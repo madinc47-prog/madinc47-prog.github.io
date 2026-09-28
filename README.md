@@ -36,6 +36,8 @@ Point Pages at this folder (or push it as the Pages root). Keep relative paths. 
 
 Included at site root: `robots.txt`, `sitemap.xml`, `404.html`.
 
+`assets/hero-dominica.jpg` is the original IslePin hero photo (aerial view of Dominica's west coast), restored byte-for-byte from https://islepin.grok.me/hero-dominica.jpg.
+
 ## Constraints
 
 - Pure static: HTML / CSS / JS only  
