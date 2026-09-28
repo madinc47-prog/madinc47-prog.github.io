@@ -99,10 +99,24 @@
 
     <section class="section wrap" id="radio">
       <h2>Island Pin Radio</h2>
-      <p class="muted">Listen while you browse — external stations (opens in new tab).</p>
-      <div class="link-row">
-        <a class="chip-link" href="https://dbcradio.net/" target="_blank" rel="noopener noreferrer">DBS Radio</a>
-        <a class="chip-link" href="https://www.q95da.com/" target="_blank" rel="noopener noreferrer">Q95 FM</a>
+      <p class="muted">Listen live right here while you browse. Station websites open in a new tab — the radio keeps playing.</p>
+      <div id="radio-player" class="radio-player" data-state="idle">
+        <div class="radio-now" role="region" aria-label="Now playing">
+          <div class="radio-now-info">
+            <span class="radio-now-label"><span class="radio-dot" aria-hidden="true"></span>Now playing</span>
+            <strong id="radio-now-name">Nothing playing</strong>
+            <span id="radio-now-status" class="radio-now-status" aria-live="polite">Pick a station below.</span>
+          </div>
+          <div class="radio-now-controls">
+            <button type="button" class="btn btn-primary" id="radio-now-toggle" hidden>Pause</button>
+            <label class="radio-volume">Volume
+              <input type="range" id="radio-volume" min="0" max="100" step="1" value="80">
+            </label>
+          </div>
+        </div>
+        <div class="chips radio-groups" id="radio-groups" role="group" aria-label="Station groups"></div>
+        <div id="radio-list" class="radio-list"></div>
+        <noscript><p class="note">Turn on JavaScript to play stations in the page.</p></noscript>
       </div>
     </section>
 
@@ -130,5 +144,6 @@
     </div>
   </footer>
   <script src="app.js"></script>
+  <script src="radio.js"></script>
 </body>
 </html>

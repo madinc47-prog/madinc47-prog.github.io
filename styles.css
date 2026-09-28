@@ -198,3 +198,46 @@ input:focus, select:focus, textarea:focus {
   .nav { font-size: .8rem; gap: .5rem .75rem; }
   .stats { grid-template-columns: 1fr; }
 }
+
+/* Island Pin Radio */
+.radio-player { display: grid; gap: .75rem; margin-top: .75rem; }
+.radio-now {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .75rem 1rem;
+  background: linear-gradient(135deg, #12352e, #0a2822); border: 1px solid var(--line);
+  border-radius: var(--radius); padding: 1rem 1.1rem; box-shadow: var(--shadow);
+}
+.radio-now-info { display: grid; gap: .15rem; min-width: 0; }
+.radio-now-label {
+  display: inline-flex; align-items: center; gap: .4rem; font-size: .72rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .12em; color: var(--teal);
+}
+.radio-dot { width: .5rem; height: .5rem; border-radius: 50%; background: var(--muted); }
+.radio-player[data-state="playing"] .radio-dot { background: var(--green); animation: radio-pulse 1.4s ease-in-out infinite; }
+.radio-player[data-state="loading"] .radio-dot,
+.radio-player[data-state="buffering"] .radio-dot { background: var(--accent); animation: radio-pulse .7s ease-in-out infinite; }
+.radio-player[data-state="error"] .radio-dot { background: var(--danger); }
+@keyframes radio-pulse { 50% { opacity: .3; } }
+#radio-now-name { font-size: 1.1rem; }
+.radio-now-status { color: var(--muted); font-size: .88rem; }
+.radio-now-controls { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem 1rem; }
+.radio-volume { display: flex; align-items: center; gap: .5rem; }
+.radio-volume input[type="range"] { width: 8.5rem; padding: 0; border: 0; background: transparent; accent-color: var(--teal); }
+.radio-groups { padding-top: 0; }
+.radio-list { display: grid; gap: .75rem; }
+@media (min-width: 720px) { .radio-list { grid-template-columns: 1fr 1fr; } }
+.radio-card {
+  display: grid; gap: .6rem; background: var(--bg-card); border: 1px solid var(--line);
+  border-radius: var(--radius); padding: .95rem 1.05rem; box-shadow: var(--shadow);
+}
+.radio-card[data-state="playing"], .radio-card[data-state="loading"], .radio-card[data-state="buffering"] { border-color: var(--teal); }
+.radio-card[data-state="error"] { border-color: rgba(248,113,113,.55); }
+.radio-card h3 { margin: 0; font-size: 1.02rem; }
+.radio-card .meta { margin: .15rem 0 0; }
+.radio-status { margin: .25rem 0 0; font-size: .84rem; color: var(--teal); min-height: 1.25em; }
+.radio-status.is-error, .radio-now-status.is-error { color: var(--danger); }
+.radio-card[data-state="loading"] .radio-status, .radio-card[data-state="buffering"] .radio-status { color: var(--accent); }
+.radio-card[data-state="paused"] .radio-status { color: var(--muted); }
+.radio-card-actions { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; }
+.radio-card-actions .btn { padding: .45rem .95rem; font-size: .86rem; }
+.radio-play { min-width: 5.25rem; }
+.radio-site-host { flex-basis: 100%; font-size: .75rem; color: var(--muted); }
