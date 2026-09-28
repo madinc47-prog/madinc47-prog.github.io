@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Island Pin Beats — Free Browser Beat Maker</title>
+  <meta name="description" content="Island Pin Beats: free browser beat maker for rappers and DJs. Trap, Drill and Phonk kits, 16 pads, step sequencer, chord loop, lyrics teleprompter, vocal recording over the beat, mixer, WAV export.">
+  <meta name="robots" content="index,follow">
+  <link rel="canonical" href="https://madinc47-prog.github.io/beats/">
+  <meta property="og:title" content="Island Pin Beats — Free Beat Maker">
+  <meta property="og:description" content="Make Trap, Drill and Phonk beats in your browser. 16 pads, sequencer, chords, mixer, record WAV. Free, from Dominica.">
+  <meta property="og:url" content="https://madinc47-prog.github.io/beats/">
+  <meta property="og:type" content="website">
+  <meta name="theme-color" content="#0b0d12">
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <a href="../" class="back" aria-label="Back to IslePin">←</a>
+      <span class="logo">ISLAND PIN <b>BEATS</b></span>
+    </div>
+    <div class="transport">
+      <button id="btn-play" class="tbtn play" aria-label="Play pattern">▶</button>
+      <button id="btn-stop" class="tbtn" aria-label="Stop pattern">■</button>
+      <label class="bpm">BPM <input id="bpm" type="number" min="60" max="200" value="140"></label>
+      <span id="audio-state" class="audio-state">Tap any pad to start audio</span>
+    </div>
+  </header>
+
+  <nav class="tabs" role="tablist">
+    <button class="tab active" role="tab" data-tab="beats" aria-selected="true">Beats</button>
+    <button class="tab" role="tab" data-tab="lyrics" aria-selected="false">Lyrics</button>
+    <button class="tab" role="tab" data-tab="mixer" aria-selected="false">Mixer</button>
+    <button class="tab" role="tab" data-tab="studio" aria-selected="false">Studio</button>
+    <button class="tab" role="tab" data-tab="vault" aria-selected="false">Vault</button>
+  </nav>
+
+  <main>
+    <!-- BEATS -->
+    <section id="tab-beats" class="panel active" role="tabpanel">
+      <div class="toolbar">
+        <div class="kits" role="group" aria-label="Starter kits">
+          <button class="kit active" data-kit="trap">Trap</button>
+          <button class="kit" data-kit="drill">Drill</button>
+          <button class="kit" data-kit="phonk">Phonk</button>
+        </div>
+        <div class="toolbar-right">
+          <label class="swing">Swing <input id="swing" type="range" min="0" max="60" value="0"></label>
+          <button id="btn-fresh" class="btn">Fresh beat</button>
+          <button id="btn-demo" class="btn ghost">Load kit demo</button>
+        </div>
+      </div>
+
+      <div class="song-bar">
+        <div class="song-bar-left">
+          <select id="song-preset" aria-label="Song preset (loads beat and lyrics)"></select>
+          <select id="struct-sel" aria-label="Song structure">
+            <option value="">No song form (loop)</option>
+            <option value="rap80">Song form · 80 bars</option>
+          </select>
+          <button type="button" class="btn small js-open-prompter">Teleprompter</button>
+        </div>
+        <span id="song-pos" class="song-pos">Bar 1</span>
+      </div>
+      <div class="timeline" id="timeline" hidden aria-label="Song structure timeline"></div>
+
+      <div class="rec-bar">
+        <div class="rec-controls">
+          <button id="btn-rec" class="btn rec">● Record</button>
+          <button id="btn-rec-stop" class="btn" disabled>Stop</button>
+          <label>Length
+            <select id="rec-length">
+              <option value="15">15 sec</option>
+              <option value="30" selected>30 sec</option>
+              <option value="60">60 sec</option>
+              <option value="0">Free (until stop)</option>
+              <option value="song">Full song (song form)</option>
+            </select>
+          </label>
+          <label class="chk"><input type="checkbox" id="rec-autoplay" checked> Start pattern with record</label>
+          <span class="sep"></span>
+          <button id="btn-bounce" class="btn ghost">Bounce loop</button>
+          <select id="bounce-bars" aria-label="Bounce length">
+            <option value="2">2 bars</option>
+            <option value="4" selected>4 bars</option>
+            <option value="8">8 bars</option>
+            <option value="16">16 bars</option>
+            <option value="song">Full song</option>
+          </select>
+          <span class="sep"></span>
+          <button type="button" class="btn rec vox js-vox">🎙 Record Vocals</button>
+        </div>
+        <span id="rec-status" class="rec-status">Ready</span>
+        <div class="vox-status js-vox-status" role="status">Record Vocals: 1-bar count-in, then the beat plays and your mic records. Use headphones.</div>
+      </div>
+
+      <div class="beats-grid">
+        <div class="pads-wrap">
+          <div class="pads" id="pads"></div>
+          <div class="pad-edit">
+            <div><span class="label">Selected pad</span> <strong id="sel-pad-name">—</strong></div>
+            <div class="pad-edit-actions">
+              <label class="btn small file-btn">Swap sample
+                <input type="file" id="pad-file" accept="audio/*" hidden>
+              </label>
+              <button id="btn-pad-reset" class="btn small ghost">Reset pad</button>
+              <label class="pitch">Pitch <input type="range" id="pad-pitch" min="-12" max="12" value="0"> <span id="pad-pitch-val">0</span></label>
+            </div>
+          </div>
+        </div>
+
+        <div class="seq-wrap">
+          <div class="seq-head">
+            <span class="label">Step sequencer · 16 steps <span class="roll-hint">· right-click / long-press a step for rolls (2× / 3×)</span></span>
+            <button id="btn-clear-row" class="btn small ghost">Clear selected row</button>
+          </div>
+          <div class="seq" id="seq"></div>
+        </div>
+      </div>
+
+      <div class="chordloop" id="cl-wrap">
+        <span class="label">Chord loop</span>
+        <label class="chk"><input type="checkbox" id="cl-on"> On</label>
+        <div class="cl-slots" id="cl-slots"></div>
+        <label>Bars each
+          <select id="cl-bars"><option value="1">1</option><option value="2">2</option><option value="4">4</option></select>
+        </label>
+        <label>Sound
+          <select id="cl-sound">
+            <option value="pad">Dark pad</option>
+            <option value="keys">E-piano</option>
+            <option value="pluck">Pluck</option>
+            <option value="bell">Bell</option>
+          </select>
+        </label>
+        <label class="chk" title="Transposes the 808 pads to each chord root (tuned from C)"><input type="checkbox" id="cl-bass"> 808 follows chord</label>
+      </div>
+
+      <div class="keys-wrap">
+        <div class="keys-head">
+          <span class="label">Keys</span>
+          <div class="keys-opts">
+            <label>Mode
+              <select id="key-mode">
+                <option value="note">Single note</option>
+                <option value="maj">Major chord</option>
+                <option value="min" selected>Minor chord</option>
+                <option value="min7">Minor 7</option>
+              </select>
+            </label>
+            <label>Sound
+              <select id="key-sound">
+                <option value="pad">Dark pad</option>
+                <option value="keys">E-piano</option>
+                <option value="pluck">Pluck</option>
+                <option value="bell">Bell</option>
+              </select>
+            </label>
+            <label>Octave
+              <select id="key-oct">
+                <option value="3">3</option>
+                <option value="4" selected>4</option>
+                <option value="5">5</option>
+              </select>
+            </label>
+          </div>
+        </div>
+        <div class="chords" id="chords"></div>
+        <div class="piano" id="piano"></div>
+        <p class="hint">Computer keys: A W S E D F T G Y H U J K play notes · Z X C V B N M , trigger pads 1–8 · Space = play/stop.</p>
+      </div>
+    </section>
+
+    <!-- LYRICS -->
+    <section id="tab-lyrics" class="panel" role="tabpanel">
+      <div class="ly-head">
+        <div>
+          <h2>Lyrics</h2>
+          <p class="sub">Write and edit here. <b>[Hook]</b>, <b>[Verse 1]</b>… become section headers; <span class="adlib">(ad-libs)</span> are dimmed. Songs save in this browser.</p>
+        </div>
+        <div class="ly-actions">
+          <button type="button" class="btn js-open-prompter primary">Teleprompter</button>
+          <button type="button" class="btn rec vox js-vox">🎙 Record Vocals</button>
+        </div>
+      </div>
+      <div class="ly-bar">
+        <select id="ly-song" aria-label="Song"></select>
+        <button type="button" id="ly-save" class="btn small">Save</button>
+        <button type="button" id="ly-new" class="btn small ghost">New</button>
+        <button type="button" id="ly-saveas" class="btn small ghost">Save as…</button>
+        <button type="button" id="ly-reset" class="btn small ghost" hidden>Restore original</button>
+        <button type="button" id="ly-del" class="btn small ghost" hidden>Delete</button>
+        <button type="button" id="ly-loadbeat" class="btn small ghost" hidden>Load this song's beat</button>
+        <label class="chk" id="ly-attach-wrap" title="My songs only: store the current beat so the Song preset menu loads beat + lyrics together"><input type="checkbox" id="ly-attach"> Save current beat with song</label>
+        <span id="ly-dirty" class="ly-dirty"></span>
+      </div>
+      <div class="vox-status js-vox-status" role="status"></div>
+      <div class="ly-grid">
+        <textarea id="ly-text" spellcheck="false" aria-label="Lyrics editor" placeholder="[Hook]&#10;Your lines here (ad-lib)"></textarea>
+        <div class="ly-preview" id="ly-preview"><div id="ly-preview-lines" class="ly-lines"></div></div>
+      </div>
+      <p class="hint" id="ly-info"></p>
+    </section>
+
+    <!-- MIXER -->
+    <section id="tab-mixer" class="panel" role="tabpanel">
+      <h2>Mixer</h2>
+      <p class="sub">Group volume and mute. Changes apply live and to recordings.</p>
+      <div class="mixer" id="mixer"></div>
+      <div class="vox-box">
+        <strong>Vocal channel</strong>
+        <p class="sub">The Vocal fader sets the vocal level in the exported mix (beat + vocal WAV). Mute leaves the vocal out.</p>
+        <div class="vox-opts">
+          <button type="button" id="vox-check" class="btn small">Mic check</button>
+          <label class="chk"><input type="checkbox" id="vox-monitor"> Hear mic while recording (headphones only)</label>
+          <label class="chk"><input type="checkbox" id="vox-dry"> Also save dry vocal WAV</label>
+          <label>Latency comp <span id="vox-lat" class="mono">auto</span> + nudge
+            <input type="number" id="vox-nudge" min="-300" max="300" step="5" value="0" aria-label="Vocal timing nudge in ms"> ms
+          </label>
+        </div>
+        <div class="vox-opts">
+          <span id="vox-last" class="mono">No take yet this session.</span>
+          <button type="button" id="vox-remix" class="btn small" disabled>Export last take again (current vocal level)</button>
+          <button type="button" class="btn small rec vox js-vox">🎙 Record Vocals</button>
+        </div>
+        <div class="vox-status js-vox-status" role="status"></div>
+      </div>
+    </section>
+
+    <!-- STUDIO -->
+    <section id="tab-studio" class="panel" role="tabpanel">
+      <h2>Studio</h2>
+      <p class="sub">Preview frames for YouTube (16:9) and Shorts / Reels / TikTok (9:16). The visualizer reacts to your beat.</p>
+      <div class="studio-opts">
+        <label>Title <input id="studio-title" maxlength="60" value="Untitled beat"></label>
+        <label>Artist / tag <input id="studio-artist" maxlength="60" value="Island Pin Beats"></label>
+        <label>Style
+          <select id="studio-style">
+            <option value="bars">Bars</option>
+            <option value="wave">Waveform</option>
+            <option value="ring">Ring</option>
+          </select>
+        </label>
+      </div>
+      <div class="frames">
+        <figure class="frame f169">
+          <canvas id="cv-169" width="1280" height="720"></canvas>
+          <figcaption>16:9 · YouTube</figcaption>
+        </figure>
+        <figure class="frame f916">
+          <canvas id="cv-916" width="720" height="1280"></canvas>
+          <figcaption>9:16 · Shorts / Reels</figcaption>
+        </figure>
+      </div>
+      <div class="note-box">
+        <strong>How to capture video (free):</strong>
+        <ul>
+          <li>Desktop: use OBS Studio (free) — add a Window/Browser capture, crop to the frame, and record while the beat plays.</li>
+          <li>Phone: use the built-in screen recorder, then crop to 9:16 in your gallery editor.</li>
+          <li>For best audio, export the WAV from Vault and replace the audio track in your video editor (e.g. CapCut, DaVinci Resolve — both free).</li>
+          <li>Tap a frame to toggle fullscreen for a clean capture.</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- VAULT -->
+    <section id="tab-vault" class="panel" role="tabpanel">
+      <h2>Vault</h2>
+      <p class="sub">Recordings are stored in this browser (IndexedDB). Download WAVs to keep them safe.</p>
+      <div id="vault-list" class="vault-list"></div>
+    </section>
+  </main>
+
+  <div id="prompter" class="prompter" hidden role="dialog" aria-label="Teleprompter">
+    <div class="pr-top">
+      <div class="pr-titles"><strong id="pr-title">Teleprompter</strong><span id="pr-pos" class="mono">Bar 1</span></div>
+      <div class="pr-top-btns">
+        <button type="button" id="pr-fs" class="btn small ghost" aria-label="Fullscreen">⛶</button>
+        <button type="button" id="pr-close" class="btn small" aria-label="Close teleprompter">✕</button>
+      </div>
+    </div>
+    <div class="timeline pr-tl" id="pr-timeline" hidden></div>
+    <div class="pr-scroll" id="pr-scroll"><div class="pr-lines ly-lines" id="pr-lines"></div></div>
+    <div class="pr-count" id="pr-count" aria-live="assertive"></div>
+    <div class="vox-status js-vox-status pr-status" role="status"></div>
+    <div class="pr-controls">
+      <button type="button" id="pr-play" class="btn">▶ Play</button>
+      <button type="button" id="pr-top" class="btn ghost">⟲ Top</button>
+      <label>Speed
+        <select id="pr-bpl" aria-label="Bars per line">
+          <option value="auto">Auto (fit song form)</option>
+          <option value="0.5">½ bar / line</option>
+          <option value="1">1 bar / line</option>
+          <option value="2">2 bars / line</option>
+          <option value="4">4 bars / line</option>
+        </select>
+      </label>
+      <label>Size <input type="range" id="pr-size" min="0.6" max="1.8" step="0.1" value="1"></label>
+      <button type="button" class="btn rec vox js-vox">🎙 Record Vocals</button>
+    </div>
+  </div>
+
+  <footer class="foot">Free · runs in your browser · synthesized sounds, no paid APIs · <a href="../">IslePin</a></footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

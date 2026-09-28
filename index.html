@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IslePin — Dominica Jobs &amp; Shops Pinboard</title>
+  <meta name="description" content="IslePin is Dominica's local pinboard. Post jobs, hire help, pin your shop — parish by parish across the Nature Isle. Free, offline-first.">
+  <meta name="robots" content="index,follow">
+  <link rel="canonical" href="https://madinc47-prog.github.io/">
+  <meta property="og:title" content="IslePin — Dominica Jobs &amp; Shops Pinboard">
+  <meta property="og:description" content="Hire help, earn cash, pin your trade in Dominica. Roseau, Portsmouth, Marigot &amp; more. Free local pinboard for the Nature Isle.">
+  <meta property="og:url" content="https://madinc47-prog.github.io/">
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="en_DM">
+  <meta name="theme-color" content="#0a2e28">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap header-inner">
+      <a class="logo" href="./">Isle<span>Pin</span></a>
+      <nav class="nav" aria-label="Main">
+        <a href="#jobs">Jobs</a>
+        <a href="#shops">Shops</a>
+        <a href="#post">Post</a>
+        <a href="beats/">Beats</a>
+        <a href="isle-voice/">Isle Voice</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="wrap">
+        <p class="eyebrow">Dominica · Nature Isle</p>
+        <h1>The pinboard for the Nature Isle</h1>
+        <p class="lede">Hire help. Earn. Pin your shop — parish by parish. Free, works offline on your phone.</p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="#post-job">Post a job</a>
+          <a class="btn btn-ghost" href="#post-shop">Pin a shop</a>
+        </div>
+        <div class="stats" id="stats" aria-live="polite">
+          <div class="stat"><strong id="stat-jobs">0</strong><span>open jobs</span></div>
+          <div class="stat"><strong id="stat-shops">0</strong><span>pinned shops</span></div>
+          <div class="stat"><strong id="stat-parishes">0</strong><span>parishes active</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section wrap" id="filters">
+      <h2 class="sr-only">Filter by parish</h2>
+      <div class="chips" id="parish-chips" role="group" aria-label="Parish filters"></div>
+    </section>
+
+    <section class="section wrap" id="jobs">
+      <div class="section-head">
+        <h2>Open jobs</h2>
+        <a class="link-sm" href="#post-job">+ Post job</a>
+      </div>
+      <div id="jobs-list" class="card-list"></div>
+    </section>
+
+    <section class="section wrap" id="shops">
+      <div class="section-head">
+        <h2>Pinned shops</h2>
+        <a class="link-sm" href="#post-shop">+ Pin shop</a>
+      </div>
+      <div id="shops-list" class="card-list"></div>
+    </section>
+
+    <section class="section wrap" id="post">
+      <h2>Post to IslePin</h2>
+      <div class="forms-grid">
+        <form id="post-job" class="panel" autocomplete="on">
+          <h3>Post a job</h3>
+          <label>Title<input name="title" required maxlength="80" placeholder="e.g. Need help clearing yard"></label>
+          <label>Parish
+            <select name="parish" required id="job-parish"></select>
+          </label>
+          <label>Pay / note<input name="pay" maxlength="60" placeholder="e.g. EC$80 / half day"></label>
+          <label>Contact<input name="contact" required maxlength="80" placeholder="WhatsApp or phone"></label>
+          <label>Details<textarea name="details" rows="3" maxlength="400" placeholder="What needs doing?"></textarea></label>
+          <button type="submit" class="btn btn-primary">Post job</button>
+        </form>
+        <form id="post-shop" class="panel" autocomplete="on">
+          <h3>Pin a shop</h3>
+          <label>Business name<input name="name" required maxlength="80" placeholder="Your trade name"></label>
+          <label>Trade / category<input name="trade" required maxlength="60" placeholder="e.g. Plumbing, Cleaning, Delivery"></label>
+          <label>Parish
+            <select name="parish" required id="shop-parish"></select>
+          </label>
+          <label>Contact<input name="contact" required maxlength="80" placeholder="WhatsApp or phone"></label>
+          <label>About<textarea name="about" rows="3" maxlength="400" placeholder="What you offer"></textarea></label>
+          <button type="submit" class="btn btn-primary">Pin shop</button>
+        </form>
+      </div>
+      <p class="note">Posts save on this device (localStorage). Clear browser data removes them. No account needed.</p>
+    </section>
+
+    <section class="section wrap" id="radio">
+      <h2>Island Pin Radio</h2>
+      <p class="muted">Listen while you browse — external stations (opens in new tab).</p>
+      <div class="link-row">
+        <a class="chip-link" href="https://dbcradio.net/" target="_blank" rel="noopener noreferrer">DBS Radio</a>
+        <a class="chip-link" href="https://www.q95da.com/" target="_blank" rel="noopener noreferrer">Q95 FM</a>
+      </div>
+    </section>
+
+    <section class="section wrap" id="afterglow">
+      <a class="feature-card" href="https://cinder-heart-tulip-harbor.grok.me" target="_blank" rel="noopener noreferrer">
+        <span class="feature-label">Also from IslePin</span>
+        <strong>Afterglow</strong>
+        <span>Open Afterglow →</span>
+      </a>
+    </section>
+
+    <section class="section wrap" id="admin">
+      <details class="admin-note">
+        <summary>Local data note</summary>
+        <p>IslePin stores jobs and shops only in your browser. To clear everything on this device, use the button below. There is no remote admin or unlock code.</p>
+        <button type="button" class="btn btn-ghost" id="clear-data">Clear all local posts</button>
+      </details>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <p>IslePin · Dominica · Built for Emmanuel Griffith</p>
+      <p class="muted"><a href="beats/">Island Pin Beats</a> · <a href="isle-voice/">Isle Voice</a></p>
+    </div>
+  </footer>
+  <script src="app.js"></script>
+</body>
+</html>

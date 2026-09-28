@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Isle Voice — Free Voice Bank &amp; Song Draft Helper</title>
+  <meta name="description" content="Isle Voice: build your voice bank, write lyrics, and generate a draft instrumental in your browser. Free. Prepares files for free RVC voice conversion on Colab.">
+  <meta name="robots" content="index,follow">
+  <link rel="canonical" href="https://madinc47-prog.github.io/isle-voice/">
+  <meta property="og:title" content="Isle Voice — Free Voice Bank &amp; Song Draft">
+  <meta property="og:description" content="Record your voice bank, write lyrics, generate a draft beat — then take it to free RVC for voice conversion. Made in Dominica.">
+  <meta property="og:url" content="https://madinc47-prog.github.io/isle-voice/">
+  <meta property="og:type" content="website">
+  <meta name="theme-color" content="#0f1222">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="top">
+    <div class="wrap top-inner">
+      <a href="../" class="back" aria-label="Back to IslePin">←</a>
+      <span class="logo">Isle<b>Voice</b> <em>MVP</em></span>
+      <nav class="jump" aria-label="Sections">
+        <a href="#bank">Voice bank</a>
+        <a href="#studio">Prompt studio</a>
+        <a href="#apply">Apply my voice</a>
+        <a href="#library">Library</a>
+      </nav>
+    </div>
+  </header>
+
+  <div class="banner" role="note">
+    <div class="wrap">
+      <strong>Free version</strong> — true voice-clone singing needs a free GPU tool like RVC (Colab); this app prepares your voice bank and draft.
+    </div>
+  </div>
+
+  <main class="wrap">
+    <!-- VOICE BANK -->
+    <section id="bank" class="card">
+      <div class="card-head">
+        <div>
+          <span class="step">1</span>
+          <h2>Voice bank</h2>
+          <p class="sub">Record or upload clean, dry clips of your voice (speaking or singing). Stored only in this browser.</p>
+        </div>
+        <div class="bank-total" id="bank-total">0 clips · 0:00</div>
+      </div>
+
+      <div class="rec-row">
+        <button id="btn-mic" class="btn primary">● Record clip</button>
+        <button id="btn-mic-stop" class="btn" disabled>■ Stop</button>
+        <div class="level" aria-hidden="true"><i id="level-bar"></i></div>
+        <span id="mic-time" class="mono">0:00</span>
+        <label class="btn ghost file">Upload clips
+          <input type="file" id="clip-file" accept="audio/*" multiple hidden>
+        </label>
+      </div>
+      <p class="tip">Tips for training data: quiet room, no music or reverb, mouth ~15 cm from mic, 10–30 minutes total works best for RVC. Mic processing (echo cancel / noise suppression) is turned off for cleaner data.</p>
+      <div id="bank-list" class="list"></div>
+      <div class="row-actions">
+        <button id="btn-bank-zip" class="btn">Export voice bank (.zip of WAVs)</button>
+      </div>
+    </section>
+
+    <!-- PROMPT STUDIO -->
+    <section id="studio" class="card">
+      <div class="card-head">
+        <div>
+          <span class="step">2</span>
+          <h2>Prompt studio</h2>
+          <p class="sub">Describe the song. The generator builds a draft instrumental in your browser (synthesized — no voice, no paid AI).</p>
+        </div>
+      </div>
+      <form id="prompt-form" class="grid" autocomplete="off">
+        <label class="span2">Project name <input id="p-name" maxlength="60" placeholder="e.g. Sunrise in Roseau" required></label>
+        <label>Genre
+          <select id="p-genre">
+            <option value="trap">Trap</option>
+            <option value="drill">Drill</option>
+            <option value="afrobeats">Afrobeats</option>
+            <option value="dancehall">Dancehall</option>
+            <option value="bouyon">Bouyon</option>
+            <option value="reggae">Reggae (one drop)</option>
+            <option value="rnb">R&amp;B</option>
+            <option value="lofi">Lo-fi</option>
+            <option value="pop">Pop</option>
+          </select>
+        </label>
+        <label>Mood
+          <select id="p-mood">
+            <option value="dark">Dark</option>
+            <option value="chill">Chill</option>
+            <option value="happy">Happy</option>
+            <option value="energetic">Energetic</option>
+            <option value="sad">Sad</option>
+            <option value="romantic">Romantic</option>
+          </select>
+        </label>
+        <label>Tempo (BPM) <span class="mono" id="p-tempo-val">140</span>
+          <input type="range" id="p-tempo" min="60" max="180" value="140">
+        </label>
+        <label>Key
+          <select id="p-key">
+            <option value="auto">Auto (from mood)</option>
+            <option value="0">C</option><option value="1">Db</option><option value="2">D</option>
+            <option value="3">Eb</option><option value="4">E</option><option value="5">F</option>
+            <option value="6">F#</option><option value="7">G</option><option value="8">Ab</option>
+            <option value="9">A</option><option value="10">Bb</option><option value="11">B</option>
+          </select>
+        </label>
+        <label>Length
+          <select id="p-bars">
+            <option value="4">4 bars (loop)</option>
+            <option value="8" selected>8 bars</option>
+            <option value="16">16 bars</option>
+          </select>
+        </label>
+        <label>Variation <input type="number" id="p-var" min="1" max="999" value="1"></label>
+        <label class="span2">Lyrics
+          <textarea id="p-lyrics" rows="7" maxlength="4000" placeholder="Write your verse or hook here. One line per bar works well."></textarea>
+        </label>
+        <label class="chk span2"><input type="checkbox" id="p-guide" checked> Add guide melody from lyrics (synth tone timed to syllables — a singing guide, not a voice)</label>
+        <div class="span2 row-actions">
+          <button type="submit" class="btn primary" id="btn-gen">Generate draft</button>
+          <button type="button" class="btn ghost" id="btn-save">Save project</button>
+          <button type="button" class="btn ghost" id="btn-new">New project</button>
+          <span id="gen-status" class="mono muted"></span>
+        </div>
+      </form>
+
+      <div id="draft" class="draft" hidden>
+        <div class="draft-head">
+          <strong id="draft-title">Draft</strong>
+          <span id="draft-meta" class="mono muted"></span>
+        </div>
+        <audio id="draft-audio" controls loop></audio>
+        <div class="row-actions">
+          <a id="dl-inst" class="btn" download>Download instrumental (WAV)</a>
+          <a id="dl-guide" class="btn ghost" download hidden>Download guide melody (WAV)</a>
+          <button type="button" id="btn-lyrics-txt" class="btn ghost">Download lyrics (.txt)</button>
+        </div>
+        <div class="take-box">
+          <h3>Record a guide vocal over the draft</h3>
+          <p class="sub">Use headphones. Sing or rap your lyrics over the instrumental. This take is what RVC converts into your trained voice.</p>
+          <div class="rec-row">
+            <button id="btn-take" class="btn primary">● Record take</button>
+            <button id="btn-take-stop" class="btn" disabled>■ Stop</button>
+            <span id="take-time" class="mono">0:00</span>
+          </div>
+          <div id="take-list" class="list"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- APPLY MY VOICE -->
+    <section id="apply" class="card">
+      <div class="card-head">
+        <div>
+          <span class="step">3</span>
+          <h2>Apply my voice</h2>
+          <p class="sub">Honest path: this browser app cannot make your voice sing by itself. Free open-source RVC does voice conversion on a free Colab GPU.</p>
+        </div>
+      </div>
+      <div class="row-actions">
+        <button id="btn-pack" class="btn primary">Download project pack (.zip)</button>
+        <span class="muted small">Includes voice bank WAVs, instrumental, guide melody, guide vocal takes, lyrics and step-by-step README.</span>
+      </div>
+      <ol class="steps">
+        <li><strong>Train your voice model</strong> — open a free RVC or Applio Colab notebook, upload the <code>voice_bank/</code> WAVs, and train (roughly 10–30 min of audio, 200–300 epochs is a common start on a free T4 GPU).</li>
+        <li><strong>Convert a sung vocal</strong> — upload your <code>takes/</code> guide vocal (or any acapella you have rights to) and run inference with your model. Pick the pitch shift so it fits your range.</li>
+        <li><strong>Mix</strong> — put the converted vocal over <code>instrumental.wav</code> in a free DAW (Audacity, Cakewalk, BandLab, GarageBand).</li>
+        <li><strong>Release</strong> — only use voices you own or have permission to use.</li>
+      </ol>
+      <div class="links">
+        <a href="https://github.com/RVC-Project/Retrieval-based-Voice-Conversion-WebUI" target="_blank" rel="noopener noreferrer">RVC WebUI (GitHub, free)</a>
+        <a href="https://github.com/IAHispano/Applio" target="_blank" rel="noopener noreferrer">Applio (GitHub, free)</a>
+        <a href="https://colab.research.google.com/" target="_blank" rel="noopener noreferrer">Google Colab (free tier)</a>
+        <a href="https://www.audacityteam.org/" target="_blank" rel="noopener noreferrer">Audacity (free DAW)</a>
+      </div>
+    </section>
+
+    <!-- LIBRARY -->
+    <section id="library" class="card">
+      <div class="card-head">
+        <div>
+          <span class="step">4</span>
+          <h2>Library</h2>
+          <p class="sub">Saved projects (settings + lyrics) in this browser. Drafts regenerate identically from the saved settings.</p>
+        </div>
+      </div>
+      <div id="lib-list" class="list"></div>
+    </section>
+  </main>
+
+  <footer class="foot wrap">Isle Voice MVP · free, runs in your browser · no paid APIs · <a href="../">IslePin</a> · <a href="../beats/">Island Pin Beats</a></footer>
+  <script src="app.js"></script>
+</body>
+</html>
