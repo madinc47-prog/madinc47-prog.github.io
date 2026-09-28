@@ -1,9 +1,10 @@
-/* Island Pin Beats — pure Web Audio, no external samples, no paid APIs. */
+/* Island Pin Beats — Web Audio beat maker. Drums: synthesis + a few small CC0 one-shots (samples/CREDITS.md). No paid APIs. */
 (function () {
   "use strict";
 
   var SR = 44100;
-  var STEPS = 16;
+  var STEPS = 16;          // steps per bar (16ths)
+  var MAXLEN = 32;         // a pattern holds up to 2 bars
   var SESSION_KEY = "ipb_session_v1";
   var GROUPS = [
     { id: "drums", name: "Drums" },
@@ -13,333 +14,56 @@
     { id: "keys", name: "Keys" }
   ];
   var PAD_KEYS = ["z", "x", "c", "v", "b", "n", "m", ","];
-  var CHOKE = { 1: [1, 2, 3], 2: [1, 2, 3], 3: [1, 2, 3], 7: [8], 9: [8] };
+  var D = window.IPBDrums;            // kit library + offline pad renderer (drums.js)
+  var DEFAULT_KIT = "qb";
+  var SLOT_IDS = ["A", "B", "C", "D"];
+  var TOOL_VEL = { acc: 1, hit: 0.8, ghost: 0.45 };
 
   function mf(m) { return 440 * Math.pow(2, (m - 69) / 12); }
   function $(id) { return document.getElementById(id); }
   function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
 
-  /* ---------------- Synth voices (rendered offline into buffers) ---------------- */
-  function noiseSrc(c, dur) {
-    var len = Math.max(1, Math.floor(c.sampleRate * dur));
-    var b = c.createBuffer(1, len, c.sampleRate);
-    var d = b.getChannelData(0);
-    for (var i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
-    var s = c.createBufferSource();
-    s.buffer = b;
-    return s;
+  /* ---------------- Kits (library lives in drums.js) ---------------- */
+  function kitId(id) { id = D.ALIAS[id] || id; return D.BY_ID[id] ? id : DEFAULT_KIT; }
+  function kitDef(id) { return D.BY_ID[kitId(id || S.kit)]; }
+  function padDef(i) { return kitDef(S.kit).pads[i]; }
+  function kitName(id) { var k = D.BY_ID[D.ALIAS[id] || id]; return k ? k.name : (id ? String(id) : ""); }
+  function groupOf(i) { return padDef(i).g; }
+  /* swing: stored as % of a 16th (0–60, as before); shown MPC-style (50 % = straight, 62 % = QB bounce) */
+  function mpcSwing(sw) { return Math.round(50 + sw / 2); }
+  function swingFromMpc(p) { return clamp(Math.round((p - 50) * 2), 0, 60); }
+  function defaultPadCfg(def) { return { tune: 0, decay: 1, level: 0, pan: def.pan || 0, drive: 0, nudge: def.nudge || 0 }; }
+  function padCfg(i, kit) {
+    kit = kitId(kit || S.kit);
+    var all = S.padCfg[kit] || (S.padCfg[kit] = []);
+    return all[i] || (all[i] = defaultPadCfg(D.BY_ID[kit].pads[i]));
   }
-  function adEnv(param, t, a, peak, d) {
-    param.setValueAtTime(0.0001, t);
-    param.exponentialRampToValueAtTime(peak, t + a);
-    param.exponentialRampToValueAtTime(0.0001, t + a + d);
-  }
-  function driveCurve(k) {
-    var n = 2048, curve = new Float32Array(n);
-    for (var i = 0; i < n; i++) {
-      var x = (i * 2) / n - 1;
-      curve[i] = ((1 + k) * x) / (1 + k * Math.abs(x));
-    }
-    return curve;
-  }
-  function withDrive(c, out, amount) {
-    if (!amount) return out;
-    var ws = c.createWaveShaper();
-    ws.curve = driveCurve(amount);
-    ws.oversample = "2x";
-    var comp = c.createGain();
-    comp.gain.value = 1 / (1 + amount * 0.08);
-    ws.connect(comp);
-    comp.connect(out);
-    return ws;
-  }
-
-  var VOICES = {
-    kick: function (c, out, p) {
-      var dest = withDrive(c, out, p.drive);
-      var o = c.createOscillator(), g = c.createGain();
-      o.type = "sine";
-      o.frequency.setValueAtTime(p.f0, 0);
-      o.frequency.exponentialRampToValueAtTime(p.f1, p.pd);
-      adEnv(g.gain, 0, 0.002, 1, p.d);
-      o.connect(g); g.connect(dest);
-      o.start(0); o.stop(p.d + 0.1);
-      var n = noiseSrc(c, 0.02), hp = c.createBiquadFilter(), ng = c.createGain();
-      hp.type = "highpass"; hp.frequency.value = 2500;
-      adEnv(ng.gain, 0, 0.001, 0.35, 0.012);
-      n.connect(hp); hp.connect(ng); ng.connect(dest); n.start(0);
-    },
-    bass808: function (c, out, p) {
-      var dest = withDrive(c, out, p.drive);
-      var lp = c.createBiquadFilter();
-      lp.type = "lowpass"; lp.frequency.value = 1400;
-      lp.connect(dest);
-      var o = c.createOscillator(), g = c.createGain();
-      o.type = "sine";
-      if (p.glide) {
-        o.frequency.setValueAtTime(p.f * p.glideFrom, 0);
-        o.frequency.exponentialRampToValueAtTime(p.f, p.glide);
-      } else {
-        o.frequency.setValueAtTime(p.f * 1.9, 0);
-        o.frequency.exponentialRampToValueAtTime(p.f, 0.035);
-      }
-      g.gain.setValueAtTime(0.0001, 0);
-      g.gain.exponentialRampToValueAtTime(0.95, 0.004);
-      g.gain.exponentialRampToValueAtTime(0.6, 0.25);
-      g.gain.exponentialRampToValueAtTime(0.0001, p.d);
-      o.connect(g); g.connect(lp);
-      o.start(0); o.stop(p.d + 0.05);
-    },
-    snare: function (c, out, p) {
-      var o = c.createOscillator(), og = c.createGain();
-      o.type = "triangle";
-      o.frequency.setValueAtTime(p.tone, 0);
-      o.frequency.exponentialRampToValueAtTime(p.tone * 0.6, 0.1);
-      adEnv(og.gain, 0, 0.001, 0.55, 0.12);
-      o.connect(og); og.connect(out); o.start(0); o.stop(0.3);
-      var n = noiseSrc(c, p.nd + 0.1), hp = c.createBiquadFilter(), ng = c.createGain();
-      hp.type = "highpass"; hp.frequency.value = p.hp;
-      adEnv(ng.gain, 0, 0.001, 0.8, p.nd);
-      n.connect(hp); hp.connect(ng); ng.connect(out); n.start(0);
-    },
-    clap: function (c, out, p) {
-      var n = noiseSrc(c, p.d + 0.1), bp = c.createBiquadFilter(), g = c.createGain();
-      bp.type = "bandpass"; bp.frequency.value = p.f; bp.Q.value = 1.1;
-      g.gain.setValueAtTime(0.0001, 0);
-      [0, 0.011, 0.022].forEach(function (t) {
-        g.gain.setValueAtTime(0.9, t);
-        g.gain.exponentialRampToValueAtTime(0.12, t + 0.009);
+  function cleanPadCfg(src) {
+    var out = {};
+    Object.keys(src || {}).forEach(function (k) {
+      if (!D.BY_ID[k] || !Array.isArray(src[k])) return;
+      out[k] = src[k].slice(0, 16).map(function (c, i) {
+        var d = defaultPadCfg(D.BY_ID[k].pads[i]);
+        if (!c || typeof c !== "object") return d;
+        return {
+          tune: clamp(+c.tune || 0, -12, 12), decay: clamp(c.decay == null ? 1 : +c.decay, 0.05, 1),
+          level: clamp(+c.level || 0, -24, 6), pan: clamp(c.pan == null ? d.pan : +c.pan, -1, 1),
+          drive: clamp(+c.drive || 0, 0, 1), nudge: clamp(c.nudge == null ? d.nudge : +c.nudge, -30, 30)
+        };
       });
-      g.gain.setValueAtTime(0.8, 0.033);
-      g.gain.exponentialRampToValueAtTime(0.0001, 0.033 + p.d);
-      n.connect(bp); bp.connect(g); g.connect(out); n.start(0);
-    },
-    rim: function (c, out) {
-      var o = c.createOscillator(), o2 = c.createOscillator(), bp = c.createBiquadFilter(), g = c.createGain();
-      o.type = "triangle"; o.frequency.value = 1700;
-      o2.type = "square"; o2.frequency.value = 820;
-      bp.type = "bandpass"; bp.frequency.value = 1800; bp.Q.value = 3.5;
-      adEnv(g.gain, 0, 0.001, 0.8, 0.045);
-      o.connect(bp); o2.connect(bp); bp.connect(g); g.connect(out);
-      o.start(0); o2.start(0); o.stop(0.1); o2.stop(0.1);
-    },
-    metal: function (c, out, p) {
-      var ratios = [205.3, 304.4, 369.6, 522.7, 540, 800];
-      var bp = c.createBiquadFilter(), hp = c.createBiquadFilter(), g = c.createGain();
-      bp.type = "bandpass"; bp.frequency.value = 10000; bp.Q.value = 0.8;
-      hp.type = "highpass"; hp.frequency.value = 7000;
-      adEnv(g.gain, 0, 0.001, 0.5, p.d);
-      ratios.forEach(function (r) {
-        var o = c.createOscillator();
-        o.type = "square"; o.frequency.value = r * (p.tune || 1) * 1.6;
-        o.connect(bp); o.start(0); o.stop(p.d + 0.1);
-      });
-      bp.connect(hp); hp.connect(g); g.connect(out);
-      var n = noiseSrc(c, p.d + 0.05), nh = c.createBiquadFilter(), ng = c.createGain();
-      nh.type = "highpass"; nh.frequency.value = 8000;
-      adEnv(ng.gain, 0, 0.001, 0.18, p.d * 0.9);
-      n.connect(nh); nh.connect(ng); ng.connect(out); n.start(0);
-    },
-    crash: function (c, out, p) {
-      VOICES.metal(c, out, { d: p.d * 0.7, tune: 0.9 });
-      var n = noiseSrc(c, p.d + 0.1), hp = c.createBiquadFilter(), g = c.createGain();
-      hp.type = "highpass"; hp.frequency.value = 4500;
-      adEnv(g.gain, 0, 0.003, 0.45, p.d);
-      n.connect(hp); hp.connect(g); g.connect(out); n.start(0);
-    },
-    shaker: function (c, out, p) {
-      var n = noiseSrc(c, p.d + 0.1), bp = c.createBiquadFilter(), g = c.createGain();
-      bp.type = "bandpass"; bp.frequency.value = 6500; bp.Q.value = 0.9;
-      adEnv(g.gain, 0, 0.014, 0.55, p.d);
-      n.connect(bp); bp.connect(g); g.connect(out); n.start(0);
-    },
-    snap: function (c, out) {
-      var n = noiseSrc(c, 0.15), bp = c.createBiquadFilter(), g = c.createGain();
-      bp.type = "bandpass"; bp.frequency.value = 2800; bp.Q.value = 2.5;
-      adEnv(g.gain, 0, 0.001, 0.9, 0.07);
-      n.connect(bp); bp.connect(g); g.connect(out); n.start(0);
-      var o = c.createOscillator(), og = c.createGain();
-      o.frequency.value = 1900; adEnv(og.gain, 0, 0.001, 0.25, 0.02);
-      o.connect(og); og.connect(out); o.start(0); o.stop(0.05);
-    },
-    tom: function (c, out, p) {
-      var o = c.createOscillator(), g = c.createGain();
-      o.type = "sine";
-      o.frequency.setValueAtTime(p.f * 1.3, 0);
-      o.frequency.exponentialRampToValueAtTime(p.f * 0.55, p.d);
-      adEnv(g.gain, 0, 0.002, 0.9, p.d);
-      o.connect(g); g.connect(out); o.start(0); o.stop(p.d + 0.05);
-    },
-    perc: function (c, out, p) {
-      var o = c.createOscillator(), g = c.createGain();
-      o.type = "sine";
-      o.frequency.setValueAtTime(p.f * 1.25, 0);
-      o.frequency.exponentialRampToValueAtTime(p.f, 0.02);
-      adEnv(g.gain, 0, 0.001, 0.8, p.d);
-      o.connect(g); g.connect(out); o.start(0); o.stop(p.d + 0.05);
-      var n = noiseSrc(c, 0.03), bp = c.createBiquadFilter(), ng = c.createGain();
-      bp.type = "bandpass"; bp.frequency.value = p.f * 3; bp.Q.value = 2;
-      adEnv(ng.gain, 0, 0.001, 0.3, 0.015);
-      n.connect(bp); bp.connect(ng); ng.connect(out); n.start(0);
-    },
-    cowbell: function (c, out, p) {
-      var dest = withDrive(c, out, p.drive);
-      var bp = c.createBiquadFilter(), g = c.createGain();
-      bp.type = "bandpass"; bp.frequency.value = p.f * 1.5; bp.Q.value = 0.9;
-      g.gain.setValueAtTime(0.0001, 0);
-      g.gain.exponentialRampToValueAtTime(0.6, 0.002);
-      g.gain.exponentialRampToValueAtTime(0.2, 0.06);
-      g.gain.exponentialRampToValueAtTime(0.0001, p.d);
-      [p.f, p.f * 1.48].forEach(function (f) {
-        var o = c.createOscillator();
-        o.type = "square"; o.frequency.value = f;
-        o.connect(bp); o.start(0); o.stop(p.d + 0.05);
-      });
-      bp.connect(g); g.connect(dest);
-    },
-    riser: function (c, out, p) {
-      var n = noiseSrc(c, p.d + 0.1), bp = c.createBiquadFilter(), g = c.createGain();
-      bp.type = "bandpass"; bp.Q.value = 5;
-      bp.frequency.setValueAtTime(300, 0);
-      bp.frequency.exponentialRampToValueAtTime(9000, p.d);
-      g.gain.setValueAtTime(0.0001, 0);
-      g.gain.exponentialRampToValueAtTime(0.7, p.d);
-      g.gain.exponentialRampToValueAtTime(0.0001, p.d + 0.06);
-      n.connect(bp); bp.connect(g); g.connect(out); n.start(0);
-    },
-    stab: function (c, out, p) {
-      var lp = c.createBiquadFilter(), g = c.createGain();
-      lp.type = "lowpass"; lp.Q.value = 2;
-      lp.frequency.setValueAtTime(3200, 0);
-      lp.frequency.exponentialRampToValueAtTime(500, 0.35);
-      adEnv(g.gain, 0, 0.004, 0.22, p.d);
-      p.notes.forEach(function (m) {
-        [-7, 7].forEach(function (det) {
-          var o = c.createOscillator();
-          o.type = "sawtooth"; o.frequency.value = mf(m); o.detune.value = det;
-          o.connect(lp); o.start(0); o.stop(p.d + 0.1);
-        });
-      });
-      lp.connect(g); g.connect(out);
-    }
-  };
-
-  /* ---------------- Kits ---------------- */
-  function pad(name, group, type, p, len, vol) {
-    return { name: name, group: group, type: type, p: p || {}, len: len || 0.6, vol: vol == null ? 1 : vol };
+    });
+    return out;
   }
-  var KITS = {
-    trap: {
-      bpm: 140,
-      pads: [
-        pad("Kick", "drums", "kick", { f0: 160, f1: 42, pd: 0.12, d: 0.5 }, 0.7),
-        pad("808 Low", "bass", "bass808", { f: mf(29), d: 1.6, drive: 2 }, 1.8, 0.9),
-        pad("808 Mid", "bass", "bass808", { f: mf(34), d: 1.5, drive: 2 }, 1.7, 0.9),
-        pad("808 High", "bass", "bass808", { f: mf(36), d: 1.4, drive: 2 }, 1.6, 0.9),
-        pad("Snare", "drums", "snare", { tone: 200, hp: 1800, nd: 0.2 }, 0.5),
-        pad("Clap", "drums", "clap", { f: 1200, d: 0.28 }, 0.5),
-        pad("Rim", "drums", "rim", {}, 0.2),
-        pad("Hat", "hats", "metal", { d: 0.06, tune: 1 }, 0.2, 0.7),
-        pad("Open Hat", "hats", "metal", { d: 0.4, tune: 1 }, 0.6, 0.6),
-        pad("Hat Soft", "hats", "metal", { d: 0.035, tune: 1.05 }, 0.15, 0.4),
-        pad("Perc", "perc", "perc", { f: 620, d: 0.12 }, 0.3),
-        pad("Tom", "perc", "tom", { f: 140, d: 0.35 }, 0.5),
-        pad("Crash", "hats", "crash", { d: 1.6 }, 2, 0.5),
-        pad("Snap", "drums", "snap", {}, 0.2),
-        pad("Riser", "perc", "riser", { d: 1.5 }, 1.7, 0.6),
-        pad("Stab Cm", "perc", "stab", { notes: [60, 63, 67], d: 0.6 }, 0.8)
-      ],
-      demo: {
-        0: "x......x..x.....",
-        1: "x......x........",
-        3: "..........x.....",
-        4: "....x.......x...",
-        5: "....x.......x...",
-        7: "x.x.x.x.x.x.xx.x",
-        8: "..............x.",
-        12: "x...............",
-        15: "x..............."
-      }
-    },
-    drill: {
-      bpm: 142,
-      pads: [
-        pad("Kick", "drums", "kick", { f0: 190, f1: 52, pd: 0.06, d: 0.32 }, 0.5),
-        pad("808 Slide", "bass", "bass808", { f: mf(31), d: 1.5, glide: 0.14, glideFrom: 1.5, drive: 3 }, 1.7, 0.9),
-        pad("808 Low", "bass", "bass808", { f: mf(29), d: 1.4, drive: 3 }, 1.6, 0.9),
-        pad("808 Glide Up", "bass", "bass808", { f: mf(38), d: 1.2, glide: 0.12, glideFrom: 0.75, drive: 3 }, 1.4, 0.9),
-        pad("Snare", "drums", "snare", { tone: 240, hp: 2500, nd: 0.14 }, 0.4),
-        pad("Clap", "drums", "clap", { f: 1500, d: 0.2 }, 0.4),
-        pad("Rim", "drums", "rim", {}, 0.2),
-        pad("Hat", "hats", "metal", { d: 0.045, tune: 1.1 }, 0.15, 0.7),
-        pad("Open Hat", "hats", "metal", { d: 0.3, tune: 1.1 }, 0.5, 0.55),
-        pad("Shaker", "hats", "shaker", { d: 0.09 }, 0.2, 0.6),
-        pad("Perc Wood", "perc", "perc", { f: 900, d: 0.06 }, 0.2),
-        pad("Perc Low", "perc", "perc", { f: 400, d: 0.1 }, 0.25),
-        pad("Crash", "hats", "crash", { d: 1.4 }, 1.8, 0.5),
-        pad("Snap", "drums", "snap", {}, 0.2),
-        pad("Riser", "perc", "riser", { d: 1.5 }, 1.7, 0.6),
-        pad("Stab Bbm", "perc", "stab", { notes: [58, 61, 65], d: 0.5 }, 0.7)
-      ],
-      demo: {
-        0: "x.........x.....",
-        1: "x.....x.........",
-        2: "..........x..x..",
-        4: "....x.......x...",
-        6: "..x.....x.....x.",
-        7: "x..x..x.x..x..x.",
-        10: ".......x.......x",
-        15: "x.......x......."
-      }
-    },
-    phonk: {
-      bpm: 130,
-      pads: [
-        pad("Kick", "drums", "kick", { f0: 150, f1: 48, pd: 0.1, d: 0.45, drive: 6 }, 0.6),
-        pad("808 Dist E", "bass", "bass808", { f: mf(28), d: 1.3, drive: 9 }, 1.5, 0.8),
-        pad("808 Dist G", "bass", "bass808", { f: mf(31), d: 1.2, drive: 9 }, 1.4, 0.8),
-        pad("808 Dist A", "bass", "bass808", { f: mf(33), d: 1.2, drive: 9 }, 1.4, 0.8),
-        pad("Snare", "drums", "snare", { tone: 180, hp: 1200, nd: 0.25 }, 0.5),
-        pad("Clap Big", "drums", "clap", { f: 1000, d: 0.35 }, 0.6),
-        pad("Rim", "drums", "rim", {}, 0.2),
-        pad("Hat", "hats", "metal", { d: 0.05, tune: 0.9 }, 0.15, 0.7),
-        pad("Open Hat", "hats", "metal", { d: 0.35, tune: 0.9 }, 0.5, 0.55),
-        pad("Shaker", "hats", "shaker", { d: 0.1 }, 0.2, 0.6),
-        pad("Cowbell Hi", "perc", "cowbell", { f: mf(74), d: 0.4, drive: 2 }, 0.5, 0.7),
-        pad("Cowbell Lo", "perc", "cowbell", { f: mf(69), d: 0.4, drive: 2 }, 0.5, 0.7),
-        pad("Crash", "hats", "crash", { d: 1.4 }, 1.8, 0.5),
-        pad("Cowbell Deep", "perc", "cowbell", { f: mf(65), d: 0.45, drive: 2 }, 0.55, 0.7),
-        pad("Riser", "perc", "riser", { d: 1.5 }, 1.7, 0.6),
-        pad("Stab Am", "perc", "stab", { notes: [57, 60, 64], d: 0.5 }, 0.7)
-      ],
-      demo: {
-        0: "x...x...x...x...",
-        1: "x.......x.x.....",
-        5: "....x.......x...",
-        7: "x.x.x.x.x.x.x.x.",
-        10: "x..x..x.........",
-        11: "..........x..x..",
-        13: "........x.......",
-        12: "x..............."
-      }
-    }
-  };
-
-  function renderPadBuffer(def) {
-    var c = new OfflineAudioContext(1, Math.ceil(SR * def.len), SR);
-    var out = c.createGain();
-    out.gain.value = def.vol;
-    out.connect(c.destination);
-    VOICES[def.type](c, out, def.p);
-    return c.startRendering();
-  }
-
   /* ---------------- State ---------------- */
-  function emptyPattern() {
+  /* ---------------- State ---------------- */
+  function emptyGrid(v) {
     var p = [];
-    for (var i = 0; i < 16; i++) { p.push(new Array(STEPS).fill(0)); }
+    for (var i = 0; i < 16; i++) p.push(new Array(MAXLEN).fill(v || 0));
     return p;
   }
+  function emptyPattern() { return emptyGrid(0); }
+  /* a pattern slot: roll count per step (0 = off, 1 = hit, 2 = 32nd roll, 3 = triplet roll), velocity, note offset, slide */
+  function newSlot(len) { return { len: len === 32 ? 32 : 16, pattern: emptyGrid(0), vel: emptyGrid(0.8), note: emptyGrid(0), slide: emptyGrid(0) }; }
   function defaultMixer() {
     var m = { master: { v: 0.85, m: false } };
     GROUPS.forEach(function (g) { m[g.id] = { v: g.id === "keys" ? 0.7 : 0.85, m: false }; });
@@ -351,11 +75,16 @@
     return { on: false, prog: [6, 10, 8, 15], bars: 2, sound: "pad", bassFollow: false };
   }
   var S = {
-    kit: "trap",
-    bpm: 140,
-    swing: 0,
-    pattern: emptyPattern(),
-    pitches: new Array(16).fill(0),
+    kit: DEFAULT_KIT,
+    bpm: 90,
+    swing: 24,
+    slots: { A: newSlot(16), B: newSlot(16), C: newSlot(16), D: newSlot(16) },
+    slot: "A",
+    pattern: null, vel: null, note: null, slide: null, // views of the current slot
+    padCfg: {},           // kit id → per-pad tune / decay / level / pan / drive / nudge
+    kitSwing: {},         // kit id → swing (each kit remembers its own)
+    mute: new Array(16).fill(false),
+    solo: new Array(16).fill(false),
     mixer: defaultMixer(),
     sel: 0,
     chordTrack: defaultChordTrack(),
@@ -364,19 +93,69 @@
     lyricSong: "streets", // song shown in Lyrics / Teleprompter
     bpl: "auto",          // teleprompter bars per line ("auto" = fit song sections)
     prSize: 1,
-    vox: { nudge: 0, monitor: false, dry: false }
+    vox: { nudge: 0, monitor: false, dry: false },
+    tool: "hit", lane: "vel", page: 0
   };
-  var stockBuf = new Array(16).fill(null);
+  function curSlot() { return S.slots[S.slot]; }
+  function plen() { return curSlot().len; }
+  function bindSlot() { var s = curSlot(); S.pattern = s.pattern; S.vel = s.vel; S.note = s.note; S.slide = s.slide; }
+  bindSlot();
+  var stockBufs = new Array(16).fill(null); // pad → round-robin AudioBuffers of the current kit
   var customBuf = new Array(16).fill(null);
   var customName = new Array(16).fill(null);
+
+  function fitGrid(src, def, lo, hi, round) {
+    var g = emptyGrid(def);
+    if (!Array.isArray(src)) return g;
+    for (var i = 0; i < 16; i++) {
+      var r = src[i];
+      if (!Array.isArray(r)) continue;
+      for (var s = 0; s < MAXLEN && s < r.length; s++) {
+        var v = +r[s];
+        if (isFinite(v)) g[i][s] = clamp(round ? Math.round(v) : v, lo, hi);
+      }
+    }
+    return g;
+  }
+  function slotFrom(o) {
+    var s = newSlot(o && +o.len === 32 ? 32 : 16);
+    if (!o) return s;
+    s.pattern = fitGrid(o.pattern, 0, 0, 3, true);
+    s.vel = fitGrid(o.vel, 0.8, 0.05, 1);
+    s.note = fitGrid(o.note, 0, -24, 24, true);
+    s.slide = fitGrid(o.slide, 0, 0, 1, true);
+    return s;
+  }
+  function slotCopy(s) { return JSON.parse(JSON.stringify(s)); }
+  function slotHasNotes(s) { return s.pattern.some(function (r) { return r.some(function (v) { return !!v; }); }); }
+  /* pre-2026 Trap / Drill / Phonk patterns (16 steps, old pad order) → new kit layout.
+     Re-pitched / merged rows (the old three 808 pads → one mono 808) keep their pitch as per-step notes. */
+  function legacyConvert(kit, pattern, pitches) {
+    var L = D.LEGACY[kit];
+    if (!L) return null;
+    var s = newSlot(16), tunes = [], p16 = fitGrid(pattern, 0, 0, 3, true);
+    for (var o = 0; o < 16; o++) {
+      var m = L.map[o], ni = m[0], perStep = m[1] !== undefined;
+      var pt = Array.isArray(pitches) ? clamp(+pitches[o] || 0, -12, 12) : 0;
+      for (var st = 0; st < 16; st++) {
+        var v = p16[o][st];
+        if (!v || s.pattern[ni][st]) continue;
+        s.pattern[ni][st] = v;
+        s.vel[ni][st] = m[2] || 0.8;
+        s.note[ni][st] = perStep ? (m[1] || 0) + pt : 0;
+      }
+      if (!perStep && pt) tunes[ni] = pt;
+    }
+    return { kit: L.kit, slot: s, tunes: tunes };
+  }
 
   function saveSession() {
     try {
       localStorage.setItem(SESSION_KEY, JSON.stringify({
-        kit: S.kit, bpm: S.bpm, swing: S.swing, pattern: S.pattern,
-        pitches: S.pitches, mixer: S.mixer, sel: S.sel,
+        fmt: 2, kit: S.kit, bpm: S.bpm, swing: S.swing, slot: S.slot, slots: S.slots,
+        padCfg: S.padCfg, kitSwing: S.kitSwing, mute: S.mute, solo: S.solo, mixer: S.mixer, sel: S.sel,
         chordTrack: S.chordTrack, structure: S.structure, cueBar: S.cueBar,
-        lyricSong: S.lyricSong, bpl: S.bpl, prSize: S.prSize, vox: S.vox
+        lyricSong: S.lyricSong, bpl: S.bpl, prSize: S.prSize, vox: S.vox, tool: S.tool
       }));
     } catch (e) { /* storage full or blocked */ }
   }
@@ -385,11 +164,26 @@
       var raw = localStorage.getItem(SESSION_KEY);
       if (!raw) return false;
       var d = JSON.parse(raw);
-      if (d.kit && KITS[d.kit]) S.kit = d.kit;
+      if (d.fmt >= 2) {
+        S.kit = kitId(d.kit);
+        if (d.slots) SLOT_IDS.forEach(function (id) { if (d.slots[id]) S.slots[id] = slotFrom(d.slots[id]); });
+        if (SLOT_IDS.indexOf(d.slot) !== -1) S.slot = d.slot;
+        S.padCfg = cleanPadCfg(d.padCfg);
+        if (d.kitSwing) Object.keys(d.kitSwing).forEach(function (k) { if (D.BY_ID[k]) S.kitSwing[k] = clamp(+d.kitSwing[k] || 0, 0, 60); });
+        if (Array.isArray(d.mute)) S.mute = S.mute.map(function (x, i) { return !!d.mute[i]; });
+        if (Array.isArray(d.solo)) S.solo = S.solo.map(function (x, i) { return !!d.solo[i]; });
+        if (TOOL_VEL[d.tool]) S.tool = d.tool;
+      } else {
+        // session saved before the 2026 kits (Trap / Drill / Phonk, 16 steps, old pad order)
+        var lc = legacyConvert(d.kit && D.LEGACY[d.kit] ? d.kit : "trap", d.pattern, d.pitches);
+        S.kit = lc.kit;
+        S.slots.A = lc.slot; S.slot = "A";
+        lc.tunes.forEach(function (t, i) { if (t) padCfg(i, lc.kit).tune = t; });
+      }
+      bindSlot();
       if (d.bpm) S.bpm = clamp(+d.bpm, 60, 200);
       if (d.swing != null) S.swing = clamp(+d.swing, 0, 60);
-      if (Array.isArray(d.pattern) && d.pattern.length === 16) S.pattern = d.pattern;
-      if (Array.isArray(d.pitches) && d.pitches.length === 16) S.pitches = d.pitches;
+      S.kitSwing[S.kit] = S.swing;
       if (d.mixer) {
         var dm = defaultMixer();
         Object.keys(dm).forEach(function (k) { if (d.mixer[k]) dm[k] = d.mixer[k]; });
@@ -414,14 +208,15 @@
       return true;
     } catch (e) { return false; }
   }
-  function loadDemo(kit) {
-    var k = KITS[kit];
-    S.pattern = emptyPattern();
-    Object.keys(k.demo).forEach(function (i) {
-      var str = k.demo[i];
-      for (var s = 0; s < STEPS; s++) S.pattern[+i][s] = str[s] === "x" ? 1 : 0;
-    });
+  /* the kit's 2-bar starter pattern, tempo and swing into the current slot */
+  function loadStarter(id) {
+    var k = kitDef(id), st = D.starter(k), s = curSlot();
+    s.len = st.len; s.pattern = st.pattern; s.vel = st.vel; s.note = st.note; s.slide = st.slide;
+    bindSlot();
     S.bpm = k.bpm;
+    S.swing = swingFromMpc(k.swing);
+    S.kitSwing[k.id] = S.swing;
+    S.page = 0;
   }
 
   /* ---------------- Song structures, beat presets, built-in songs ---------------- */
@@ -449,23 +244,25 @@
    * The G7 (with its raised B natural) adds tension that pulls hard back to Cm.
    * The 808 follows each chord root; kick + 808 hit together, snare/clap on beat 3,
    * hats in 8ths with 32nd ("2") and triplet ("3") rolls.
-   * Pad map (Trap): 0 Kick, 2 808 Mid, 3 808 High(C), 4 Snare, 5 Clap, 7 Hat, 9 Hat Soft.
+   * Pad map (2026 Trap kit): 0 Kick, 2 808 Long (C, one A# step), 4 Clap, 5 Snare, 8 Closed Hat, 9 Hat Soft.
    */
   var BEAT_PRESETS = {
     streets: {
       name: "The Streets Is Calling",
+      fmt: 2,
       kit: "trap",
       bpm: 140,
       swing: 0,
+      len: 16,
       pattern: {
         0: "x......x..x..x..",
-        2: ".............x..",
-        3: "x......x..x.....",
+        2: "x......x..x..x..",
         4: "........x.......",
         5: "........x.......",
-        7: "x.x.x.3.x.x.x2x3",
+        8: "x.x.x.3.x.x.x2x3",
         9: "...x.......x...."
       },
+      note: { 2: { 13: -2 } },
       chords: { on: true, prog: [6, 10, 8, 15], bars: 2, sound: "pad", bassFollow: true },
       structure: "rap80",
       mixer: { drums: 0.9, bass: 0.95, hats: 0.6, perc: 0.7, keys: 0.5 },
@@ -563,18 +360,34 @@
   }];
   function patternFrom(src) {
     var p = emptyPattern();
-    if (Array.isArray(src)) {
-      for (var i = 0; i < 16; i++) for (var s = 0; s < STEPS; s++) p[i][s] = clamp(+((src[i] || [])[s]) || 0, 0, 3);
-      return p;
-    }
+    if (Array.isArray(src)) return fitGrid(src, 0, 0, 3, true);
     Object.keys(src || {}).forEach(function (i) {
-      var str = src[i];
-      for (var s = 0; s < STEPS; s++) {
+      var str = String(src[i]);
+      for (var s = 0; s < MAXLEN && s < str.length; s++) {
         var ch = str[s];
         p[+i][s] = ch === "x" ? 1 : ch === "2" ? 2 : ch === "3" ? 3 : 0;
       }
     });
     return p;
+  }
+  function gridFrom(src, def, lo, hi, round) {
+    if (Array.isArray(src)) return fitGrid(src, def, lo, hi, round);
+    var g = emptyGrid(def);
+    Object.keys(src || {}).forEach(function (r) {
+      if (!(r >= 0 && r < 16)) return;
+      Object.keys(src[r] || {}).forEach(function (s) { if (s >= 0 && s < MAXLEN) g[+r][+s] = clamp(+src[r][s] || 0, lo, hi); });
+    });
+    return g;
+  }
+  /* beat attached to a song / preset → { kit, slot, tunes, pads } (old Trap/Drill/Phonk beats are re-mapped) */
+  function beatSlot(beat) {
+    if (!beat.fmt && D.LEGACY[beat.kit]) return legacyConvert(beat.kit, patternFrom(beat.pattern), beat.pitches);
+    var s = newSlot(+beat.len === 32 ? 32 : 16);
+    s.pattern = patternFrom(beat.pattern);
+    if (beat.vel) s.vel = gridFrom(beat.vel, 0.8, 0.05, 1);
+    if (beat.note) s.note = gridFrom(beat.note, 0, -24, 24, true);
+    if (beat.slide) s.slide = gridFrom(beat.slide, 0, 0, 1, true);
+    return { kit: kitId(beat.kit), slot: s, tunes: [], pads: beat.pads };
   }
   function arrangement() { return S.structure && STRUCTURES[S.structure] ? STRUCTURES[S.structure].sections : null; }
   function totalBars(A) { return A.reduce(function (a, s) { return a + s.bars; }, 0); }
@@ -610,10 +423,107 @@
   }
   var memVault = []; // fallback if IndexedDB is blocked
 
-  /* ---------------- Audio graph ---------------- */
-  var ctx = null, master = null, comp = null, masterAnalyser = null, beatMon = null;
+  /* ---------------- Audio graph ----------------
+   * pad voice → pad strip (level · drive · pan) → group fader → drum bus (glue comp ∥ parallel smash → saturation)
+   * Keys skip the drum bus. → master fader → limiter → safety clipper (ceiling −0.3 dBFS) → `master`
+   * The same graph is built for live playback, Bounce and Level match, so all three sound identical.
+   * Web Audio compressors add automatic make-up gain; it is trimmed back out so faders mean what they say. */
+  var ctx = null, master = null, masterAnalyser = null, beatMon = null, LG = null;
   var groupNodes = {};
   var liveVoices = [];
+  var livePeak = 0;
+  var CEIL = 0.966;          // −0.3 dBFS hard ceiling
+  var LIM_THR = -2;          // limiter threshold (dBFS) — leaves room for inter-sample peaks of crushed (12-bit) kits
+  var GRAPH_LAT = 0.012;     // two compressor look-aheads (drum bus + limiter), trimmed from bounces
+  function makeupDb(thr, ratio) { return -0.6 * thr * (1 - 1 / ratio); }
+  function dbGain(db) { return Math.pow(10, db / 20); }
+  var curves = {};
+  function softCurve(key, fn) {
+    if (curves[key]) return curves[key];
+    var n = 8192, c = new Float32Array(n);
+    for (var i = 0; i < n; i++) c[i] = fn(((i / (n - 1)) * 2 - 1) * 2); // shaper input is pre-scaled by 0.5 → covers ±2
+    return (curves[key] = c);
+  }
+  var SAFETY = softCurve("safety", function (x) {
+    var a = Math.abs(x), k = 0.8, y = a < k ? a : k + (1 - k) * Math.tanh((a - k) / (1 - k));
+    return (x < 0 ? -1 : 1) * Math.min(1, y) * CEIL;
+  });
+  function busCurve(k) { k = Math.max(1.01, k); return softCurve("bus" + k.toFixed(2), function (x) { return Math.tanh(k * x) / k; }); }
+  function padDriveCurve(dr) {
+    var k = 1 + dr * 4;
+    return softCurve("pd" + dr.toFixed(2), function (x) { return Math.tanh(k * Math.max(-1, Math.min(1, x))) / Math.tanh(k); });
+  }
+  function makeGraph(c, live) {
+    function gn(v) { var g = c.createGain(); g.gain.value = v == null ? 1 : v; return g; }
+    var G = { c: c, groups: {}, an: {}, strips: [], rr: new Array(16).fill(0) };
+    G.bus = gn(1);
+    G.comp = c.createDynamicsCompressor(); G.compTrim = gn(1);
+    G.smash = c.createDynamicsCompressor(); G.smashG = gn(0);
+    G.smash.threshold.value = -30; G.smash.ratio.value = 12; G.smash.knee.value = 0;
+    G.smash.attack.value = 0.002; G.smash.release.value = 0.09;
+    G.bsum = gn(1); G.bdPre = gn(0.5);
+    G.bdrive = c.createWaveShaper(); G.bdrive.oversample = "none";
+    G.bus.connect(G.comp); G.comp.connect(G.compTrim); G.compTrim.connect(G.bsum);
+    G.bus.connect(G.smash); G.smash.connect(G.smashG); G.smashG.connect(G.bsum);
+    G.bsum.connect(G.bdPre); G.bdPre.connect(G.bdrive);
+    G.sum = gn(1);
+    G.kitOut = gn(1);
+    G.bdrive.connect(G.kitOut); G.kitOut.connect(G.sum);
+    G.keysDelay = c.createDelay(0.05); G.keysDelay.delayTime.value = 0.006; // matches the drum-bus look-ahead
+    G.keysDelay.connect(G.sum);
+    G.fader = gn(mixGain("master"));
+    G.lim = c.createDynamicsCompressor();
+    G.lim.threshold.value = LIM_THR; G.lim.knee.value = 0; G.lim.ratio.value = 20; G.lim.attack.value = 0.001; G.lim.release.value = 0.1;
+    G.limTrim = gn(dbGain(-makeupDb(LIM_THR, 20)));
+    G.clipPre = gn(0.5);
+    G.clip = c.createWaveShaper(); G.clip.curve = SAFETY; G.clip.oversample = "none";
+    G.out = gn(1);
+    G.sum.connect(G.fader); G.fader.connect(G.lim); G.lim.connect(G.limTrim);
+    G.limTrim.connect(G.clipPre); G.clipPre.connect(G.clip); G.clip.connect(G.out);
+    GROUPS.forEach(function (g) {
+      var n = gn(mixGain(g.id)), tail = n;
+      if (live) { var an = c.createAnalyser(); an.fftSize = 512; n.connect(an); tail = an; G.an[g.id] = an; }
+      tail.connect(g.id === "keys" ? G.keysDelay : G.bus);
+      G.groups[g.id] = n;
+    });
+    for (var i = 0; i < 16; i++) {
+      var st = { inp: gn(1), drv: c.createWaveShaper(), post: gn(1), pan: c.createStereoPanner ? c.createStereoPanner() : null, key: "" };
+      st.drv.oversample = "none";
+      G.strips.push(st);
+    }
+    graphKit(G);
+    return G;
+  }
+  /* pad strip routing + settings; `t` = ramp time for live changes */
+  function stripApply(G, i, t) {
+    var st = G.strips[i], cfg = padCfg(i), def = padDef(i), on = cfg.drive > 0.005;
+    var key = def.g + (on ? "d" : "");
+    if (st.key !== key) {
+      [st.inp, st.drv, st.post].concat(st.pan ? [st.pan] : []).forEach(function (n) { try { n.disconnect(); } catch (e) { /* not connected */ } });
+      if (on) { st.inp.connect(st.drv); st.drv.connect(st.post); } else st.inp.connect(st.post);
+      if (st.pan) { st.post.connect(st.pan); st.pan.connect(G.groups[def.g]); } else st.post.connect(G.groups[def.g]);
+      st.key = key;
+    }
+    if (on) st.drv.curve = padDriveCurve(Math.round(cfg.drive * 50) / 50);
+    var lvl = dbGain(cfg.level) * (on ? 1 / Math.pow(1 + cfg.drive * 4, 0.6) : 1);
+    if (t) {
+      st.inp.gain.setTargetAtTime(lvl, t, 0.015);
+      if (st.pan) st.pan.pan.setTargetAtTime(cfg.pan, t, 0.015);
+    } else {
+      st.inp.gain.value = lvl;
+      if (st.pan) st.pan.pan.value = cfg.pan;
+    }
+  }
+  function graphKit(G, t) {
+    for (var i = 0; i < 16; i++) stripApply(G, i, t);
+    var b = kitDef(S.kit).bus;
+    G.comp.threshold.value = b.thr; G.comp.ratio.value = b.ratio; G.comp.knee.value = 3;
+    G.comp.attack.value = b.atk; G.comp.release.value = b.rel;
+    G.compTrim.gain.value = dbGain(-makeupDb(b.thr, b.ratio));
+    G.smashG.gain.value = b.smash ? b.smash * dbGain(-makeupDb(-30, 12)) : 0;
+    G.bdrive.curve = busCurve(b.drive || 1.1);
+    G.kitOut.gain.value = dbGain(b.out || 0);
+  }
 
   function ensureCtx() {
     if (ctx) {
@@ -623,25 +533,16 @@
     var AC = window.AudioContext || window.webkitAudioContext;
     if (!AC) { toast("Web Audio is not supported in this browser."); return null; }
     ctx = new AC({ latencyHint: "interactive" });
-    comp = ctx.createDynamicsCompressor();
-    comp.threshold.value = -10; comp.ratio.value = 4; comp.attack.value = 0.003; comp.release.value = 0.15;
-    master = ctx.createGain();
+    LG = makeGraph(ctx, true);
+    master = LG.out;
     masterAnalyser = ctx.createAnalyser();
     masterAnalyser.fftSize = 2048;
-    comp.connect(master);
     master.connect(masterAnalyser);
     // speaker feed of the beat goes through the A/B gate; recordings tap `master` upstream of it
     beatMon = ctx.createGain();
     masterAnalyser.connect(beatMon);
     beatMon.connect(ctx.destination);
-    GROUPS.forEach(function (g) {
-      var gain = ctx.createGain();
-      var an = ctx.createAnalyser();
-      an.fftSize = 512;
-      gain.connect(an);
-      an.connect(comp);
-      groupNodes[g.id] = { gain: gain, an: an };
-    });
+    GROUPS.forEach(function (g) { groupNodes[g.id] = { gain: LG.groups[g.id], an: LG.an[g.id] }; });
     applyMixer();
     setupRecorder();
     refOnCtx();
@@ -657,46 +558,73 @@
     if (!ctx) return;
     var t = ctx.currentTime;
     GROUPS.forEach(function (g) { groupNodes[g.id].gain.gain.setTargetAtTime(mixGain(g.id), t, 0.01); });
-    master.gain.setTargetAtTime(mixGain("master"), t, 0.01);
+    LG.fader.gain.setTargetAtTime(mixGain("master"), t, 0.01);
     if (vocalFader) vocalFader.gain.setTargetAtTime(mixGain("vocal"), t, 0.01);
     if (monitorGain) monitorGain.gain.setTargetAtTime(S.vox.monitor ? 1 : 0, t, 0.01);
   }
-  function bufFor(i) { return customBuf[i] || stockBuf[i]; }
-  function groupOf(i) { return KITS[S.kit].pads[i].group; }
+  function hasPad(i) { return !!(customBuf[i] || stockBufs[i]); }
+  function audible(p) { return !S.mute[p] && (!S.solo.some(Boolean) || S.solo[p]); }
 
-  /* shared by live playback + offline bounce */
-  function playPadInto(c, i, when, dest, registry, semi) {
-    var buf = bufFor(i);
+  /* shared by live playback + offline bounce. o = { vel, semi, slide } */
+  function playPadInto(c, G, i, when, reg, o) {
+    o = o || {};
+    var def = padDef(i), cfg = padCfg(i), bufs = stockBufs[i];
+    var buf = customBuf[i] || (bufs && bufs.length ? bufs[G.rr[i]++ % bufs.length] : null);
     if (!buf) return;
-    var targets = CHOKE[i];
-    if (targets) {
-      for (var k = registry.length - 1; k >= 0; k--) {
-        var v = registry[k];
-        if (targets.indexOf(v.pad) !== -1 && v.start < when) {
+    var rate = Math.pow(2, ((cfg.tune || 0) + (o.semi || 0)) / 12);
+    var k, v;
+    if (def.ck) {
+      if (o.slide) { // legato glide: bend the voice that is still ringing instead of retriggering
+        for (k = reg.length - 1; k >= 0; k--) {
+          v = reg[k];
+          if (v.ck === def.ck && v.start < when && v.end > when) {
+            var pr = v.src.playbackRate;
+            pr.cancelScheduledValues(when);
+            pr.setValueAtTime(v.rate, when);
+            pr.exponentialRampToValueAtTime(rate, when + (def.glide || 0.07));
+            v.rate = rate;
+            return;
+          }
+        }
+      }
+      for (k = reg.length - 1; k >= 0; k--) {
+        v = reg[k];
+        if (v.ck === def.ck && v.start < when) {
           try {
-            v.g.gain.setTargetAtTime(0, when, 0.012);
-            v.src.stop(when + 0.08);
+            v.g.gain.cancelScheduledValues(when);
+            v.g.gain.setTargetAtTime(0, when, 0.008);
+            v.src.stop(when + 0.06);
           } catch (e) { /* already stopped */ }
-          registry.splice(k, 1);
+          reg.splice(k, 1);
         }
       }
     }
+    var vel = o.vel == null ? 0.8 : o.vel, amp = Math.pow(vel / 0.8, 1.5);
     var src = c.createBufferSource();
     src.buffer = buf;
-    src.playbackRate.value = Math.pow(2, ((S.pitches[i] || 0) + (semi || 0)) / 12);
+    src.playbackRate.value = rate;
     var g = c.createGain();
-    src.connect(g); g.connect(dest);
+    g.gain.value = amp;
+    var dur = buf.duration / rate, end = when + dur;
+    if (cfg.decay < 0.995) {
+      var hold = dur * cfg.decay * 0.35, tau = dur * cfg.decay * 0.12 + 0.003;
+      g.gain.setValueAtTime(amp, when + hold);
+      g.gain.setTargetAtTime(0, when + hold, tau);
+      end = Math.min(end, when + hold + tau * 8);
+    }
+    src.connect(g); g.connect(G.strips[i].inp);
     src.start(when);
-    var voice = { pad: i, src: src, g: g, start: when };
-    registry.push(voice);
+    if (end < when + dur) src.stop(end);
+    var voice = { pad: i, src: src, g: g, start: when, end: end, rate: rate, ck: def.ck };
+    reg.push(voice);
     src.onended = function () {
-      var idx = registry.indexOf(voice);
-      if (idx !== -1) registry.splice(idx, 1);
+      var idx = reg.indexOf(voice);
+      if (idx !== -1) reg.splice(idx, 1);
     };
   }
-  function triggerPad(i, when) {
+  function triggerPad(i, when, vel) {
     if (!ensureCtx()) return;
-    playPadInto(ctx, i, when || ctx.currentTime, groupNodes[groupOf(i)].gain, liveVoices);
+    playPadInto(ctx, LG, i, when || ctx.currentTime, liveVoices, { vel: vel == null ? TOOL_VEL[S.tool] : vel });
   }
 
   /* ---------------- Sequencer ---------------- */
@@ -707,10 +635,11 @@
    */
   var playing = false, timer = null, nextTime = 0, curK = 0, startK = 0, uiQueue = [], uiStep = -1;
   var posAnchor = null, chordLive = [], songEndTimer = null;
+  var patAnchor = 0, pendingSlot = null;   // loop mode: global 16th where the current pattern (re)started
   function stepDur() { return 60 / S.bpm / 4; }
   function stepInfo(k) {
-    var bar = Math.floor(k / STEPS);
-    var info = { k: k, patStep: k % STEPS, fire: true, feel: "full", end: false, secStart: false, sec: null, secIdx: -1, mb: k / STEPS };
+    var bar = Math.floor(k / STEPS), L = plen();
+    var info = { k: k, patStep: (((k - patAnchor) % L) + L) % L, fire: true, feel: "full", end: false, secStart: false, sec: null, secIdx: -1, mb: k / STEPS };
     var A = arrangement();
     if (!A) return info;
     var b0 = 0, mb0 = 0;
@@ -722,10 +651,10 @@
         info.secStart = local === 0;
         if (info.feel === "half") {
           info.fire = local % 2 === 0;
-          info.patStep = Math.floor(local / 2) % STEPS;
+          info.patStep = Math.floor(local / 2) % L;
           info.mb = mb0 + local / (STEPS * 2);
         } else {
-          info.patStep = local % STEPS;
+          info.patStep = local % L;
           info.mb = mb0 + local / STEPS;
         }
         return info;
@@ -747,34 +676,50 @@
     var r = CHORDS[ci] ? CHORDS[ci].r : 0; // semitones above C; keep 808 within -6..+5
     return r > 5 ? r - 12 : r;
   }
-  function scheduleStep(c, info, t, dests, reg, creg, first) {
+  /* humanise: fixed pseudo-random offset per (16th, pad) → the groove feels played but every bounce is identical */
+  function humJitter(k, p) {
+    var h = Math.imul((k * 16 + p) ^ 0x9e3779b9, 0x85ebca6b);
+    h ^= h >>> 13; h = Math.imul(h, 0xc2b2ae35); h ^= h >>> 16;
+    return ((h >>> 0) / 4294967296) * 2 - 1;
+  }
+  function scheduleStep(c, G, info, t, reg, creg, first) {
     var half = info.feel === "half";
     var len = stepDur() * (half ? 2 : 1);
     var sw = info.patStep % 2 === 1 ? len * (S.swing / 100) : 0;
     var ch = chordAt(info, first);
-    if (ch && ch.change) startChord(c, ch.idx, t, dests.keys, creg);
+    if (ch && ch.change) startChord(c, ch.idx, t, G.groups.keys, creg);
+    var kit = kitDef(S.kit), s = info.patStep;
     for (var p = 0; p < 16; p++) {
-      var v = S.pattern[p][info.patStep];
-      if (!v) continue;
-      var grp = groupOf(p);
+      var v = S.pattern[p][s];
+      if (!v || !audible(p)) continue;
+      var def = kit.pads[p], grp = def.g;
       if (info.feel === "sparse" && (grp === "drums" || grp === "bass")) continue;
-      var semi = ch && ch.idx >= 0 && S.chordTrack.bassFollow && grp === "bass" ? rootSemi(ch.idx) : 0;
-      for (var r = 0; r < v; r++) playPadInto(c, p, t + sw + (r * len) / v, dests[grp], reg, semi);
+      var semi = S.note[p][s] || 0;
+      if (ch && ch.idx >= 0 && S.chordTrack.bassFollow && grp === "bass") semi += rootSemi(ch.idx);
+      var off = (padCfg(p).nudge || 0) / 1000 + (def.hum ? humJitter(info.k, p) * def.hum / 1000 : 0);
+      var vel = S.vel[p][s], slide = !!S.slide[p][s];
+      for (var r = 0; r < v; r++) {
+        playPadInto(c, G, p, Math.max(0, t + sw + off + (r * len) / v), reg, { semi: semi, vel: r ? vel * 0.88 : vel, slide: slide && r === 0 });
+      }
     }
     // crash on each new section (not intro / sparse parts)
-    if (info.secStart && info.secIdx > 0 && info.feel !== "sparse") playPadInto(c, 12, t, dests[groupOf(12)], reg, 0);
+    if (info.secStart && info.secIdx > 0 && info.feel !== "sparse" && kit.crashPad >= 0) playPadInto(c, G, kit.crashPad, t, reg, {});
   }
-  function liveDests() {
-    var d = {};
-    GROUPS.forEach(function (g) { d[g.id] = groupNodes[g.id].gain; });
-    return d;
+  function applySlot(id, k) {
+    S.slot = id; bindSlot();
+    pendingSlot = null;
+    patAnchor = k;
   }
   function scheduler() {
-    var dests = liveDests();
     while (playing && nextTime < ctx.currentTime + 0.12) {
       var info = stepInfo(curK);
+      if (pendingSlot && !info.end && info.fire && info.patStep === 0) {
+        applySlot(pendingSlot, curK);
+        info = stepInfo(curK);
+        uiQueue.push({ step: -1, k: curK, time: nextTime, fire: false, slot: true });
+      }
       if (info.end) { endSong(nextTime); return; }
-      if (info.fire) scheduleStep(ctx, info, nextTime, dests, liveVoices, chordLive, curK === startK);
+      if (info.fire) scheduleStep(ctx, LG, info, nextTime, liveVoices, chordLive, curK === startK);
       uiQueue.push({ step: info.patStep, k: curK, time: nextTime, fire: info.fire });
       nextTime += stepDur();
       curK++;
@@ -795,6 +740,9 @@
     if (A && S.cueBar >= totalBars(A)) S.cueBar = 0;
     playing = true;
     startK = curK = S.cueBar * STEPS;
+    patAnchor = startK;
+    if (pendingSlot) applySlot(pendingSlot, startK);
+    livePeak = 0;
     nextTime = startAt || ctx.currentTime + 0.06;
     uiQueue = [];
     posAnchor = { k: curK, time: nextTime };
@@ -906,8 +854,9 @@
     });
   }
 
-  /* ---------------- UI: pads + sequencer ---------------- */
-  var padEls = [], seqRows = [], seqCells = [];
+  /* ---------------- UI: pads + inspector + sequencer ---------------- */
+  var padEls = [], seqRows = [], seqCells = [], laneBars = [];
+  function padLabel(i) { return customBuf[i] ? (customName[i] || "Custom") : padDef(i).n; }
   function buildPads() {
     var wrap = $("pads");
     wrap.innerHTML = "";
@@ -931,21 +880,40 @@
     refreshPads();
   }
   function refreshPads() {
-    var kit = KITS[S.kit];
     padEls.forEach(function (el, i) {
-      var def = kit.pads[i];
-      el.className = "pad g-" + def.group + (i === S.sel ? " sel" : "") + (customBuf[i] ? " custom" : "");
-      var name = customBuf[i] ? (customName[i] || "Custom") : def.name;
+      var def = padDef(i);
+      el.className = "pad g-" + def.g + (i === S.sel ? " sel" : "") + (customBuf[i] ? " custom" : "") +
+        (S.mute[i] ? " muted" : "") + (S.solo[i] ? " soloed" : "");
       el.innerHTML =
         '<span class="ptag">' + (i + 1) + "</span>" +
         (PAD_KEYS[i] ? '<span class="pkey">' + PAD_KEYS[i].toUpperCase() + "</span>" : "") +
         '<span class="pname"></span>';
+      var name = padLabel(i);
       el.querySelector(".pname").textContent = name.length > 14 ? name.slice(0, 13) + "…" : name;
     });
-    var selName = customBuf[S.sel] ? (customName[S.sel] || "Custom") : kit.pads[S.sel].name;
-    $("sel-pad-name").textContent = (S.sel + 1) + " · " + selName;
-    $("pad-pitch").value = S.pitches[S.sel] || 0;
-    $("pad-pitch-val").textContent = (S.pitches[S.sel] > 0 ? "+" : "") + (S.pitches[S.sel] || 0);
+    refreshInspector();
+  }
+  var PE = [
+    { id: "pitch", key: "tune", fmt: function (v) { return (v > 0 ? "+" : "") + v + " st"; } },
+    { id: "decay", key: "decay", fmt: function (v) { return Math.round(v * 100) + "%"; } },
+    { id: "level", key: "level", fmt: function (v) { return (v > 0 ? "+" : "") + (+v).toFixed(1) + " dB"; } },
+    { id: "pan", key: "pan", fmt: function (v) { v = Math.round(v * 100); return v === 0 ? "C" : v < 0 ? "L" + -v : "R" + v; } },
+    { id: "drive", key: "drive", fmt: function (v) { return Math.round(v * 100) + "%"; } },
+    { id: "nudge", key: "nudge", fmt: function (v) { return (v > 0 ? "+" : "") + v + " ms"; } }
+  ];
+  function refreshInspector() {
+    var i = S.sel, cfg = padCfg(i), def = padDef(i);
+    $("sel-pad-name").textContent = (i + 1) + " · " + padLabel(i);
+    var gt = $("sel-pad-group");
+    if (gt) gt.textContent = (GROUPS.filter(function (g) { return g.id === def.g; })[0] || {}).name + (def.tuned ? " · tuned" : "");
+    PE.forEach(function (p) {
+      var el = $("pad-" + p.id);
+      if (!el) return;
+      el.value = cfg[p.key];
+      $("pad-" + p.id + "-val").textContent = p.fmt(cfg[p.key]);
+    });
+    $("pe-mute").classList.toggle("on", !!S.mute[i]);
+    $("pe-solo").classList.toggle("on", !!S.solo[i]);
   }
   function flashPad(i) {
     var el = padEls[i];
@@ -957,48 +925,116 @@
     S.sel = i;
     refreshPads();
     seqRows.forEach(function (r, k) { r.classList.toggle("sel", k === i); });
+    buildLane();
+    saveSession();
+  }
+  function toggleMS(kind, p) {
+    var arr = kind === "m" ? S.mute : S.solo;
+    arr[p] = !arr[p];
+    refreshMS();
+    saveSession();
+  }
+  function refreshMS() {
+    var anySolo = S.solo.some(Boolean);
+    seqRows.forEach(function (row, p) {
+      row.classList.toggle("muted", !audible(p));
+      row.querySelector(".ms-m").classList.toggle("on", !!S.mute[p]);
+      row.querySelector(".ms-s").classList.toggle("on", !!S.solo[p]);
+    });
+    $("seq").classList.toggle("has-solo", anySolo);
+    refreshPads();
+  }
+  function paged() { var w = $("seq-wrap"); return !!w && w.clientWidth < 520; }
+  function seqLayout() {
+    var L = plen(), pg = paged() && L === 32, el = $("seq");
+    if (!pg) S.page = 0;
+    el.classList.toggle("len32", L === 32);
+    el.classList.toggle("paged", pg);
+    el.classList.toggle("p1", pg && S.page === 1);
+    el.style.setProperty("--cols", L === 32 && !pg ? 32 : 16);
+    var lane = $("lane-bars");
+    if (lane) {
+      lane.className = "lane-bars" + (L === 32 ? " len32" : "") + (pg ? " paged" : "") + (pg && S.page === 1 ? " p1" : "") +
+        (S.lane === "pitch" ? " pitch" : "") + (lane.classList.contains("can-slide") ? " can-slide" : "");
+      lane.style.setProperty("--cols", L === 32 && !pg ? 32 : 16);
+    }
+    document.querySelectorAll("#len-seg button").forEach(function (b) { b.classList.toggle("on", +b.dataset.len === L); });
+    var ps = $("page-seg");
+    ps.hidden = !pg;
+    ps.querySelectorAll("button").forEach(function (b) { b.classList.toggle("on", +b.dataset.page === S.page); });
+    document.querySelectorAll("#slots button[data-slot]").forEach(function (b) {
+      var id = b.dataset.slot;
+      b.classList.toggle("on", id === S.slot);
+      b.classList.toggle("queued", id === pendingSlot);
+      b.classList.toggle("empty", !slotHasNotes(S.slots[id]));
+    });
+    document.querySelectorAll("#tool-seg button").forEach(function (b) { b.classList.toggle("on", b.dataset.tool === S.tool); });
+  }
+  function paintCell(p, s) {
+    var b = seqCells[p] && seqCells[p][s];
+    if (!b) return;
+    var v = S.pattern[p][s], vel = S.vel[p][s];
+    b.className = "step " + (s < 16 ? "b1" : "b2") + (s % 4 === 0 ? " beat" : "") + (v ? " on" : "") +
+      (v && vel >= 0.95 ? " acc" : "") + (v && vel < 0.6 ? " ghost" : "") + (v > 1 ? " r" + v : "") +
+      (v && S.slide[p][s] ? " sl" : "") + (v && S.note[p][s] ? " nt" : "") + (s === uiStep ? " now" : "");
+    b.style.setProperty("--v", v ? vel.toFixed(2) : 0);
+    b.title = v ? (vel >= 0.95 ? "Accent" : vel < 0.6 ? "Ghost" : "Hit") + (v > 1 ? (v === 2 ? " · roll ×2 (32nds)" : " · roll ×3 (triplet)") : "") +
+      (S.note[p][s] ? " · " + (S.note[p][s] > 0 ? "+" : "") + S.note[p][s] + " st" : "") + (S.slide[p][s] ? " · slide" : "") : "";
+  }
+  function stepTap(p, s) {
+    var tv = TOOL_VEL[S.tool];
+    if (!S.pattern[p][s]) { S.pattern[p][s] = 1; S.vel[p][s] = tv; }
+    else if (Math.abs(S.vel[p][s] - tv) > 0.04) S.vel[p][s] = tv;
+    else { S.pattern[p][s] = 0; S.vel[p][s] = 0.8; S.note[p][s] = 0; S.slide[p][s] = 0; }
+    paintCell(p, s);
+    if (S.pattern[p][s] && !playing) triggerPad(p, 0, S.vel[p][s]);
+    if (p === S.sel) buildLane();
+    seqLayout();
     saveSession();
   }
   function buildSeq() {
     var wrap = $("seq");
     wrap.innerHTML = "";
     seqRows = []; seqCells = [];
-    var kit = KITS[S.kit];
     for (var p = 0; p < 16; p++) {
       (function (p) {
         var row = document.createElement("div");
-        row.className = "seq-row" + (p === S.sel ? " sel" : "");
-        var nm = document.createElement("div");
+        row.className = "seq-row g-" + padDef(p).g + (p === S.sel ? " sel" : "");
+        var head = document.createElement("div");
+        head.className = "rhead";
+        var nm = document.createElement("button");
+        nm.type = "button";
         nm.className = "rname";
-        nm.textContent = customBuf[p] ? (customName[p] || "Custom") : kit.pads[p].name;
+        nm.textContent = padLabel(p);
+        nm.title = padLabel(p);
         nm.addEventListener("click", function () { selectPad(p); triggerPad(p); });
-        row.appendChild(nm);
+        var m = document.createElement("button");
+        m.type = "button"; m.className = "ms ms-m"; m.textContent = "M"; m.title = "Mute row";
+        m.addEventListener("click", function () { toggleMS("m", p); });
+        var so = document.createElement("button");
+        so.type = "button"; so.className = "ms ms-s"; so.textContent = "S"; so.title = "Solo row";
+        so.addEventListener("click", function () { toggleMS("s", p); });
+        head.appendChild(nm); head.appendChild(m); head.appendChild(so);
+        row.appendChild(head);
         var cells = [];
-        for (var s = 0; s < STEPS; s++) {
+        for (var s = 0; s < MAXLEN; s++) {
           (function (s) {
             var b = document.createElement("button");
             b.type = "button";
             b.setAttribute("aria-label", "Pad " + (p + 1) + " step " + (s + 1));
-            function paint() {
-              var v = S.pattern[p][s];
-              b.className = "step" + (s % 4 === 0 ? " beat" : "") + (v ? " on" : "") + (v > 1 ? " r" + v : "") + (s === uiStep ? " now" : "");
-              b.title = v > 1 ? (v === 2 ? "Roll: 2 hits (32nds)" : "Roll: 3 hits (triplet)") : "";
-            }
-            paint();
-            // click = on/off · right-click or long-press = cycle roll (1 → 2 → 3 hits)
+            // tap = add (with the Accent / Hit / Ghost tool) → re-tap with another tool changes velocity → same tool removes
+            // right-click or long-press = cycle roll (1 → 2 → 3 hits)
             var lpTimer = null, skipClick = false;
             function cycleRoll() {
               var v = S.pattern[p][s];
+              if (!v) S.vel[p][s] = TOOL_VEL[S.tool];
               S.pattern[p][s] = v >= 3 ? 1 : v + 1;
-              paint(); saveSession();
-              if (!playing) triggerPad(p);
+              paintCell(p, s); saveSession();
+              if (!playing) triggerPad(p, 0, S.vel[p][s]);
             }
             b.addEventListener("click", function () {
               if (skipClick) { skipClick = false; return; }
-              S.pattern[p][s] = S.pattern[p][s] ? 0 : 1;
-              paint();
-              if (S.pattern[p][s] && !playing) triggerPad(p);
-              saveSession();
+              stepTap(p, s);
             });
             b.addEventListener("contextmenu", function (e) { e.preventDefault(); if (!skipClick) cycleRoll(); });
             b.addEventListener("pointerdown", function (e) {
@@ -1017,23 +1053,203 @@
         seqCells.push(cells);
       })(p);
     }
+    for (var q = 0; q < 16; q++) for (var s2 = 0; s2 < MAXLEN; s2++) paintCell(q, s2);
+    refreshMS();
+    seqLayout();
+    buildLane();
+  }
+  function repaintSeq() {
+    for (var q = 0; q < 16; q++) {
+      for (var s = 0; s < MAXLEN; s++) paintCell(q, s);
+      if (seqRows[q]) { var rn = seqRows[q].querySelector(".rname"); rn.textContent = rn.title = padLabel(q); }
+    }
+    refreshMS(); seqLayout(); buildLane();
   }
   function setNowColumn(s) {
-    if (uiStep >= 0) seqCells.forEach(function (r) { r[uiStep].classList.remove("now"); });
+    if (uiStep >= 0) seqCells.forEach(function (r) { if (r[uiStep]) r[uiStep].classList.remove("now"); });
     uiStep = s;
-    if (s >= 0) seqCells.forEach(function (r) { r[s].classList.add("now"); });
+    if (s >= 0) seqCells.forEach(function (r) { if (r[s]) r[s].classList.add("now"); });
+    if (s >= 0 && playing && paged() && plen() === 32 && (s >= 16 ? 1 : 0) !== S.page && S.follow !== false) {
+      S.page = s >= 16 ? 1 : 0; seqLayout();
+    }
+  }
+  /* velocity / pitch lane for the selected row */
+  function buildLane() {
+    var bars = $("lane-bars");
+    if (!bars) return;
+    var p = S.sel, def = padDef(p), pitchMode = S.lane === "pitch";
+    $("lane-title").textContent = (p + 1) + " · " + padLabel(p);
+    document.querySelectorAll("#lane-seg button").forEach(function (b) { b.classList.toggle("on", b.dataset.lane === S.lane); });
+    $("lane-hint").textContent = pitchMode ? (def.tuned || def.ck === "b8" ? "Drag up/down = note (semitones) · tap ↗ = slide into the note" : "Drag = pitch per hit (semitones)") : "Drag up/down = velocity per hit";
+    if (!laneBars.length) {
+      for (var s = 0; s < MAXLEN; s++) {
+        var b = document.createElement("div");
+        b.className = "lb " + (s < 16 ? "b1" : "b2");
+        b.innerHTML = '<span class="lf"></span><span class="lv"></span><button type="button" class="lsl" aria-label="Slide step ' + (s + 1) + '">↗</button>';
+        bars.appendChild(b);
+        laneBars.push(b);
+        (function (s, b) {
+          b.querySelector(".lsl").addEventListener("click", function (e) {
+            e.stopPropagation();
+            if (!S.pattern[S.sel][s]) return;
+            S.slide[S.sel][s] = S.slide[S.sel][s] ? 0 : 1;
+            paintCell(S.sel, s); buildLane(); saveSession();
+          });
+        })(s, b);
+      }
+      var drag = null;
+      function at(e) {
+        var cells = laneBars.filter(function (x) { return x.offsetParent !== null; });
+        for (var k = 0; k < cells.length; k++) {
+          var r = cells[k].getBoundingClientRect();
+          if (e.clientX >= r.left - 1 && e.clientX <= r.right + 1) return { s: laneBars.indexOf(cells[k]), y: clamp((r.bottom - e.clientY) / r.height, 0, 1) };
+        }
+        return null;
+      }
+      function apply(e) {
+        var h = at(e);
+        if (!h || !S.pattern[S.sel][h.s]) return;
+        if (S.lane === "pitch") S.note[S.sel][h.s] = clamp(Math.round((h.y - 0.5) * 24), -12, 12);
+        else S.vel[S.sel][h.s] = clamp(Math.round((0.1 + h.y * 0.9) * 20) / 20, 0.1, 1);
+        drag.s = h.s;
+        paintCell(S.sel, h.s); paintLane(h.s);
+      }
+      bars.addEventListener("pointerdown", function (e) {
+        if (e.target.classList.contains("lsl")) return;
+        drag = { s: -1 };
+        try { bars.setPointerCapture(e.pointerId); } catch (x) { /* ignore */ }
+        apply(e);
+        e.preventDefault();
+      });
+      bars.addEventListener("pointermove", function (e) { if (drag) apply(e); });
+      ["pointerup", "pointercancel"].forEach(function (ev) {
+        bars.addEventListener(ev, function () {
+          if (!drag) return;
+          var s = drag.s; drag = null;
+          if (s >= 0 && !playing) triggerPad(S.sel, 0, S.vel[S.sel][s]);
+          saveSession();
+        });
+      });
+    }
+    bars.classList.toggle("pitch", pitchMode);
+    bars.classList.toggle("can-slide", pitchMode && (def.tuned || !!def.glide));
+    for (var s3 = 0; s3 < MAXLEN; s3++) paintLane(s3);
+    seqLayout();
+  }
+  function paintLane(s) {
+    var b = laneBars[s];
+    if (!b) return;
+    var p = S.sel, on = !!S.pattern[p][s], f = b.firstChild, lv = b.children[1];
+    b.classList.toggle("on", on);
+    b.classList.toggle("sl", on && !!S.slide[p][s]);
+    b.classList.toggle("beat", s % 4 === 0);
+    if (S.lane === "pitch") {
+      var n = S.note[p][s] || 0;
+      f.style.bottom = (n >= 0 ? 50 : 50 + (n / 24) * 100) + "%";
+      f.style.height = on ? Math.max(2, (Math.abs(n) / 24) * 100) + "%" : "0";
+      lv.textContent = on && n ? (n > 0 ? "+" : "") + n : "";
+    } else {
+      f.style.bottom = "0";
+      f.style.height = on ? Math.round(S.vel[p][s] * 100) + "%" : "0";
+      lv.textContent = "";
+    }
+  }
+  var CAT_COLOR = { boombap: "#f5b301", trap: "#f43f5e", afro: "#34d399", club: "#22d3ee", rnb: "#a78bfa" };
+  function refreshKitUI() {
+    var k = kitDef(S.kit), cat = (D.CATS.filter(function (c) { return c.id === k.cat; })[0] || {}).name || "";
+    $("kit-cat").textContent = cat;
+    $("kit-name").textContent = k.name;
+    $("kit-meta").textContent = k.genre + " · " + k.bpm + " BPM · swing " + k.swing + "%";
+    document.documentElement.style.setProperty("--kit", CAT_COLOR[k.cat] || "#f5b301");
+    document.querySelectorAll(".kit-card").forEach(function (b) { b.classList.toggle("active", b.dataset.kit === S.kit); });
+    $("swing").value = S.swing;
+    $("swing-val").textContent = mpcSwing(S.swing) + "%";
+  }
+  function buildKitBrowser() {
+    var cats = $("kb-cats"), grid = $("kb-grid");
+    cats.innerHTML = ""; grid.innerHTML = "";
+    D.CATS.forEach(function (c, ci) {
+      var b = document.createElement("button");
+      b.type = "button"; b.className = "kb-cat" + (ci === 0 ? " on" : ""); b.dataset.cat = c.id; b.textContent = c.name;
+      b.addEventListener("click", function () {
+        cats.querySelectorAll("button").forEach(function (x) { x.classList.toggle("on", x === b); });
+        grid.querySelectorAll(".kit-card").forEach(function (k) { k.hidden = c.id !== "all" && k.dataset.cat !== c.id; });
+      });
+      cats.appendChild(b);
+    });
+    D.KITS.forEach(function (k) {
+      var b = document.createElement("button");
+      b.type = "button"; b.className = "kit kit-card"; b.dataset.kit = k.id; b.dataset.cat = k.cat;
+      b.innerHTML = '<span class="kc-name"></span><span class="kc-meta"></span><span class="kc-desc"></span>';
+      b.style.setProperty("--kc", CAT_COLOR[k.cat] || "#f5b301");
+      if (k.lead) b.classList.add("lead");
+      b.querySelector(".kc-name").textContent = k.name;
+      b.querySelector(".kc-meta").textContent = k.genre + " · " + k.bpm + " · " + k.swing + "%";
+      b.querySelector(".kc-desc").textContent = k.desc;
+      b.addEventListener("click", function () { pickKit(k.id); });
+      grid.appendChild(b);
+    });
+  }
+  function openKitBrowser(open) {
+    var kb = $("kit-browser");
+    kb.hidden = open == null ? !kb.hidden : !open;
+    $("kit-open").setAttribute("aria-expanded", String(!kb.hidden));
+  }
+  function pickKit(id) {
+    openKitBrowser(false);
+    if (id === S.kit) return;
+    var empty = !SLOT_IDS.some(function (x) { return slotHasNotes(S.slots[x]); });
+    S.kitSwing[S.kit] = S.swing;
+    if (empty) { loadStarter(id); $("bpm").value = S.bpm; }
+    loadKit(id, empty).then(function () { toast(kitName(id) + (empty ? " — starter pattern loaded" : " loaded")); });
   }
 
-  function loadKit(kit) {
-    S.kit = kit;
-    document.querySelectorAll(".kit").forEach(function (b) { b.classList.toggle("active", b.dataset.kit === kit); });
+  /* kit sounds: CC0 one-shots (fetched once) + synthesis, pre-rendered per kit with the kit's grit baked in */
+  var sampleCache = {}, kitCache = {}, kitSeq = 0;
+  function fetchSample(name) {
+    if (!sampleCache[name]) {
+      sampleCache[name] = fetch("samples/" + name + ".flac").then(function (r) {
+        if (!r.ok) throw new Error("HTTP " + r.status);
+        return r.arrayBuffer();
+      }).then(decode).catch(function (e) {
+        console.warn("Sample " + name + " unavailable — pad falls back to synthesis", e);
+        delete sampleCache[name];
+        return null;
+      });
+    }
+    return sampleCache[name];
+  }
+  function kitBuffers(id) {
+    if (!kitCache[id]) {
+      var k = kitDef(id), names = D.samplesFor(k);
+      kitCache[id] = Promise.all(names.map(fetchSample)).then(function (bufs) {
+        var map = {};
+        names.forEach(function (n, i) { if (bufs[i]) map[n] = bufs[i]; });
+        return D.renderKit(k, map);
+      });
+      kitCache[id].catch(function () { delete kitCache[id]; });
+    }
+    return kitCache[id];
+  }
+  function loadKit(id, keepSwing) {
+    id = kitId(id);
+    if (S.kit !== id && !keepSwing) S.kitSwing[S.kit] = S.swing;
+    S.kit = id;
+    if (!keepSwing) S.swing = S.kitSwing[id] != null ? S.kitSwing[id] : swingFromMpc(kitDef(id).swing);
+    S.kitSwing[id] = S.swing;
+    var my = ++kitSeq;
     customBuf = new Array(16).fill(null);
     customName = new Array(16).fill(null);
-    var defs = KITS[kit].pads;
-    return Promise.all(defs.map(renderPadBuffer)).then(function (bufs) {
-      stockBuf = bufs;
-      return loadCustomPads(kit);
-    }).then(function () {
+    refreshKitUI();
+    var bufs;
+    return kitBuffers(id).then(function (b) {
+      bufs = b;
+      return loadCustomPads(id);
+    }).then(function (mine) {
+      if (my !== kitSeq) return;
+      stockBufs = bufs;
+      (mine || []).forEach(function (r) { customBuf[r.i] = r.buf; customName[r.i] = r.name; });
+      if (LG) graphKit(LG, ctx.currentTime);
       refreshPads();
       buildSeq();
       saveSession();
@@ -1050,16 +1266,33 @@
       c.decodeAudioData(ab, res, function (err) { rej(err || new Error("Could not decode audio")); });
     });
   }
-  function loadCustomPads(kit) {
+  function padKey(kit, i) { return "k2:" + kit + ":" + i; }
+  /* one-time: pads swapped on the old Trap / Drill / Phonk kits follow their sound to the new layout */
+  function migratePads() {
+    try { if (localStorage.getItem("ipb_pads_v2")) return Promise.resolve(); } catch (e) { return Promise.resolve(); }
     return idb("pads", "readonly", function (st) { return st.getAll(); }).then(function (rows) {
-      var mine = (rows || []).filter(function (r) { return r.key.indexOf(kit + "_") === 0; });
-      return Promise.all(mine.map(function (r) {
-        var i = +r.key.split("_")[1];
-        return decode(r.data.slice(0)).then(function (buf) {
-          customBuf[i] = buf; customName[i] = r.name;
-        }).catch(function () { /* skip broken */ });
-      }));
+      var puts = [];
+      (rows || []).forEach(function (r) {
+        var m = /^(trap|drill|phonk)_(\d+)$/.exec(r.key || "");
+        if (!m) return;
+        var L = D.LEGACY[m[1]], t = L && L.map[+m[2]];
+        if (t) puts.push({ key: padKey(L.kit, t[0]), name: r.name, data: r.data });
+      });
+      if (!puts.length) return null;
+      return idb("pads", "readwrite", function (st) { puts.forEach(function (x) { st.put(x); }); return null; });
+    }).then(function () {
+      try { localStorage.setItem("ipb_pads_v2", "1"); } catch (e) { /* ignore */ }
     }).catch(function () { /* no IDB */ });
+  }
+  function loadCustomPads(kit) {
+    var pre = "k2:" + kit + ":";
+    return idb("pads", "readonly", function (st) { return st.getAll(); }).then(function (rows) {
+      var mine = (rows || []).filter(function (r) { return String(r.key).indexOf(pre) === 0; });
+      return Promise.all(mine.map(function (r) {
+        var i = +r.key.slice(pre.length);
+        return decode(r.data.slice(0)).then(function (buf) { return { i: i, buf: buf, name: r.name }; }).catch(function () { return null; });
+      })).then(function (list) { return list.filter(Boolean); });
+    }).catch(function () { return []; });
   }
   function onPadFile(file) {
     if (!file) return;
@@ -1068,13 +1301,14 @@
     file.arrayBuffer().then(function (ab) {
       var keep = ab.slice(0);
       return decode(ab).then(function (buf) {
+        if (kit !== S.kit) return;
         customBuf[i] = buf;
         customName[i] = file.name.replace(/\.[^.]+$/, "");
-        refreshPads(); buildSeq();
+        refreshPads(); repaintSeq();
         toast("Pad " + (i + 1) + " → " + customName[i]);
         triggerPad(i);
         return idb("pads", "readwrite", function (st) {
-          return st.put({ key: kit + "_" + i, name: customName[i], data: keep });
+          return st.put({ key: padKey(kit, i), name: customName[i], data: keep });
         }).catch(function () { toast("Sample loaded (not saved — storage blocked)."); });
       });
     }).catch(function (e) {
@@ -1084,24 +1318,55 @@
   }
   function resetPad(i) {
     customBuf[i] = null; customName[i] = null;
-    S.pitches[i] = 0;
-    idb("pads", "readwrite", function (st) { return st.delete(S.kit + "_" + i); }).catch(function () {});
-    refreshPads(); buildSeq(); saveSession();
+    var all = S.padCfg[S.kit];
+    if (all) all[i] = defaultPadCfg(padDef(i));
+    if (LG) stripApply(LG, i, ctx.currentTime);
+    idb("pads", "readwrite", function (st) { return st.delete(padKey(S.kit, i)); }).catch(function () {});
+    refreshPads(); repaintSeq(); saveSession();
   }
   function freshBeat() {
     stop();
     S.chordTrack.on = false;
     renderChordLoopUI();
-    S.pattern = emptyPattern();
-    S.pitches = new Array(16).fill(0);
+    SLOT_IDS.forEach(function (id) { S.slots[id] = newSlot(16); });
+    S.slot = "A"; pendingSlot = null; bindSlot();
+    S.page = 0;
+    S.mute = new Array(16).fill(false);
+    S.solo = new Array(16).fill(false);
     var kit = S.kit;
+    S.padCfg[kit] = [];
+    if (LG) graphKit(LG, ctx.currentTime);
     for (var i = 0; i < 16; i++) { customBuf[i] = null; customName[i] = null; }
     idb("pads", "readwrite", function (st) {
-      for (var i = 0; i < 16; i++) st.delete(kit + "_" + i);
+      for (var i = 0; i < 16; i++) st.delete(padKey(kit, i));
       return null;
     }).catch(function () {});
     refreshPads(); buildSeq(); saveSession();
-    toast("Fresh beat — empty pattern, stock " + kit + " pads.");
+    toast("Fresh beat — empty pattern, stock " + kitName(kit) + " pads.");
+  }
+  function switchSlot(id) {
+    if (id === S.slot && !pendingSlot) return;
+    if (playing && !arrangement()) { // loop mode: switch on the next pattern start, like an MPC
+      pendingSlot = id === S.slot ? null : id;
+      seqLayout();
+      return;
+    }
+    applySlot(id, patAnchor);
+    S.page = 0;
+    repaintSeq(); saveSession();
+  }
+  function setLen(L) {
+    var s = curSlot();
+    if (s.len === L) return;
+    if (L === 32) { // empty bar 2 → start it as a copy of bar 1
+      var b2 = s.pattern.some(function (r) { return r.slice(16).some(Boolean); });
+      if (!b2) ["pattern", "vel", "note", "slide"].forEach(function (k) {
+        s[k].forEach(function (r) { for (var i = 0; i < 16; i++) r[i + 16] = r[i]; });
+      });
+    }
+    s.len = L;
+    S.page = 0;
+    repaintSeq(); saveSession();
   }
 
   /* ---------------- Recording (WAV) ----------------
@@ -1252,41 +1517,34 @@
 
   /* Offline bounce of the pattern + chord loop (clean render, no live keys).
      With a song structure selected, "Full song" renders the whole arrangement. */
+  function loopInfo(k) { var L = plen(); return { k: k, patStep: k % L, fire: true, feel: "full", mb: k / STEPS }; }
+  /* Offline bounce of the pattern + chord loop (clean render, no live keys) through the same graph as live playback.
+     With a song structure selected, "Full song" renders the whole arrangement. */
   function bounce(barsSel) {
     var sd = stepDur();
     var A = arrangement();
     var songMode = barsSel === "song";
     if (songMode && !A) { toast("Pick a song structure first (Song bar above)."); return; }
-    var startBar = songMode ? 0 : 0;
     var bars = songMode ? totalBars(A) : +barsSel;
     var total = bars * STEPS;
-    var dur = total * sd + 2.5;
+    if (!S.chordTrack.on && !patternHasNotes()) { toast("Pattern is empty — add steps first."); return; }
+    var dur = total * sd + 2.5 + GRAPH_LAT;
     var c = new OfflineAudioContext(2, Math.ceil(SR * dur), SR);
-    var cp = c.createDynamicsCompressor();
-    cp.threshold.value = -10; cp.ratio.value = 4; cp.attack.value = 0.003; cp.release.value = 0.15;
-    var m = c.createGain();
-    m.gain.value = mixGain("master");
-    cp.connect(m); m.connect(c.destination);
-    var gn = {};
-    GROUPS.forEach(function (g) {
-      var n = c.createGain(); n.gain.value = mixGain(g.id); n.connect(cp); gn[g.id] = n;
-    });
+    var G = makeGraph(c, false);
+    G.out.connect(c.destination);
     var reg = [], creg = [];
-    var any = S.chordTrack.on;
-    for (var p = 0; p < 16 && !any; p++) for (var q = 0; q < STEPS; q++) if (S.pattern[p][q]) any = true;
-    if (!any) { toast("Pattern is empty — add steps first."); return; }
     for (var k = 0; k < total; k++) {
       // loop bounces ignore the structure so "4 bars" really means the 4-bar loop
-      var info = songMode ? stepInfo(startBar * STEPS + k) : { k: k, patStep: k % STEPS, fire: true, feel: "full", mb: k / STEPS };
+      var info = songMode ? stepInfo(k) : loopInfo(k);
       if (info.end) break;
-      if (info.fire) scheduleStep(c, info, k * sd, gn, reg, creg, k === 0);
+      if (info.fire) scheduleStep(c, G, info, k * sd, reg, creg, k === 0);
     }
     cutChords(creg, total * sd);
     $("rec-status").textContent = songMode ? "Bouncing full song… (can take up to a minute)" : "Bouncing…";
     c.startRendering().then(function (buf) {
-      var frames = Math.round((total * sd + 0.8) * SR);
-      frames = Math.min(frames, buf.length);
-      var blob = encodeWav(buf.getChannelData(0), buf.getChannelData(1), frames, SR);
+      var off = Math.round(GRAPH_LAT * SR); // compressor look-ahead → bar 1 starts at 0:00
+      var frames = Math.min(Math.round((total * sd + 0.8) * SR), buf.length - off);
+      var blob = encodeWav(buf.getChannelData(0).subarray(off), buf.getChannelData(1).subarray(off), frames, SR);
       var label = songMode ? "Bounce full song" : "Bounce " + bars + " bars";
       saveToVault(blob, frames / SR, label);
       $("rec-status").textContent = (songMode ? "Bounced full song" : "Bounced " + bars + " bars") + " to Vault";
@@ -1297,7 +1555,7 @@
   function saveToVault(blob, dur, label) {
     var item = {
       id: "r_" + Date.now().toString(36),
-      name: label + " · " + S.kit.toUpperCase() + " " + S.bpm + "bpm",
+      name: label + " · " + kitName(S.kit) + " " + S.bpm + "bpm",
       created: Date.now(),
       duration: dur,
       size: blob.size,
@@ -1621,7 +1879,7 @@
     g.fillText(artist, cx, portrait ? H * 0.74 + W * 0.07 : H * 0.18 + W * 0.035);
     g.fillStyle = "#22d3ee";
     g.font = "700 " + Math.round(W * (portrait ? 0.03 : 0.016)) + "px Inter, Segoe UI, sans-serif";
-    g.fillText(S.kit.toUpperCase() + " · " + S.bpm + " BPM", cx, portrait ? H * 0.9 : H * 0.92);
+    g.fillText(kitName(S.kit).toUpperCase() + " · " + S.bpm + " BPM", cx, portrait ? H * 0.9 : H * 0.92);
   }
 
   /* ---------------- Animation loop ---------------- */
@@ -1631,8 +1889,10 @@
       while (uiQueue.length && uiQueue[0].time <= ctx.currentTime) {
         var q = uiQueue.shift();
         posAnchor = { k: q.k, time: q.time };
+        if (q.slot) repaintSeq();
         if (q.fire) setNowColumn(q.step);
       }
+      if (masterAnalyser) livePeak = Math.max(livePeak, peak(masterAnalyser));
     }
     if (activeTab === "mixer" && ctx) {
       GROUPS.forEach(function (g) {
@@ -1901,10 +2161,12 @@
     return null;
   }
   function beatSnapshot() {
+    var s = curSlot();
+    function cp(g) { return g.map(function (r) { return r.slice(); }); }
     return {
-      kit: S.kit, bpm: S.bpm, swing: S.swing,
-      pattern: S.pattern.map(function (r) { return r.slice(); }),
-      pitches: S.pitches.slice(),
+      fmt: 2, kit: S.kit, bpm: S.bpm, swing: S.swing, len: s.len,
+      pattern: cp(s.pattern), vel: cp(s.vel), note: cp(s.note), slide: cp(s.slide),
+      pads: JSON.parse(JSON.stringify(S.padCfg[S.kit] || [])),
       chords: JSON.parse(JSON.stringify(S.chordTrack)),
       structure: S.structure
     };
@@ -2057,13 +2319,13 @@
       var bp = BEAT_PRESETS[b.preset];
       var o = document.createElement("option");
       o.value = "b:" + b.id;
-      o.textContent = b.title + " — " + bp.kit.charAt(0).toUpperCase() + bp.kit.slice(1) + " " + bp.bpm + " (beat + lyrics)";
+      o.textContent = b.title + " — " + kitName(bp.kit) + " " + bp.bpm + " (beat + lyrics)";
       ps.appendChild(o);
     });
     songStore.songs.forEach(function (x) {
       if (!x.beat) return;
       var o = document.createElement("option");
-      o.value = "u:" + x.id; o.textContent = x.title + " — " + x.beat.kit + " " + x.beat.bpm + " (beat + lyrics)";
+      o.value = "u:" + x.id; o.textContent = x.title + " — " + kitName(D.LEGACY[x.beat.kit] && !x.beat.fmt ? D.LEGACY[x.beat.kit].kit : x.beat.kit) + " " + x.beat.bpm + " (beat + lyrics)";
       ps.appendChild(o);
     });
     ps.value = keep && ps.querySelector('option[value="' + keep + '"]') ? keep : "";
@@ -2265,32 +2527,29 @@
   }
 
   /* ---------------- Song preset: beat + lyrics in one tap ---------------- */
-  function patternHasNotes() {
-    return S.pattern.some(function (r) { return r.some(function (v) { return !!v; }); });
-  }
+  function patternHasNotes() { return slotHasNotes(curSlot()); }
   function applySongPreset(val) {
     if (!val) return;
     var kind = val.charAt(0), id = val.slice(2), beat = null, song = getSong(id), extra = null;
     if (kind === "b") {
       var b = BUILTIN_SONGS.filter(function (x) { return x.id === id; })[0];
       extra = b && BEAT_PRESETS[b.preset];
-      beat = extra ? {
-        kit: extra.kit, bpm: extra.bpm, swing: extra.swing, pattern: extra.pattern,
-        chords: extra.chords, structure: extra.structure
-      } : null;
+      beat = extra || null;
     } else if (song) beat = song.beat;
     if (!beat || !song) { toast("That song has no beat attached."); return; }
-    var newPat = patternFrom(beat.pattern);
-    var same = JSON.stringify(newPat) === JSON.stringify(S.pattern);
+    var conv = beatSlot(beat);
+    var same = conv.kit === S.kit && JSON.stringify(conv.slot.pattern) === JSON.stringify(S.pattern);
     if (patternHasNotes() && !same && !confirm("Load “" + song.title + "”? This replaces the current pattern, BPM, chord loop and song form (your swapped pad samples stay).")) {
       $("song-preset").value = ""; return;
     }
     if (vox.state !== "idle") stopVocalTake();
     stop();
+    S.kitSwing[S.kit] = S.swing;
     S.bpm = clamp(+beat.bpm || 140, 60, 200);
     S.swing = clamp(+beat.swing || 0, 0, 60);
-    S.pattern = newPat;
-    S.pitches = Array.isArray(beat.pitches) && beat.pitches.length === 16 ? beat.pitches.slice() : new Array(16).fill(0);
+    S.slots[S.slot] = conv.slot; pendingSlot = null; bindSlot(); S.page = 0;
+    (conv.tunes || []).forEach(function (t, i) { if (t) padCfg(i, conv.kit).tune = t; });
+    if (Array.isArray(conv.pads)) { var pc = {}; pc[conv.kit] = conv.pads; S.padCfg[conv.kit] = cleanPadCfg(pc)[conv.kit]; }
     var ct = defaultChordTrack();
     if (beat.chords) Object.keys(ct).forEach(function (k) { if (beat.chords[k] != null) ct[k] = JSON.parse(JSON.stringify(beat.chords[k])); });
     S.chordTrack = ct;
@@ -2301,18 +2560,24 @@
     if (extra && extra.studio) { $("studio-title").value = extra.studio.title; $("studio-artist").value = extra.studio.artist; }
     else { $("studio-title").value = song.title; }
     $("bpm").value = S.bpm;
-    $("swing").value = S.swing;
     buildMixer(); applyMixer();
     renderChordLoopUI();
     renderTimelines();
     if (S.structure) $("rec-length").value = "song"; // Record / Record Vocals cover the whole song by default
     if (song.id === S.lyricSong && ly.dirty) renderLyrics(); // keep the edits in progress
     else if (!ly.dirty || confirm("Discard unsaved lyric changes?")) selectLyricSong(song.id, true);
-    var kitP = beat.kit && KITS[beat.kit] && beat.kit !== S.kit ? loadKit(beat.kit) : Promise.resolve(buildSeq());
+    var kitP;
+    if (conv.kit !== S.kit) kitP = loadKit(conv.kit, true);
+    else {
+      S.kitSwing[S.kit] = S.swing;
+      if (LG) graphKit(LG, ctx.currentTime);
+      refreshKitUI(); refreshPads(); repaintSeq();
+      kitP = Promise.resolve();
+    }
     return kitP.then(function () {
       saveSession();
       var names = S.chordTrack.on ? S.chordTrack.prog.map(function (i) { return CHORDS[i] ? CHORDS[i].n : "—"; }).join("–") : "";
-      toast("Loaded “" + song.title + "” — beat + lyrics · " + S.kit + " " + S.bpm + " BPM" + (names ? " · " + names : ""));
+      toast("Loaded “" + song.title + "” — beat + lyrics · " + kitName(S.kit) + " " + S.bpm + " BPM" + (names ? " · " + names : ""));
     });
   }
 
@@ -2784,15 +3049,10 @@
   function refRenderMix(bars) {
     var sd = stepDur(), total = bars * STEPS, dur = total * sd + 0.5;
     var c = new OfflineAudioContext(2, Math.ceil(SR * dur), SR);
-    var cp = c.createDynamicsCompressor();
-    cp.threshold.value = -10; cp.ratio.value = 4; cp.attack.value = 0.003; cp.release.value = 0.15;
-    var m = c.createGain();
-    m.gain.value = mixGain("master");
-    cp.connect(m); m.connect(c.destination);
-    var gn = {};
-    GROUPS.forEach(function (g) { var nd = c.createGain(); nd.gain.value = mixGain(g.id); nd.connect(cp); gn[g.id] = nd; });
+    var G = makeGraph(c, false);
+    G.out.connect(c.destination);
     var reg = [], creg = [];
-    for (var k = 0; k < total; k++) scheduleStep(c, { k: k, patStep: k % STEPS, fire: true, feel: "full", mb: k / STEPS }, k * sd, gn, reg, creg, k === 0);
+    for (var k = 0; k < total; k++) scheduleStep(c, G, loopInfo(k), k * sd, reg, creg, k === 0);
     cutChords(creg, total * sd);
     return c.startRendering();
   }
@@ -3185,31 +3445,65 @@
     });
     var sw = $("swing");
     sw.value = S.swing;
-    sw.addEventListener("input", function () { S.swing = +sw.value; saveSession(); });
-
-    document.querySelectorAll(".kit").forEach(function (b) {
-      b.addEventListener("click", function () { if (b.dataset.kit !== S.kit) loadKit(b.dataset.kit); });
+    sw.addEventListener("input", function () {
+      S.swing = +sw.value; S.kitSwing[S.kit] = S.swing;
+      $("swing-val").textContent = mpcSwing(S.swing) + "%";
+      saveSession();
     });
+    $("kit-open").addEventListener("click", function () { openKitBrowser(); });
+    $("kb-close").addEventListener("click", function () { openKitBrowser(false); });
     $("btn-fresh").addEventListener("click", freshBeat);
     $("btn-demo").addEventListener("click", function () {
-      loadDemo(S.kit);
+      if (playing && !arrangement()) stop();
+      loadStarter(S.kit);
       $("bpm").value = S.bpm;
-      buildSeq(); saveSession();
-      toast(S.kit.charAt(0).toUpperCase() + S.kit.slice(1) + " demo loaded");
+      refreshKitUI(); repaintSeq(); saveSession();
+      toast(kitName(S.kit) + " starter · " + S.bpm + " BPM · swing " + mpcSwing(S.swing) + "%");
     });
     $("btn-clear-row").addEventListener("click", function () {
-      S.pattern[S.sel] = new Array(STEPS).fill(0);
-      buildSeq(); saveSession();
+      var p = S.sel;
+      S.pattern[p].fill(0); S.vel[p].fill(0.8); S.note[p].fill(0); S.slide[p].fill(0);
+      repaintSeq(); saveSession();
     });
     $("pad-file").addEventListener("change", function (e) {
       onPadFile(e.target.files[0]);
       e.target.value = "";
     });
     $("btn-pad-reset").addEventListener("click", function () { resetPad(S.sel); });
-    $("pad-pitch").addEventListener("input", function (e) {
-      S.pitches[S.sel] = +e.target.value;
-      $("pad-pitch-val").textContent = (S.pitches[S.sel] > 0 ? "+" : "") + S.pitches[S.sel];
-      saveSession();
+    PE.forEach(function (pe) {
+      var el = $("pad-" + pe.id);
+      el.addEventListener("input", function () {
+        var cfg = padCfg(S.sel);
+        cfg[pe.key] = +el.value;
+        $("pad-" + pe.id + "-val").textContent = pe.fmt(cfg[pe.key]);
+        if (LG && (pe.key === "level" || pe.key === "pan" || pe.key === "drive")) stripApply(LG, S.sel, ctx.currentTime);
+        saveSession();
+      });
+      el.addEventListener("change", function () { if (!playing) triggerPad(S.sel); });
+    });
+    $("pe-mute").addEventListener("click", function () { toggleMS("m", S.sel); });
+    $("pe-solo").addEventListener("click", function () { toggleMS("s", S.sel); });
+    document.querySelectorAll("#slots button[data-slot]").forEach(function (b) {
+      b.addEventListener("click", function () { switchSlot(b.dataset.slot); });
+    });
+    $("btn-dup").addEventListener("click", function () {
+      var from = S.slot, nx = SLOT_IDS[(SLOT_IDS.indexOf(from) + 1) % SLOT_IDS.length];
+      if (slotHasNotes(S.slots[nx]) && !confirm("Overwrite pattern " + nx + " with a copy of " + from + "?")) return;
+      S.slots[nx] = slotCopy(curSlot());
+      switchSlot(nx);
+      toast("Copied pattern " + from + " → " + nx);
+    });
+    document.querySelectorAll("#len-seg button").forEach(function (b) {
+      b.addEventListener("click", function () { setLen(+b.dataset.len); });
+    });
+    document.querySelectorAll("#page-seg button").forEach(function (b) {
+      b.addEventListener("click", function () { S.page = +b.dataset.page; seqLayout(); });
+    });
+    document.querySelectorAll("#tool-seg button").forEach(function (b) {
+      b.addEventListener("click", function () { S.tool = b.dataset.tool; seqLayout(); saveSession(); });
+    });
+    document.querySelectorAll("#lane-seg button").forEach(function (b) {
+      b.addEventListener("click", function () { S.lane = b.dataset.lane; buildLane(); });
     });
     $("btn-rec").addEventListener("click", startRec);
     $("btn-rec-stop").addEventListener("click", stopRec);
@@ -3323,7 +3617,8 @@
 
   function init() {
     var had = loadSession();
-    if (!had) loadDemo("trap");
+    if (!had) loadStarter(DEFAULT_KIT);
+    var migrated = migratePads();
     loadSongStore();
     buildPads();
     buildChords();
@@ -3339,11 +3634,39 @@
     renderLastTake();
     updateLatencyLabel();
     if (!window.isSecureContext) setVoxStatus("Mic recording needs HTTPS or localhost — this page isn't a secure context.", true);
-    loadKit(S.kit).then(function () { selectPad(S.sel); });
+    buildKitBrowser();
+    refreshKitUI();
+    window.addEventListener("resize", function () { seqLayout(); });
+    migrated.then(function () { return loadKit(S.kit, true); }).then(function () { selectPad(S.sel); });
     renderVault();
     refInit();
     requestAnimationFrame(loop);
   }
+
+  /* read-only status for automated tests / debugging */
+  window.IPBBeats = {
+    info: function () {
+      return {
+        kit: S.kit, kitName: kitName(S.kit), bpm: S.bpm, swing: S.swing, mpcSwing: mpcSwing(S.swing), len: plen(), slot: S.slot,
+        pendingSlot: pendingSlot, pads: kitDef(S.kit).pads.map(function (p) { return p.n; }),
+        custom: customBuf.map(Boolean), livePeak: livePeak, playing: playing, graphLat: GRAPH_LAT,
+        steps: S.pattern.map(function (r) { return r.slice(0, plen()).join(""); }),
+        notes: S.note.map(function (r) { return r.slice(0, plen()); }),
+        vels: S.vel.map(function (r) { return r.slice(0, plen()); }),
+        mute: S.mute.slice(), solo: S.solo.slice(),
+        cfg: JSON.parse(JSON.stringify(S.padCfg[S.kit] || [])),
+        bufs: stockBufs.map(function (arr) {
+          if (!arr || !arr[0]) return null;
+          var d = arr[0].getChannelData(0), eq = 0, pk = 0;
+          var nz = 0; // held (repeated) values among non-silent samples → sample-rate reduction / bit-crush signature
+          for (var i = 0; i < d.length; i++) { var a = Math.abs(d[i]); if (a > pk) pk = a; if (i && a > 0.002) { nz++; if (d[i] === d[i - 1]) eq++; } }
+          var sum = 0; arr.forEach(function (b) { var x = b.getChannelData(0); for (var j = 0; j < x.length; j += 7) sum += x[j] * ((j % 13) + 1); });
+          return { n: arr.length, dur: +arr[0].duration.toFixed(3), peak: +pk.toFixed(4), eqFrac: +(eq / Math.max(1, nz)).toFixed(3), sum: sum };
+        })
+      };
+    },
+    kits: function () { return D.KITS.map(function (k) { return k.id; }); }
+  };
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
   else init();

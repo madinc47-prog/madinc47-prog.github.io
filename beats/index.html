@@ -4,11 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Island Pin Beats — Free Browser Beat Maker</title>
-  <meta name="description" content="Island Pin Beats: free browser beat maker for rappers and DJs. Trap, Drill and Phonk kits, 16 pads, step sequencer, chord loop, lyrics teleprompter, vocal recording over the beat, mixer, reference track A/B with loudness matching, WAV export.">
+  <meta name="description" content="Island Pin Beats: free browser beat maker for rappers and DJs. 18 genre drum kits (NY boom-bap, trap, drill, afrobeats, amapiano, house, bouyon and more), 16 pads, step sequencer with velocity and 2-bar patterns, chord loop, lyrics teleprompter, vocal recording over the beat, mixer, reference track A/B with loudness matching, WAV export.">
   <meta name="robots" content="index,follow">
   <link rel="canonical" href="https://madinc47-prog.github.io/beats/">
   <meta property="og:title" content="Island Pin Beats — Free Beat Maker">
-  <meta property="og:description" content="Make Trap, Drill and Phonk beats in your browser. 16 pads, sequencer, chords, mixer, record WAV. Free, from Dominica.">
+  <meta property="og:description" content="Make boom-bap, trap, drill, afrobeats, amapiano, house and bouyon beats in your browser. 16 pads, sequencer, chords, mixer, record WAV. Free, from Dominica.">
   <meta property="og:url" content="https://madinc47-prog.github.io/beats/">
   <meta property="og:type" content="website">
   <meta name="theme-color" content="#0b0d12">
@@ -41,17 +41,23 @@
   <main>
     <!-- BEATS -->
     <section id="tab-beats" class="panel active" role="tabpanel">
-      <div class="toolbar">
-        <div class="kits" role="group" aria-label="Starter kits">
-          <button class="kit active" data-kit="trap">Trap</button>
-          <button class="kit" data-kit="drill">Drill</button>
-          <button class="kit" data-kit="phonk">Phonk</button>
+      <div class="kitbar">
+        <button id="kit-open" class="kit-open" type="button" aria-expanded="false" aria-controls="kit-browser" title="Browse drum kits by genre">
+          <span class="ko-top"><span id="kit-cat" class="ko-cat">Boom-Bap</span><span class="ko-chev">Kits ▾</span></span>
+          <strong id="kit-name" class="ko-name">QB Bap</strong>
+          <span id="kit-meta" class="ko-meta"></span>
+        </button>
+        <div class="kitbar-right">
+          <label class="swing" title="Swing, MPC-style: 50% = straight · 54–58% = light shuffle · 62%+ = heavy bounce">Swing <input id="swing" type="range" min="0" max="60" step="2" value="24"> <span id="swing-val" class="swing-val">62%</span></label>
+          <button id="btn-demo" class="btn ghost" type="button" title="Load this kit's 2-bar starter groove, tempo and swing">Load starter</button>
+          <button id="btn-fresh" class="btn" type="button">Fresh beat</button>
         </div>
-        <div class="toolbar-right">
-          <label class="swing">Swing <input id="swing" type="range" min="0" max="60" value="0"></label>
-          <button id="btn-fresh" class="btn">Fresh beat</button>
-          <button id="btn-demo" class="btn ghost">Load kit demo</button>
-        </div>
+      </div>
+      <div id="kit-browser" class="kit-browser" hidden>
+        <div class="kb-head"><span class="label">Drum kits · 18 genres</span><button id="kb-close" class="btn small ghost" type="button">Close</button></div>
+        <div id="kb-cats" class="kb-cats" role="group" aria-label="Genre"></div>
+        <div id="kb-grid" class="kb-grid"></div>
+        <p class="kb-note">Picking a kit swaps the sounds and its swing. On an empty pattern it also loads the kit's starter groove and tempo. Your pattern and swapped samples stay.</p>
       </div>
 
       <div class="song-bar">
@@ -151,23 +157,49 @@
         <div class="pads-wrap">
           <div class="pads" id="pads"></div>
           <div class="pad-edit">
-            <div><span class="label">Selected pad</span> <strong id="sel-pad-name">—</strong></div>
+            <div class="pe-head">
+              <div class="pe-title"><span class="label">Pad</span> <strong id="sel-pad-name">—</strong> <span id="sel-pad-group" class="pe-group"></span></div>
+              <div class="pe-ms"><button id="pe-mute" class="ms" type="button" title="Mute this row">M</button><button id="pe-solo" class="ms" type="button" title="Solo this row">S</button></div>
+            </div>
+            <div class="pe-knobs">
+              <label class="pe-k"><span>Tune</span><input type="range" id="pad-pitch" min="-12" max="12" step="1" value="0"><output id="pad-pitch-val">0</output></label>
+              <label class="pe-k"><span>Decay</span><input type="range" id="pad-decay" min="0.05" max="1" step="0.01" value="1"><output id="pad-decay-val">100%</output></label>
+              <label class="pe-k"><span>Level</span><input type="range" id="pad-level" min="-24" max="6" step="0.5" value="0"><output id="pad-level-val">0 dB</output></label>
+              <label class="pe-k"><span>Pan</span><input type="range" id="pad-pan" min="-1" max="1" step="0.05" value="0"><output id="pad-pan-val">C</output></label>
+              <label class="pe-k"><span>Drive</span><input type="range" id="pad-drive" min="0" max="1" step="0.02" value="0"><output id="pad-drive-val">0%</output></label>
+              <label class="pe-k"><span>Nudge</span><input type="range" id="pad-nudge" min="-30" max="30" step="1" value="0"><output id="pad-nudge-val">0 ms</output></label>
+            </div>
             <div class="pad-edit-actions">
               <label class="btn small file-btn">Swap sample
                 <input type="file" id="pad-file" accept="audio/*" hidden>
               </label>
-              <button id="btn-pad-reset" class="btn small ghost">Reset pad</button>
-              <label class="pitch">Pitch <input type="range" id="pad-pitch" min="-12" max="12" value="0"> <span id="pad-pitch-val">0</span></label>
+              <button id="btn-pad-reset" class="btn small ghost" type="button">Reset pad</button>
             </div>
           </div>
         </div>
 
-        <div class="seq-wrap">
+        <div class="seq-wrap" id="seq-wrap">
           <div class="seq-head">
-            <span class="label">Step sequencer · 16 steps <span class="roll-hint">· right-click / long-press a step for rolls (2× / 3×)</span></span>
-            <button id="btn-clear-row" class="btn small ghost">Clear selected row</button>
+            <div class="slots" id="slots" role="group" aria-label="Pattern slots">
+              <span class="label">Pattern</span>
+              <button type="button" data-slot="A">A</button><button type="button" data-slot="B">B</button><button type="button" data-slot="C">C</button><button type="button" data-slot="D">D</button>
+              <button id="btn-dup" class="btn small ghost" type="button" title="Copy this pattern into the next slot">Copy →</button>
+            </div>
+            <div class="seg" id="len-seg" role="group" aria-label="Pattern length"><button type="button" data-len="16">1 bar</button><button type="button" data-len="32">2 bars</button></div>
+            <div class="seg" id="page-seg" role="group" aria-label="Bar shown" hidden><button type="button" data-page="0">Bar 1</button><button type="button" data-page="1">Bar 2</button></div>
+            <div class="seg tool" id="tool-seg" role="group" aria-label="Step velocity"><button type="button" data-tool="acc">Accent</button><button type="button" data-tool="hit">Hit</button><button type="button" data-tool="ghost">Ghost</button></div>
+            <button id="btn-clear-row" class="btn small ghost" type="button">Clear row</button>
           </div>
           <div class="seq" id="seq"></div>
+          <div class="lane" id="lane">
+            <div class="lane-head">
+              <span class="label">Lane</span> <strong id="lane-title"></strong>
+              <div class="seg" id="lane-seg" role="group" aria-label="Lane"><button type="button" data-lane="vel">Velocity</button><button type="button" data-lane="pitch">Pitch / Slide</button></div>
+              <span id="lane-hint" class="lane-hint"></span>
+            </div>
+            <div class="lane-bars" id="lane-bars"></div>
+          </div>
+          <p class="seq-hint">Tap = add with the Accent / Hit / Ghost tool · tap with another tool = change velocity · same tool = remove · right-click / long-press = roll (2× / 3×)</p>
         </div>
       </div>
 
@@ -427,8 +459,9 @@
     </div>
   </div>
 
-  <footer class="foot">Free · runs in your browser · synthesized sounds, no paid APIs · <a href="../">IslePin</a></footer>
+  <footer class="foot">Free · runs in your browser · synthesized drums + CC0 one-shots (<a href="samples/CREDITS.md">credits</a>), no paid APIs · <a href="../">IslePin</a></footer>
 
+  <script src="drums.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
