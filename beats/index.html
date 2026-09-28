@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Island Pin Beats — Free Browser Beat Maker</title>
-  <meta name="description" content="Island Pin Beats: free browser beat maker for rappers and DJs. Trap, Drill and Phonk kits, 16 pads, step sequencer, chord loop, lyrics teleprompter, vocal recording over the beat, mixer, WAV export.">
+  <meta name="description" content="Island Pin Beats: free browser beat maker for rappers and DJs. Trap, Drill and Phonk kits, 16 pads, step sequencer, chord loop, lyrics teleprompter, vocal recording over the beat, mixer, reference track A/B with loudness matching, WAV export.">
   <meta name="robots" content="index,follow">
   <link rel="canonical" href="https://madinc47-prog.github.io/beats/">
   <meta property="og:title" content="Island Pin Beats — Free Beat Maker">
@@ -26,6 +26,7 @@
       <button id="btn-stop" class="tbtn" aria-label="Stop pattern">■</button>
       <label class="bpm">BPM <input id="bpm" type="number" min="60" max="200" value="140"></label>
       <span id="audio-state" class="audio-state">Tap any pad to start audio</span>
+      <span id="ref-badge" class="ref-badge" hidden title="You are hearing the reference track. Press R to go back to your beat.">B · REFERENCE</span>
     </div>
   </header>
 
@@ -95,6 +96,56 @@
         <span id="rec-status" class="rec-status">Ready</span>
         <div class="vox-status js-vox-status" role="status">Record Vocals: 1-bar count-in, then the beat plays and your mic records. Use headphones.</div>
       </div>
+
+      <!-- REFERENCE TRACK (monitor only: never recorded, bounced or saved to Vault) -->
+      <section class="ref-panel js-ref-drop" id="ref-panel" aria-label="Reference track">
+        <div class="ref-head">
+          <div class="ref-title">
+            <span class="label">Reference track</span>
+            <span class="ref-name js-ref-name">No reference loaded</span>
+            <span class="ref-meta mono js-ref-meta"></span>
+            <span class="ref-trim js-ref-trim" hidden title="Level match lowered your beat on the speakers only (recordings and bounces are unaffected)">Beat monitor <b class="mono"></b><button type="button" class="btn small ghost js-ref-trim-reset">Reset</button></span>
+            <span class="ref-bpm js-ref-bpm" hidden><b class="mono"></b><small class="ref-bpm-alt mono"></small><button type="button" class="btn small ghost js-ref-bpm-use" title="Set the beat tempo to the reference estimate">Use</button></span>
+          </div>
+          <div class="ref-head-right">
+            <button type="button" class="btn small js-ref-play" disabled>▶ Play ref</button>
+          <div class="ab js-ref-ab" role="group" aria-label="A/B monitor: A = your beat, B = reference">
+            <button type="button" class="ab-btn ab-a" data-ab="A" aria-pressed="true" title="A = your beat (R)">A <small>Beat</small></button>
+            <button type="button" class="ab-btn ab-b" data-ab="B" aria-pressed="false" title="B = reference (R)">B <small>Ref</small></button>
+          </div>
+            <kbd class="kbd" title="Keyboard shortcut: R (or `) toggles A/B">R</kbd>
+            <button type="button" class="btn small ghost ref-collapse" id="ref-collapse" aria-expanded="true" aria-controls="ref-body">Hide</button>
+          </div>
+        </div>
+        <div class="ref-body" id="ref-body">
+          <div class="ref-empty js-ref-empty">
+            <span class="ref-drop-ico" aria-hidden="true">⤓</span>
+            <div>
+              <strong>Drop a song here</strong> or
+              <label class="btn small file-btn">Upload reference…<input type="file" class="js-ref-file" accept="audio/*,.mp3,.wav,.m4a,.aac,.mp4,.ogg,.oga,.opus,.flac,.webm,.aif,.aiff" hidden></label>
+              <div class="hint">MP3, WAV, M4A/AAC, OGG, FLAC — whatever this browser can decode. A/B it against your beat while you build and mix.</div>
+            </div>
+          </div>
+          <div class="ref-loaded js-ref-loaded" hidden>
+            <div class="ref-wave-wrap"><canvas class="ref-wave js-ref-wave" aria-label="Reference waveform: click to seek, drag to set a loop region"></canvas></div>
+            <div class="ref-ctrls">
+              <button type="button" class="btn small ghost js-ref-rew" title="Back to cue point" aria-label="Back to cue point"><svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><rect x="2" y="3" width="2" height="10" fill="currentColor"/><path d="M14 3v10L5 8z" fill="currentColor"/></svg></button>
+              <span class="mono ref-time js-ref-time">0:00 / 0:00</span>
+              <span class="sep"></span>
+              <button type="button" class="btn small ghost" id="ref-in" title="Loop start at the playhead">Set in</button>
+              <button type="button" class="btn small ghost" id="ref-out" title="Loop end at the playhead">Set out</button>
+              <label class="chk"><input type="checkbox" id="ref-loop"> Loop region</label>
+              <button type="button" class="btn small ghost" id="ref-clear">Clear</button>
+              <span class="sep"></span>
+              <label class="chk" title="The reference starts from its cue point (loop start, or where you last clicked) whenever the beat plays, and stops with it"><input type="checkbox" id="ref-sync"> Sync start with beat</label>
+              <span class="ref-spacer"></span>
+              <label class="btn small ghost file-btn">Replace…<input type="file" class="js-ref-file" accept="audio/*,.mp3,.wav,.m4a,.aac,.mp4,.ogg,.oga,.opus,.flac,.webm,.aif,.aiff" hidden></label>
+              <button type="button" class="btn small ghost js-ref-remove">Remove</button>
+            </div>
+          </div>
+          <p class="ref-note">Stays on your device — use tracks you own or have rights to. The reference plays to your speakers only: it is never included in Record, Record Vocals, Bounce or the Vault.</p>
+        </div>
+      </section>
 
       <div class="beats-grid">
         <div class="pads-wrap">
@@ -169,7 +220,7 @@
         </div>
         <div class="chords" id="chords"></div>
         <div class="piano" id="piano"></div>
-        <p class="hint">Computer keys: A W S E D F T G Y H U J K play notes · Z X C V B N M , trigger pads 1–8 · Space = play/stop.</p>
+        <p class="hint">Computer keys: A W S E D F T G Y H U J K play notes · Z X C V B N M , trigger pads 1–8 · Space = play/stop · R (or `) = A/B reference.</p>
       </div>
     </section>
 
@@ -209,6 +260,80 @@
       <h2>Mixer</h2>
       <p class="sub">Group volume and mute. Changes apply live and to recordings.</p>
       <div class="mixer" id="mixer"></div>
+      <section class="ref-mix js-ref-drop" id="ref-mix" aria-label="Reference channel">
+        <div class="ref-head">
+          <div class="ref-title">
+            <strong>Reference</strong>
+            <span class="ref-name js-ref-name">No reference loaded</span>
+            <span class="ref-meta mono js-ref-meta"></span>
+            <span class="ref-trim js-ref-trim" hidden title="Level match lowered your beat on the speakers only (recordings and bounces are unaffected)">Beat monitor <b class="mono"></b><button type="button" class="btn small ghost js-ref-trim-reset">Reset</button></span>
+          </div>
+          <div class="ref-head-right">
+            <button type="button" class="btn small js-ref-play" disabled>▶ Play ref</button>
+          <div class="ab js-ref-ab" role="group" aria-label="A/B monitor: A = your beat, B = reference">
+            <button type="button" class="ab-btn ab-a" data-ab="A" aria-pressed="true" title="A = your beat (R)">A <small>Beat</small></button>
+            <button type="button" class="ab-btn ab-b" data-ab="B" aria-pressed="false" title="B = reference (R)">B <small>Ref</small></button>
+          </div>
+            <kbd class="kbd" title="Keyboard shortcut: R (or `) toggles A/B">R</kbd>
+          </div>
+        </div>
+        <p class="sub">A/B your mix against a reference at matched loudness. Monitor only — the reference never reaches recordings, bounces or the Vault.</p>
+        <div class="ref-empty js-ref-empty">
+          <span class="ref-drop-ico" aria-hidden="true">⤓</span>
+          <div>
+            <strong>Drop a song here</strong> or
+            <label class="btn small file-btn">Upload reference…<input type="file" class="js-ref-file" accept="audio/*,.mp3,.wav,.m4a,.aac,.mp4,.ogg,.oga,.opus,.flac,.webm,.aif,.aiff" hidden></label>
+            <div class="hint">Stays on your device — use tracks you own or have rights to.</div>
+          </div>
+        </div>
+        <div class="ref-loaded js-ref-loaded" hidden>
+          <div class="ref-mix-grid">
+            <div class="ref-strips">
+              <div class="strip ref-strip-mix">
+                <span class="sname">Mix</span>
+                <div class="faders"><div class="meter db"><i id="ref-meter-mix"></i></div></div>
+                <span class="val" id="ref-live-mix-pk">—</span>
+                <span class="strip-note">master</span>
+              </div>
+              <div class="strip ref-strip">
+                <span class="sname">Ref</span>
+                <div class="faders"><div class="meter db"><i id="ref-meter-ref"></i></div>
+                  <div class="vwrap"><input type="range" id="ref-gain" min="-30" max="12" step="0.1" value="0" aria-label="Reference level in dB"></div></div>
+                <span class="val" id="ref-gain-val">0.0 dB</span>
+                <button type="button" class="mute" id="ref-mute">MUTE</button>
+              </div>
+            </div>
+            <div class="ref-meas">
+              <div class="ref-lm">
+                <button type="button" class="btn primary" id="ref-match">Level match</button>
+                <span class="ref-match-status" id="ref-match-status">Measures your beat and the reference, then sets the Ref fader so A and B are equally loud.</span>
+              </div>
+              <div class="ref-table-wrap">
+                <table class="ref-table">
+                  <thead><tr><th scope="col"></th><th scope="col">Integrated<small>≈ LUFS</small></th><th scope="col">Peak<small>dBFS</small></th><th scope="col">Live<small>≈ LUFS-M</small></th><th scope="col">Live peak<small>dBFS</small></th></tr></thead>
+                  <tbody>
+                    <tr class="r-mix"><th scope="row">Mix</th><td id="ref-mix-i">—</td><td id="ref-mix-p">—</td><td id="ref-mix-m">—</td><td id="ref-mix-lp">—</td></tr>
+                    <tr class="r-ref"><th scope="row">Ref</th><td id="ref-ref-i">—</td><td id="ref-ref-p">—</td><td id="ref-ref-m">—</td><td id="ref-ref-lp">—</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <p class="hint">Approximate loudness (BS.1770-style K-weighting and gating, computed in the browser). Mix integrated = offline render of 8 bars of your loop at the current mixer settings; Ref integrated = the whole file before the Ref fader. Live columns are momentary (400 ms): Ref after its fader, Mix at the master (before any beat-monitor trim). Peaks are sample peaks, not true-peak.</p>
+            </div>
+          </div>
+          <div class="ref-wave-wrap small"><canvas class="ref-wave js-ref-wave" aria-label="Reference waveform: click to seek, drag to set a loop region"></canvas></div>
+          <div class="ref-ctrls">
+            <button type="button" class="btn small ghost js-ref-rew" title="Back to cue point" aria-label="Back to cue point"><svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><rect x="2" y="3" width="2" height="10" fill="currentColor"/><path d="M14 3v10L5 8z" fill="currentColor"/></svg></button>
+            <span class="mono ref-time js-ref-time">0:00 / 0:00</span>
+            <span class="ref-spacer"></span>
+            <label class="btn small ghost file-btn">Replace…<input type="file" class="js-ref-file" accept="audio/*,.mp3,.wav,.m4a,.aac,.mp4,.ogg,.oga,.opus,.flac,.webm,.aif,.aiff" hidden></label>
+            <button type="button" class="btn small ghost js-ref-remove">Remove</button>
+          </div>
+          <div class="ref-spec-wrap">
+            <canvas id="ref-spec" aria-label="Spectrum: mix vs reference"></canvas>
+            <div class="ref-legend"><span class="lg-mix">Mix</span><span class="lg-ref">Ref (after fader)</span></div>
+          </div>
+        </div>
+      </section>
       <div class="vox-box">
         <strong>Vocal channel</strong>
         <p class="sub">The Vocal fader sets the vocal level in the exported mix (beat + vocal WAV). Mute leaves the vocal out.</p>

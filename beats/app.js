@@ -611,7 +611,7 @@
   var memVault = []; // fallback if IndexedDB is blocked
 
   /* ---------------- Audio graph ---------------- */
-  var ctx = null, master = null, comp = null, masterAnalyser = null;
+  var ctx = null, master = null, comp = null, masterAnalyser = null, beatMon = null;
   var groupNodes = {};
   var liveVoices = [];
 
@@ -630,7 +630,10 @@
     masterAnalyser.fftSize = 2048;
     comp.connect(master);
     master.connect(masterAnalyser);
-    masterAnalyser.connect(ctx.destination);
+    // speaker feed of the beat goes through the A/B gate; recordings tap `master` upstream of it
+    beatMon = ctx.createGain();
+    masterAnalyser.connect(beatMon);
+    beatMon.connect(ctx.destination);
     GROUPS.forEach(function (g) {
       var gain = ctx.createGain();
       var an = ctx.createAnalyser();
@@ -641,6 +644,7 @@
     });
     applyMixer();
     setupRecorder();
+    refOnCtx();
     var st = $("audio-state");
     st.textContent = "Audio on"; st.classList.add("on");
     return ctx;
@@ -798,6 +802,7 @@
     scheduler();
     $("btn-play").classList.add("on");
     updatePlayButtons();
+    refOnBeatPlay(posAnchor.time);
   }
   /* stop = stop and rewind to bar 1 (old behaviour); keepCue = pause at the current bar */
   function stop(keepCue) {
@@ -814,6 +819,7 @@
     $("btn-play").classList.remove("on");
     updatePlayButtons();
     saveSession();
+    refOnBeatStop();
   }
   function pause() { stop(true); }
   function togglePlay() { playing ? pause() : play(); }
@@ -1647,6 +1653,7 @@
       drawFrame($("cv-169"));
       drawFrame($("cv-916"));
     }
+    refTick();
     requestAnimationFrame(loop);
   }
 
@@ -1718,6 +1725,7 @@
     if (bs) bs.disabled = !(rec.on || vox.state !== "idle");
     var mc = $("vox-check");
     if (mc) { mc.disabled = vox.state !== "idle"; mc.classList.toggle("on", vox.check); mc.textContent = vox.check ? "Stop mic check" : "Mic check"; }
+    refVoxChanged();
   }
   function click(t, accent) {
     var o = ctx.createOscillator(), g = ctx.createGain();
@@ -2308,6 +2316,821 @@
     });
   }
 
+  /* ---------------- Reference track (A/B + level match) ----------------
+   * Monitor-only. Live graph:
+   *   refSrc → refN.fader → refN.gate → ctx.destination      (reference, speakers only)
+   *   master → masterAnalyser → beatMon → ctx.destination    (beat speaker feed, A/B gate)
+   * ● Record / Record Vocals tap `master` (upstream of beatMon, never connected to the reference),
+   * and Bounce / level-match renders use their own OfflineAudioContext, so the reference can
+   * never end up in a recording, bounce or Vault file.
+   */
+  var REF_PREF_KEY = "ipb.reference.v1";
+  var REF_MAX_BYTES = 250 * 1048576;
+  var ref = {
+    ready: false, loaded: false, fileTok: 0, name: "", type: "", size: 0, bytes: null,
+    buf: null, playBuf: null, prep: null, dur: 0, peaks: null, bpm: null, lufs: null, peak: null,
+    ab: "A", playing: false, src: null, srcLoop: false, t0: 0, off: 0, pos: 0, tok: 0, syncing: false,
+    mixLufs: null, mixPeak: null, measuring: false, dirty: true, dragSel: null, lastLive: 0, pkHold: { mix: 0, ref: 0 }
+  };
+  var refPrefs = { key: "", gainDb: 0, beatTrim: 0, muted: false, sync: false, loop: false, a: 0, b: 0, cue: 0, collapsed: false, matched: null };
+  var refN = null, refMixN = null;
+
+  function dbToGain(db) { return Math.pow(10, db / 20); }
+  function gainToDb(g) { return g > 0 ? 20 * Math.log10(g) : -Infinity; }
+  function fmtDb(v, plus) {
+    if (v == null || !isFinite(v)) return v === -Infinity ? "−∞" : "—";
+    var s = Math.abs(v).toFixed(1);
+    return (v < 0 && s !== "0.0" ? "−" : plus && v > 0 ? "+" : "") + s;
+  }
+  function refLoadPrefs() {
+    try { var d = JSON.parse(localStorage.getItem(REF_PREF_KEY) || "null"); if (d) Object.keys(refPrefs).forEach(function (k) { if (d[k] !== undefined) refPrefs[k] = d[k]; }); } catch (e) { /* ignore */ }
+  }
+  function refSavePrefs() { try { localStorage.setItem(REF_PREF_KEY, JSON.stringify(refPrefs)); } catch (e) { /* ignore */ } }
+
+  /* own tiny IndexedDB (separate database so the existing vault/pads DB is untouched) */
+  var refDbP = null;
+  function refIdb(mode, fn) {
+    if (!refDbP) {
+      refDbP = new Promise(function (res, rej) {
+        if (!window.indexedDB) { rej(new Error("IndexedDB unavailable")); return; }
+        var r = indexedDB.open("islandpinbeats-ref", 1);
+        r.onupgradeneeded = function () { if (!r.result.objectStoreNames.contains("ref")) r.result.createObjectStore("ref", { keyPath: "id" }); };
+        r.onsuccess = function () { res(r.result); };
+        r.onerror = function () { rej(r.error); };
+      });
+    }
+    return refDbP.then(function (d) {
+      return new Promise(function (res, rej) {
+        var tx = d.transaction("ref", mode), req = fn(tx.objectStore("ref"));
+        tx.oncomplete = function () { res(req ? req.result : undefined); };
+        tx.onerror = function () { rej(tx.error); };
+        tx.onabort = function () { rej(tx.error); };
+      });
+    });
+  }
+
+  /* ---- loudness: ITU-R BS.1770-style K-weighting (coefficients for any sample rate, as in libebur128) ---- */
+  function kCoeffs(sr) {
+    var f0 = 1681.974450955533, G = 3.999843853973347, Q = 0.7071752369554196;
+    var K = Math.tan(Math.PI * f0 / sr), Vh = Math.pow(10, G / 20), Vb = Math.pow(Vh, 0.4996667741545416);
+    var a0 = 1 + K / Q + K * K;
+    var shelf = { b: [(Vh + Vb * K / Q + K * K) / a0, 2 * (K * K - Vh) / a0, (Vh - Vb * K / Q + K * K) / a0], a: [1, 2 * (K * K - 1) / a0, (1 - K / Q + K * K) / a0] };
+    f0 = 38.13547087602444; Q = 0.5003270373238773;
+    K = Math.tan(Math.PI * f0 / sr);
+    var d = 1 + K / Q + K * K;
+    var hp = { b: [1, -2, 1], a: [1, 2 * (K * K - 1) / d, (1 - K / Q + K * K) / d] };
+    return { shelf: shelf, hp: hp };
+  }
+  /* integrated loudness (400 ms blocks, 75 % overlap, −70 LUFS absolute + −10 LU relative gate) and sample peak */
+  function measureLoudness(chs, sr) {
+    var k = kCoeffs(sr), sub = Math.round(sr * 0.1), n = chs[0].length, nSub = Math.floor(n / sub);
+    var ms = new Float64Array(Math.max(1, nSub)), peak = 0;
+    var sb0 = k.shelf.b[0], sb1 = k.shelf.b[1], sb2 = k.shelf.b[2], sa1 = k.shelf.a[1], sa2 = k.shelf.a[2];
+    var hb0 = k.hp.b[0], hb1 = k.hp.b[1], hb2 = k.hp.b[2], ha1 = k.hp.a[1], ha2 = k.hp.a[2];
+    for (var c = 0; c < chs.length; c++) {
+      var x = chs[c], x1 = 0, x2 = 0, y1 = 0, y2 = 0, z1 = 0, z2 = 0, acc = 0, cnt = 0, si = 0;
+      for (var i = 0; i < n; i++) {
+        var xi = x[i], ab = xi < 0 ? -xi : xi;
+        if (ab > peak) peak = ab;
+        var yi = sb0 * xi + sb1 * x1 + sb2 * x2 - sa1 * y1 - sa2 * y2;
+        x2 = x1; x1 = xi;
+        var zi = hb0 * yi + hb1 * y1 + hb2 * y2 - ha1 * z1 - ha2 * z2;
+        y2 = y1; y1 = yi; z2 = z1; z1 = zi;
+        acc += zi * zi;
+        if (++cnt === sub) { if (si < nSub) ms[si] += acc / sub; si++; acc = 0; cnt = 0; }
+      }
+    }
+    var L = function (z) { return -0.691 + 10 * Math.log10(z); };
+    var blocks = [];
+    for (var j = 0; j + 4 <= nSub; j++) blocks.push((ms[j] + ms[j + 1] + ms[j + 2] + ms[j + 3]) / 4);
+    var abs = blocks.filter(function (z) { return z > 0 && L(z) > -70; });
+    var lufs = -Infinity;
+    if (abs.length) {
+      var rel = L(abs.reduce(function (a, b) { return a + b; }, 0) / abs.length) - 10;
+      var gated = abs.filter(function (z) { return L(z) > rel; });
+      if (gated.length) lufs = L(gated.reduce(function (a, b) { return a + b; }, 0) / gated.length);
+    }
+    return { lufs: lufs, peak: peak };
+  }
+  function bufChannels(b) { // mono plays as dual-mono (L = R), so measure it that way
+    var c0 = b.getChannelData(0);
+    return [c0, b.numberOfChannels > 1 ? b.getChannelData(1) : c0];
+  }
+
+  /* ---- tempo estimate ----
+   * Per-band (low / mid / high) spectral-flux onsets → summed autocorrelation → metrical comb
+   * (½, 1, 2, 4, 8 × period), folded into 80–160 BPM. Only reported when the pulse is clear
+   * (prominence, peaky onsets, no strong non-octave rival such as 2/3 or 3/4) and 15 s segments agree;
+   * otherwise nothing is shown — never a guess.
+   */
+  function refTempoStats(c0, c1, sr) {
+    var n = c0.length;
+    if (n / sr < 10) return null;
+    var ds = Math.max(1, Math.round(sr / 11025)), dsr = sr / ds, m = Math.floor(n / ds);
+    var x = new Float32Array(m);
+    for (var i = 0, o = 0; i < m; i++) { var s = 0; for (var j = 0; j < ds; j++, o++) s += c0[o] + c1[o]; x[i] = s / (2 * ds); }
+    var N = 512, hop = 128, fps = dsr / hop, nf = Math.floor((m - N) / hop);
+    if (nf < 400) return null;
+    var win = new Float32Array(N); for (i = 0; i < N; i++) win[i] = 0.5 - 0.5 * Math.cos(2 * Math.PI * i / N);
+    var re = new Float64Array(N), im = new Float64Array(N), prev = new Float32Array(N / 2), cur = new Float32Array(N / 2);
+    var rev = new Uint16Array(N); for (i = 0; i < N; i++) { var r = 0; for (var b = 1, k = i; b < N; b <<= 1, k >>= 1) r = (r << 1) | (k & 1); rev[i] = r; }
+    var cosT = new Float64Array(N / 2), sinT = new Float64Array(N / 2);
+    for (i = 0; i < N / 2; i++) { cosT[i] = Math.cos(2 * Math.PI * i / N); sinT[i] = -Math.sin(2 * Math.PI * i / N); }
+    var binHz = dsr / N, edges = [1, Math.round(200 / binHz), Math.round(2000 / binHz), N / 2], NB = 3, BW = [2, 1, 0.5];
+    var env = [new Float32Array(nf), new Float32Array(nf), new Float32Array(nf)];
+    for (var f = 0; f < nf; f++) {
+      var base = f * hop;
+      for (i = 0; i < N; i++) { re[rev[i]] = x[base + i] * win[i]; im[rev[i]] = 0; }
+      for (var size = 2; size <= N; size <<= 1) {
+        var half = size >> 1, step = N / size;
+        for (var st = 0; st < N; st += size) for (k = 0; k < half; k++) {
+          var tr = cosT[k * step], ti = sinT[k * step], a = st + k, bb = a + half;
+          var xr = re[bb] * tr - im[bb] * ti, xi = re[bb] * ti + im[bb] * tr;
+          re[bb] = re[a] - xr; im[bb] = im[a] - xi; re[a] += xr; im[a] += xi;
+        }
+      }
+      for (k = 1; k < N / 2; k++) cur[k] = Math.log(1 + 100 * Math.sqrt(re[k] * re[k] + im[k] * im[k]));
+      for (var bd = 0; bd < NB; bd++) {
+        var fl = 0;
+        if (f) for (k = edges[bd]; k < edges[bd + 1]; k++) { var d = cur[k] - prev[k]; if (d > 0) fl += d; }
+        env[bd][f] = fl;
+      }
+      var t = prev; prev = cur; cur = t;
+    }
+    // per band: remove the local mean (~0.5 s), half-wave rectify, normalise to unit RMS
+    var w = Math.max(1, Math.round(fps * 0.25)), on = [], peaky = [];
+    for (bd = 0; bd < NB; bd++) {
+      var e = env[bd], cs = new Float64Array(nf + 1), ob = new Float32Array(nf), ss = 0;
+      for (i = 0; i < nf; i++) cs[i + 1] = cs[i] + e[i];
+      for (i = 0; i < nf; i++) { var lo = Math.max(0, i - w), hi = Math.min(nf, i + w + 1); ob[i] = Math.max(0, e[i] - (cs[hi] - cs[lo]) / (hi - lo)); ss += ob[i] * ob[i]; }
+      // light smoothing (≈±2 frames) so onsets that fall between frames still line up in the autocorrelation
+      var sm = new Float32Array(nf), K = [0.06, 0.24, 0.4, 0.24, 0.06]; ss = 0;
+      for (i = 0; i < nf; i++) { var acc = 0; for (var kk = -2; kk <= 2; kk++) { var ii = i + kk; if (ii >= 0 && ii < nf) acc += K[kk + 2] * ob[ii]; } sm[i] = acc; ss += acc * acc; }
+      // peakiness of this band's onsets (drums: sharp spikes; noise / sustained tones: flat)
+      var srt = Array.prototype.slice.call(sm).sort(function (p, q) { return p - q; });
+      peaky.push((srt[Math.floor(nf * 0.98)] + 1e-9) / (srt[Math.floor(nf * 0.5)] + 1e-3 * srt[Math.floor(nf * 0.98)] + 1e-9));
+      var rms = Math.sqrt(ss / nf) || 1;
+      for (i = 0; i < nf; i++) sm[i] /= rms;
+      on.push(sm);
+    }
+    var minL = fps * 60 / 160, maxL = fps * 60 / 80, H = 8;
+    function tempoOf(s, e) {
+      var maxLag = Math.min(Math.ceil(maxL * H) + 2, Math.floor((e - s) / 2));
+      if (maxLag < maxL * 4 + 2) return null;
+      var ac = new Float64Array(maxLag + 2);
+      for (var bd2 = 0; bd2 < NB; bd2++) {
+        var ob2 = on[bd2], wt = BW[bd2];
+        for (var lag = 0; lag <= maxLag; lag++) { var sum = 0; for (var q = s; q + lag < e; q++) sum += ob2[q] * ob2[q + lag]; ac[lag] += wt * sum / (e - s - lag); }
+      }
+      var acAt = function (v) { var i0 = Math.floor(v), fr = v - i0; return i0 + 1 > maxLag ? 0 : ac[i0] * (1 - fr) + ac[i0 + 1] * fr; };
+      var useH8 = 8 * maxL + 1 < maxLag;
+      var score = function (L) { return 0.5 * acAt(L / 2) + acAt(L) + acAt(2 * L) + acAt(4 * L) + (useH8 ? acAt(8 * L) : 0); };
+      var best = -1, bestL = 0, vals = [];
+      for (var L = minL; L <= maxL; L += 0.1) { var v = score(L); vals.push(v); if (v > best) { best = v; bestL = L; } }
+      var mean = vals.reduce(function (a, c) { return a + c; }, 0) / vals.length;
+      var sd = Math.sqrt(vals.reduce(function (a, c) { return a + (c - mean) * (c - mean); }, 0) / vals.length) || 1e-12;
+      var rival = mean;
+      for (L = minL; L <= maxL; L += 0.1) {
+        var ratio = L / bestL, oct = Math.abs(Math.log(ratio) / Math.LN2 - Math.round(Math.log(ratio) / Math.LN2));
+        if (Math.abs(ratio - 1) < 0.04 || oct < 0.03) continue;
+        var vv = score(L); if (vv > rival) rival = vv;
+      }
+      // precision: locate the autocorrelation peak near the longest usable multiple of the period
+      var mult = Math.floor((maxLag - 2) / bestL); mult = mult >= 8 ? 8 : mult >= 4 ? 4 : mult >= 2 ? 2 : 1;
+      var c = Math.round(bestL * mult), pk = c, rng = Math.max(2, Math.round(mult * 0.6));
+      for (var z = c - rng; z <= c + rng; z++) if (z > 0 && z < maxLag && ac[z] > ac[pk]) pk = z;
+      var y0 = ac[pk - 1], y1 = ac[pk], y2 = ac[pk + 1], den = y0 - 2 * y1 + y2, off = den < 0 ? 0.5 * (y0 - y2) / den : 0;
+      var fine = (pk + clampF(off, -0.5, 0.5)) / mult;
+      if (Math.abs(fine - bestL) / bestL > 0.02) fine = bestL;
+      return { bpm: 60 * fps / fine, prom: (best - mean) / sd, margin: (best - mean) / Math.max(1e-12, rival - mean), nac: acAt(bestL) / ac[0] };
+    }
+    function clampF(v, a, b) { return Math.max(a, Math.min(b, v)); }
+    var all = tempoOf(0, nf);
+    if (!all) return null;
+    var segLen = Math.round(fps * 15), segs = [];
+    if (nf >= segLen * 2) {
+      var count = Math.min(6, Math.floor(nf / segLen)), stepF = (nf - segLen) / Math.max(1, count - 1);
+      for (var si = 0; si < count; si++) { var s0 = Math.round(si * stepF), rr = tempoOf(s0, s0 + segLen); if (rr) segs.push(rr); }
+    }
+    var agree = segs.length ? segs.filter(function (q) { return Math.abs(q.bpm - all.bpm) / all.bpm < 0.02; }).length / segs.length : 0;
+    return { bpm: all.bpm, prom: all.prom, margin: all.margin, nac: all.nac, agree: agree, segs: segs.length, peaky: Math.max.apply(null, peaky) };
+  }
+  function refEstimateBpm(b) {
+    var ch = bufChannels(b), r = refTempoStats(ch[0], ch[1], b.sampleRate);
+    if (!r || !isFinite(r.bpm)) return null;
+    var ok = r.prom >= 3.6 && r.margin >= 1.1 && r.peaky >= 10;
+    if (r.segs >= 2) ok = ok && r.agree >= 0.6;
+    else ok = ok && r.prom >= 4 && r.margin >= 1.15;
+    if (!ok) return null;
+    var bpm = Math.round(r.bpm);
+    return { bpm: bpm, alt: bpm >= 120 ? Math.round(bpm / 2) : Math.round(bpm * 2) };
+  }
+
+  /* ---- decode / install ---- */
+  function refDecodeOffline(ab) {
+    return new Promise(function (res, rej) {
+      var c = new OfflineAudioContext(2, 1, ctx ? ctx.sampleRate : SR);
+      var done = false;
+      var p = c.decodeAudioData(ab, function (b) { done = true; res(b); }, function (err) { if (!done) rej(err || new Error("decode")); });
+      if (p && p.catch) p.catch(function (err) { if (!done) rej(err || new Error("decode")); });
+    });
+  }
+  function refComputePeaks(b) {
+    var cols = 1600, ch = bufChannels(b), n = b.length, per = Math.max(1, Math.floor(n / cols));
+    var mins = new Float32Array(cols), maxs = new Float32Array(cols);
+    var stride = Math.max(1, Math.floor(per / 256));
+    for (var c = 0; c < cols; c++) {
+      var lo = 0, hi = 0, s = c * per, e = Math.min(n, s + per);
+      for (var i = s; i < e; i += stride) { var v = (ch[0][i] + ch[1][i]) * 0.5; if (v < lo) lo = v; if (v > hi) hi = v; }
+      mins[c] = lo; maxs[c] = hi;
+    }
+    return { mins: mins, maxs: maxs, cols: cols };
+  }
+  function refInstall(meta, buf) {
+    refStopSrc(); ref.playing = false; ref.syncing = false;
+    ref.fileTok++;
+    ref.loaded = true; ref.name = meta.name; ref.type = meta.type || ""; ref.size = meta.size || 0; ref.bytes = meta.bytes;
+    ref.buf = buf; ref.playBuf = null; ref.prep = null; ref.dur = buf.duration;
+    ref.peaks = refComputePeaks(buf); ref.bpm = null; ref.lufs = null; ref.peak = null; ref.pos = 0;
+    var key = meta.name + "|" + meta.size;
+    if (refPrefs.key !== key) {
+      refPrefs.key = key; refPrefs.gainDb = 0; refPrefs.beatTrim = 0; refPrefs.muted = false; refPrefs.loop = false;
+      refPrefs.a = 0; refPrefs.b = 0; refPrefs.cue = 0; refPrefs.matched = null; refSavePrefs();
+    }
+    if (refPrefs.b > ref.dur) { refPrefs.a = 0; refPrefs.b = 0; refPrefs.loop = false; }
+    if (refPrefs.cue > ref.dur) refPrefs.cue = 0;
+    ref.pos = refPrefs.cue;
+    var tok = ref.fileTok;
+    setTimeout(function () { // analysis after first paint
+      if (tok !== ref.fileTok || !ref.buf) return;
+      var m = measureLoudness(bufChannels(ref.buf), ref.buf.sampleRate);
+      ref.lufs = m.lufs; ref.peak = m.peak;
+      ref.analysed = true;
+      refUI();
+      setTimeout(function () { // tempo in a separate task so the UI can paint in between
+        if (tok !== ref.fileTok || !ref.buf) return;
+        try { ref.bpm = refEstimateBpm(ref.buf); } catch (e) { ref.bpm = null; }
+        ref.bpmDone = true;
+        refUI();
+        refPreparePlayBuf();
+      }, 16);
+    }, 30);
+    ref.bpmDone = false;
+    ref.analysed = false;
+    refApplyGates(); ref.dirty = true; refUI();
+  }
+  /* play at the device rate: re-decode with the live context (its resampler) instead of resampling on the fly */
+  function refPreparePlayBuf() {
+    if (!ctx || !ref.loaded || !ref.bpmDone) return;
+    if (ref.playBuf || ref.prep) return;
+    if (ref.buf.sampleRate === ctx.sampleRate || !ref.bytes) { ref.playBuf = ref.buf; return; }
+    var tok = ref.fileTok;
+    ref.prep = new Promise(function (res) {
+      var done = false;
+      var p = ctx.decodeAudioData(ref.bytes.slice(0), function (b) { done = true; res(b); }, function () { if (!done) res(null); });
+      if (p && p.catch) p.catch(function () { if (!done) res(null); });
+    }).then(function (b) {
+      ref.prep = null;
+      if (tok !== ref.fileTok) return;
+      ref.playBuf = b || ref.buf;
+      if (b) { ref.buf = b; ref.bytes = null; } // keep one decoded copy in memory (the file itself stays in IndexedDB)
+    });
+  }
+  function refLoadFile(file) {
+    if (!file) return;
+    if (file.size > REF_MAX_BYTES) { toast("That file is too big (max 250 MB)."); return; }
+    if (file.type && !/^audio\//.test(file.type) && !/\.(mp3|wav|m4a|aac|mp4|ogg|oga|opus|flac|webm|aiff?)$/i.test(file.name)) {
+      toast("Please choose an audio file (MP3, WAV, M4A/AAC, OGG, FLAC).");
+      return;
+    }
+    refSetNames("Decoding " + file.name + "…");
+    file.arrayBuffer().then(function (ab) {
+      return refDecodeOffline(ab.slice(0)).then(function (buf) {
+        refInstall({ name: file.name, type: file.type, size: file.size, bytes: ab }, buf);
+        toast("Reference loaded: " + file.name);
+        return refIdb("readwrite", function (st) {
+          return st.put({ id: "current", name: file.name, type: file.type, size: file.size, added: Date.now(), data: ab });
+        }).catch(function () { toast("Reference loaded for this session only (browser storage full or blocked)."); });
+      }, function () {
+        refUI();
+        toast("This browser can't decode “" + file.name + "”. Try MP3 or WAV.");
+      });
+    }).catch(function () { refUI(); toast("Could not read that file."); });
+  }
+  function refLoadStored() {
+    return refIdb("readonly", function (st) { return st.get("current"); }).then(function (row) {
+      if (!row || !row.data) return;
+      return refDecodeOffline(row.data.slice(0)).then(function (buf) {
+        refInstall({ name: row.name, type: row.type, size: row.size, bytes: row.data }, buf);
+      });
+    }).catch(function () { /* nothing stored / storage blocked / undecodable */ });
+  }
+  function refRemove() {
+    if (!ref.loaded) return;
+    if (!confirm("Remove the reference track from this browser?")) return;
+    refStopSrc();
+    ref.fileTok++;
+    ref.loaded = false; ref.playing = false; ref.syncing = false; ref.buf = ref.playBuf = ref.bytes = null; ref.peaks = null;
+    ref.bpm = null; ref.lufs = ref.peak = null; ref.ab = "A"; ref.pos = 0; ref.name = "";
+    refPrefs.key = ""; refPrefs.gainDb = 0; refPrefs.beatTrim = 0; refPrefs.muted = false; refPrefs.loop = false; refPrefs.a = refPrefs.b = refPrefs.cue = 0; refPrefs.matched = null;
+    refSavePrefs();
+    refIdb("readwrite", function (st) { return st.delete("current"); }).catch(function () {});
+    refApplyGates(); ref.dirty = true; refUI();
+    toast("Reference removed");
+  }
+
+  /* ---- audio nodes ---- */
+  function refMeterChain(input, sink) {
+    var up = ctx.createGain(); // force stereo so mono sources measure as dual-mono (like the WAV exports)
+    up.channelCount = 2; up.channelCountMode = "explicit"; up.channelInterpretation = "speakers";
+    input.connect(up);
+    var k = kCoeffs(ctx.sampleRate), f1, f2;
+    try {
+      f1 = ctx.createIIRFilter(k.shelf.b, k.shelf.a);
+      f2 = ctx.createIIRFilter(k.hp.b, k.hp.a);
+    } catch (e) {
+      f1 = ctx.createBiquadFilter(); f1.type = "highshelf"; f1.frequency.value = 1682; f1.gain.value = 4;
+      f2 = ctx.createBiquadFilter(); f2.type = "highpass"; f2.frequency.value = 38; f2.Q.value = -6;
+    }
+    up.connect(f1); f1.connect(f2);
+    var mk = function (fft) { var a = ctx.createAnalyser(); a.fftSize = fft; a.smoothingTimeConstant = 0; a.connect(sink); return a; };
+    var o = { kL: mk(32768), kR: mk(32768), pL: mk(2048), pR: mk(2048), spec: mk(4096) };
+    o.spec.smoothingTimeConstant = 0.82;
+    var ks = ctx.createChannelSplitter(2), ps = ctx.createChannelSplitter(2);
+    f2.connect(ks); up.connect(ps);
+    ks.connect(o.kL, 0); ks.connect(o.kR, 1);
+    ps.connect(o.pL, 0); ps.connect(o.pR, 1);
+    up.connect(o.spec);
+    return o;
+  }
+  function refOnCtx() {
+    if (refN || !ctx || !master) return;
+    var sink = ctx.createGain(); sink.gain.value = 0; sink.connect(ctx.destination); // keeps analysers pulled, inaudible
+    refN = { fader: ctx.createGain(), gate: ctx.createGain(), outRef: ctx.createAnalyser(), outBeat: ctx.createAnalyser() };
+    refN.gate.gain.value = 0;
+    refN.fader.connect(refN.gate);
+    refN.gate.connect(ctx.destination);
+    refN.meter = refMeterChain(refN.fader, sink);
+    refMixN = refMeterChain(master, sink);
+    // post-gate taps: what actually reaches the speakers from each side
+    refN.outRef.fftSize = 2048; refN.outBeat.fftSize = 2048;
+    refN.gate.connect(refN.outRef); refN.outRef.connect(sink);
+    beatMon.connect(refN.outBeat); refN.outBeat.connect(sink);
+    refApplyGates();
+    refPreparePlayBuf();
+  }
+  function refLocked() { return vox.state !== "idle"; }
+  function refApplyGates() {
+    if (refLocked() && ref.ab === "B") ref.ab = "A";
+    var bOn = ref.ab === "B" && ref.loaded;
+    if (!ctx || !beatMon) return;
+    var t = ctx.currentTime;
+    // A side: optional monitor-only trim from Level match (speakers only; recordings tap `master` before this)
+    beatMon.gain.setTargetAtTime(bOn ? 0 : ref.loaded ? dbToGain(refPrefs.beatTrim || 0) : 1, t, 0.008);
+    if (refN) {
+      refN.gate.gain.setTargetAtTime(bOn ? 1 : 0, t, 0.008);
+      refN.fader.gain.setTargetAtTime(refPrefs.muted ? 0 : dbToGain(refPrefs.gainDb), t, 0.01);
+    }
+  }
+  function refVoxChanged() {
+    if (!ref.ready) return;
+    if (refLocked()) {
+      if (ref.playing) refPause();
+      if (ref.ab === "B") { refApplyGates(); toast("Record Vocals: monitoring your beat (reference off)"); }
+    }
+    refApplyGates(); refUI();
+  }
+
+  /* ---- transport ---- */
+  function refRegion() {
+    return refPrefs.loop && refPrefs.b - refPrefs.a >= 0.05 ? { a: refPrefs.a, b: refPrefs.b } : null;
+  }
+  function refPos() {
+    if (!ref.playing || !ctx) return ref.pos;
+    var p = ref.off + Math.max(0, ctx.currentTime - ref.t0);
+    var r = refRegion();
+    if (ref.srcLoop && r && p >= r.b) p = r.a + ((p - r.a) % (r.b - r.a));
+    return Math.min(p, ref.dur);
+  }
+  function refStopSrc() {
+    if (!ref.src) return;
+    ref.tok++;
+    try { ref.src.stop(); } catch (e) { /* not started */ }
+    try { ref.src.disconnect(); } catch (e) { /* ignore */ }
+    ref.src = null;
+  }
+  function refStart(offset, when) {
+    if (!ref.loaded || !ensureCtx() || !refN) return;
+    if (refLocked()) { toast("The reference is off while recording vocals."); return; }
+    refStopSrc();
+    var b = ref.playBuf || ref.buf;
+    if (!b) return;
+    var r = refRegion();
+    offset = clamp(offset || 0, 0, ref.dur);
+    if (r && (offset < r.a || offset >= r.b)) offset = r.a;
+    if (!r && offset >= ref.dur - 0.02) offset = 0;
+    var s = ctx.createBufferSource();
+    s.buffer = b;
+    if (r) { s.loop = true; s.loopStart = r.a; s.loopEnd = r.b; }
+    s.connect(refN.fader);
+    when = Math.max(when || 0, ctx.currentTime);
+    s.start(when, offset);
+    var tok = ++ref.tok;
+    s.onended = function () {
+      if (tok !== ref.tok) return;
+      ref.src = null; ref.playing = false; ref.syncing = false; ref.pos = 0; ref.dirty = true; refUI();
+    };
+    ref.src = s; ref.srcLoop = !!r; ref.playing = true; ref.t0 = when; ref.off = offset; ref.dirty = true;
+    refUI();
+  }
+  function refPause() {
+    if (!ref.playing) return;
+    ref.pos = refPos(); refStopSrc(); ref.playing = false; ref.syncing = false; ref.dirty = true; refUI();
+  }
+  function refTogglePlay() {
+    if (!ref.loaded) return;
+    if (ref.playing) refPause(); else { ref.syncing = false; refStart(ref.pos); }
+  }
+  function refCuePoint() { var r = refRegion(); return r ? r.a : refPrefs.cue; }
+  function refSeek(t) {
+    t = clamp(t, 0, ref.dur);
+    refPrefs.cue = t; refSavePrefs();
+    if (ref.playing) refStart(t); else ref.pos = t;
+    ref.dirty = true; refUI();
+  }
+  function refRestartIfPlaying() { if (ref.playing) refStart(refPos(), 0); ref.dirty = true; }
+  function refOnBeatPlay(t) {
+    if (!ref.loaded || !refPrefs.sync || refLocked() || !refN) return;
+    refStart(refCuePoint(), t);
+    ref.syncing = true;
+  }
+  function refOnBeatStop() {
+    if (!ref.syncing) return;
+    ref.syncing = false;
+    refStopSrc(); ref.playing = false;
+    ref.pos = refCuePoint(); ref.dirty = true; refUI();
+  }
+  function refSetAB(v) {
+    if (!ref.loaded) { ref.ab = "A"; toast("Load a reference track first (Beats tab → Reference track)."); refUI(); return; }
+    if (v === "B" && refLocked()) { toast("A/B stays on your beat while recording vocals."); return; }
+    ref.ab = v;
+    if (v === "B" && !ref.playing) { ref.syncing = false; refStart(ref.pos); } // B needs the reference running
+    ensureCtx();
+    refApplyGates(); refUI();
+  }
+  function refToggleAB() { refSetAB(ref.ab === "B" ? "A" : "B"); }
+
+  /* ---- level match: offline render of the loop (same engine as Bounce, nothing saved) ---- */
+  function refRenderMix(bars) {
+    var sd = stepDur(), total = bars * STEPS, dur = total * sd + 0.5;
+    var c = new OfflineAudioContext(2, Math.ceil(SR * dur), SR);
+    var cp = c.createDynamicsCompressor();
+    cp.threshold.value = -10; cp.ratio.value = 4; cp.attack.value = 0.003; cp.release.value = 0.15;
+    var m = c.createGain();
+    m.gain.value = mixGain("master");
+    cp.connect(m); m.connect(c.destination);
+    var gn = {};
+    GROUPS.forEach(function (g) { var nd = c.createGain(); nd.gain.value = mixGain(g.id); nd.connect(cp); gn[g.id] = nd; });
+    var reg = [], creg = [];
+    for (var k = 0; k < total; k++) scheduleStep(c, { k: k, patStep: k % STEPS, fire: true, feel: "full", mb: k / STEPS }, k * sd, gn, reg, creg, k === 0);
+    cutChords(creg, total * sd);
+    return c.startRendering();
+  }
+  function refLevelMatch() {
+    if (!ref.loaded || ref.measuring) return;
+    if (!ref.analysed) { toast("Still analysing the reference — try again in a moment."); return; }
+    if (!isFinite(ref.lufs)) { refStatus("The reference is silent — nothing to match."); return; }
+    if (!patternHasNotes() && !S.chordTrack.on) { refStatus("Your beat is empty — add some steps first."); return; }
+    ref.measuring = true; refUI();
+    refStatus("Measuring your mix (8-bar render)…");
+    refRenderMix(8).then(function (b) {
+      var m = measureLoudness([b.getChannelData(0), b.getChannelData(1)], b.sampleRate);
+      ref.measuring = false;
+      ref.mixLufs = m.lufs; ref.mixPeak = m.peak;
+      if (!isFinite(m.lufs)) { refStatus("Your mix measured silent (muted channels?) — nothing to match."); refUI(); return; }
+      // turn the louder side down; only boost the reference as far as its peaks allow (≤ −0.5 dBFS)
+      var want = m.lufs - ref.lufs;
+      var headroom = ref.peak > 0 ? Math.max(0, -gainToDb(ref.peak) - 0.5) : 0;
+      var g = want < 0 ? Math.max(want, -30) : Math.min(want, headroom, 12);
+      var trim = want > g ? Math.max(-30, -(want - g)) : 0;
+      refPrefs.gainDb = Math.round(g * 10) / 10;
+      refPrefs.beatTrim = Math.round(trim * 10) / 10;
+      refPrefs.muted = false;
+      refPrefs.matched = { mix: m.lufs, ref: ref.lufs, gain: refPrefs.gainDb, trim: refPrefs.beatTrim, at: Date.now() };
+      refSavePrefs(); refApplyGates(); refUI();
+      var full = Math.abs(want - g + trim) < 0.06;
+      refStatus("Matched — Ref fader " + fmtDb(refPrefs.gainDb, true) + " dB" +
+        (refPrefs.beatTrim ? " and beat monitor " + fmtDb(refPrefs.beatTrim) + " dB (speakers only — the reference is quieter and can't be raised further without clipping)" : "") +
+        ". Mix ≈ " + fmtDb(m.lufs) + " LUFS, reference ≈ " + fmtDb(ref.lufs) + " LUFS" + (full ? "." : ". Limited by the fader range, so not fully matched."));
+    }).catch(function (e) { ref.measuring = false; refUI(); refStatus("Measurement failed: " + (e && e.message ? e.message : e)); });
+  }
+  function refStatus(msg) { var el = $("ref-match-status"); if (el) el.textContent = msg; }
+
+  /* ---- drawing ---- */
+  function refSizeCanvas(cv) {
+    var dpr = Math.min(2, window.devicePixelRatio || 1), w = Math.round(cv.clientWidth * dpr), h = Math.round(cv.clientHeight * dpr);
+    if (w && h && (cv.width !== w || cv.height !== h)) { cv.width = w; cv.height = h; cv._base = null; }
+    return w > 0 && h > 0;
+  }
+  function refWaveLayer(cv, color) {
+    var c = document.createElement("canvas"); c.width = cv.width; c.height = cv.height;
+    var g = c.getContext("2d"), W = c.width, H = c.height, P = ref.peaks, mid = H / 2;
+    var bw = Math.max(1, Math.round(W / 700));
+    g.fillStyle = color;
+    for (var x = 0; x < W; x += bw) {
+      var i0 = Math.floor((x / W) * P.cols), i1 = Math.max(i0 + 1, Math.floor(((x + bw) / W) * P.cols));
+      var lo = 0, hi = 0;
+      for (var i = i0; i < i1 && i < P.cols; i++) { if (P.mins[i] < lo) lo = P.mins[i]; if (P.maxs[i] > hi) hi = P.maxs[i]; }
+      var top = mid - hi * mid * 0.95, bot = mid - lo * mid * 0.95;
+      g.fillRect(x, top, Math.max(1, bw - (bw > 2 ? 1 : 0)), Math.max(1, bot - top));
+    }
+    return c;
+  }
+  function refDrawWave(cv) {
+    if (!cv.offsetParent || !refSizeCanvas(cv)) return;
+    var g = cv.getContext("2d"), W = cv.width, H = cv.height;
+    g.clearRect(0, 0, W, H);
+    if (!ref.loaded || !ref.peaks) return;
+    if (!cv._base) cv._base = { a: refWaveLayer(cv, "#3b4560"), b: refWaveLayer(cv, "#a78bfa") };
+    var px = function (t) { return (t / ref.dur) * W; };
+    var reg = ref.dragSel || (refPrefs.b - refPrefs.a >= 0.05 ? { a: refPrefs.a, b: refPrefs.b } : null);
+    if (reg) {
+      g.fillStyle = ref.dragSel || refPrefs.loop ? "rgba(34,211,238,.14)" : "rgba(138,147,168,.10)";
+      g.fillRect(px(reg.a), 0, px(reg.b) - px(reg.a), H);
+    }
+    g.drawImage(cv._base.a, 0, 0);
+    var pos = refPos(), x = px(pos);
+    if (x > 0) g.drawImage(cv._base.b, 0, 0, x, H, 0, 0, x, H);
+    if (reg) {
+      g.fillStyle = refPrefs.loop || ref.dragSel ? "#22d3ee" : "#56607a";
+      g.fillRect(px(reg.a), 0, 2, H); g.fillRect(px(reg.b) - 2, 0, 2, H);
+    }
+    if (!refRegion() && refPrefs.cue > 0) { g.fillStyle = "rgba(250,204,21,.8)"; g.fillRect(px(refPrefs.cue), 0, 2, Math.round(H * 0.18)); }
+    g.fillStyle = "#fff"; g.fillRect(Math.min(W - 2, x), 0, 2, H);
+  }
+  function refDrawSpectrum() {
+    var cv = $("ref-spec");
+    if (!cv || !cv.offsetParent || !refSizeCanvas(cv)) return;
+    var g = cv.getContext("2d"), W = cv.width, H = cv.height;
+    g.fillStyle = "#0e1118"; g.fillRect(0, 0, W, H);
+    var fMin = 30, fMax = 18000, dMin = -100, dMax = -20, lx = Math.log(fMax / fMin);
+    var fx = function (f) { return (Math.log(f / fMin) / lx) * W; };
+    var dy = function (d) { return H - ((clamp(d, dMin, dMax) - dMin) / (dMax - dMin)) * H; };
+    g.strokeStyle = "#1c2230"; g.lineWidth = 1; g.fillStyle = "#56607a";
+    g.font = Math.round(10 * Math.min(2, window.devicePixelRatio || 1)) + "px ui-monospace, monospace";
+    [50, 100, 200, 500, 1000, 2000, 5000, 10000].forEach(function (f) {
+      var x = Math.round(fx(f)) + 0.5; g.beginPath(); g.moveTo(x, 0); g.lineTo(x, H); g.stroke();
+      g.fillText(f >= 1000 ? f / 1000 + "k" : String(f), x + 3, H - 4);
+    });
+    if (!refN || !refMixN) return;
+    function curve(an, stroke, fill) {
+      var data = an._fd || (an._fd = new Float32Array(an.frequencyBinCount));
+      an.getFloatFrequencyData(data);
+      var binHz = ctx.sampleRate / an.fftSize, any = false;
+      g.beginPath(); g.moveTo(0, H);
+      for (var x = 0; x <= W; x += 2) {
+        var f = fMin * Math.exp((x / W) * lx), bi = f / binHz, i0 = Math.floor(bi), fr = bi - i0;
+        var i1 = Math.min(data.length - 1, i0 + 1), v = data[i0] * (1 - fr) + data[i1] * fr;
+        if (isFinite(v) && v > dMin) any = true;
+        g.lineTo(x, dy(isFinite(v) ? v : dMin));
+      }
+      if (!any) return;
+      g.lineTo(W, H); g.closePath();
+      if (fill) { g.fillStyle = fill; g.fill(); }
+      g.strokeStyle = stroke; g.lineWidth = Math.max(1.5, W / 600); g.stroke();
+    }
+    curve(refMixN.spec, "#22d3ee", "rgba(34,211,238,.14)");
+    curve(refN.meter.spec, "#a78bfa", null);
+  }
+  function refTdOf(an) {
+    var d = an._td || (an._td = new Float32Array(an.fftSize));
+    an.getFloatTimeDomainData(d);
+    return d;
+  }
+  function refMs(an, n) {
+    var d = refTdOf(an), s = 0;
+    for (var i = d.length - n; i < d.length; i++) s += d[i] * d[i];
+    return s / n;
+  }
+  function refPk(o) {
+    var p = 0;
+    [o.pL, o.pR].forEach(function (an) {
+      var d = refTdOf(an);
+      for (var i = 0; i < d.length; i++) { var v = d[i] < 0 ? -d[i] : d[i]; if (v > p) p = v; }
+    });
+    return p;
+  }
+  function refMomentary(o) {
+    var n = Math.min(o.kL.fftSize, Math.round(ctx.sampleRate * 0.4));
+    var z = refMs(o.kL, n) + refMs(o.kR, n);
+    return z > 0 ? -0.691 + 10 * Math.log10(z) : -Infinity;
+  }
+  function meterPct(p) { var d = gainToDb(p); return d <= -48 ? 0 : Math.min(100, ((d + 48) / 48) * 100); }
+  function refTick() {
+    if (!ref.ready) return;
+    var onBeats = activeTab === "beats", onMix = activeTab === "mixer";
+    if ((onBeats || onMix) && ref.loaded && (ref.playing || ref.dirty)) {
+      document.querySelectorAll(".js-ref-wave").forEach(refDrawWave);
+      var tt = fmtTime(refPos()) + " / " + fmtTime(ref.dur);
+      document.querySelectorAll(".js-ref-time").forEach(function (el) { if (el.textContent !== tt) el.textContent = tt; });
+      ref.dirty = false;
+    }
+    if (onMix && ctx && refN && ref.loaded) {
+      var pm = refPk(refMixN), pr = refPk(refN.meter);
+      $("ref-meter-mix").style.height = meterPct(pm) + "%";
+      $("ref-meter-ref").style.height = meterPct(pr) + "%";
+      ref.pkHold.mix = Math.max(pm, ref.pkHold.mix * 0.97); ref.pkHold.ref = Math.max(pr, ref.pkHold.ref * 0.97);
+      var now = performance.now();
+      if (now - ref.lastLive > 150) {
+        ref.lastLive = now;
+        var mm = refMomentary(refMixN), mr = refMomentary(refN.meter);
+        $("ref-mix-m").textContent = mm > -70 ? fmtDb(mm) : "—";
+        $("ref-ref-m").textContent = mr > -70 ? fmtDb(mr) : "—";
+        $("ref-mix-lp").textContent = ref.pkHold.mix > 0.0003 ? fmtDb(gainToDb(ref.pkHold.mix)) : "—";
+        $("ref-ref-lp").textContent = ref.pkHold.ref > 0.0003 ? fmtDb(gainToDb(ref.pkHold.ref)) : "—";
+        $("ref-live-mix-pk").textContent = ref.pkHold.mix > 0.0003 ? fmtDb(gainToDb(ref.pkHold.mix)) : "—";
+      }
+      refDrawSpectrum();
+    }
+  }
+
+  /* ---- UI ---- */
+  function refSetNames(txt) { document.querySelectorAll(".js-ref-name").forEach(function (el) { el.textContent = txt; }); }
+  function refUI() {
+    if (!ref.ready) return;
+    var L = ref.loaded, B = ref.ab === "B" && L;
+    refSetNames(L ? ref.name : "No reference loaded");
+    var ext = (ref.name.match(/\.([a-z0-9]{2,5})$/i) || [])[1];
+    var meta = L ? fmtTime(ref.dur) + (ext ? " · " + ext.toUpperCase() : "") + (ref.size ? " · " + (ref.size / 1048576).toFixed(1) + " MB" : "") : "";
+    document.querySelectorAll(".js-ref-meta").forEach(function (el) { el.textContent = meta; });
+    document.querySelectorAll(".js-ref-empty").forEach(function (el) { el.hidden = L; });
+    document.querySelectorAll(".js-ref-loaded").forEach(function (el) { el.hidden = !L; });
+    document.querySelectorAll(".js-ref-ab").forEach(function (grp) {
+      grp.classList.toggle("locked", refLocked());
+      grp.querySelectorAll(".ab-btn").forEach(function (b) {
+        var on = b.dataset.ab === (B ? "B" : "A");
+        b.classList.toggle("on", on);
+        b.setAttribute("aria-pressed", on ? "true" : "false");
+        b.disabled = !L || (b.dataset.ab === "B" && refLocked());
+      });
+    });
+    document.querySelectorAll(".js-ref-play").forEach(function (b) {
+      b.disabled = !L || refLocked();
+      b.textContent = ref.playing ? "❚❚ Pause ref" : "▶ Play ref";
+      b.classList.toggle("on", ref.playing);
+    });
+    var bpmEls = document.querySelectorAll(".js-ref-bpm");
+    bpmEls.forEach(function (el) {
+      el.hidden = !(L && ref.bpm);
+      if (L && ref.bpm) {
+        el.querySelector("b").textContent = "≈" + ref.bpm.bpm + " BPM";
+        el.querySelector("small").textContent = "or " + ref.bpm.alt;
+        el.title = "Tempo estimate from the audio (half/double-time ≈" + ref.bpm.alt + " also fits)";
+      }
+    });
+    document.querySelectorAll(".js-ref-trim").forEach(function (el) {
+      el.hidden = !(L && refPrefs.beatTrim);
+      el.querySelector("b").textContent = fmtDb(refPrefs.beatTrim) + " dB";
+    });
+    var badge = $("ref-badge"); if (badge) badge.hidden = !B;
+    document.body.classList.toggle("ref-b", B);
+    var rl = $("ref-loop"); if (rl) rl.checked = !!refPrefs.loop;
+    var rs = $("ref-sync"); if (rs) rs.checked = !!refPrefs.sync;
+    var hasReg = refPrefs.b - refPrefs.a >= 0.05;
+    if (rl) rl.disabled = !hasReg;
+    var rc = $("ref-clear"); if (rc) rc.disabled = !hasReg;
+    var gi = $("ref-gain");
+    if (gi && document.activeElement !== gi) gi.value = refPrefs.gainDb;
+    var gv = $("ref-gain-val"); if (gv) gv.textContent = fmtDb(refPrefs.gainDb, true) + " dB";
+    var mu = $("ref-mute"); if (mu) mu.classList.toggle("on", !!refPrefs.muted);
+    var mb = $("ref-match"); if (mb) { mb.disabled = !L || ref.measuring; mb.textContent = ref.measuring ? "Measuring…" : "Level match"; }
+    var setT = function (id, v) { var e = $(id); if (e) e.textContent = v; };
+    setT("ref-ref-i", L && ref.analysed ? fmtDb(ref.lufs) : "—");
+    setT("ref-ref-p", L && ref.analysed ? fmtDb(gainToDb(ref.peak)) : "—");
+    setT("ref-mix-i", ref.mixLufs != null ? fmtDb(ref.mixLufs) : "—");
+    setT("ref-mix-p", ref.mixPeak != null ? fmtDb(gainToDb(ref.mixPeak)) : "—");
+    [["ref-ref-p", L && ref.analysed ? ref.peak : 0], ["ref-mix-p", ref.mixPeak || 0]].forEach(function (a) {
+      var e = $(a[0]); if (!e) return;
+      e.classList.toggle("over", a[1] > 1);
+      e.title = a[1] > 1 ? "Above 0 dBFS: clips on live playback (WAV exports are peak-normalized)" : "";
+    });
+    var body = $("ref-body"), col = $("ref-collapse");
+    if (body && col) {
+      body.hidden = !!refPrefs.collapsed;
+      col.textContent = refPrefs.collapsed ? "Show" : "Hide";
+      col.setAttribute("aria-expanded", refPrefs.collapsed ? "false" : "true");
+    }
+    ref.dirty = true;
+  }
+  function refWireWave(cv) {
+    var down = null;
+    function tAt(e) { var r = cv.getBoundingClientRect(); return clamp((e.clientX - r.left) / Math.max(1, r.width), 0, 1) * ref.dur; }
+    cv.addEventListener("pointerdown", function (e) {
+      if (!ref.loaded || e.button > 0) return;
+      down = { x: e.clientX, t: tAt(e), drag: false };
+      try { cv.setPointerCapture(e.pointerId); } catch (er) { /* ignore */ }
+    });
+    cv.addEventListener("pointermove", function (e) {
+      if (!down) return;
+      if (!down.drag && Math.abs(e.clientX - down.x) > 6) down.drag = true;
+      if (down.drag) { var t = tAt(e); ref.dragSel = { a: Math.min(down.t, t), b: Math.max(down.t, t) }; ref.dirty = true; }
+    });
+    cv.addEventListener("pointerup", function () {
+      if (!down) return;
+      var d = down, sel = ref.dragSel; down = null; ref.dragSel = null;
+      if (d.drag && sel && sel.b - sel.a >= 0.1) {
+        refPrefs.a = sel.a; refPrefs.b = sel.b; refPrefs.loop = true; refPrefs.cue = sel.a; refSavePrefs();
+        if (ref.playing) refStart(sel.a); else ref.pos = sel.a;
+        refUI();
+      } else refSeek(d.t);
+      ref.dirty = true;
+    });
+    cv.addEventListener("pointercancel", function () { down = null; ref.dragSel = null; ref.dirty = true; });
+  }
+  function refWire() {
+    document.querySelectorAll(".js-ref-file").forEach(function (inp) {
+      inp.addEventListener("change", function (e) { refLoadFile(e.target.files[0]); e.target.value = ""; });
+    });
+    document.querySelectorAll(".js-ref-drop").forEach(function (zone) {
+      var depth = 0;
+      zone.addEventListener("dragenter", function (e) { if (e.dataTransfer && Array.prototype.indexOf.call(e.dataTransfer.types || [], "Files") !== -1) { e.preventDefault(); depth++; zone.classList.add("drag"); } });
+      zone.addEventListener("dragover", function (e) { if (e.dataTransfer && Array.prototype.indexOf.call(e.dataTransfer.types || [], "Files") !== -1) { e.preventDefault(); e.dataTransfer.dropEffect = "copy"; } });
+      zone.addEventListener("dragleave", function () { depth = Math.max(0, depth - 1); if (!depth) zone.classList.remove("drag"); });
+      zone.addEventListener("drop", function (e) {
+        depth = 0; zone.classList.remove("drag");
+        var f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+        if (!f) return;
+        e.preventDefault();
+        ensureCtx();
+        refLoadFile(f);
+      });
+    });
+    document.querySelectorAll(".js-ref-ab .ab-btn").forEach(function (b) {
+      b.addEventListener("click", function () { refSetAB(b.dataset.ab); });
+    });
+    document.querySelectorAll(".js-ref-play").forEach(function (b) { b.addEventListener("click", refTogglePlay); });
+    document.querySelectorAll(".js-ref-rew").forEach(function (b) { b.addEventListener("click", function () { var c = refCuePoint(); if (ref.playing) refStart(c); else ref.pos = c; ref.dirty = true; refUI(); }); });
+    document.querySelectorAll(".js-ref-remove").forEach(function (b) { b.addEventListener("click", refRemove); });
+    document.querySelectorAll(".js-ref-bpm-use").forEach(function (b) {
+      b.addEventListener("click", function () {
+        if (!ref.bpm) return;
+        var bpm = $("bpm"), v = ref.bpm.bpm;
+        if (v < 60 || v > 200) v = ref.bpm.alt;
+        bpm.value = clamp(v, 60, 200);
+        bpm.dispatchEvent(new Event("change"));
+        toast("Beat tempo set to " + bpm.value + " BPM");
+      });
+    });
+    document.querySelectorAll(".js-ref-wave").forEach(refWireWave);
+    $("ref-in").addEventListener("click", function () {
+      var t = refPos();
+      refPrefs.a = t; if (refPrefs.b <= t + 0.05) refPrefs.b = Math.min(ref.dur, Math.max(refPrefs.b, t + Math.min(8, ref.dur - t)));
+      refPrefs.cue = t; refSavePrefs(); refRestartIfPlaying(); refUI();
+    });
+    $("ref-out").addEventListener("click", function () {
+      var t = refPos();
+      if (t <= refPrefs.a + 0.05) { toast("Set out after the in point (play or click further along the waveform)."); return; }
+      refPrefs.b = t; refPrefs.loop = true; refSavePrefs(); refRestartIfPlaying(); refUI();
+    });
+    $("ref-loop").addEventListener("change", function (e) { refPrefs.loop = e.target.checked; refSavePrefs(); refRestartIfPlaying(); refUI(); });
+    $("ref-clear").addEventListener("click", function () { refPrefs.a = refPrefs.b = 0; refPrefs.loop = false; refSavePrefs(); refRestartIfPlaying(); refUI(); });
+    $("ref-sync").addEventListener("change", function (e) { refPrefs.sync = e.target.checked; refSavePrefs(); if (!refPrefs.sync) ref.syncing = false; });
+    $("ref-collapse").addEventListener("click", function () { refPrefs.collapsed = !refPrefs.collapsed; refSavePrefs(); refUI(); });
+    var gi = $("ref-gain");
+    gi.addEventListener("input", function () { refPrefs.gainDb = Math.round(+gi.value * 10) / 10; refApplyGates(); $("ref-gain-val").textContent = fmtDb(refPrefs.gainDb, true) + " dB"; });
+    gi.addEventListener("change", function () { refSavePrefs(); refUI(); });
+    gi.addEventListener("dblclick", function () { refPrefs.gainDb = 0; refSavePrefs(); refApplyGates(); refUI(); });
+    $("ref-mute").addEventListener("click", function () { refPrefs.muted = !refPrefs.muted; refSavePrefs(); refApplyGates(); refUI(); });
+    $("ref-match").addEventListener("click", refLevelMatch);
+    document.querySelectorAll(".js-ref-trim-reset").forEach(function (b) {
+      b.addEventListener("click", function () { refPrefs.beatTrim = 0; refSavePrefs(); refApplyGates(); refUI(); toast("Beat monitor level reset"); });
+    });
+    document.querySelectorAll(".tab").forEach(function (t) { t.addEventListener("click", function () { ref.dirty = true; }); });
+    window.addEventListener("resize", function () { ref.dirty = true; });
+  }
+  function refInit() {
+    refLoadPrefs();
+    refWire();
+    ref.ready = true;
+    if (refPrefs.matched) refStatus("Last match: Ref fader " + fmtDb(refPrefs.matched.gain, true) + " dB" + (refPrefs.matched.trim ? ", beat monitor " + fmtDb(refPrefs.matched.trim) + " dB" : "") + " (mix ≈ " + fmtDb(refPrefs.matched.mix) + " LUFS, reference ≈ " + fmtDb(refPrefs.matched.ref) + " LUFS). Re-run after changing the mix.");
+    refUI();
+    refLoadStored();
+    // read-only hook for automated checks (no controls)
+    window.IPBReference = {
+      info: function () {
+        var rms = function (an) { if (!an) return 0; var d = new Float32Array(an.fftSize); an.getFloatTimeDomainData(d); var s = 0; for (var i = 0; i < d.length; i++) s += d[i] * d[i]; return Math.sqrt(s / d.length); };
+        return {
+          loaded: ref.loaded, analysed: !!ref.analysed && !!ref.bpmDone, name: ref.name, duration: ref.dur, ab: ref.ab, playing: ref.playing, pos: refPos(),
+          gainDb: refPrefs.gainDb, beatTrim: refPrefs.beatTrim, muted: refPrefs.muted, lufs: ref.lufs, peak: ref.peak, mixLufs: ref.mixLufs, bpm: ref.bpm ? ref.bpm.bpm : null,
+          sync: refPrefs.sync, syncing: ref.syncing, loop: refRegion(), playRate: ref.playBuf ? ref.playBuf.sampleRate : null,
+          beatGate: beatMon ? beatMon.gain.value : null, refGate: refN ? refN.gate.gain.value : null,
+          refFader: refN ? refN.fader.gain.value : null,
+          outBeatRms: refN ? rms(refN.outBeat) : null, outRefRms: refN ? rms(refN.outRef) : null
+        };
+      }
+    };
+  }
+
   /* ---------------- Toast ---------------- */
   var toastTimer = null;
   function toast(msg) {
@@ -2413,6 +3236,7 @@
       if (k === " ") { e.preventDefault(); togglePlay(); return; }
       if (k === "escape" && ly.open) { closePrompter(); return; }
       if (ly.open) return; // no pad/key triggers behind the teleprompter
+      if (k === "r" || k === "`" || e.code === "Backquote") { e.preventDefault(); refToggleAB(); return; }
       var pi = PAD_KEYS.indexOf(k);
       if (pi !== -1) { triggerPad(pi); flashPad(pi); return; }
       if (KEYMAP[k] != null && !held[k]) { held[k] = true; pianoDown(KEYMAP[k]); }
@@ -2517,6 +3341,7 @@
     if (!window.isSecureContext) setVoxStatus("Mic recording needs HTTPS or localhost — this page isn't a secure context.", true);
     loadKit(S.kit).then(function () { selectPad(S.sel); });
     renderVault();
+    refInit();
     requestAnimationFrame(loop);
   }
 
