@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>New &amp; Recent — Afterglow</title>
+<meta name="description" content="Afterglow New & Recent: recent films that are free and legal to watch — open movies, official free releases and public-domain NASA documentaries.">
+<meta name="theme-color" content="#120e0a">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22%3E%3Crect width=%2264%22 height=%2264%22 rx=%2214%22 fill=%22%23120e0a%22/%3E%3Ccircle cx=%2232%22 cy=%2236%22 r=%2216%22 fill=%22%23e8a54b%22/%3E%3Crect x=%228%22 y=%2240%22 width=%2248%22 height=%2216%22 fill=%22%23120e0a%22/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&display=swap">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header class="top">
+  <div class="wrap top-inner">
+    <a class="brand" href="https://cinder-heart-tulip-harbor.grok.me/"><span class="brand-name">Afterglow</span><span class="brand-tag">Late night television</span></a>
+    <nav class="nav" aria-label="Afterglow">
+      <a href="https://cinder-heart-tulip-harbor.grok.me/">Lounge</a>
+      <a href="https://cinder-heart-tulip-harbor.grok.me/movies">Movies</a>
+      <a href="https://cinder-heart-tulip-harbor.grok.me/series">Series</a>
+      <a href="https://cinder-heart-tulip-harbor.grok.me/documentaries">Docs</a>
+      <a href="./" class="active" aria-current="page">New &amp; Recent</a>
+      <a href="https://cinder-heart-tulip-harbor.grok.me/news">Live News</a>
+      <a href="https://cinder-heart-tulip-harbor.grok.me/radio">Radio</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section class="hero wrap" id="hero" aria-live="polite"></section>
+
+  <section class="wrap tools">
+    <input id="q" class="search" type="search" placeholder="Search title, studio, license" autocomplete="off" aria-label="Search New &amp; Recent">
+    <div class="chips" role="group" aria-label="Genre"><span class="chip-label">Genre</span><div id="genres" class="chip-row"></div></div>
+    <div class="chips" role="group" aria-label="Rights"><span class="chip-label">Rights</span><div id="rights" class="chip-row"></div></div>
+  </section>
+
+  <section class="wrap shelf" aria-labelledby="shelf-title">
+    <div class="shelf-head">
+      <h2 id="shelf-title">New &amp; Recent <span class="soft">(free &amp; legal)</span></h2>
+      <p class="muted" id="count"></p>
+    </div>
+    <div id="grid" class="grid"></div>
+    <p id="empty" class="muted empty" hidden>Nothing on this shelf matches that.</p>
+  </section>
+
+  <section class="wrap note">
+    <h3>Why these are on air</h3>
+    <p>Every film here is free and legal to show: <strong>Creative Commons</strong> open movies (Blender Studio, CC BY 4.0), <strong>U.S. Government works</strong> (NASA, public domain in the U.S.), or <strong>full films the rights holder posted free</strong> on its own verified channel, embedded as-is. Afterglow does not re-host copyrighted studio films. Each card links to its source and license.</p>
+  </section>
+</main>
+
+<footer class="foot wrap">
+  <span>Afterglow · New &amp; Recent</span>
+  <a href="https://cinder-heart-tulip-harbor.grok.me/">Back to the Lounge →</a>
+</footer>
+
+<div id="player" class="player" hidden role="dialog" aria-modal="true" aria-labelledby="p-title">
+  <div class="player-backdrop" data-close></div>
+  <div class="player-card">
+    <div class="screen"><div id="screen-inner"></div></div>
+    <div class="p-info">
+      <button class="close" data-close aria-label="Close player">✕ Close</button>
+      <p class="eyebrow" id="p-eyebrow"></p>
+      <h2 id="p-title"></h2>
+      <p class="meta" id="p-meta"></p>
+      <p id="p-syn" class="syn"></p>
+      <p id="p-note" class="muted small"></p>
+      <p class="links" id="p-links"></p>
+    </div>
+  </div>
+</div>
+
+<script src="catalog.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
