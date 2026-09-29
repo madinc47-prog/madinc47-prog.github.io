@@ -254,6 +254,28 @@ input:focus, select:focus, textarea:focus {
 .radio-now-controls { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem 1rem; }
 .radio-volume { display: flex; align-items: center; gap: .5rem; }
 .radio-volume input[type="range"] { width: 8.5rem; padding: 0; border: 0; background: transparent; accent-color: var(--teal); }
+.radio-fx { display: flex; flex-wrap: wrap; align-items: center; gap: .3rem .6rem; }
+.radio-fx-switch {
+  display: inline-flex; align-items: center; gap: .5rem; cursor: pointer;
+  padding: .38rem .8rem .38rem .45rem; border-radius: 999px;
+  border: 1px solid var(--line); background: rgba(7,26,23,.45); color: #b4d2c9;
+  font: inherit; font-size: .84rem; font-weight: 600; line-height: 1.2;
+  transition: border-color .2s ease, background-color .2s ease, color .2s ease;
+}
+.radio-fx-switch:hover { border-color: #2a5f53; }
+.radio-fx-track {
+  position: relative; flex: none; width: 2rem; height: 1.1rem; border-radius: 999px;
+  background: #0a2420; border: 1px solid #2a5f53; transition: background-color .2s ease, border-color .2s ease;
+}
+.radio-fx-thumb {
+  position: absolute; top: 50%; left: .14rem; width: .78rem; height: .78rem; border-radius: 50%;
+  background: var(--muted); transform: translateY(-50%); transition: transform .2s ease, background-color .2s ease;
+}
+.radio-fx-switch[aria-checked="true"] { color: var(--text); border-color: rgba(45,212,191,.45); }
+.radio-fx-switch[aria-checked="true"] .radio-fx-track { background: rgba(45,212,191,.22); border-color: var(--teal-dim); }
+.radio-fx-switch[aria-checked="true"] .radio-fx-thumb { background: var(--teal); transform: translate(.86rem, -50%); }
+.radio-fx-note { font-size: .78rem; color: var(--teal); }
+.radio-fx[data-fx="original"] .radio-fx-note { color: var(--muted); }
 .radio-groups {
   padding: 0 0 .85rem; gap: .5rem; border-bottom: 1px solid var(--line);
 }
@@ -302,5 +324,5 @@ input:focus, select:focus, textarea:focus {
   .radio-groups .chip { padding: .45rem .75rem; font-size: .84rem; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .radio-card, .radio-now { transition: none; }
+  .radio-card, .radio-now, .radio-fx-switch, .radio-fx-track, .radio-fx-thumb { transition: none; }
 }

@@ -14,7 +14,7 @@
   <meta property="og:locale" content="en_DM">
   <meta name="theme-color" content="#0a2e28">
   <link rel="preload" as="image" href="assets/hero-dominica.jpg">
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css?v=20260929">
 </head>
 <body>
   <header class="site-header">
@@ -116,6 +116,13 @@
             <label class="radio-volume">Volume
               <input type="range" id="radio-volume" min="0" max="100" step="1" value="80">
             </label>
+            <div class="radio-fx" id="radio-fx" data-fx="on" hidden>
+              <button type="button" class="radio-fx-switch" id="radio-fx-toggle" role="switch" aria-checked="true" aria-describedby="radio-fx-note" title="Warm &amp; Wide: softer highs, a wider stereo stage and a light room ambience. Easy listening in the car.">
+                <span class="radio-fx-track" aria-hidden="true"><span class="radio-fx-thumb"></span></span>
+                <span class="radio-fx-label">Warm &amp; Wide</span>
+              </button>
+              <span class="radio-fx-note" id="radio-fx-note">Smoother highs · wider stage</span>
+            </div>
           </div>
         </div>
         <div class="chips radio-groups" id="radio-groups" role="group" aria-label="Station groups"></div>
@@ -148,6 +155,6 @@
     </div>
   </footer>
   <script src="app.js"></script>
-  <script src="radio.js"></script>
+  <script src="radio.js?v=20260929"></script>
 </body>
 </html>
