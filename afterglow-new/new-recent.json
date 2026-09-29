@@ -1360,7 +1360,7 @@
       "id": "equalizer-2000-1987",
       "title": "Equalizer 2000",
       "year": 1987,
-      "duration": 5220,
+      "duration": 5268,
       "genres": [
         "action",
         "post-apocalyptic",
@@ -1386,7 +1386,7 @@
       "badge": "Shout!",
       "shelf": "action-80s",
       "mediaType": "movie",
-      "runtime": "1h 27m"
+      "runtime": "1h 28m"
     },
     {
       "id": "gunmen-1988",
@@ -1493,7 +1493,7 @@
       "id": "bloodfist-1989",
       "title": "Bloodfist",
       "year": 1989,
-      "duration": 5160,
+      "duration": 5194,
       "genres": [
         "action",
         "martial-arts"
@@ -1518,7 +1518,7 @@
       "badge": "Shout!",
       "shelf": "action-80s",
       "mediaType": "movie",
-      "runtime": "1h 26m"
+      "runtime": "1h 27m"
     }
   ]
 }
