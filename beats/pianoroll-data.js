@@ -39,6 +39,8 @@
     if (o.type === "ipb-piano-pattern" && o.pattern) o = o.pattern;
     var p = empty(o);
     p.name = typeof o.name === "string" ? o.name.slice(0, 80) : "";
+    if (typeof o.src === "string" && o.src) p.src = o.src.slice(0, 60); // origin tag, e.g. "kl:dusty-ninths" (keys loop bank)
+    if (isFinite(+o.gain) && +o.gain) p.gain = clamp(Math.round(+o.gain * 2) / 2, -12, 12); // level trim in dB (loop bank balance)
     if (typeof o.inst === "string" && (!instOk || instOk(o.inst))) p.inst = o.inst;
     var L = lenTicks(p), seen = {};
     (Array.isArray(o.notes) ? o.notes : []).forEach(function (n) {
@@ -55,6 +57,7 @@
     sortNotes(p.notes);
     return p;
   }
+  function gainLin(p) { return p && p.gain ? Math.pow(10, p.gain / 20) : 1; }
   function clone(p) { return JSON.parse(JSON.stringify(p)); }
   function hasNotes(p) { return !!(p && p.notes && p.notes.length); }
   function inRange(p, semis) { return p.notes.every(function (n) { return n.p + semis >= LOW && n.p + semis <= HIGH; }); }
@@ -180,7 +183,7 @@
 
   window.IPBPianoData = {
     TPB: TPB, TPBAR: TPBAR, STEP: STEP, LOW: LOW, HIGH: HIGH, GRIDS: GRIDS, BARS: BARS, SCALES: SCALES, SCALE_NAMES: SCALE_NAMES, NOTE_NAMES: NOTE_NAMES,
-    empty: empty, normalize: normalize, clone: clone, hasNotes: hasNotes, lenTicks: lenTicks, transpose: transpose, inRange: inRange, setBars: setBars,
+    empty: empty, gainLin: gainLin, normalize: normalize, clone: clone, hasNotes: hasNotes, lenTicks: lenTicks, transpose: transpose, inRange: inRange, setBars: setBars,
     scalePcs: scalePcs, inScale: inScale, snapPitch: snapPitch, notesStarting: notesStarting, fromChords: fromChords,
     toJSON: toJSON, fromJSON: fromJSON, noteName: noteName, sortNotes: sortNotes, Library: Library
   };

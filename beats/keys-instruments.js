@@ -20,7 +20,8 @@
     { id: "synthbass", name: "Analog Bass", cat: "Bass", poly: false },
     { id: "pluck", name: "Pluck", cat: "Synth", poly: true },
     { id: "bell", name: "Bell / Glock", cat: "Synth", poly: true },
-    { id: "lead", name: "Soft Lead", cat: "Synth", poly: false }
+    { id: "lead", name: "Soft Lead", cat: "Synth", poly: false },
+    { id: "whine", name: "G-Funk Whine Lead", cat: "Synth", poly: false }
   ];
   var BY_ID = {};
   INSTRUMENTS.forEach(function (i) { BY_ID[i.id] = i; });
@@ -210,12 +211,27 @@
       vib.connect(vg); vg.connect(o1.detune); vg.connect(o2.detune); vib.start(t); v.nodes.push(vib);
       var end = env(v, t, dur, 0.09 * (0.5 + 0.5 * vel), 0.02, 0.8, 0.3, 0.18);
       return finish(v, end);
+    },
+    /* West Coast "whine": sine + soft triangle, scoops up into the note, slow wide vibrato fades in */
+    whine: function (c, dest, m, t, dur, vel) {
+      var v = voiceBase(c, dest, t), f = mf(m);
+      var lp = c.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = 2400 + vel * 1800; lp.Q.value = 0.9; lp.connect(v.out);
+      var o1 = osc(v, c, "sine", f, t, 0, lp);
+      var tg = c.createGain(); tg.gain.value = 0.42; tg.connect(lp);
+      var o2 = osc(v, c, "triangle", f, t, 4, tg);
+      [o1, o2].forEach(function (o) { o.frequency.setValueAtTime(f * 0.945, t); o.frequency.exponentialRampToValueAtTime(f, t + 0.075); });
+      var vib = c.createOscillator(); vib.frequency.value = 5.4;
+      var vg = c.createGain(); vg.gain.setValueAtTime(0, t); vg.gain.setValueAtTime(0, t + 0.14); vg.gain.linearRampToValueAtTime(24, t + 0.55);
+      vib.connect(vg); vg.connect(o1.detune); vg.connect(o2.detune); vib.start(t); v.nodes.push(vib);
+      var end = env(v, t, dur, 0.13 * (0.5 + 0.5 * vel), 0.025, 0.85, 0.5, 0.22);
+      return finish(v, end);
     }
   };
 
-  /* play one note. dur = held length in seconds (release follows). Returns { stop(t), end } */
-  function play(c, dest, midi, when, dur, vel, instId) {
+  /* play one note. dur = held length in seconds (release follows). gain = optional linear level trim. Returns { stop(t), end } */
+  function play(c, dest, midi, when, dur, vel, instId, gain) {
     var fn = VOICES[instId] || VOICES.grand;
+    if (gain != null && gain !== 1 && isFinite(gain)) { var g = c.createGain(); g.gain.value = clamp(gain, 0, 8); g.connect(dest); dest = g; }
     return fn(c, dest, clamp(Math.round(midi), 0, 127), Math.max(0, when), Math.max(0.02, dur || 0.25), clamp(vel == null ? 0.8 : +vel, 0.05, 1));
   }
   window.IPBKeys = { INSTRUMENTS: INSTRUMENTS, BY_ID: BY_ID, play: play, has: function (id) { return !!VOICES[id]; } };

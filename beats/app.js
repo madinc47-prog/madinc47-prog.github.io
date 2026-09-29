@@ -101,7 +101,9 @@
     prSize: 1,
     vox: { nudge: 0, monitor: false, dry: false },
     tool: "hit", lane: "vel", page: 0,
-    piano: { slot: "A", slots: { A: PD.empty(), B: PD.empty(), C: PD.empty(), D: PD.empty() } } // piano-roll pattern slots
+    piano: { slot: "A", slots: { A: PD.empty(), B: PD.empty(), C: PD.empty(), D: PD.empty() } }, // piano-roll pattern slots
+    songKey: null,        // song key 0–11 for the keys loop bank (null = the first loaded loop sets it)
+    klTempo: false        // keys loops: "Use loop tempo" on load
   };
   function pianoPat() { return S.piano.slots[S.piano.slot]; }
   function curSlot() { return S.slots[S.slot]; }
@@ -165,7 +167,7 @@
         chordTrack: S.chordTrack, structure: S.structure, cueBar: S.cueBar,
         lyricSong: S.lyricSong, bpl: S.bpl, prSize: S.prSize, vox: S.vox, tool: S.tool,
         backing: bt.id ? { id: bt.id, layer: bt.layer, prevBpm: bt.prevBpm } : null,
-        piano: S.piano
+        piano: S.piano, songKey: S.songKey, klTempo: S.klTempo
       }));
     } catch (e) { /* storage full or blocked */ }
   }
@@ -210,6 +212,8 @@
       if (typeof d.lyricSong === "string") S.lyricSong = d.lyricSong;
       if (d.bpl) S.bpl = String(d.bpl);
       if (d.prSize) S.prSize = clamp(+d.prSize, 0.6, 1.8);
+      if (d.songKey != null && d.songKey !== "" && isFinite(+d.songKey)) S.songKey = clamp(Math.round(+d.songKey), 0, 11);
+      S.klTempo = !!d.klTempo;
       if (d.piano && d.piano.slots && typeof d.piano.slots === "object") {
         SLOT_IDS.forEach(function (id) { if (d.piano.slots[id]) S.piano.slots[id] = PD.normalize(d.piano.slots[id], instOk); });
         if (SLOT_IDS.indexOf(d.piano.slot) !== -1) S.piano.slot = d.piano.slot;
@@ -1202,10 +1206,21 @@
     $("swing").value = S.swing;
     $("swing-val").textContent = mpcSwing(S.swing) + "%";
   }
+  /* the beat maker leans hip-hop: hip-hop kits and genres are listed first (every kit is still there) */
+  var HIPHOP_KITS = ["qb", "buffalo", "lofi", "trap", "bkdrill", "ukdrill", "sexydrill", "pluggnb", "rage", "phonk", "rnb", "jersey"];
+  var CAT_ORDER = ["all", "boombap", "trap", "rnb", "afro", "club"];
+  function hipHopKits() {
+    function r(k) { var i = HIPHOP_KITS.indexOf(k.id); return i === -1 ? 100 + D.KITS.indexOf(k) : i; }
+    return D.KITS.slice().sort(function (a, b) { return r(a) - r(b); });
+  }
+  function hipHopCats() {
+    function r(c) { var i = CAT_ORDER.indexOf(c.id); return i === -1 ? 50 + D.CATS.indexOf(c) : i; }
+    return D.CATS.slice().sort(function (a, b) { return r(a) - r(b); });
+  }
   function buildKitBrowser() {
     var cats = $("kb-cats"), grid = $("kb-grid");
     cats.innerHTML = ""; grid.innerHTML = "";
-    D.CATS.forEach(function (c, ci) {
+    hipHopCats().forEach(function (c, ci) {
       var b = document.createElement("button");
       b.type = "button"; b.className = "kb-cat" + (ci === 0 ? " on" : ""); b.dataset.cat = c.id; b.textContent = c.name;
       b.addEventListener("click", function () {
@@ -1214,7 +1229,7 @@
       });
       cats.appendChild(b);
     });
-    D.KITS.forEach(function (k) {
+    hipHopKits().forEach(function (k) {
       var b = document.createElement("button");
       b.type = "button"; b.className = "kit kit-card"; b.dataset.kit = k.id; b.dataset.cat = k.cat;
       b.innerHTML = '<span class="kc-name"></span><span class="kc-meta"></span><span class="kc-desc"></span>';
@@ -2216,7 +2231,8 @@
       pads: JSON.parse(JSON.stringify(S.padCfg[S.kit] || [])),
       chords: JSON.parse(JSON.stringify(S.chordTrack)),
       structure: S.structure,
-      piano: PD.normalize(pianoPat(), instOk)
+      piano: PD.normalize(pianoPat(), instOk),
+      songKey: S.songKey
     };
   }
 
@@ -2603,6 +2619,7 @@
     S.bpm = clamp(+beat.bpm || 140, 60, 200);
     S.swing = clamp(+beat.swing || 0, 0, 60);
     S.slots[S.slot] = conv.slot; pendingSlot = null; bindSlot(); S.page = 0;
+    if (beat.songKey != null && isFinite(+beat.songKey)) { S.songKey = clamp(Math.round(+beat.songKey), 0, 11); klKeyUI(); }
     if (beat.piano) { S.piano.slots[S.piano.slot] = PD.normalize(beat.piano, instOk); pianoPending = null; pianoUI(true, true); } // older songs have no piano part: keep the current one
     (conv.tunes || []).forEach(function (t, i) { if (t) padCfg(i, conv.kit).tune = t; });
     if (Array.isArray(conv.pads)) { var pc = {}; pc[conv.kit] = conv.pads; S.padCfg[conv.kit] = cleanPadCfg(pc)[conv.kit]; }
@@ -3688,12 +3705,13 @@
   function schedulePiano(c, G, info, t, len) {
     var p = pianoPat();
     if (!p.notes.length) return;
+    if (klPrev && klPrev.synced && G === LG && t >= klPrev.t0 - 0.002 && t < klPrev.end) return; // a keys-loop preview has the floor
     var s16 = pianoStepOf(info), t0 = s16 * PD.STEP, tickSec = len / PD.STEP;
     var sw = s16 % 2 === 1 ? len * (S.swing / 100) : 0;
-    var ns = PD.notesStarting(p, t0, t0 + PD.STEP);
+    var ns = PD.notesStarting(p, t0, t0 + PD.STEP), gl = PD.gainLin(p);
     for (var i = 0; i < ns.length; i++) {
       var n = ns[i];
-      G.preg.push(PK.play(c, G.groups.piano, n.p, t + (n.s - t0) * tickSec + (n.s === t0 ? sw : 0), n.l * tickSec, n.v, p.inst));
+      G.preg.push(PK.play(c, G.groups.piano, n.p, t + (n.s - t0) * tickSec + (n.s === t0 ? sw : 0), n.l * tickSec, n.v, p.inst, gl));
     }
     if (G.preg.length > 96) G.preg = G.preg.filter(function (v) { return v.end > c.currentTime; });
   }
@@ -3707,12 +3725,13 @@
   }
   function pianoPreview(m, v) {
     if (!ensureCtx()) return;
-    PK.play(ctx, LG.groups.piano, m, ctx.currentTime + 0.005, 0.32, v == null ? 0.8 : v, pianoPat().inst);
+    PK.play(ctx, LG.groups.piano, m, ctx.currentTime + 0.005, 0.32, v == null ? 0.8 : v, pianoPat().inst, PD.gainLin(pianoPat()));
   }
   function pianoSummary() {
     var p = pianoPat(), inst = PK.BY_ID[p.inst];
     return "Pattern " + S.piano.slot + (p.name ? " · " + p.name : "") + " · " + p.bars + " bar" + (p.bars > 1 ? "s" : "") + " · " + p.notes.length + " note" + (p.notes.length === 1 ? "" : "s") +
-      " · " + (inst ? inst.name : p.inst) + (p.scale !== "off" ? " · " + PD.NOTE_NAMES[p.key] + " " + PD.SCALE_NAMES[p.scale].toLowerCase() : "");
+      " · " + (inst ? inst.name : p.inst) + (p.scale !== "off" ? " · " + PD.NOTE_NAMES[p.key] + " " + PD.SCALE_NAMES[p.scale].toLowerCase() : "") +
+      (p.gain ? " · level " + (p.gain > 0 ? "+" : "") + p.gain + " dB" : "");
   }
   function pianoUI(refreshEditor, scroll) {
     if (!pianoEd) return;
@@ -3736,6 +3755,7 @@
     $("pn-redo").disabled = !pianoEd.canRedo();
     $("pn-sum").textContent = pianoSummary();
     document.querySelectorAll('#pn-lib [data-act="load"]').forEach(function (b) { b.textContent = "Load → " + S.piano.slot; });
+    if (klReady) { klBarUI(); klRefreshCards(); }
   }
   function pianoChanged(kind) {
     if (kind !== "view") saveSession();
@@ -3948,6 +3968,169 @@
     $("pn-vel-val").textContent = Math.round(pianoEd.velocity() * 100);
     renderPianoLib();
     pianoUI(true);
+  }
+
+  /* ---------------- Keys loop bank (hip-hop piano / Rhodes loops → Piano Roll) ----------------
+   * keys-loops.js holds original loops as data; each builds into a Piano Roll pattern transposed to the song key
+   * (S.songKey; "Auto" = the first loaded loop sets it). Patterns are tick-based, so loops always follow the song
+   * BPM + swing. Preview plays through the Piano Roll mixer channel; while the beat is playing it joins on the next
+   * bar, in time with the drums, and the current piano pattern steps aside for it.
+   */
+  var KL = window.IPBKeysLoops, klPrev = null, klReady = false, klCat = "boombap", klWhere = "beats";
+  function klInstName(id) { var i = PK.BY_ID[id]; return i ? i.name : id; }
+  function klTarget() { var v = $("kl-slot").value; return SLOT_IDS.indexOf(v) !== -1 ? v : S.piano.slot; }
+  function klBuild(id) { return KL.build(id, { key: S.songKey }); }
+  function klKeyUI() {
+    document.querySelectorAll(".js-songkey").forEach(function (s) { s.value = S.songKey == null ? "" : String(S.songKey); });
+  }
+  function klSlotLoop(id) { var p = S.piano.slots[id]; return p && p.src && p.src.indexOf("kl:") === 0 ? KL.BY_ID[p.src.slice(3)] : null; }
+  function klBarUI() {
+    var L = klSlotLoop(S.piano.slot), p = pianoPat(), cat = L ? KL.CATS.filter(function (c) { return c.id === L.cat; })[0] : null;
+    $("kl-cat").textContent = cat ? cat.name : "Keys loops";
+    $("kl-name").textContent = L ? L.name : "Pick a keys loop";
+    $("kl-meta").textContent = L
+      ? "Piano pattern " + S.piano.slot + " · " + PD.NOTE_NAMES[p.key] + " " + (KL.MODE_NAMES[p.scale] || p.scale) + " · " + klInstName(p.inst) + " · at " + S.bpm + " BPM"
+      : KL.LOOPS.length + " hip-hop piano, Rhodes & synth loops · follow song key + BPM";
+    $("kl-open").style.setProperty("--kit", cat ? cat.color : "#a78bfa");
+    var sel = $("kl-slot"); sel.options[0].textContent = "Current pattern (" + S.piano.slot + ")";
+  }
+  function klRefreshCards() {
+    var tgt = klTarget(), cur = klSlotLoop(S.piano.slot);
+    document.querySelectorAll(".kl-card").forEach(function (card) {
+      var L = KL.BY_ID[card.dataset.loop];
+      card.querySelector(".kc-meta").textContent = KL.keyLabel(L, S.songKey) + " · " + L.bpm + " BPM · " + klInstName(L.inst) + " · " + L.bars + " bar" + (L.bars > 1 ? "s" : "");
+      card.querySelector(".kl-load").textContent = "Load → " + tgt;
+      card.classList.toggle("active", !!cur && cur.id === L.id);
+      var on = !!klPrev && klPrev.id === L.id;
+      card.classList.toggle("previewing", on);
+      card.querySelector(".kl-prev").textContent = on ? "■ Stop" : "▶ Preview";
+    });
+    $("kl-stop").hidden = !klPrev;
+  }
+  function klFilter(cat) {
+    klCat = cat;
+    $("kl-cats").querySelectorAll("button").forEach(function (b) { b.classList.toggle("on", b.dataset.cat === cat); });
+    document.querySelectorAll(".kl-card").forEach(function (c) { c.hidden = cat !== "all" && c.dataset.cat !== cat; });
+  }
+  function klBuildBrowser() {
+    var cats = $("kl-cats"), grid = $("kl-grid");
+    cats.innerHTML = ""; grid.innerHTML = "";
+    KL.CATS.concat([{ id: "all", name: "All" }]).forEach(function (c) {
+      var b = document.createElement("button");
+      b.type = "button"; b.className = "kb-cat"; b.dataset.cat = c.id;
+      b.textContent = c.name + (c.id === "all" ? "" : " · " + KL.LOOPS.filter(function (L) { return L.cat === c.id; }).length);
+      b.addEventListener("click", function () { klFilter(c.id); });
+      cats.appendChild(b);
+    });
+    KL.LOOPS.forEach(function (L) {
+      var cat = KL.CATS.filter(function (c) { return c.id === L.cat; })[0];
+      var card = document.createElement("div");
+      card.className = "kit-card kl-card"; card.dataset.loop = L.id; card.dataset.cat = L.cat;
+      card.style.setProperty("--kc", cat.color);
+      card.innerHTML = '<button type="button" class="kl-main" title="Preview"><span class="kc-name"></span><span class="kc-meta"></span><span class="kc-desc"></span></button>' +
+        '<div class="kl-actions"><button type="button" class="btn small ghost kl-prev">▶ Preview</button><button type="button" class="btn small primary kl-load">Load</button></div>';
+      card.querySelector(".kc-name").textContent = L.name;
+      card.querySelector(".kc-desc").textContent = L.desc;
+      card.querySelector(".kl-main").addEventListener("click", function () { klPreview(L.id); });
+      card.querySelector(".kl-prev").addEventListener("click", function () { klPreview(L.id); });
+      card.querySelector(".kl-load").addEventListener("click", function () { klLoad(L.id); });
+      grid.appendChild(card);
+    });
+    klFilter(klCat);
+    klRefreshCards();
+  }
+  function klOpen(open, where) {
+    var kb = $("kl-browser");
+    if (where && where !== klWhere) { $(where === "piano" ? "kl-host-piano" : "kl-host-beats").appendChild(kb); klWhere = where; if (open == null) open = true; }
+    kb.hidden = open == null ? !kb.hidden : !open;
+    $("kl-open").setAttribute("aria-expanded", String(!kb.hidden && klWhere === "beats"));
+    $("pn-loops").setAttribute("aria-expanded", String(!kb.hidden && klWhere === "piano"));
+    if (!kb.hidden) klRefreshCards();
+  }
+  function klStopPreview() {
+    if (!klPrev) return;
+    var t = ctx ? ctx.currentTime : 0;
+    klPrev.voices.forEach(function (v) { v.stop(t); });
+    clearTimeout(klPrev.timer);
+    klPrev = null;
+    klRefreshCards();
+  }
+  /* one pass of the loop (repeated up to 4 bars), in the song key at the song BPM + swing */
+  function klPreview(id) {
+    if (klPrev && klPrev.id === id) { klStopPreview(); return; }
+    klStopPreview();
+    if (!ensureCtx()) return;
+    var p = klBuild(id), sd = stepDur(), tick = sd / PD.STEP, L = p.bars * PD.TPBAR, passes = Math.max(1, Math.round(4 / p.bars));
+    var t0 = ctx.currentTime + 0.08, synced = false;
+    if (playing && drumsOn()) { var barK = Math.ceil(curK / STEPS) * STEPS; t0 = nextTime + (barK - curK) * sd; synced = true; }
+    var voices = [], dest = LG.groups.piano;
+    for (var r = 0; r < passes; r++) {
+      p.notes.forEach(function (n) {
+        var s16 = Math.floor(n.s / PD.STEP), sw = (n.s % PD.STEP === 0 && s16 % 2 === 1) ? sd * (S.swing / 100) : 0;
+        voices.push(PK.play(ctx, dest, n.p, t0 + (r * L + n.s) * tick + sw, n.l * tick, n.v, p.inst, PD.gainLin(p)));
+      });
+    }
+    var end = t0 + passes * L * tick;
+    if (synced) LG.preg.forEach(function (v) { v.stop(t0); }); // the current piano pattern steps aside
+    klPrev = { id: id, t0: t0, end: end, synced: synced, voices: voices, notes: p.notes.length * passes };
+    klPrev.timer = setTimeout(function () { if (klPrev && klPrev.id === id) { klPrev = null; klRefreshCards(); } }, (end - ctx.currentTime) * 1000 + 400);
+    klRefreshCards();
+    var Lp = KL.BY_ID[id];
+    toast("Preview: " + Lp.name + " · " + KL.keyLabel(Lp, S.songKey) + " · " + S.bpm + " BPM" + (synced ? " · joins on the next bar" : ""));
+  }
+  function klLoad(id) {
+    var L = KL.BY_ID[id];
+    if (!L) return;
+    var target = klTarget(), cur = S.piano.slots[target];
+    if (PD.hasNotes(cur) && !(cur.src === "kl:" + id) && !confirm("Replace piano pattern " + target + " (" + cur.notes.length + " notes) with “" + L.name + "”?")) return;
+    klStopPreview();
+    var autoKey = S.songKey == null;
+    if (autoKey) S.songKey = L.keyPc;
+    var pat = PD.normalize(klBuild(id), instOk);
+    S.piano.slots[target] = pat;
+    if ($("kl-tempo").checked && S.bpm !== L.bpm) { S.bpm = L.bpm; $("bpm").value = S.bpm; lastPosLabel = ""; }
+    if (target !== S.piano.slot) pianoSwitchSlot(target);
+    pianoUI(true, true); saveSession();
+    klKeyUI(); klBarUI(); klRefreshCards();
+    var msg = "Loaded “" + L.name + "” into Piano Roll pattern " + target + " · " + PD.NOTE_NAMES[pat.key] + " " + (KL.MODE_NAMES[pat.scale] || pat.scale) +
+      (autoKey ? " (song key set)" : "") + " · " + S.bpm + " BPM";
+    if (btActive() && !bt.layer) msg += " — tick “Layer drum machine” to hear it with the instrumental";
+    else if (!playing) msg += " — press ▶ to hear it with the drums";
+    toast(msg);
+  }
+  /* song key change: loops loaded from the bank follow it (hand-drawn patterns are left alone) */
+  function klSetSongKey(v) {
+    var k = v === "" || v == null ? null : clamp(Math.round(+v), 0, 11);
+    S.songKey = k;
+    var moved = 0;
+    if (k != null) SLOT_IDS.forEach(function (id) {
+      var p = S.piano.slots[id];
+      if (!p.src || p.src.indexOf("kl:") !== 0 || p.key === k) return;
+      var d = (((k - p.key) % 12) + 12) % 12; if (d > 6) d -= 12;
+      if (PD.transpose(p, d) || PD.transpose(p, d > 0 ? d - 12 : d + 12)) { p.key = k; moved++; }
+    });
+    if (moved) pianoUI(true);
+    klStopPreview();
+    saveSession(); klKeyUI(); klBarUI(); klRefreshCards();
+    toast(k == null ? "Song key: Auto — the next loop you load sets it" : "Song key: " + KL.KEY_NAMES[k] + (moved ? " · moved " + moved + " loaded loop pattern" + (moved > 1 ? "s" : "") : ""));
+  }
+  function klInit() {
+    document.querySelectorAll(".js-songkey").forEach(function (sel) {
+      var o = document.createElement("option"); o.value = ""; o.textContent = "Auto (first loop sets it)"; sel.appendChild(o);
+      KL.KEY_NAMES.forEach(function (n, i) { var x = document.createElement("option"); x.value = String(i); x.textContent = n; sel.appendChild(x); });
+      sel.addEventListener("change", function () { klSetSongKey(sel.value); });
+    });
+    klKeyUI();
+    $("kl-tempo").checked = !!S.klTempo;
+    $("kl-tempo").addEventListener("change", function (e) { S.klTempo = e.target.checked; saveSession(); });
+    $("kl-slot").addEventListener("change", klRefreshCards);
+    $("kl-open").addEventListener("click", function () { klOpen(klWhere === "beats" ? null : true, "beats"); });
+    $("pn-loops").addEventListener("click", function () { klOpen(klWhere === "piano" ? null : true, "piano"); });
+    $("kl-close").addEventListener("click", function () { klOpen(false); });
+    $("kl-stop").addEventListener("click", klStopPreview);
+    klBuildBrowser();
+    klReady = true;
+    klBarUI();
   }
 
   /* ---------------- Toast ---------------- */
@@ -4202,6 +4385,7 @@
     refInit();
     btInit();
     pianoInit();
+    klInit();
     requestAnimationFrame(loop);
   }
 
@@ -4241,6 +4425,12 @@
         geom: pianoEd ? pianoEd.geom() : null, canUndo: pianoEd ? pianoEd.canUndo() : false, canRedo: pianoEd ? pianoEd.canRedo() : false,
         tool: pianoEd ? pianoEd.tool() : "", zoom: pianoEd ? pianoEd.zoomLevel() : 1, sel: pianoEd && pianoEd.selected() ? PD.clone(pianoEd.selected()) : null,
         instruments: PK.INSTRUMENTS.map(function (i) { return i.id; }) };
+    },
+    keysLoops: function () {
+      return { count: KL.LOOPS.length, cats: KL.CATS.map(function (c) { return c.id; }), songKey: S.songKey, target: klTarget(), where: klWhere,
+        open: !$("kl-browser").hidden, cat: klCat, visible: document.querySelectorAll(".kl-card:not([hidden])").length,
+        preview: klPrev ? { id: klPrev.id, t0: klPrev.t0, end: klPrev.end, synced: klPrev.synced, notes: klPrev.notes, now: ctx.currentTime, kAt: klPrev.synced ? curK + (klPrev.t0 - nextTime) / stepDur() : null } : null,
+        peakNow: ctx && masterAnalyser ? peak(masterAnalyser) : 0 };
     },
     backingTempo: function () { try { return bt.buf ? refEstimateBpm(bt.buf) : null; } catch (e) { return null; } }
   };

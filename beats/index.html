@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Island Pin Beats — Free Browser Beat Maker</title>
-  <meta name="description" content="Island Pin Beats: free browser beat maker for rappers and DJs. 18 genre drum kits (NY boom-bap, trap, drill, afrobeats, amapiano, house, bouyon and more), 16 pads, step sequencer with velocity and 2-bar patterns, piano roll with savable patterns, chord loop, lyrics teleprompter, vocal recording over the beat, mixer, reference track A/B with loudness matching, WAV export.">
+  <meta name="description" content="Island Pin Beats: free browser beat maker for rappers and DJs. 18 genre drum kits (NY boom-bap, trap, drill, afrobeats, amapiano, house, bouyon and more), 16 pads, step sequencer with velocity and 2-bar patterns, piano roll with savable patterns, hip-hop keys loop bank (boom-bap, jazz-rap, lo-fi, soul, trap, drill, G-funk, cinematic, R&amp;B-rap piano and Rhodes loops), chord loop, lyrics teleprompter, vocal recording over the beat, mixer, reference track A/B with loudness matching, WAV export.">
   <meta name="robots" content="index,follow">
   <link rel="canonical" href="https://madinc47-prog.github.io/beats/">
   <meta property="og:title" content="Island Pin Beats — Free Beat Maker">
@@ -59,6 +59,31 @@
         <div id="kb-cats" class="kb-cats" role="group" aria-label="Genre"></div>
         <div id="kb-grid" class="kb-grid"></div>
         <p class="kb-note">Picking a kit swaps the sounds and its swing. On an empty pattern it also loads the kit's starter groove and tempo. Your pattern and swapped samples stay.</p>
+      </div>
+
+      <div class="kitbar keysbar">
+        <button id="kl-open" class="kit-open kl-open" type="button" aria-expanded="false" aria-controls="kl-browser" title="Browse hip-hop keys / piano loops by style">
+          <span class="ko-top"><span id="kl-cat" class="ko-cat">Keys loops</span><span class="ko-chev">Keys ▾</span></span>
+          <strong id="kl-name" class="ko-name">Pick a keys loop</strong>
+          <span id="kl-meta" class="ko-meta"></span>
+        </button>
+        <div class="kitbar-right">
+          <label class="kl-keylbl" title="Song key: keys loops are transposed to it">Song key <select class="js-songkey" id="kl-key" aria-label="Song key"></select></label>
+        </div>
+      </div>
+      <div id="kl-host-beats">
+        <div id="kl-browser" class="kit-browser kl-browser" hidden>
+          <div class="kb-head"><span class="label">Keys loops · hip-hop piano, Rhodes &amp; synth · follow song key + BPM</span><button id="kl-close" class="btn small ghost" type="button">Close</button></div>
+          <div class="kl-opts">
+            <label>Song key <select class="js-songkey" id="kl-key2" aria-label="Song key (keys loops)"></select></label>
+            <label>Load into <select id="kl-slot" aria-label="Load into piano pattern"><option value="">Current pattern (A)</option><option value="A">Pattern A</option><option value="B">Pattern B</option><option value="C">Pattern C</option><option value="D">Pattern D</option></select></label>
+            <label class="chk" title="Loops always play at the song BPM. Tick to switch the song to the loop's suggested tempo when you load it."><input type="checkbox" id="kl-tempo"> Use loop tempo</label>
+            <button type="button" id="kl-stop" class="btn small ghost" hidden>■ Stop preview</button>
+          </div>
+          <div id="kl-cats" class="kb-cats" role="group" aria-label="Keys loop style"></div>
+          <div id="kl-grid" class="kb-grid kl-grid"></div>
+          <p class="kb-note">Original progressions and melodies, synthesized in your browser (no samples). Loops play at the song BPM and swing and are transposed to the song key. Tap a card to preview it (while the beat plays it joins on the next bar). Load puts the loop into a Piano Roll pattern (A–D), where every note can be edited, and it plays with the drums.</p>
+        </div>
       </div>
 
       <div class="song-bar">
@@ -296,9 +321,11 @@
         </div>
         <div class="pn-transport">
           <span id="pn-pos" class="mono pn-pos">Bar 1</span>
+          <button type="button" id="pn-loops" class="btn pn-loops" aria-expanded="false" aria-controls="kl-browser" title="Hip-hop keys / piano loop bank">🎹 Keys loops ▾</button>
           <button type="button" id="pn-play" class="btn primary pn-play" title="Play / pause with the drum machine (Space)">▶ Play</button>
         </div>
       </div>
+      <div id="kl-host-piano"></div>
       <div class="pn-bar">
         <div class="slots" id="pn-slots" role="group" aria-label="Piano pattern slots">
           <span class="label">Pattern</span>
@@ -553,6 +580,7 @@
   <script src="drums.js"></script>
   <script src="keys-instruments.js"></script>
   <script src="pianoroll-data.js"></script>
+  <script src="keys-loops.js"></script>
   <script src="pianoroll.js"></script>
   <script src="app.js"></script>
 </body>

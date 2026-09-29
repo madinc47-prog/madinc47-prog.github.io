@@ -718,3 +718,30 @@ body.bt-on:not(.bt-layer) .seq-head::after {
   .pn-item-actions { width: 100%; display: grid; grid-template-columns: repeat(4, 1fr); }
   .pn-item-actions .btn { justify-content: center; padding: .4rem .3rem; }
 }
+
+/* ---------- Keys loop bank (kit-picker style) ---------- */
+.keysbar { margin-top: -.2rem; }
+.kl-open { --kit: var(--pn, #a78bfa); }
+.kl-keylbl { display: flex; align-items: center; gap: .4rem; font-size: .8rem; color: var(--muted); font-weight: 700; }
+.kl-keylbl select, .kl-opts select { background: var(--bg3); border: 1px solid var(--line); border-radius: 8px; padding: .34rem .45rem; color: var(--text); font-weight: 700; min-width: 0; max-width: 100%; }
+.kl-keylbl { white-space: nowrap; }
+.kl-browser { border-color: #3a3357; }
+.kl-opts { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem .9rem; margin-bottom: .6rem; font-size: .8rem; color: var(--muted); font-weight: 700; }
+.kl-opts label { display: flex; align-items: center; gap: .35rem; }
+.kl-card { cursor: default; padding: 0; gap: 0; overflow: hidden; }
+.kl-main { display: grid; gap: .15rem; text-align: left; background: transparent; border: 0; color: inherit; font: inherit; padding: .55rem .65rem .4rem; cursor: pointer; letter-spacing: 0; }
+.kl-actions { display: flex; gap: .35rem; padding: 0 .65rem .55rem; }
+.kl-actions .btn { flex: 1 1 0; justify-content: center; }
+.kl-card.previewing { box-shadow: 0 0 0 2px var(--kc); background: #221f33; }
+.kl-card.previewing .kl-prev { color: var(--kc); border-color: var(--kc); }
+.kl-card.active .kc-name::after { content: "IN PIANO ROLL"; margin-left: .4rem; font-size: .56rem; letter-spacing: .08em; color: var(--kc); border: 1px solid var(--kc); border-radius: 4px; padding: 0 .25rem; vertical-align: 2px; }
+.pn-loops[aria-expanded="true"] { border-color: var(--pn, #a78bfa); color: var(--pn, #a78bfa); }
+#kl-host-piano .kl-browser { margin: .2rem 0 .8rem; }
+@media (max-width: 560px) {
+  .keysbar .kitbar-right { width: 100%; }
+  .kl-keylbl { width: 100%; }
+  .kl-keylbl select { flex: 1 1 auto; }
+  .kl-card .kc-desc { display: block; }
+  .kl-grid { grid-template-columns: 1fr; }
+  .kl-opts { gap: .45rem .7rem; }
+}
