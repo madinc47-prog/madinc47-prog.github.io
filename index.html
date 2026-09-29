@@ -14,7 +14,7 @@
   <meta property="og:locale" content="en_DM">
   <meta name="theme-color" content="#0a2e28">
   <link rel="preload" as="image" href="assets/hero-dominica.jpg">
-  <link rel="stylesheet" href="styles.css?v=20260929">
+  <link rel="stylesheet" href="styles.css?v=20260929b">
 </head>
 <body>
   <header class="site-header">
@@ -124,6 +124,16 @@
               <span class="radio-fx-note" id="radio-fx-note">Smoother highs · wider stage</span>
             </div>
           </div>
+          <div class="radio-eq" id="radio-eq" data-eq="off" hidden>
+            <div class="radio-eq-bar">
+              <label class="radio-eq-pick" for="radio-eq-preset">EQ</label>
+              <select id="radio-eq-preset" class="radio-eq-select" aria-describedby="radio-eq-hint"></select>
+              <button type="button" class="radio-eq-btn" id="radio-eq-adjust" aria-expanded="false" aria-controls="radio-eq-bands">Adjust</button>
+              <button type="button" class="radio-eq-btn" id="radio-eq-reset">Reset</button>
+              <span class="radio-eq-hint" id="radio-eq-hint"></span>
+            </div>
+            <div class="radio-eq-bands" id="radio-eq-bands" role="group" aria-label="10-band equalizer" hidden></div>
+          </div>
         </div>
         <div class="chips radio-groups" id="radio-groups" role="group" aria-label="Station groups"></div>
         <div id="radio-list" class="radio-list"></div>
@@ -155,6 +165,6 @@
     </div>
   </footer>
   <script src="app.js"></script>
-  <script src="radio.js?v=20260929"></script>
+  <script src="radio.js?v=20260929b"></script>
 </body>
 </html>

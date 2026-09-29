@@ -2,46 +2,49 @@
    Every stream below is HTTPS and was checked to serve real audio.
    "Warm & Wide" sound: stations whose streams send CORS headers (Access-Control-Allow-Origin,
    checked on every redirect hop, Sep 2026) are routed through a gentle Web Audio chain.
-   Stations marked fx: false (no CORS headers) always play their original sound. */
+   Stations marked fx: false (no CORS headers) always play their original sound.
+   eq: the station's starting EQ preset (standard presets only, picked by format); listeners can change it. */
 (function () {
   "use strict";
 
   var STATIONS = [
     // Dominica
-    { id: "dbs", name: "DBS Radio", group: "Dominica", place: "Roseau · 88.1", genre: "News & talk", stream: "https://stream.dbcradio.net:8005/live", site: "https://dbcradio.net/" },
-    { id: "q95", name: "Q95 FM", group: "Dominica", place: "Roseau · 95.1", genre: "Talk & music", stream: "https://sonic01.instainternet.com/8306/stream", site: "https://www.q95da.com/" },
-    { id: "kairi", name: "Kairi FM", group: "Dominica", place: "Roseau · 93.1", genre: "News & jams", stream: "https://stream.zeno.fm/ych5ixtx51ktv", site: "https://zeno.fm/radio/kairi-fm/" },
-    { id: "vibes", name: "Vibes Radio", group: "Dominica", place: "Roseau · 99.5", genre: "Urban", stream: "https://vibesradio.dm/stream", site: "https://vibesradio.dm/", fx: false },
-    { id: "vol", name: "Voice of Life Radio", group: "Dominica", place: "Loubiere", genre: "Gospel", stream: "https://cdn.comeseetv.com:8000/vol", site: "https://voiceofliferadio.dm/" },
-    { id: "dcr", name: "Dominica Catholic Radio", group: "Dominica", place: "Roseau · 96.1", genre: "Faith", stream: "https://cdn.comeseetv.com:8010/dominicacatholicradio", site: "http://www.dominicacatholicradio.org/" },
-    { id: "my-worship", name: "My Worship FM", group: "Dominica", place: "Mahaut · 103.3", genre: "Gospel", stream: "https://playerservices.streamtheworld.com/api/livestream-redirect/SP_R2796427_SC", site: "https://myworshipfm.com/" },
-    { id: "en-ba-mango", name: "Radio En Ba Mango", group: "Dominica", place: "Grand Bay", genre: "Soca & local", stream: "https://s10.myradiostream.com/:4212/listen.mp3", site: "https://www.facebook.com/oobinmmani/" },
-    { id: "tdn", name: "TDN Radio", group: "Dominica", place: "Roseau", genre: "News & Caribbean", stream: "https://sonic01.instainternet.com/8308/stream", site: "https://tdnradio.net/" },
-    { id: "hits-767", name: "Hits 767", group: "Dominica", place: "Roseau", genre: "Hits", stream: "https://stream.zeno.fm/tsjanuqnp9rtv", site: "https://zeno.fm/radio/hits-767-radio/" },
-    { id: "gtm", name: "GTM Radio", group: "Dominica", place: "Roseau", genre: "Local", stream: "https://sonic01.instainternet.com/8314/stream", site: "https://www.gtmradio.com/" },
-    { id: "life-101", name: "Life 101", group: "Dominica", place: "Roseau", genre: "Worship", stream: "https://sonic01.instainternet.com/8310/stream", site: "https://life101radio.net/" },
-    { id: "rvr-jamz", name: "RVR Jamz", group: "Dominica", place: "Roseau", genre: "Jamz", stream: "https://vousstream.com/8320/stream", site: "https://onlineradiobox.com/dm/rvrjamz/" },
-    { id: "mount-zion", name: "Mt. Zion FM", group: "Dominica", place: "Dominica", genre: "Gospel", stream: "https://streaming.live365.com/a42752", site: "https://live365.com/station/Mt--Zion-FM-a42752" },
+    { id: "dbs", name: "DBS Radio", group: "Dominica", place: "Roseau · 88.1", genre: "News & talk", stream: "https://stream.dbcradio.net:8005/live", site: "https://dbcradio.net/", eq: "Vocal" },
+    { id: "q95", name: "Q95 FM", group: "Dominica", place: "Roseau · 95.1", genre: "Talk & music", stream: "https://sonic01.instainternet.com/8306/stream", site: "https://www.q95da.com/", eq: "Vocal" },
+    { id: "kairi", name: "Kairi FM", group: "Dominica", place: "Roseau · 93.1", genre: "News & jams", stream: "https://stream.zeno.fm/ych5ixtx51ktv", site: "https://zeno.fm/radio/kairi-fm/", eq: "Vocal" },
+    { id: "vibes", name: "Vibes Radio", group: "Dominica", place: "Roseau · 99.5", genre: "Urban", stream: "https://vibesradio.dm/stream", site: "https://vibesradio.dm/", fx: false, eq: "Hip-Hop" },
+    { id: "vol", name: "Voice of Life Radio", group: "Dominica", place: "Loubiere", genre: "Gospel", stream: "https://cdn.comeseetv.com:8000/vol", site: "https://voiceofliferadio.dm/", eq: "Vocal" },
+    { id: "dcr", name: "Dominica Catholic Radio", group: "Dominica", place: "Roseau · 96.1", genre: "Faith", stream: "https://cdn.comeseetv.com:8010/dominicacatholicradio", site: "http://www.dominicacatholicradio.org/", eq: "Vocal" },
+    { id: "my-worship", name: "My Worship FM", group: "Dominica", place: "Mahaut · 103.3", genre: "Gospel", stream: "https://playerservices.streamtheworld.com/api/livestream-redirect/SP_R2796427_SC", site: "https://myworshipfm.com/", eq: "Pop" },
+    { id: "en-ba-mango", name: "Radio En Ba Mango", group: "Dominica", place: "Grand Bay", genre: "Soca & local", stream: "https://s10.myradiostream.com/:4212/listen.mp3", site: "https://www.facebook.com/oobinmmani/", eq: "Dance" },
+    { id: "tdn", name: "TDN Radio", group: "Dominica", place: "Roseau", genre: "News & Caribbean", stream: "https://sonic01.instainternet.com/8308/stream", site: "https://tdnradio.net/", eq: "Vocal" },
+    { id: "hits-767", name: "Hits 767", group: "Dominica", place: "Roseau", genre: "Hits", stream: "https://stream.zeno.fm/tsjanuqnp9rtv", site: "https://zeno.fm/radio/hits-767-radio/", eq: "Pop" },
+    { id: "gtm", name: "GTM Radio", group: "Dominica", place: "Roseau", genre: "Local", stream: "https://sonic01.instainternet.com/8314/stream", site: "https://www.gtmradio.com/", eq: "Pop" },
+    { id: "life-101", name: "Life 101", group: "Dominica", place: "Roseau", genre: "Worship", stream: "https://sonic01.instainternet.com/8310/stream", site: "https://life101radio.net/", eq: "Pop" },
+    { id: "rvr-jamz", name: "RVR Jamz", group: "Dominica", place: "Roseau", genre: "Jamz", stream: "https://vousstream.com/8320/stream", site: "https://onlineradiobox.com/dm/rvrjamz/", eq: "Bass Boost" },
+    { id: "mount-zion", name: "Mt. Zion FM", group: "Dominica", place: "Dominica", genre: "Gospel", stream: "https://streaming.live365.com/a42752", site: "https://live365.com/station/Mt--Zion-FM-a42752", eq: "Pop" },
     // Caribbean
-    { id: "blazin", name: "Blazin 99.3", group: "Caribbean", place: "Castries, Saint Lucia", genre: "Urban", stream: "https://streams.radio.co/s5f11a7ef9/listen", site: "https://www.blazin993.com/" },
-    { id: "kiss-slu", name: "Caribbean KISS FM", group: "Caribbean", place: "Castries, Saint Lucia", genre: "Hits", stream: "https://auds2.intacs.com/caribbeankissfm", site: "https://www.caribbeankissfm.com/" },
-    { id: "vob", name: "VOB 92.9", group: "Caribbean", place: "Bridgetown, Barbados", genre: "Talk & music", stream: "https://ice66.securenetsystems.net/VOB929", site: "https://vob929.com/" },
-    { id: "hott", name: "HOTT 95.3", group: "Caribbean", place: "Bridgetown, Barbados", genre: "Urban", stream: "https://ice64.securenetsystems.net/HOTT953", site: "https://www.starcomnetwork.net/hott-953-fm-landing/" },
-    { id: "irie", name: "Irie FM", group: "Caribbean", place: "Ocho Rios, Jamaica", genre: "Reggae", stream: "https://stream.iriefm.net:8008/stream", site: "https://iriefm.net/" },
-    { id: "boss", name: "Boss FM", group: "Caribbean", place: "St. George's, Grenada", genre: "Hits", stream: "https://usa8.fastcast4u.com/proxy/bossfm2?mp=/1", site: "https://www.bossfmgrenada.net/" },
-    { id: "hot97", name: "Hot 97 SVG", group: "Caribbean", place: "Kingstown, St. Vincent", genre: "Urban", stream: "https://usa7.fastcast4u.com/proxy/hot97svg?mp=/1", site: "http://www.hot97svg.com/" },
+    { id: "blazin", name: "Blazin 99.3", group: "Caribbean", place: "Castries, Saint Lucia", genre: "Urban", stream: "https://streams.radio.co/s5f11a7ef9/listen", site: "https://www.blazin993.com/", eq: "Hip-Hop" },
+    { id: "kiss-slu", name: "Caribbean KISS FM", group: "Caribbean", place: "Castries, Saint Lucia", genre: "Hits", stream: "https://auds2.intacs.com/caribbeankissfm", site: "https://www.caribbeankissfm.com/", eq: "Pop" },
+    { id: "vob", name: "VOB 92.9", group: "Caribbean", place: "Bridgetown, Barbados", genre: "Talk & music", stream: "https://ice66.securenetsystems.net/VOB929", site: "https://vob929.com/", eq: "Vocal" },
+    { id: "hott", name: "HOTT 95.3", group: "Caribbean", place: "Bridgetown, Barbados", genre: "Urban", stream: "https://ice64.securenetsystems.net/HOTT953", site: "https://www.starcomnetwork.net/hott-953-fm-landing/", eq: "Hip-Hop" },
+    { id: "irie", name: "Irie FM", group: "Caribbean", place: "Ocho Rios, Jamaica", genre: "Reggae", stream: "https://stream.iriefm.net:8008/stream", site: "https://iriefm.net/", eq: "Bass Boost" },
+    { id: "boss", name: "Boss FM", group: "Caribbean", place: "St. George's, Grenada", genre: "Hits", stream: "https://usa8.fastcast4u.com/proxy/bossfm2?mp=/1", site: "https://www.bossfmgrenada.net/", eq: "Dance" },
+    { id: "hot97", name: "Hot 97 SVG", group: "Caribbean", place: "Kingstown, St. Vincent", genre: "Urban", stream: "https://usa7.fastcast4u.com/proxy/hot97svg?mp=/1", site: "http://www.hot97svg.com/", eq: "Hip-Hop" },
     // World
-    { id: "bbc-ws", name: "BBC World Service", group: "World", place: "London", genre: "World news", stream: "https://stream.live.vc.bbcmedia.co.uk/bbc_world_service", site: "https://www.bbc.co.uk/worldserviceradio" },
-    { id: "npr", name: "NPR", group: "World", place: "Washington", genre: "News", stream: "https://npr-ice.streamguys1.com/live.mp3", site: "https://www.npr.org/" },
-    { id: "rfi", name: "RFI English", group: "World", place: "Paris", genre: "World news", stream: "https://rfienanglais64k.ice.infomaniak.ch/rfienanglais-64.mp3", site: "https://www.rfi.fr/en/" },
-    { id: "kexp", name: "KEXP", group: "World", place: "Seattle", genre: "Indie", stream: "https://kexp-mp3-128.streamguys1.com/kexp128.mp3", site: "https://www.kexp.org/" },
-    { id: "fip", name: "FIP", group: "World", place: "Paris", genre: "Eclectic", stream: "https://icecast.radiofrance.fr/fip-midfi.mp3", site: "https://www.radiofrance.fr/fip" },
-    { id: "classic-fm", name: "Classic FM", group: "World", place: "London", genre: "Classical", stream: "https://media-ice.musicradio.com/ClassicFMMP3", site: "https://www.classicfm.com/" }
+    { id: "bbc-ws", name: "BBC World Service", group: "World", place: "London", genre: "World news", stream: "https://stream.live.vc.bbcmedia.co.uk/bbc_world_service", site: "https://www.bbc.co.uk/worldserviceradio", eq: "Vocal" },
+    { id: "npr", name: "NPR", group: "World", place: "Washington", genre: "News", stream: "https://npr-ice.streamguys1.com/live.mp3", site: "https://www.npr.org/", eq: "Vocal" },
+    { id: "rfi", name: "RFI English", group: "World", place: "Paris", genre: "World news", stream: "https://rfienanglais64k.ice.infomaniak.ch/rfienanglais-64.mp3", site: "https://www.rfi.fr/en/", eq: "Vocal" },
+    { id: "kexp", name: "KEXP", group: "World", place: "Seattle", genre: "Indie", stream: "https://kexp-mp3-128.streamguys1.com/kexp128.mp3", site: "https://www.kexp.org/", eq: "Rock" },
+    { id: "fip", name: "FIP", group: "World", place: "Paris", genre: "Eclectic", stream: "https://icecast.radiofrance.fr/fip-midfi.mp3", site: "https://www.radiofrance.fr/fip", eq: "Jazz" },
+    { id: "classic-fm", name: "Classic FM", group: "World", place: "London", genre: "Classical", stream: "https://media-ice.musicradio.com/ClassicFMMP3", site: "https://www.classicfm.com/", eq: "Classical" }
   ];
 
   var GROUPS = ["Dominica", "Caribbean", "World"];
   var VOLUME_KEY = "islepin_radio_volume";
-  var FX_KEY = "islepin_radio_fx";        // "1" = Warm & Wide on (default), "0" = original sound
+  var FX_KEY = "islepin_radio_fx";        // "1" = Warm & Wide on (default), "0" = off
+  var EQ_KEY = "islepin_radio_eq";        // { stationId: { p: presetName } | { p: "Custom", g: [10 gains] } }
+  var EQ_OPEN_KEY = "islepin_radio_eq_open";
   var START_TIMEOUT_MS = 20000;
 
   // ---- Warm & Wide: gentle "car sound" chain (Web Audio) ----
@@ -89,7 +92,74 @@
     return buf;
   }
 
-  // Builds the chain on any BaseAudioContext (also used by offline tests). Returns { input, output, setProcessed }.
+  // ---- Graphic EQ: the standard presets found on phones, car stereos and players ----
+  // Conventional iOS/Winamp-style curves, kept moderate (never more than +/-6 dB). Ten peaking bands.
+  // The EQ feeds Warm & Wide, the auto-gain and the limiter, so even Treble Boost stays smooth.
+  var EQ_BANDS = [32, 64, 125, 250, 500, 1000, 2000, 4000, 8000, 16000];
+  var EQ_LABELS = ["32", "64", "125", "250", "500", "1k", "2k", "4k", "8k", "16k"];
+  var EQ_Q = 1.41;          // about one octave per band
+  var EQ_RANGE = 12;        // slider range, dB
+  var EQ_PRESETS = [
+    ["Flat",          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]],
+    ["Pop",           [-1, 1, 3, 4, 3.5, 1.5, -0.5, -1, -1, -1.5]],
+    ["Rock",          [4.5, 3.5, 2, -0.5, -1.5, -1, 1, 2.5, 3, 3.5]],
+    ["Jazz",          [3, 2, 1, 1.5, -1, -1, 0, 1, 2, 3]],
+    ["Classical",     [3.5, 3, 2.5, 1.5, -1, -1, 0, 1.5, 2.5, 3]],
+    ["Hip-Hop",       [5, 4.5, 1.5, 3, -1, -1, 1, -0.5, 1.5, 2.5]],
+    ["Dance",         [4, 5, 3.5, 0, 0.5, 1.5, 3, 3, 2, 0]],
+    ["Electronic",    [4, 3.5, 1, 0, -1.5, 1.5, 1, 1.5, 3.5, 4]],
+    ["R&B",           [2.5, 5.5, 4.5, 1.5, -2, -1.5, 2, 2.5, 3, 3.5]],
+    ["Acoustic",      [4, 4, 3, 1, 1.5, 1.5, 3, 3.5, 3, 2]],
+    ["Bass Boost",    [5.5, 4.5, 3.5, 2, 1, 0, 0, 0, 0, 0]],
+    ["Bass Reduce",   [-5.5, -4.5, -3.5, -2, -1, 0, 0, 0, 0, 0]],
+    ["Treble Boost",  [0, 0, 0, 0, 0, 1, 2.5, 3.5, 4.5, 5.5]],
+    ["Treble Reduce", [0, 0, 0, 0, 0, -1, -2.5, -3.5, -4.5, -5.5]],
+    ["Vocal",         [-1.5, -3, -3, 1, 3.5, 3.5, 3, 1.5, 0, -1.5]],
+    ["Loudness",      [5, 4, 2, 0, -1, -0.5, 0, 1.5, 3.5, 3]],
+    ["Small Speakers",[5, 4, 3, 2, 1, 0, -2, -3, -4, -4.5]],
+    ["Deep",          [4.5, 3.5, 1.5, 1, 2.5, 2, 1.5, -2, -3.5, -4]],
+    ["Latin",         [4, 3, 0, 0, -1.5, -1.5, -1.5, 0, 3, 4]],
+    ["Piano",         [3, 2, 0, 2.5, 3, 1.5, 3, 4, 3, 3]],
+    ["Lounge",        [-3, -1.5, -0.5, 1.5, 4, 2.5, 0, -1.5, 2, 1]]
+  ];
+  function presetGains(name) {
+    for (var i = 0; i < EQ_PRESETS.length; i++) if (EQ_PRESETS[i][0] === name) return EQ_PRESETS[i][1].slice();
+    return null;
+  }
+  function isFlat(g) { for (var i = 0; i < g.length; i++) if (g[i]) return false; return true; }
+
+  // |H(f)|^2 of a Web Audio (RBJ cookbook) peaking biquad
+  function peakingMagSq(f0, g, q, f, sr) {
+    var A = Math.pow(10, g / 40), w0 = 2 * Math.PI * f0 / sr, cw = Math.cos(w0), alpha = Math.sin(w0) / (2 * q);
+    var b0 = 1 + alpha * A, b1 = -2 * cw, b2 = 1 - alpha * A, a0 = 1 + alpha / A, a1 = -2 * cw, a2 = 1 - alpha / A;
+    var w = 2 * Math.PI * f / sr, c1 = Math.cos(w), s1 = Math.sin(w), c2 = Math.cos(2 * w), s2 = Math.sin(2 * w);
+    var nr = b0 + b1 * c1 + b2 * c2, ni = -(b1 * s1 + b2 * s2), dr = a0 + a1 * c1 + a2 * c2, di = -(a1 * s1 + a2 * s2);
+    return (nr * nr + ni * ni) / (dr * dr + di * di);
+  }
+  // Auto-gain: undo the loudness change of an EQ curve, weighted like typical music heard by ear
+  // (K-weighting style low cut and presence lift, less energy at the very top). Boosts are fully
+  // compensated; cuts get at most +2 dB make-up.
+  var EQ_WF = [], EQ_WW = [];
+  (function () {
+    for (var i = 0; i < 64; i++) {
+      var f = 20 * Math.pow(1000, i / 63), f4 = Math.pow(f / 38, 4);
+      EQ_WF.push(f);
+      EQ_WW.push(f4 / (1 + f4) * (1 + 1.5 * f * f / (f * f + 1500 * 1500)) / (1 + Math.pow(f / 5000, 2)));
+    }
+  })();
+  function eqAutoGainDb(gains) {
+    var num = 0, den = 0;
+    for (var i = 0; i < EQ_WF.length; i++) {
+      var m = 1;
+      for (var b = 0; b < EQ_BANDS.length; b++) if (gains[b]) m *= peakingMagSq(EQ_BANDS[b], gains[b], EQ_Q, EQ_WF[i], 48000);
+      num += EQ_WW[i] * m; den += EQ_WW[i];
+    }
+    return Math.max(-9, Math.min(2, -10 * Math.log10(num / den)));
+  }
+
+  // Builds the chain on any BaseAudioContext (also used by offline tests).
+  //   input -> graphic EQ -> auto-gain -> [Warm & Wide | bypass] -> headroom -> limiter -> trim -> output
+  //   plus an untouched "original" path for instant A/B without reconnecting.
   function buildWarmWide(ctx) {
     function biquad(type, freq, q, g) {
       var f = ctx.createBiquadFilter();
@@ -104,11 +174,18 @@
     input.channelCount = 2; input.channelCountMode = "explicit"; input.channelInterpretation = "speakers"; // mono -> centred stereo
     var output = gain(1);
 
+    // 0) graphic EQ + auto-gain
+    var eq = EQ_BANDS.map(function (f) { return biquad("peaking", f, EQ_Q, 0); });
+    var eqGain = gain(1);
+    input.connect(eq[0]);
+    for (var b = 1; b < eq.length; b++) eq[b - 1].connect(eq[b]);
+    eq[eq.length - 1].connect(eqGain);
+
     // 1) tone
     var warmth = biquad("lowshelf", FX.warmthHz, null, FX.warmthDb);
     var deharsh = biquad("peaking", FX.harshHz, FX.harshQ, FX.harshDb);
     var air = biquad("highshelf", FX.airHz, null, FX.airDb);
-    input.connect(warmth); warmth.connect(deharsh); deharsh.connect(air);
+    eqGain.connect(warmth); warmth.connect(deharsh); deharsh.connect(air);
 
     // 2) mid/side width
     var split = ctx.createChannelSplitter(2);
@@ -137,9 +214,10 @@
     var wet = gain(FX.wetMix);
     air.connect(wetHp); wetHp.connect(wetLp); wetLp.connect(room); room.connect(wet);
 
-    // 4) sum -> gentle compressor/limiter -> loudness trim
-    var sum = gain(1);
-    merge.connect(sum); wet.connect(sum);
+    // 4) Warm & Wide on/off (EQ keeps working either way) -> gentle compressor/limiter -> loudness trim
+    var wwSum = gain(1), wwLevel = gain(1), wwBypass = gain(0), sum = gain(1);
+    merge.connect(wwSum); wet.connect(wwSum); wwSum.connect(wwLevel); wwLevel.connect(sum);
+    eqGain.connect(wwBypass); wwBypass.connect(sum);
     var comp = ctx.createDynamicsCompressor();
     comp.threshold.value = FX.compThreshold; comp.knee.value = FX.compKnee; comp.ratio.value = FX.compRatio;
     comp.attack.value = FX.compAttack; comp.release.value = FX.compRelease;
@@ -150,16 +228,28 @@
     var fxLevel = gain(1), dryLevel = gain(0);
     trim.connect(fxLevel); fxLevel.connect(output);
     input.connect(dryLevel); dryLevel.connect(output);
-    function setProcessed(on, instant) {
+    function fade(param, v, instant) {
       var t = ctx.currentTime;
-      [[fxLevel, on ? 1 : 0], [dryLevel, on ? 0 : 1]].forEach(function (p) {
-        var g = p[0].gain;
-        g.cancelScheduledValues(t);
-        if (instant) g.setValueAtTime(p[1], t);
-        else { g.setValueAtTime(g.value, t); g.linearRampToValueAtTime(p[1], t + 0.25); }
-      });
+      param.cancelScheduledValues(t);
+      if (instant) param.setValueAtTime(v, t);
+      else { param.setValueAtTime(param.value, t); param.linearRampToValueAtTime(v, t + 0.25); }
     }
-    return { input: input, output: output, setProcessed: setProcessed, compressor: comp };
+    function glide(param, v, instant) {
+      var t = ctx.currentTime;
+      param.cancelScheduledValues(t);
+      if (instant) param.setValueAtTime(v, t); else param.setTargetAtTime(v, t, 0.03);
+    }
+    // processed: false = original sound; warmWide: Warm & Wide stage in or bypassed
+    function setMode(processed, warmWide, instant) {
+      fade(fxLevel.gain, processed ? 1 : 0, instant); fade(dryLevel.gain, processed ? 0 : 1, instant);
+      fade(wwLevel.gain, warmWide ? 1 : 0, instant); fade(wwBypass.gain, warmWide ? 0 : 1, instant);
+    }
+    function setEq(gains, instant) {
+      for (var b = 0; b < eq.length; b++) glide(eq[b].gain, gains[b] || 0, instant);
+      glide(eqGain.gain, Math.pow(10, eqAutoGainDb(gains) / 20), instant);
+    }
+    function setProcessed(on, instant) { setMode(on, true, instant); }
+    return { input: input, output: output, setMode: setMode, setEq: setEq, setProcessed: setProcessed, compressor: comp };
   }
 
   var root = document.getElementById("radio-player");
@@ -174,6 +264,12 @@
   var fxWrap = document.getElementById("radio-fx");
   var fxToggle = document.getElementById("radio-fx-toggle");
   var fxNote = document.getElementById("radio-fx-note");
+  var eqWrap = document.getElementById("radio-eq");
+  var eqSelect = document.getElementById("radio-eq-preset");
+  var eqAdjust = document.getElementById("radio-eq-adjust");
+  var eqReset = document.getElementById("radio-eq-reset");
+  var eqHint = document.getElementById("radio-eq-hint");
+  var eqBandsEl = document.getElementById("radio-eq-bands");
 
   function makeAudio(id, cors) {
     var a = new Audio();
@@ -267,6 +363,33 @@
     return fxSupported && !engineFailed && s.fx !== false && !fxBroken[s.id];
   }
 
+  // ---- EQ state: per-station choice, falling back to the station's standard default preset ----
+  var eqPrefs = {};
+  try { eqPrefs = JSON.parse(load(EQ_KEY) || "{}") || {}; } catch (e) { eqPrefs = {}; }
+  function clampGain(v) { v = Number(v); return isFinite(v) ? Math.max(-EQ_RANGE, Math.min(EQ_RANGE, Math.round(v * 2) / 2)) : 0; }
+  function stationDefault(s) { return presetGains(s.eq) ? s.eq : "Flat"; }
+  function eqFor(s) {
+    var p = eqPrefs[s.id];
+    if (p && p.p === "Custom" && p.g && p.g.length === EQ_BANDS.length) return { name: "Custom", gains: p.g.map(clampGain) };
+    if (p && presetGains(p.p)) return { name: p.p, gains: presetGains(p.p) };
+    var d = stationDefault(s);
+    return { name: d, gains: presetGains(d) };
+  }
+  function saveEq(s, entry) {
+    if (entry && entry.p === stationDefault(s)) entry = null;   // choosing the default = follow the default
+    if (entry) eqPrefs[s.id] = entry; else delete eqPrefs[s.id];
+    store(EQ_KEY, JSON.stringify(eqPrefs));
+  }
+  function eqActive(s) { return !isFlat(eqFor(s).gains); }
+  function wantsProcessing(s) { return canProcess(s) && (fxOn || eqActive(s)); }
+  // push the current station's EQ + Warm & Wide state into the running chain
+  function applySound(instant) {
+    if (!engine || !current || audio !== fxAudio) return;
+    var e = eqFor(current);
+    engine.chain.setEq(e.gains, instant);
+    engine.chain.setMode(fxOn || !isFlat(e.gains), fxOn, instant);
+  }
+
   // ---- volume ----
   var savedVol = parseFloat(load(VOLUME_KEY));
   var volume = isFinite(savedVol) && savedVol >= 0 && savedVol <= 1 ? savedVol : 0.8;
@@ -321,16 +444,62 @@
     if (!fxSupported) return;
     fxToggle.setAttribute("aria-checked", fxOn ? "true" : "false");
     var note, original = false;
-    if (!fxOn) { note = "Original sound"; original = true; }
-    else if (current && (!canProcess(current) || (isActive(current.id) && audio !== fxAudio))) {
+    if (current && (!canProcess(current) || (isActive(current.id) && audio !== fxAudio && wantsProcessing(current)))) {
       note = "Original sound for this station"; original = true;
-    } else note = "Smoother highs · wider stage";
+    } else if (fxOn) note = "Smoother highs · wider stage";
+    else if (current && eqActive(current)) note = "Warm & Wide off · EQ on";
+    else { note = "Original sound"; original = true; }
     fxNote.textContent = note;
     fxWrap.setAttribute("data-fx", original ? "original" : "on");
   }
 
+  // ---- EQ panel ----
+  var eqSliders = [], eqOutputs = [];
+  function fmtDb(v) { return (v > 0 ? "+" : v < 0 ? "\u2212" : "") + Math.abs(v); }
+  function buildEqUi() {
+    if (!eqWrap) return;
+    eqSelect.innerHTML = EQ_PRESETS.map(function (p) { return '<option value="' + esc(p[0]) + '">' + esc(p[0]) + '</option>'; }).join("") +
+      '<option value="Custom" hidden>Custom</option>';
+    eqBandsEl.innerHTML = EQ_BANDS.map(function (f, i) {
+      return '<label class="radio-eq-band"><output>0</output>' +
+        '<input type="range" min="-' + EQ_RANGE + '" max="' + EQ_RANGE + '" step="0.5" value="0" data-band="' + i + '" aria-label="' + esc(EQ_LABELS[i]) + (f < 1000 ? ' Hz' : 'Hz') + '">' +
+        '<span>' + esc(EQ_LABELS[i]) + '</span></label>';
+    }).join("");
+    eqSliders = [].slice.call(eqBandsEl.querySelectorAll("input"));
+    eqOutputs = [].slice.call(eqBandsEl.querySelectorAll("output"));
+    setEqOpen(load(EQ_OPEN_KEY) === "1");
+  }
+  function setEqOpen(open) {
+    eqBandsEl.hidden = !open;
+    eqAdjust.setAttribute("aria-expanded", open ? "true" : "false");
+    eqAdjust.textContent = open ? "Hide sliders" : "Adjust";
+  }
+  function paintEq() {
+    if (!eqWrap) return;
+    eqWrap.hidden = !fxSupported;
+    if (!fxSupported) return;
+    var s = current, ok = !!s && canProcess(s);
+    var e = ok ? eqFor(s) : { name: "Flat", gains: presetGains("Flat") };   // nothing is applied: show flat
+    var customOpt = eqSelect.querySelector('option[value="Custom"]');
+    customOpt.hidden = e.name !== "Custom";
+    if (eqSelect.value !== e.name) eqSelect.value = e.name;
+    eqSelect.disabled = !ok;
+    eqAdjust.disabled = !ok;
+    eqReset.disabled = !ok || !eqPrefs[s.id];
+    eqWrap.setAttribute("data-eq", ok ? "on" : "off");
+    for (var i = 0; i < eqSliders.length; i++) {
+      if (Number(eqSliders[i].value) !== e.gains[i]) eqSliders[i].value = String(e.gains[i]);
+      eqSliders[i].disabled = !ok;
+      eqOutputs[i].textContent = fmtDb(e.gains[i]);
+    }
+    eqHint.textContent = !s ? "Pick a station to set its EQ" :
+      !ok ? "EQ isn't available for this station" : "Station default: " + stationDefault(s);
+    eqReset.title = s ? "Back to this station's default (" + stationDefault(s) + ")" : "";
+  }
+
   function paintNow() {
     paintFx();
+    paintEq();
     if (!current) {
       nowName.textContent = "Nothing playing";
       nowStatus.textContent = "Pick a station below.";
@@ -413,11 +582,11 @@
     var my = ++session;
     clearStartTimer();
     clearFxWatch();
-    var useFx = !opts.plain && fxOn && canProcess(station) && !!ensureEngine();
+    var useFx = !opts.plain && wantsProcessing(station) && !!ensureEngine();
     var el = useFx ? fxAudio : plainAudio;
     silence(el === fxAudio ? plainAudio : fxAudio);
     audio = el;
-    if (useFx) { resumeEngine(); engine.chain.setProcessed(true, true); } else idleEngine();
+    if (useFx) { resumeEngine(); applySound(true); } else idleEngine();
     setStatus(station.id, "loading", opts.retry ? "Reconnecting…" : (opts.statusMsg || ""));
     el.src = station.stream;   // fresh connection = live edge
     el.load();
@@ -498,18 +667,27 @@
     if (active) pause(); else play(station);
   }
 
-  function setFx(on) {
-    fxOn = on;
-    store(FX_KEY, on ? "1" : "0");
+  // Warm & Wide or EQ changed: update the running chain (smooth, no reconnect) or switch paths if needed.
+  function soundChanged(instant) {
     if (current && isActive(current.id)) {
       if (audio === fxAudio && engine) {
         resumeEngine();
-        engine.chain.setProcessed(on, false);   // smooth crossfade, stream keeps going
-      } else if (on && canProcess(current)) {
+        applySound(instant);
+      } else if (wantsProcessing(current)) {
         play(current, { keepAttempts: true });  // switch to the processed path (brief reconnect)
       }
     }
     paintNow();
+  }
+  function setFx(on) {
+    fxOn = on;
+    store(FX_KEY, on ? "1" : "0");
+    soundChanged(false);
+  }
+  function setPreset(name) {
+    if (!current || !presetGains(name)) return;
+    saveEq(current, { p: name });
+    soundChanged(false);
   }
 
   function wire(el) {
@@ -568,6 +746,24 @@
   });
   nowToggle.addEventListener("click", function () { if (current) toggle(current); });
   if (fxToggle) fxToggle.addEventListener("click", function () { setFx(!fxOn); });
+  if (eqWrap) {
+    eqSelect.addEventListener("change", function () { if (eqSelect.value !== "Custom") setPreset(eqSelect.value); });
+    eqAdjust.addEventListener("click", function () {
+      var open = eqBandsEl.hidden;
+      setEqOpen(open);
+      store(EQ_OPEN_KEY, open ? "1" : "0");
+    });
+    eqReset.addEventListener("click", function () {
+      if (!current) return;
+      saveEq(current, null);
+      soundChanged(false);
+    });
+    eqBandsEl.addEventListener("input", function (e) {
+      if (!current || !e.target.hasAttribute("data-band")) return;
+      saveEq(current, { p: "Custom", g: eqSliders.map(function (el) { return clampGain(el.value); }) });
+      soundChanged(false);
+    });
+  }
   // iOS Safari: (re)start the audio context from a real user gesture
   document.addEventListener("pointerdown", resumeEngine, true);
   document.addEventListener("keydown", resumeEngine, true);
@@ -591,7 +787,12 @@
       build: buildWarmWide,
       isOn: function () { return fxOn; },
       set: setFx,
-      processing: function () { return !!(engine && audio === fxAudio && fxOn && current && isActive(current.id)); },
+      processing: function () { return !!(engine && audio === fxAudio && current && isActive(current.id) && (fxOn || eqActive(current))); },
+      presets: EQ_PRESETS,
+      bands: EQ_BANDS,
+      autoGainDb: eqAutoGainDb,
+      eq: function (id) { var st = byId(id) || current; return st ? { name: eqFor(st).name, gains: eqFor(st).gains, stationDefault: stationDefault(st) } : null; },
+      setPreset: setPreset,
       context: function () { return engine && engine.ctx; },
       levels: function () {   // peak of the stream going into / coming out of the chain (debug)
         if (!engine) return null;
@@ -601,6 +802,7 @@
     }
   };
 
+  buildEqUi();
   renderTabs();
   renderList();
   paintNow();

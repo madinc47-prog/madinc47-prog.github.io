@@ -276,6 +276,46 @@ input:focus, select:focus, textarea:focus {
 .radio-fx-switch[aria-checked="true"] .radio-fx-thumb { background: var(--teal); transform: translate(.86rem, -50%); }
 .radio-fx-note { font-size: .78rem; color: var(--teal); }
 .radio-fx[data-fx="original"] .radio-fx-note { color: var(--muted); }
+.radio-eq { flex-basis: 100%; display: grid; gap: .6rem; padding-top: .8rem; border-top: 1px solid rgba(45,212,191,.14); }
+.radio-eq-bar { display: flex; flex-wrap: wrap; align-items: center; gap: .45rem .6rem; }
+.radio-eq-pick {
+  display: inline; font-size: .72rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--teal);
+}
+select.radio-eq-select {
+  width: auto; min-width: 9.5rem; padding: .38rem 2rem .38rem .75rem; border-radius: 999px;
+  border: 1px solid var(--line); background-color: rgba(7,26,23,.45); color: var(--text);
+  font-size: .86rem; font-weight: 600; line-height: 1.2; cursor: pointer;
+  appearance: none; -webkit-appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, var(--teal) 50%), linear-gradient(135deg, var(--teal) 50%, transparent 50%);
+  background-position: calc(100% - 1.05rem) 55%, calc(100% - .75rem) 55%;
+  background-size: .3rem .3rem, .3rem .3rem; background-repeat: no-repeat;
+}
+select.radio-eq-select option { background: var(--bg-elev); color: var(--text); }
+.radio-eq-btn {
+  padding: .38rem .8rem; border-radius: 999px; border: 1px solid var(--line); background: transparent;
+  color: #b4d2c9; font: inherit; font-size: .82rem; font-weight: 600; line-height: 1.2; cursor: pointer;
+  transition: border-color .2s ease, color .2s ease;
+}
+.radio-eq-btn:hover:not(:disabled) { border-color: var(--teal); color: var(--teal); }
+.radio-eq-btn[aria-expanded="true"] { border-color: rgba(45,212,191,.45); color: var(--text); }
+.radio-eq-btn:disabled, select.radio-eq-select:disabled { opacity: .45; cursor: default; }
+.radio-eq-hint { font-size: .78rem; color: var(--muted); }
+.radio-eq-bands {
+  display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); gap: .15rem; max-width: 34rem;
+  padding: .7rem .4rem .45rem; border-radius: 10px; background: rgba(7,26,23,.35); border: 1px solid var(--line);
+}
+.radio-eq-bands[hidden] { display: none; }
+.radio-eq-band {
+  display: flex; flex-direction: column; align-items: center; gap: .3rem; min-width: 0;
+  font-size: .7rem; font-weight: 600; color: var(--muted);
+}
+.radio-eq-band output { font-size: .68rem; color: var(--text); font-variant-numeric: tabular-nums; min-height: 1.1em; white-space: nowrap; }
+.radio-eq-band input[type="range"] {
+  writing-mode: vertical-lr; direction: rtl; width: 1.5rem; height: 7rem; margin: 0; padding: 0;
+  border: 0; background: transparent; accent-color: var(--teal); touch-action: none; cursor: pointer;
+}
+.radio-eq-band input[type="range"]:disabled { opacity: .4; cursor: default; }
+.radio-eq[data-eq="off"] .radio-eq-band output { color: var(--muted); }
 .radio-groups {
   padding: 0 0 .85rem; gap: .5rem; border-bottom: 1px solid var(--line);
 }
@@ -322,7 +362,10 @@ input:focus, select:focus, textarea:focus {
   .radio-card { padding: .95rem 1rem; }
   .radio-groups { gap: .4rem; }
   .radio-groups .chip { padding: .45rem .75rem; font-size: .84rem; }
+  .radio-eq-bands { padding: .6rem .15rem .4rem; }
+  .radio-eq-band input[type="range"] { height: 6.5rem; }
+  .radio-eq-band output { font-size: .62rem; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .radio-card, .radio-now, .radio-fx-switch, .radio-fx-track, .radio-fx-thumb { transition: none; }
+  .radio-card, .radio-now, .radio-fx-switch, .radio-fx-track, .radio-fx-thumb, .radio-eq-btn { transition: none; }
 }
