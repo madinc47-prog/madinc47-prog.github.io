@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Island Pin Beats — Free Browser Beat Maker</title>
-  <meta name="description" content="Island Pin Beats: free browser beat maker for rappers and DJs. 18 genre drum kits (NY boom-bap, trap, drill, afrobeats, amapiano, house, bouyon and more), 16 pads, step sequencer with velocity and 2-bar patterns, chord loop, lyrics teleprompter, vocal recording over the beat, mixer, reference track A/B with loudness matching, WAV export.">
+  <meta name="description" content="Island Pin Beats: free browser beat maker for rappers and DJs. 18 genre drum kits (NY boom-bap, trap, drill, afrobeats, amapiano, house, bouyon and more), 16 pads, step sequencer with velocity and 2-bar patterns, piano roll with savable patterns, chord loop, lyrics teleprompter, vocal recording over the beat, mixer, reference track A/B with loudness matching, WAV export.">
   <meta name="robots" content="index,follow">
   <link rel="canonical" href="https://madinc47-prog.github.io/beats/">
   <meta property="og:title" content="Island Pin Beats — Free Beat Maker">
@@ -32,6 +32,7 @@
 
   <nav class="tabs" role="tablist">
     <button class="tab active" role="tab" data-tab="beats" aria-selected="true">Beats</button>
+    <button class="tab" role="tab" data-tab="piano" aria-selected="false">Piano Roll</button>
     <button class="tab" role="tab" data-tab="lyrics" aria-selected="false">Lyrics</button>
     <button class="tab" role="tab" data-tab="mixer" aria-selected="false">Mixer</button>
     <button class="tab" role="tab" data-tab="studio" aria-selected="false">Studio</button>
@@ -286,6 +287,64 @@
       </div>
     </section>
 
+    <!-- PIANO ROLL -->
+    <section id="tab-piano" class="panel" role="tabpanel">
+      <div class="pn-head">
+        <div class="pn-title">
+          <h2>Piano Roll</h2>
+          <span class="pn-sum mono" id="pn-sum"></span>
+        </div>
+        <div class="pn-transport">
+          <span id="pn-pos" class="mono pn-pos">Bar 1</span>
+          <button type="button" id="pn-play" class="btn primary pn-play" title="Play / pause with the drum machine (Space)">▶ Play</button>
+        </div>
+      </div>
+      <div class="pn-bar">
+        <div class="slots" id="pn-slots" role="group" aria-label="Piano pattern slots">
+          <span class="label">Pattern</span>
+          <button type="button" data-slot="A">A</button><button type="button" data-slot="B">B</button><button type="button" data-slot="C">C</button><button type="button" data-slot="D">D</button>
+          <button id="pn-dup" class="btn small ghost" type="button" title="Copy this piano pattern into the next slot">Copy →</button>
+        </div>
+        <div class="seg" id="pn-bars" role="group" aria-label="Pattern length"><button type="button" data-bars="1">1 bar</button><button type="button" data-bars="2">2 bars</button><button type="button" data-bars="4">4 bars</button></div>
+        <div class="seg" id="pn-grid" role="group" aria-label="Grid"><button type="button" data-grid="1/8">1/8</button><button type="button" data-grid="1/16">1/16</button><button type="button" data-grid="1/16t" title="1/16 triplets">1/16T</button></div>
+        <label class="chk" title="Snap notes to the grid"><input type="checkbox" id="pn-snap" checked> Snap</label>
+        <div class="seg tool" id="pn-tool" role="group" aria-label="Tool"><button type="button" data-tool="draw" title="Draw: click to add, drag to move / lengthen">✎ Draw</button><button type="button" data-tool="erase" title="Erase: click or drag over notes">⌫ Erase</button></div>
+        <div class="pn-zoom" role="group" aria-label="Zoom"><button type="button" class="btn small ghost" id="pn-zout" aria-label="Zoom out">−</button><button type="button" class="btn small ghost" id="pn-zin" aria-label="Zoom in">+</button></div>
+      </div>
+      <div class="pn-bar">
+        <label class="pn-lbl">Sound <select id="pn-inst" aria-label="Instrument"></select></label>
+        <label class="pn-lbl">Key <select id="pn-key" aria-label="Key"></select></label>
+        <select id="pn-scale" aria-label="Scale"></select>
+        <label class="chk" title="New and moved notes snap to the scale"><input type="checkbox" id="pn-snapscale"> Snap to scale</label>
+        <label class="pn-lbl pn-vel" title="Velocity for new notes (and the selected note)">Velocity <input type="range" id="pn-vel" min="5" max="100" value="80"> <output id="pn-vel-val" class="mono">80</output></label>
+      </div>
+      <div class="pn-bar">
+        <button type="button" class="btn small ghost" id="pn-undo" title="Undo (Ctrl/⌘+Z)">↶ Undo</button>
+        <button type="button" class="btn small ghost" id="pn-redo" title="Redo (Ctrl/⌘+Shift+Z)">↷ Redo</button>
+        <span class="sep"></span>
+        <span class="label">Transpose</span>
+        <div class="seg" id="pn-tr" role="group" aria-label="Transpose pattern"><button type="button" data-tr="-12">−oct</button><button type="button" data-tr="-1">−1</button><button type="button" data-tr="1">+1</button><button type="button" data-tr="12">+oct</button></div>
+        <span class="sep"></span>
+        <button type="button" class="btn small ghost" id="pn-seed" title="Write the chord loop progression (Beats tab) into this pattern">From chord loop</button>
+        <button type="button" class="btn small ghost" id="pn-clear">Clear</button>
+      </div>
+      <div class="pn-roll" id="pn-roll"></div>
+      <p class="hint pn-hint">Click = add note · drag = move · drag the right edge = length · right-click / double-click = delete · phone: tap = add, drag empty grid = scroll, long-press = delete · drag bars in VEL = velocity · Del / arrows edit the selected note · Ctrl/⌘+wheel = zoom. Loops with the drum pattern at the same BPM and swing; goes through the Mixer's Piano Roll fader, master and limiter.</p>
+
+      <section class="pn-lib" aria-label="Piano pattern library">
+        <div class="pn-lib-head">
+          <div><span class="label">Pattern library</span> <span class="pn-lib-count mono" id="pn-lib-count"></span></div>
+          <div class="pn-lib-actions">
+            <button type="button" class="btn small primary" id="pn-save">Save to library…</button>
+            <button type="button" class="btn small ghost" id="pn-export" title="Download this pattern as a .json file">Export JSON</button>
+            <label class="btn small ghost file-btn" title="Load a pattern .json into the current slot">Import JSON<input type="file" id="pn-import" accept=".json,application/json" hidden></label>
+          </div>
+        </div>
+        <div class="pn-lib-list" id="pn-lib"></div>
+        <p class="hint">Saved in this browser. Load puts a saved pattern into the current slot (A–D). Songs saved with “Save current beat with song” keep the current piano pattern too.</p>
+      </section>
+    </section>
+
     <!-- LYRICS -->
     <section id="tab-lyrics" class="panel" role="tabpanel">
       <div class="ly-head">
@@ -492,6 +551,9 @@
   <footer class="foot">Free · runs in your browser · synthesized drums + CC0 one-shots (<a href="samples/CREDITS.md">credits</a>), no paid APIs · instrumental “Gunwalk” © Emmanuel Griffith / DJ Psycho Fingers (<a href="tracks/CREDITS.md">credits</a>) · <a href="../">IslePin</a></footer>
 
   <script src="drums.js"></script>
+  <script src="keys-instruments.js"></script>
+  <script src="pianoroll-data.js"></script>
+  <script src="pianoroll.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

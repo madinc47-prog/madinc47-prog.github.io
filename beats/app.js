@@ -12,10 +12,15 @@
     { id: "hats", name: "Hats" },
     { id: "perc", name: "Perc / FX" },
     { id: "keys", name: "Keys" },
+    { id: "piano", name: "Piano Roll" },   // piano-roll instruments (skip the drum bus, like Keys)
     { id: "inst", name: "Instrumental" }   // loaded backing track (skips the drum bus, like Keys)
   ];
   var PAD_KEYS = ["z", "x", "c", "v", "b", "n", "m", ","];
   var D = window.IPBDrums;            // kit library + offline pad renderer (drums.js)
+  var PD = window.IPBPianoData;       // piano-roll pattern format + library (pianoroll-data.js)
+  var PK = window.IPBKeys;            // melodic instruments (keys-instruments.js)
+  var PIANO_LIB_KEY = "ipb_piano_lib_v1";
+  function instOk(id) { return !!PK.BY_ID[id]; }
   var DEFAULT_KIT = "qb";
   var SLOT_IDS = ["A", "B", "C", "D"];
   var TOOL_VEL = { acc: 1, hit: 0.8, ghost: 0.45 };
@@ -67,7 +72,7 @@
   function newSlot(len) { return { len: len === 32 ? 32 : 16, pattern: emptyGrid(0), vel: emptyGrid(0.8), note: emptyGrid(0), slide: emptyGrid(0) }; }
   function defaultMixer() {
     var m = { master: { v: 0.85, m: false } };
-    GROUPS.forEach(function (g) { m[g.id] = { v: g.id === "keys" ? 0.7 : 0.85, m: false }; });
+    GROUPS.forEach(function (g) { m[g.id] = { v: g.id === "keys" ? 0.7 : g.id === "piano" ? 0.8 : 0.85, m: false }; });
     m.vocal = { v: 0.9, m: false };
     return m;
   }
@@ -95,8 +100,10 @@
     bpl: "auto",          // teleprompter bars per line ("auto" = fit song sections)
     prSize: 1,
     vox: { nudge: 0, monitor: false, dry: false },
-    tool: "hit", lane: "vel", page: 0
+    tool: "hit", lane: "vel", page: 0,
+    piano: { slot: "A", slots: { A: PD.empty(), B: PD.empty(), C: PD.empty(), D: PD.empty() } } // piano-roll pattern slots
   };
+  function pianoPat() { return S.piano.slots[S.piano.slot]; }
   function curSlot() { return S.slots[S.slot]; }
   function plen() { return curSlot().len; }
   function bindSlot() { var s = curSlot(); S.pattern = s.pattern; S.vel = s.vel; S.note = s.note; S.slide = s.slide; }
@@ -157,7 +164,8 @@
         padCfg: S.padCfg, kitSwing: S.kitSwing, mute: S.mute, solo: S.solo, mixer: S.mixer, sel: S.sel,
         chordTrack: S.chordTrack, structure: S.structure, cueBar: S.cueBar,
         lyricSong: S.lyricSong, bpl: S.bpl, prSize: S.prSize, vox: S.vox, tool: S.tool,
-        backing: bt.id ? { id: bt.id, layer: bt.layer, prevBpm: bt.prevBpm } : null
+        backing: bt.id ? { id: bt.id, layer: bt.layer, prevBpm: bt.prevBpm } : null,
+        piano: S.piano
       }));
     } catch (e) { /* storage full or blocked */ }
   }
@@ -202,6 +210,10 @@
       if (typeof d.lyricSong === "string") S.lyricSong = d.lyricSong;
       if (d.bpl) S.bpl = String(d.bpl);
       if (d.prSize) S.prSize = clamp(+d.prSize, 0.6, 1.8);
+      if (d.piano && d.piano.slots && typeof d.piano.slots === "object") {
+        SLOT_IDS.forEach(function (id) { if (d.piano.slots[id]) S.piano.slots[id] = PD.normalize(d.piano.slots[id], instOk); });
+        if (SLOT_IDS.indexOf(d.piano.slot) !== -1) S.piano.slot = d.piano.slot;
+      }
       if (d.backing && typeof d.backing.id === "string") {
         btRestore = { id: d.backing.id, layer: !!d.backing.layer, prevBpm: d.backing.prevBpm != null ? clamp(+d.backing.prevBpm || 90, 60, 200) : null };
       }
@@ -460,7 +472,7 @@
   }
   function makeGraph(c, live) {
     function gn(v) { var g = c.createGain(); g.gain.value = v == null ? 1 : v; return g; }
-    var G = { c: c, groups: {}, an: {}, strips: [], rr: new Array(16).fill(0) };
+    var G = { c: c, groups: {}, an: {}, strips: [], rr: new Array(16).fill(0), preg: [] }; // preg = piano-roll voices
     G.bus = gn(1);
     G.comp = c.createDynamicsCompressor(); G.compTrim = gn(1);
     G.smash = c.createDynamicsCompressor(); G.smashG = gn(0);
@@ -488,7 +500,7 @@
     GROUPS.forEach(function (g) {
       var n = gn(mixGain(g.id)), tail = n;
       if (live) { var an = c.createAnalyser(); an.fftSize = 512; n.connect(an); tail = an; G.an[g.id] = an; }
-      tail.connect(g.id === "keys" || g.id === "inst" ? G.keysDelay : G.bus);
+      tail.connect(g.id === "keys" || g.id === "inst" || g.id === "piano" ? G.keysDelay : G.bus);
       G.groups[g.id] = n;
     });
     for (var i = 0; i < 16; i++) {
@@ -642,10 +654,11 @@
   var playing = false, timer = null, nextTime = 0, curK = 0, startK = 0, uiQueue = [], uiStep = -1;
   var posAnchor = null, chordLive = [], songEndTimer = null;
   var patAnchor = 0, pendingSlot = null;   // loop mode: global 16th where the current pattern (re)started
+  var pianoAnchor = 0, pianoPending = null; // piano roll: global 16th of its loop start, queued slot
   function stepDur() { return 60 / S.bpm / 4; }
   function stepInfo(k) {
     var bar = Math.floor(k / STEPS), L = plen();
-    var info = { k: k, patStep: (((k - patAnchor) % L) + L) % L, fire: true, feel: "full", end: false, secStart: false, sec: null, secIdx: -1, mb: k / STEPS };
+    var info = { k: k, patStep: (((k - patAnchor) % L) + L) % L, fire: true, feel: "full", end: false, secStart: false, sec: null, secIdx: -1, mb: k / STEPS, m16: k - pianoAnchor };
     var A = arrangement();
     if (!A) return info;
     var b0 = 0, mb0 = 0;
@@ -663,6 +676,7 @@
           info.patStep = local % L;
           info.mb = mb0 + local / STEPS;
         }
+        info.m16 = Math.round(info.mb * STEPS); // piano roll follows musical time (half-time sections play it at half speed)
         return info;
       }
       b0 += sec.bars;
@@ -693,6 +707,7 @@
     var half = info.feel === "half";
     var len = stepDur() * (half ? 2 : 1);
     var sw = info.patStep % 2 === 1 ? len * (S.swing / 100) : 0;
+    schedulePiano(c, G, info, t, len);
     var ch = chordAt(info, first);
     if (ch && ch.change) startChord(c, ch.idx, t, G.groups.keys, creg);
     var kit = kitDef(S.kit), s = info.patStep;
@@ -725,6 +740,11 @@
         info = stepInfo(curK);
         uiQueue.push({ step: -1, k: curK, time: nextTime, fire: false, slot: true });
       }
+      if (pianoPending && !info.end && info.fire && pianoStepOf(info) === 0) {
+        S.piano.slot = pianoPending; pianoPending = null;
+        if (!arrangement()) { pianoAnchor = curK; info = stepInfo(curK); }
+        uiQueue.push({ step: -1, k: curK, time: nextTime, fire: false, pslot: true });
+      }
       if (info.end && !btActive()) { endSong(nextTime); return; } // with an instrumental, its own end stops the take
       if (info.fire && !info.end) scheduleStep(ctx, LG, info, nextTime, liveVoices, chordLive, curK === startK);
       uiQueue.push({ step: info.patStep, k: curK, time: nextTime, fire: info.fire });
@@ -748,7 +768,9 @@
     playing = true;
     startK = curK = S.cueBar * STEPS;
     patAnchor = startK;
+    pianoAnchor = startK;
     if (pendingSlot) applySlot(pendingSlot, startK);
+    if (pianoPending) { S.piano.slot = pianoPending; pianoPending = null; pianoUI(true); }
     livePeak = 0;
     nextTime = startAt || ctx.currentTime + 0.06;
     uiQueue = [];
@@ -771,6 +793,8 @@
     uiQueue = [];
     setNowColumn(-1);
     if (ctx) cutChords(chordLive, ctx.currentTime);
+    if (ctx && LG) { LG.preg.forEach(function (v) { v.stop(ctx.currentTime); }); LG.preg = []; }
+    if (pianoPending) { S.piano.slot = pianoPending; pianoPending = null; pianoUI(true, true); saveSession(); } // queued piano pattern: switch now
     btStop();
     S.cueBar = keepCue ? Math.max(0, Math.floor(pos / STEPS)) : 0;
     $("btn-play").classList.remove("on");
@@ -795,6 +819,8 @@
     if (wasPlaying) play();
   }
   function updatePlayButtons() {
+    var pp = $("pn-play");
+    if (pp) { pp.textContent = playing ? "❚❚ Pause" : "▶ Play"; pp.classList.toggle("on", playing); }
     var bp = $("bt-play");
     if (bp) { bp.textContent = playing ? "❚❚ Pause" : "▶ Play"; bp.classList.toggle("on", playing); }
     var b = $("pr-play");
@@ -1529,7 +1555,7 @@
 
   /* Offline bounce of the pattern + chord loop (clean render, no live keys).
      With a song structure selected, "Full song" renders the whole arrangement. */
-  function loopInfo(k) { var L = plen(); return { k: k, patStep: k % L, fire: true, feel: "full", mb: k / STEPS }; }
+  function loopInfo(k) { var L = plen(); return { k: k, patStep: k % L, fire: true, feel: "full", mb: k / STEPS, m16: k }; }
   /* Offline bounce of the pattern + chord loop (clean render, no live keys) through the same graph as live playback.
      With a song structure selected, "Full song" renders the whole arrangement. */
   function bounce(barsSel) {
@@ -1539,7 +1565,7 @@
     if (songMode && !A) { toast("Pick a song structure first (Song bar above)."); return; }
     var bars = songMode ? totalBars(A) : +barsSel;
     var total = bars * STEPS;
-    if (!btActive() && !S.chordTrack.on && !patternHasNotes()) { toast("Pattern is empty — add steps first."); return; }
+    if (!btActive() && !S.chordTrack.on && !patternHasNotes() && !PD.hasNotes(pianoPat())) { toast("Pattern is empty — add steps first."); return; }
     var dur = total * sd + 2.5 + GRAPH_LAT;
     var c = new OfflineAudioContext(2, Math.ceil(SR * dur), SR);
     var G = makeGraph(c, false);
@@ -1907,6 +1933,7 @@
         var q = uiQueue.shift();
         posAnchor = { k: q.k, time: q.time };
         if (q.slot) repaintSeq();
+        if (q.pslot) pianoUI(true);
         if (q.fire) setNowColumn(q.step);
       }
       if (masterAnalyser) livePeak = Math.max(livePeak, peak(masterAnalyser));
@@ -1932,6 +1959,7 @@
     }
     refTick();
     if (activeTab === "beats" && bt.buf) btTick();
+    if (activeTab === "piano" && pianoEd) pianoTick();
     requestAnimationFrame(loop);
   }
 
@@ -2187,7 +2215,8 @@
       pattern: cp(s.pattern), vel: cp(s.vel), note: cp(s.note), slide: cp(s.slide),
       pads: JSON.parse(JSON.stringify(S.padCfg[S.kit] || [])),
       chords: JSON.parse(JSON.stringify(S.chordTrack)),
-      structure: S.structure
+      structure: S.structure,
+      piano: PD.normalize(pianoPat(), instOk)
     };
   }
 
@@ -2564,7 +2593,7 @@
     if (!beat || !song) { toast("That song has no beat attached."); return; }
     var conv = beatSlot(beat);
     var same = conv.kit === S.kit && JSON.stringify(conv.slot.pattern) === JSON.stringify(S.pattern);
-    if (patternHasNotes() && !same && !confirm("Load “" + song.title + "”? This replaces the current pattern, BPM, chord loop and song form (your swapped pad samples stay).")) {
+    if (patternHasNotes() && !same && !confirm("Load “" + song.title + "”? This replaces the current pattern, BPM, chord loop and song form" + (beat.piano ? ", and the current piano-roll pattern" : "") + " (your swapped pad samples stay).")) {
       $("song-preset").value = ""; return;
     }
     if (vox.state !== "idle") stopVocalTake();
@@ -2574,6 +2603,7 @@
     S.bpm = clamp(+beat.bpm || 140, 60, 200);
     S.swing = clamp(+beat.swing || 0, 0, 60);
     S.slots[S.slot] = conv.slot; pendingSlot = null; bindSlot(); S.page = 0;
+    if (beat.piano) { S.piano.slots[S.piano.slot] = PD.normalize(beat.piano, instOk); pianoPending = null; pianoUI(true, true); } // older songs have no piano part: keep the current one
     (conv.tunes || []).forEach(function (t, i) { if (t) padCfg(i, conv.kit).tune = t; });
     if (Array.isArray(conv.pads)) { var pc = {}; pc[conv.kit] = conv.pads; S.padCfg[conv.kit] = cleanPadCfg(pc)[conv.kit]; }
     var ct = defaultChordTrack();
@@ -3635,7 +3665,7 @@
       btLoadBuiltin(q, false).then(function (ok) {
         if (!ok) return;
         var pn = $("bt-panel");
-        if (pn && pn.scrollIntoView) pn.scrollIntoView({ block: "start" });
+        if (pn) { var tb = document.querySelector(".topbar"), y = pn.getBoundingClientRect().top + window.pageYOffset - (tb ? tb.offsetHeight : 0) - 8; window.scrollTo(0, Math.max(0, y)); }
         setVoxStatus("“" + bt.title + "” is loaded. Put headphones on and tap 🎙 Record Vocals: 1-bar count-in, then the instrumental starts from 0:00 and your mic records until the end (or Stop take).");
       });
     } else if (btRestore) {
@@ -3645,6 +3675,279 @@
       if (BACKING_TRACKS[r0.id]) btLoadBuiltin(r0.id, true);
       else if (r0.id === "file") btLoadStoredFile();
     }
+  }
+
+  /* ---------------- Piano Roll (patterns saved like drum patterns) ----------------
+   * S.piano.slots A–D hold piano patterns (pianoroll-data.js format) next to the drum slots and are saved in the
+   * session; named patterns live in a localStorage library (PIANO_LIB_KEY); songs with an attached beat carry the
+   * current piano pattern. Notes are scheduled from the same 16th-note scheduler as the drums (same BPM, swing,
+   * song form), live and offline, through the Mixer's "Piano Roll" fader → master → limiter.
+   */
+  var pianoEd = null, pianoLib = null, pianoSeen = false;
+  function pianoStepOf(info) { var P16 = pianoPat().bars * STEPS; return (((info.m16 || 0) % P16) + P16) % P16; }
+  function schedulePiano(c, G, info, t, len) {
+    var p = pianoPat();
+    if (!p.notes.length) return;
+    var s16 = pianoStepOf(info), t0 = s16 * PD.STEP, tickSec = len / PD.STEP;
+    var sw = s16 % 2 === 1 ? len * (S.swing / 100) : 0;
+    var ns = PD.notesStarting(p, t0, t0 + PD.STEP);
+    for (var i = 0; i < ns.length; i++) {
+      var n = ns[i];
+      G.preg.push(PK.play(c, G.groups.piano, n.p, t + (n.s - t0) * tickSec + (n.s === t0 ? sw : 0), n.l * tickSec, n.v, p.inst));
+    }
+    if (G.preg.length > 96) G.preg = G.preg.filter(function (v) { return v.end > c.currentTime; });
+  }
+  function pianoPlayTick() {
+    if (!playing || !ctx) return -1;
+    var pos = currentPosK(), k = Math.floor(pos), frac = pos - k, info = stepInfo(k);
+    if (info.end) return -1;
+    var m = arrangement() ? info.mb * STEPS + frac * (info.feel === "half" ? 0.5 : 1) : info.m16 + frac;
+    var P16 = pianoPat().bars * STEPS;
+    return (((m % P16) + P16) % P16) * PD.STEP;
+  }
+  function pianoPreview(m, v) {
+    if (!ensureCtx()) return;
+    PK.play(ctx, LG.groups.piano, m, ctx.currentTime + 0.005, 0.32, v == null ? 0.8 : v, pianoPat().inst);
+  }
+  function pianoSummary() {
+    var p = pianoPat(), inst = PK.BY_ID[p.inst];
+    return "Pattern " + S.piano.slot + (p.name ? " · " + p.name : "") + " · " + p.bars + " bar" + (p.bars > 1 ? "s" : "") + " · " + p.notes.length + " note" + (p.notes.length === 1 ? "" : "s") +
+      " · " + (inst ? inst.name : p.inst) + (p.scale !== "off" ? " · " + PD.NOTE_NAMES[p.key] + " " + PD.SCALE_NAMES[p.scale].toLowerCase() : "");
+  }
+  function pianoUI(refreshEditor, scroll) {
+    if (!pianoEd) return;
+    var p = pianoPat();
+    if (refreshEditor) pianoEd.refresh(scroll);
+    document.querySelectorAll("#pn-slots button[data-slot]").forEach(function (b) {
+      var id = b.dataset.slot;
+      b.classList.toggle("on", id === S.piano.slot);
+      b.classList.toggle("queued", id === pianoPending);
+      b.classList.toggle("empty", !PD.hasNotes(S.piano.slots[id]));
+    });
+    document.querySelectorAll("#pn-bars button").forEach(function (b) { b.classList.toggle("on", +b.dataset.bars === p.bars); });
+    document.querySelectorAll("#pn-grid button").forEach(function (b) { b.classList.toggle("on", b.dataset.grid === p.grid); });
+    document.querySelectorAll("#pn-tool button").forEach(function (b) { b.classList.toggle("on", b.dataset.tool === pianoEd.tool()); });
+    $("pn-inst").value = PK.BY_ID[p.inst] ? p.inst : "grand";
+    $("pn-key").value = String(p.key);
+    $("pn-scale").value = p.scale;
+    $("pn-snapscale").checked = !!p.snapScale;
+    $("pn-snapscale").disabled = p.scale === "off";
+    $("pn-undo").disabled = !pianoEd.canUndo();
+    $("pn-redo").disabled = !pianoEd.canRedo();
+    $("pn-sum").textContent = pianoSummary();
+    document.querySelectorAll('#pn-lib [data-act="load"]').forEach(function (b) { b.textContent = "Load → " + S.piano.slot; });
+  }
+  function pianoChanged(kind) {
+    if (kind !== "view") saveSession();
+    pianoUI(false);
+  }
+  function pianoSwitchSlot(id) {
+    if (id === S.piano.slot && !pianoPending) return;
+    if (playing && !arrangement()) { pianoPending = id === S.piano.slot ? null : id; pianoUI(false); return; } // switch at the loop end, like the drums
+    S.piano.slot = id; pianoPending = null;
+    pianoUI(true, true); saveSession();
+  }
+  function pianoReplace(pattern, what) {
+    var cur = pianoPat();
+    if (PD.hasNotes(cur) && JSON.stringify(cur.notes) !== JSON.stringify(pattern.notes) &&
+        !confirm("Replace piano pattern " + S.piano.slot + " (" + cur.notes.length + " notes) with " + what + "?")) return false;
+    S.piano.slots[S.piano.slot] = PD.normalize(pattern, instOk);
+    pianoUI(true, true); saveSession();
+    return true;
+  }
+  function pianoTick() {
+    pianoEd.tick();
+    var el = $("pn-pos"), t = pianoPlayTick(), txt;
+    if (t < 0) txt = "Bar 1 · stopped";
+    else { var bar = Math.floor(t / PD.TPBAR), beat = Math.floor((t % PD.TPBAR) / PD.TPB); txt = "Bar " + (bar + 1) + "." + (beat + 1) + " / " + pianoPat().bars; }
+    if (el.textContent !== txt) el.textContent = txt;
+  }
+  function pianoShown() {
+    if (!pianoEd) return;
+    pianoEd.refresh(false);
+    pianoEd.scrollToNotes(!pianoSeen);
+    pianoSeen = true;
+  }
+  function fmtDate(ms) { try { return new Date(ms).toLocaleDateString(undefined, { month: "short", day: "numeric" }); } catch (e) { return ""; } }
+  function renderPianoLib() {
+    var list = $("pn-lib");
+    $("pn-lib-count").textContent = pianoLib.items.length ? pianoLib.items.length + " saved" : "";
+    if (!pianoLib.items.length) {
+      list.innerHTML = '<div class="empty small">No saved piano patterns yet. Draw something, then “Save to library…”.</div>';
+      return;
+    }
+    list.innerHTML = "";
+    pianoLib.items.forEach(function (it) {
+      var p = it.pattern, inst = PK.BY_ID[p.inst];
+      var row = document.createElement("div");
+      row.className = "pn-item";
+      row.innerHTML = '<div class="pn-item-main"><strong></strong><span class="mono"></span></div>' +
+        '<div class="pn-item-actions"><button type="button" class="btn small" data-act="load">Load → ' + S.piano.slot + '</button>' +
+        '<button type="button" class="btn small ghost" data-act="rename">Rename</button>' +
+        '<button type="button" class="btn small ghost" data-act="dup">Duplicate</button>' +
+        '<button type="button" class="btn small ghost" data-act="del">Delete</button></div>';
+      row.querySelector("strong").textContent = it.name;
+      row.querySelector(".mono").textContent = p.bars + " bar" + (p.bars > 1 ? "s" : "") + " · " + p.notes.length + " notes · " + (inst ? inst.name : p.inst) +
+        (p.scale !== "off" ? " · " + PD.NOTE_NAMES[p.key] + " " + PD.SCALE_NAMES[p.scale].toLowerCase() : "") + " · " + fmtDate(it.updated);
+      row.dataset.id = it.id;
+      list.appendChild(row);
+    });
+  }
+  function pianoLibAction(act, id) {
+    var it = pianoLib.get(id);
+    if (!it) return;
+    if (act === "load") {
+      var cp = PD.clone(it.pattern); cp.name = it.name;
+      if (pianoReplace(cp, "“" + it.name + "”")) toast("Loaded “" + it.name + "” into piano pattern " + S.piano.slot);
+    } else if (act === "rename") {
+      var n = prompt("Rename piano pattern", it.name);
+      if (!n || !n.trim()) return;
+      pianoLib.rename(id, n) ? toast("Renamed to “" + n.trim().slice(0, 80) + "”") : toast("Could not save — browser storage is full or blocked.");
+    } else if (act === "dup") {
+      var d = pianoLib.duplicate(id);
+      toast(d ? "Duplicated as “" + d.name + "”" : "Could not save — browser storage is full or blocked.");
+    } else if (act === "del") {
+      if (!confirm("Delete “" + it.name + "” from the library?")) return;
+      pianoLib.remove(id);
+      toast("Deleted “" + it.name + "”");
+    }
+    renderPianoLib();
+  }
+  function pianoSaveToLib() {
+    var p = pianoPat();
+    if (!PD.hasNotes(p)) { toast("This piano pattern is empty — draw some notes first."); return; }
+    var def = p.name || "Piano idea " + (pianoLib.items.length + 1);
+    var name = prompt("Save piano pattern as", def);
+    if (!name || !name.trim()) return;
+    name = name.trim().slice(0, 80);
+    var ex = pianoLib.byName(name);
+    if (ex && !confirm("“" + ex.name + "” already exists. Overwrite it?")) return;
+    var it = pianoLib.save(name, p, ex ? ex.id : null);
+    if (!it) { toast("Could not save — browser storage is full or blocked."); return; }
+    p.name = name; saveSession(); pianoUI(false); renderPianoLib();
+    toast("Saved “" + name + "” to the piano library");
+  }
+  function pianoExport() {
+    var p = pianoPat();
+    if (!PD.hasNotes(p)) { toast("This piano pattern is empty."); return; }
+    var blob = new Blob([JSON.stringify(PD.toJSON(p), null, 1)], { type: "application/json" });
+    var a = document.createElement("a"), url = URL.createObjectURL(blob);
+    a.href = url; a.download = ((p.name || "piano-pattern-" + S.piano.slot).replace(/[^\w\- ]+/g, "").replace(/\s+/g, "_") || "piano-pattern") + ".ipb-piano.json";
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
+  }
+  function pianoImport(file) {
+    if (!file) return;
+    if (file.size > 2 * 1048576) { toast("That file is too big for a piano pattern."); return; }
+    file.text().then(function (txt) {
+      var pat = PD.fromJSON(txt, instOk);
+      if (!pat.name) pat.name = file.name.replace(/(\.ipb-piano)?\.json$/i, "").slice(0, 80);
+      if (pianoReplace(pat, "“" + (pat.name || file.name) + "”")) toast("Imported “" + (pat.name || file.name) + "” (" + pat.notes.length + " notes) into pattern " + S.piano.slot);
+    }).catch(function () { toast("That file is not an Island Pin Beats piano pattern (.json)."); });
+  }
+  function pianoSeedChords() {
+    var CT = S.chordTrack, chords = CT.prog.map(function (ci) { var c = CHORDS[ci]; return c ? { root: c.r, ivs: QUAL[c.q] } : null; });
+    if (!chords.some(Boolean)) { toast("The chord loop is empty — pick chords on the Beats tab."); return; }
+    var p = pianoPat(), fresh = !PD.hasNotes(p);
+    if (!fresh && !confirm("Replace the notes in piano pattern " + S.piano.slot + " with the chord loop?")) return;
+    var first = CHORDS[CT.prog.filter(function (ci) { return CHORDS[ci]; })[0]];
+    var seeded = PD.fromChords(chords, Math.max(1, CT.bars), { inst: p.inst });
+    pianoEd.edit(function (pp) {
+      pp.bars = seeded.bars; pp.notes = seeded.notes;
+      if (fresh && first) { pp.key = first.r; pp.scale = /^min/.test(first.q) ? "minor" : "major"; }
+    }, "seed");
+    pianoUI(true, true);
+    toast("Chord loop written into pattern " + S.piano.slot + " · " + CT.prog.map(function (i) { return CHORDS[i] ? CHORDS[i].n : "—"; }).join(" – "));
+  }
+  function pianoInit() {
+    pianoLib = new PD.Library(PIANO_LIB_KEY, instOk);
+    var isel = $("pn-inst"), cats = {};
+    PK.INSTRUMENTS.forEach(function (ins) {
+      if (!cats[ins.cat]) { cats[ins.cat] = document.createElement("optgroup"); cats[ins.cat].label = ins.cat; isel.appendChild(cats[ins.cat]); }
+      var o = document.createElement("option"); o.value = ins.id; o.textContent = ins.name; cats[ins.cat].appendChild(o);
+    });
+    PD.NOTE_NAMES.forEach(function (n, i) { var o = document.createElement("option"); o.value = i; o.textContent = n; $("pn-key").appendChild(o); });
+    Object.keys(PD.SCALE_NAMES).forEach(function (k) { var o = document.createElement("option"); o.value = k; o.textContent = PD.SCALE_NAMES[k]; $("pn-scale").appendChild(o); });
+    pianoEd = window.IPBPianoRoll.create($("pn-roll"), {
+      getPattern: pianoPat, onChange: pianoChanged, preview: pianoPreview, playTick: pianoPlayTick,
+      isPlaying: function () { return playing; }, toast: toast
+    });
+    document.querySelectorAll("#pn-slots button[data-slot]").forEach(function (b) { b.addEventListener("click", function () { pianoSwitchSlot(b.dataset.slot); }); });
+    $("pn-dup").addEventListener("click", function () {
+      var from = S.piano.slot, nx = SLOT_IDS[(SLOT_IDS.indexOf(from) + 1) % SLOT_IDS.length];
+      if (PD.hasNotes(S.piano.slots[nx]) && !confirm("Overwrite piano pattern " + nx + " with a copy of " + from + "?")) return;
+      S.piano.slots[nx] = PD.clone(pianoPat());
+      pianoPending = null; S.piano.slot = nx;
+      pianoUI(true, true); saveSession();
+      toast("Copied piano pattern " + from + " → " + nx);
+    });
+    document.querySelectorAll("#pn-bars button").forEach(function (b) {
+      b.addEventListener("click", function () {
+        var n = +b.dataset.bars; if (n === pianoPat().bars) return;
+        if (n < pianoPat().bars && pianoPat().notes.some(function (x) { return x.s >= n * PD.TPBAR; }) && !confirm("Shorten to " + n + " bar" + (n > 1 ? "s" : "") + "? Notes after bar " + n + " are removed (Undo brings them back).")) return;
+        pianoEd.edit(function (p) { PD.setBars(p, n, true); }, "bars");
+        pianoUI(true);
+      });
+    });
+    document.querySelectorAll("#pn-grid button").forEach(function (b) {
+      b.addEventListener("click", function () { pianoPat().grid = b.dataset.grid; pianoEd.resetLength(); pianoEd.draw(); pianoUI(false); saveSession(); });
+    });
+    $("pn-snap").addEventListener("change", function (e) { pianoEd.setSnap(e.target.checked); });
+    document.querySelectorAll("#pn-tool button").forEach(function (b) { b.addEventListener("click", function () { pianoEd.setTool(b.dataset.tool); pianoUI(false); }); });
+    $("pn-zin").addEventListener("click", function () { pianoEd.zoom(1.25); });
+    $("pn-zout").addEventListener("click", function () { pianoEd.zoom(0.8); });
+    isel.addEventListener("change", function () { pianoPat().inst = isel.value; saveSession(); pianoUI(false); pianoPreview(60, 0.8); setTimeout(function () { pianoPreview(64, 0.7); pianoPreview(67, 0.7); }, 90); });
+    $("pn-key").addEventListener("change", function (e) { pianoPat().key = +e.target.value; pianoEd.paintKeys(); pianoUI(false); saveSession(); });
+    $("pn-scale").addEventListener("change", function (e) { pianoPat().scale = e.target.value; pianoEd.paintKeys(); pianoUI(false); saveSession(); });
+    $("pn-snapscale").addEventListener("change", function (e) { pianoPat().snapScale = e.target.checked; saveSession(); });
+    $("pn-vel").addEventListener("input", function (e) {
+      var v = +e.target.value / 100; $("pn-vel-val").textContent = e.target.value;
+      pianoEd.setVelocity(v);
+      var sel = pianoEd.selected();
+      if (sel) pianoEd.edit(function () { sel.v = v; }, "velocity");
+    });
+    $("pn-undo").addEventListener("click", function () { pianoEd.undo(); pianoUI(false); });
+    $("pn-redo").addEventListener("click", function () { pianoEd.redo(); pianoUI(false); });
+    document.querySelectorAll("#pn-tr button").forEach(function (b) {
+      b.addEventListener("click", function () {
+        var d = +b.dataset.tr, p = pianoPat();
+        if (!PD.hasNotes(p)) return;
+        if (!PD.inRange(p, d)) { toast("Can't transpose " + (d > 0 ? "up" : "down") + " — notes would leave the C1–C7 range."); return; }
+        pianoEd.edit(function (pp) { PD.transpose(pp, d); }, "transpose");
+        pianoUI(false);
+        var lo = p.notes.reduce(function (a, n) { return Math.min(a, n.p); }, 127);
+        pianoPreview(lo, 0.8);
+      });
+    });
+    $("pn-clear").addEventListener("click", function () {
+      if (!PD.hasNotes(pianoPat())) return;
+      if (!confirm("Clear all notes in piano pattern " + S.piano.slot + "? (Undo brings them back)")) return;
+      pianoEd.edit(function (p) { p.notes = []; }, "clear"); pianoUI(false);
+    });
+    $("pn-seed").addEventListener("click", pianoSeedChords);
+    $("pn-play").addEventListener("click", togglePlay);
+    $("pn-save").addEventListener("click", pianoSaveToLib);
+    $("pn-export").addEventListener("click", pianoExport);
+    $("pn-import").addEventListener("change", function (e) { pianoImport(e.target.files[0]); e.target.value = ""; });
+    $("pn-lib").addEventListener("click", function (e) {
+      var b = e.target.closest("button[data-act]"), row = e.target.closest(".pn-item");
+      if (b && row) pianoLibAction(b.dataset.act, row.dataset.id);
+    });
+    // editing keys while the Piano Roll tab is open (capture phase, before the global pad / keyboard shortcuts)
+    window.addEventListener("keydown", function (e) {
+      if (activeTab !== "piano" || isTyping(e) || ly.open) return;
+      var k = e.key, mod = e.ctrlKey || e.metaKey, done = false;
+      if (mod && (k === "z" || k === "Z")) { done = e.shiftKey ? pianoEd.redo() : pianoEd.undo(); done = true; }
+      else if (mod && (k === "y" || k === "Y")) { pianoEd.redo(); done = true; }
+      else if (!mod && (k === "Delete" || k === "Backspace")) done = pianoEd.deleteSelected();
+      else if (!mod && !e.altKey && pianoEd.selected() && (k === "ArrowUp" || k === "ArrowDown" || k === "ArrowLeft" || k === "ArrowRight")) {
+        done = pianoEd.nudgeSelected(k === "ArrowUp" ? (e.shiftKey ? 12 : 1) : k === "ArrowDown" ? (e.shiftKey ? -12 : -1) : 0, k === "ArrowRight" ? 1 : k === "ArrowLeft" ? -1 : 0);
+      }
+      if (done) { e.preventDefault(); e.stopImmediatePropagation(); pianoUI(false); }
+    }, true);
+    $("pn-vel-val").textContent = Math.round(pianoEd.velocity() * 100);
+    renderPianoLib();
+    pianoUI(true);
   }
 
   /* ---------------- Toast ---------------- */
@@ -3684,6 +3987,7 @@
         if (activeTab === "vault") renderVault();
         if (activeTab === "lyrics") { ly.preview.tops = null; }
         if (activeTab === "mixer") updateLatencyLabel();
+        if (activeTab === "piano") pianoShown();
       });
     });
     $("btn-play").addEventListener("click", togglePlay);
@@ -3897,6 +4201,7 @@
     renderVault();
     refInit();
     btInit();
+    pianoInit();
     requestAnimationFrame(loop);
   }
 
@@ -3927,6 +4232,15 @@
       return { id: bt.id, title: bt.title, loading: bt.loading, dur: bt.buf ? bt.buf.duration : 0, sr: bt.buf ? bt.buf.sampleRate : 0, bpm: bt.bpm,
         layer: bt.layer, drumsOn: drumsOn(), playing: !!bt.src, pos: btPos(), bpmNow: S.bpm, recLength: $("rec-length").value,
         vox: vox.state, recSecs: recLengthSecs() };
+    },
+    piano: function () {
+      var slots = {};
+      SLOT_IDS.forEach(function (id) { slots[id] = S.piano.slots[id].notes.length; });
+      return { slot: S.piano.slot, pending: pianoPending, pattern: PD.clone(pianoPat()), slots: slots, tick: pianoPlayTick(), voices: LG ? LG.preg.length : 0,
+        lib: pianoLib ? pianoLib.items.map(function (it) { return { id: it.id, name: it.name, notes: it.pattern.notes.length }; }) : [],
+        geom: pianoEd ? pianoEd.geom() : null, canUndo: pianoEd ? pianoEd.canUndo() : false, canRedo: pianoEd ? pianoEd.canRedo() : false,
+        tool: pianoEd ? pianoEd.tool() : "", zoom: pianoEd ? pianoEd.zoomLevel() : 1, sel: pianoEd && pianoEd.selected() ? PD.clone(pianoEd.selected()) : null,
+        instruments: PK.INSTRUMENTS.map(function (i) { return i.id; }) };
     },
     backingTempo: function () { try { return bt.buf ? refEstimateBpm(bt.buf) : null; } catch (e) { return null; } }
   };

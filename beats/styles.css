@@ -643,3 +643,78 @@ body.bt-on:not(.bt-layer) .seq-head::after {
   .bt-lvl { flex: 1 1 auto; }
   .bt-lvl input { flex: 1; width: auto; min-width: 0; }
 }
+
+/* ---------- Piano Roll ---------- */
+#tab-piano { --pn: #a78bfa; min-width: 0; }
+.pn-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: .5rem .75rem; margin-bottom: .6rem; }
+.pn-title { display: flex; flex-wrap: wrap; align-items: baseline; gap: .2rem .8rem; min-width: 0; }
+.pn-title h2 { margin: 0; }
+.pn-sum { font-size: .74rem; color: var(--muted); min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.pn-transport { display: flex; align-items: center; gap: .6rem; }
+.pn-pos { font-size: .78rem; color: var(--muted); min-width: 8.5em; text-align: right; }
+.pn-play { min-width: 96px; justify-content: center; font-weight: 800; }
+.btn.pn-play.on, .btn.pn-play.on:not(.rec) { background: var(--pn); border-color: var(--pn); color: #140a2e; }
+.pn-bar {
+  display: flex; flex-wrap: wrap; align-items: center; gap: .45rem .65rem; margin-bottom: .45rem;
+  font-size: .8rem; color: var(--muted); min-width: 0;
+}
+.pn-bar:first-of-type { margin-top: 0; }
+.pn-bar select { background: var(--bg3); border: 1px solid var(--line); border-radius: 8px; padding: .34rem .45rem; color: var(--text); max-width: 100%; font-weight: 600; }
+.pn-lbl { display: inline-flex; align-items: center; gap: .35rem; min-width: 0; }
+#pn-inst { min-width: 150px; font-weight: 700; }
+.pn-vel input { width: 100px; accent-color: var(--pn); }
+.pn-vel output { min-width: 2em; color: var(--text); font-size: .74rem; }
+#pn-slots > button[data-slot].on { background: var(--pn); border-color: var(--pn); color: #140a2e; }
+#pn-slots > button[data-slot].queued { border-color: var(--pn); color: var(--pn); }
+#pn-tool button.on[data-tool="erase"] { color: var(--hot); }
+#pn-tool button.on[data-tool="draw"] { color: var(--pn); }
+.pn-zoom { display: inline-flex; gap: .2rem; }
+.pn-zoom .btn { min-width: 30px; justify-content: center; font-weight: 800; }
+.pn-bar .btn:disabled { opacity: .35; }
+.pn-roll { margin-top: .35rem; background: #0b0d12; border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; min-width: 0; }
+.prl-scroll { position: relative; overflow: auto; max-height: min(520px, 62vh); overscroll-behavior: contain; outline: none; scrollbar-color: #2b3346 #0e1118; }
+.prl-scroll:focus-visible { box-shadow: inset 0 0 0 1px var(--pn); }
+.prl-inner { display: grid; position: relative; }
+.prl-corner, .prl-lcorner { position: sticky; left: 0; z-index: 4; background: #12151d; }
+.prl-corner { top: 0; border-bottom: 1px solid var(--line); border-right: 1px solid var(--line); }
+.prl-lcorner { bottom: 0; border-top: 1px solid var(--line); border-right: 1px solid var(--line); font: 800 .6rem var(--mono); letter-spacing: .12em; color: var(--muted); display: flex; align-items: center; justify-content: center; }
+.prl-ruler { position: sticky; top: 0; z-index: 3; display: block; }
+.prl-lane { position: sticky; bottom: 0; z-index: 3; display: block; touch-action: none; cursor: ns-resize; }
+.prl-keys { position: sticky; left: 0; z-index: 2; display: flex; flex-direction: column; border-right: 1px solid var(--line); background: #0b0d12; user-select: none; touch-action: pan-y; }
+.prk { flex: none; box-sizing: border-box; display: flex; align-items: center; justify-content: flex-end; padding-right: 4px; font: 600 9px var(--mono); cursor: pointer; border-bottom: 1px solid rgba(0,0,0,.35); }
+.prk.wk { background: linear-gradient(90deg, #cfd4de, #e8ebf2 70%); color: #5a6275; }
+.prk.bk { background: linear-gradient(90deg, #0d0f14, #262b36 75%, #1a1e27); color: #8a93a8; border-right: 12px solid #cfd4de; }
+.prk.c { color: #0b0d12; font-weight: 800; border-bottom-color: #8a93a8; }
+.prk.out.wk { background: linear-gradient(90deg, #9aa1ae, #b3b9c5 70%); }
+.prk.root { box-shadow: inset 3px 0 0 var(--pn); }
+.prk.hit { background: linear-gradient(90deg, #6d5bd0, #a78bfa) !important; color: #fff; }
+.prl-gwrap { position: relative; }
+.prl-grid { display: block; touch-action: none; cursor: crosshair; }
+.proll.erase .prl-grid { cursor: not-allowed; }
+.prl-head { position: absolute; top: 0; left: 0; bottom: 0; width: 2px; margin-left: -1px; background: #fff; box-shadow: 0 0 10px rgba(167,139,250,.9); pointer-events: none; display: none; z-index: 1; will-change: transform; }
+.pn-hint { margin: .5rem 0 0; }
+.pn-lib { margin-top: 1rem; background: var(--bg2); border: 1px solid var(--line); border-radius: var(--radius); padding: .7rem .8rem; }
+.pn-lib-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .5rem; margin-bottom: .55rem; }
+.pn-lib-count { font-size: .72rem; color: var(--muted); margin-left: .35rem; }
+.pn-lib-actions { display: flex; flex-wrap: wrap; gap: .4rem; }
+.pn-lib-list { display: grid; gap: .4rem; }
+.pn-item { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .4rem .75rem; background: var(--bg3); border: 1px solid var(--line); border-left: 3px solid var(--pn); border-radius: 8px; padding: .45rem .6rem; }
+.pn-item-main { display: grid; gap: .1rem; min-width: 0; }
+.pn-item-main strong { font-size: .9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pn-item-main span { font-size: .7rem; color: var(--muted); }
+.pn-item-actions { display: flex; flex-wrap: wrap; gap: .3rem; }
+.empty.small { padding: .9rem; font-size: .82rem; }
+@media (max-width: 560px) {
+  .pn-head { align-items: center; }
+  .pn-transport { width: 100%; justify-content: space-between; }
+  .pn-bar { gap: .4rem .5rem; }
+  .pn-bar .label { display: none; }
+  #pn-inst { min-width: 0; flex: 1 1 100%; }
+  .pn-lbl:has(#pn-inst) { flex: 1 1 100%; }
+  .pn-vel { flex: 1 1 100%; }
+  .pn-vel input { flex: 1; width: auto; min-width: 0; }
+  .pn-bar .sep { display: none; }
+  .prl-scroll { max-height: 58vh; }
+  .pn-item-actions { width: 100%; display: grid; grid-template-columns: repeat(4, 1fr); }
+  .pn-item-actions .btn { justify-content: center; padding: .4rem .3rem; }
+}
