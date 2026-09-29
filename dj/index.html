@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>DJ Psycho Fingers — Island Pin DJ Booth</title>
+  <meta name="description" content="Island Pin DJ: a free two-deck DJ mixer in the browser — the booth of DJ Psycho Fingers. Load your own beats, cue, pitch with keylock, sync, 3-band EQ with kills, filter, crossfader, hot cues, loops and record the mix to WAV.">
+  <meta name="robots" content="index,follow">
+  <link rel="canonical" href="https://madinc47-prog.github.io/dj/">
+  <meta property="og:title" content="DJ Psycho Fingers — Island Pin DJ Booth">
+  <meta property="og:description" content="Two decks, EQ, filter, sync and crossfader in your browser. Mix your own beats and record the mix to WAV.">
+  <meta property="og:url" content="https://madinc47-prog.github.io/dj/">
+  <meta property="og:type" content="website">
+  <meta name="theme-color" content="#0b0d12">
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="dj.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <a href="../" class="back" aria-label="Back to IslePin">←</a>
+      <span class="logo">ISLAND PIN <b>DJ</b></span>
+      <a class="toplink" href="../beats/">Beats →</a>
+    </div>
+    <div class="top-right">
+      <span id="audio-state" class="audio-state">Tap ▶ or load a track to start audio</span>
+      <button type="button" id="rec" class="rec-btn" title="Record the master output to a WAV file">● REC</button>
+      <span id="rec-time" class="mono rec-time" hidden>0:00</span>
+    </div>
+  </header>
+
+  <section class="booth" aria-label="DJ Psycho Fingers">
+    <div class="booth-mark" aria-hidden="true"><span>PF</span></div>
+    <div class="booth-text">
+      <p class="booth-eyebrow">Island Pin DJ booth</p>
+      <h1>DJ Psycho Fingers</h1>
+      <p class="booth-now" id="now-playing">Two decks, EQ, filter, sync &amp; crossfader. Load a beat to start.</p>
+    </div>
+    <a class="yt-btn" href="https://www.youtube.com/@emmanuelgriffith4650" target="_blank" rel="noopener noreferrer">
+      <span class="yt-ico" aria-hidden="true">▶</span> YouTube <span class="yt-handle">@emmanuelgriffith4650</span>
+    </a>
+  </section>
+
+  <section class="waves" aria-label="Waveforms">
+    <canvas id="zoom-A" class="zoom" data-deck="A" height="64"></canvas>
+    <canvas id="zoom-B" class="zoom" data-deck="B" height="64"></canvas>
+  </section>
+
+  <main class="console">
+    <section class="deck" id="deck-A" data-deck="A" aria-label="Deck A"></section>
+    <section class="mixer" id="mixer" aria-label="Mixer"></section>
+    <section class="deck" id="deck-B" data-deck="B" aria-label="Deck B"></section>
+  </main>
+
+  <div class="xfbar" id="xfbar">
+    <button type="button" class="xf-play" data-deck="A" aria-label="Play / pause deck A">▶ A</button>
+    <div class="xf-wrap">
+      <div class="ctl hfader xf" id="xf" data-label="Crossfader"></div>
+      <div class="xf-labels"><span>A</span><button type="button" id="xf-curve" class="mini" title="Crossfader curve">Smooth</button><span>B</span></div>
+    </div>
+    <button type="button" class="xf-play" data-deck="B" aria-label="Play / pause deck B">B ▶</button>
+  </div>
+
+  <section class="library" aria-label="Track library">
+    <div class="lib-head">
+      <h2>Crate</h2>
+      <div class="lib-tabs" role="tablist">
+        <button type="button" class="lib-tab on" data-lib="beats">His beats &amp; demos</button>
+        <button type="button" class="lib-tab" data-lib="vault">Beats Vault</button>
+        <button type="button" class="lib-tab" data-lib="mixes">My mixes</button>
+      </div>
+      <label class="btn file-btn">Load from device…<input type="file" id="lib-file" accept="audio/*,.mp3,.wav,.m4a,.aac,.ogg,.flac" hidden></label>
+    </div>
+    <div class="lib-list" id="lib-list"></div>
+    <p class="lib-note">Only mix audio you own or have the rights to: his own beats, Island Pin Beats bounces, or files from your device. Nothing is uploaded — audio stays in this browser.</p>
+  </section>
+
+  <footer class="foot">
+    <p>DJ Psycho Fingers · <a href="https://www.youtube.com/@emmanuelgriffith4650" target="_blank" rel="noopener noreferrer">YouTube @emmanuelgriffith4650</a> · <a href="../beats/">Island Pin Beats</a> · <a href="../">IslePin</a></p>
+    <p class="muted">Keys: Q / P play A / B · W / O cue · A / L sync · 1–4 / 7–0 hot cues. Headphone cueing needs a second audio output, which browsers don't offer — preview with the channel faders.</p>
+  </footer>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script src="dj.js"></script>
+</body>
+</html>
