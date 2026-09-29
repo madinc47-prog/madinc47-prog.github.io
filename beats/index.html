@@ -73,6 +73,36 @@
       </div>
       <div class="timeline" id="timeline" hidden aria-label="Song structure timeline"></div>
 
+      <!-- INSTRUMENTAL / BACKING TRACK: the beat you hear AND record over (mixed into the take, unlike the Reference) -->
+      <section class="bt-panel" id="bt-panel" aria-label="Instrumental / backing track">
+        <div class="bt-head">
+          <div class="bt-title">
+            <span class="label">Instrumental</span>
+            <strong class="bt-name" id="bt-name">None · Record Vocals uses the drum machine</strong>
+            <span class="bt-meta mono" id="bt-meta"></span>
+          </div>
+          <div class="bt-actions">
+            <select id="bt-pick" aria-label="Built-in instrumentals">
+              <option value="">Built-in instrumental…</option>
+              <option value="gunwalk">Gunwalk — DJ Psycho Fingers</option>
+            </select>
+            <label class="btn small file-btn" title="Load a beat you own (MP3, WAV, M4A/AAC, OGG, FLAC). It stays in this browser.">Load instrumental…<input type="file" id="bt-file" accept="audio/*,.mp3,.wav,.m4a,.aac,.mp4,.ogg,.oga,.opus,.flac,.webm,.aif,.aiff" hidden></label>
+            <button type="button" id="bt-eject" class="btn small ghost" hidden title="Remove the instrumental and go back to the drum machine">Eject</button>
+          </div>
+        </div>
+        <div class="bt-body" id="bt-body" hidden>
+          <div class="bt-prog" id="bt-prog" title="Click to cue (bar)"><i id="bt-bar"></i><span class="bt-time mono" id="bt-time">0:00 / 0:00</span></div>
+          <div class="bt-ctrls">
+            <button type="button" class="btn rec vox js-vox bt-vox">🎙 Record Vocals</button>
+            <button type="button" class="btn small" id="bt-play" title="Play / pause (Space)">▶ Play</button>
+            <label class="chk" title="Play your drum pattern (and chord loop) on top of the instrumental"><input type="checkbox" id="bt-layer"> Layer drum machine</label>
+            <label class="bt-lvl">Level <input type="range" id="bt-level" min="0" max="100" value="85" aria-label="Instrumental level"> <output id="bt-level-val" class="mono">85%</output></label>
+          </div>
+          <div class="vox-status js-vox-status" role="status"></div>
+          <p class="bt-note" id="bt-note"></p>
+        </div>
+      </section>
+
       <div class="rec-bar">
         <div class="rec-controls">
           <button id="btn-rec" class="btn rec">● Record</button>
@@ -83,7 +113,7 @@
               <option value="30" selected>30 sec</option>
               <option value="60">60 sec</option>
               <option value="0">Free (until stop)</option>
-              <option value="song">Full song (song form)</option>
+              <option value="song">Full song (song form / instrumental)</option>
             </select>
           </label>
           <label class="chk"><input type="checkbox" id="rec-autoplay" checked> Start pattern with record</label>
@@ -459,7 +489,7 @@
     </div>
   </div>
 
-  <footer class="foot">Free · runs in your browser · synthesized drums + CC0 one-shots (<a href="samples/CREDITS.md">credits</a>), no paid APIs · <a href="../">IslePin</a></footer>
+  <footer class="foot">Free · runs in your browser · synthesized drums + CC0 one-shots (<a href="samples/CREDITS.md">credits</a>), no paid APIs · instrumental “Gunwalk” © Emmanuel Griffith / DJ Psycho Fingers (<a href="tracks/CREDITS.md">credits</a>) · <a href="../">IslePin</a></footer>
 
   <script src="drums.js"></script>
   <script src="app.js"></script>

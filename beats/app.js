@@ -11,7 +11,8 @@
     { id: "bass", name: "808" },
     { id: "hats", name: "Hats" },
     { id: "perc", name: "Perc / FX" },
-    { id: "keys", name: "Keys" }
+    { id: "keys", name: "Keys" },
+    { id: "inst", name: "Instrumental" }   // loaded backing track (skips the drum bus, like Keys)
   ];
   var PAD_KEYS = ["z", "x", "c", "v", "b", "n", "m", ","];
   var D = window.IPBDrums;            // kit library + offline pad renderer (drums.js)
@@ -155,7 +156,8 @@
         fmt: 2, kit: S.kit, bpm: S.bpm, swing: S.swing, slot: S.slot, slots: S.slots,
         padCfg: S.padCfg, kitSwing: S.kitSwing, mute: S.mute, solo: S.solo, mixer: S.mixer, sel: S.sel,
         chordTrack: S.chordTrack, structure: S.structure, cueBar: S.cueBar,
-        lyricSong: S.lyricSong, bpl: S.bpl, prSize: S.prSize, vox: S.vox, tool: S.tool
+        lyricSong: S.lyricSong, bpl: S.bpl, prSize: S.prSize, vox: S.vox, tool: S.tool,
+        backing: bt.id ? { id: bt.id, layer: bt.layer, prevBpm: bt.prevBpm } : null
       }));
     } catch (e) { /* storage full or blocked */ }
   }
@@ -200,6 +202,9 @@
       if (typeof d.lyricSong === "string") S.lyricSong = d.lyricSong;
       if (d.bpl) S.bpl = String(d.bpl);
       if (d.prSize) S.prSize = clamp(+d.prSize, 0.6, 1.8);
+      if (d.backing && typeof d.backing.id === "string") {
+        btRestore = { id: d.backing.id, layer: !!d.backing.layer, prevBpm: d.backing.prevBpm != null ? clamp(+d.backing.prevBpm || 90, 60, 200) : null };
+      }
       if (d.vox) {
         S.vox.nudge = clamp(+d.vox.nudge || 0, -300, 300);
         S.vox.monitor = !!d.vox.monitor;
@@ -483,7 +488,7 @@
     GROUPS.forEach(function (g) {
       var n = gn(mixGain(g.id)), tail = n;
       if (live) { var an = c.createAnalyser(); an.fftSize = 512; n.connect(an); tail = an; G.an[g.id] = an; }
-      tail.connect(g.id === "keys" ? G.keysDelay : G.bus);
+      tail.connect(g.id === "keys" || g.id === "inst" ? G.keysDelay : G.bus);
       G.groups[g.id] = n;
     });
     for (var i = 0; i < 16; i++) {
@@ -546,6 +551,7 @@
     applyMixer();
     setupRecorder();
     refOnCtx();
+    btPrepare();
     var st = $("audio-state");
     st.textContent = "Audio on"; st.classList.add("on");
     return ctx;
@@ -683,6 +689,7 @@
     return ((h >>> 0) / 4294967296) * 2 - 1;
   }
   function scheduleStep(c, G, info, t, reg, creg, first) {
+    if (!drumsOn()) return; // instrumental loaded: drum machine + chord loop stay silent unless "Layer drum machine" is on
     var half = info.feel === "half";
     var len = stepDur() * (half ? 2 : 1);
     var sw = info.patStep % 2 === 1 ? len * (S.swing / 100) : 0;
@@ -718,8 +725,8 @@
         info = stepInfo(curK);
         uiQueue.push({ step: -1, k: curK, time: nextTime, fire: false, slot: true });
       }
-      if (info.end) { endSong(nextTime); return; }
-      if (info.fire) scheduleStep(ctx, LG, info, nextTime, liveVoices, chordLive, curK === startK);
+      if (info.end && !btActive()) { endSong(nextTime); return; } // with an instrumental, its own end stops the take
+      if (info.fire && !info.end) scheduleStep(ctx, LG, info, nextTime, liveVoices, chordLive, curK === startK);
       uiQueue.push({ step: info.patStep, k: curK, time: nextTime, fire: info.fire });
       nextTime += stepDur();
       curK++;
@@ -746,6 +753,7 @@
     nextTime = startAt || ctx.currentTime + 0.06;
     uiQueue = [];
     posAnchor = { k: curK, time: nextTime };
+    if (btActive()) btStart(nextTime, S.cueBar * barSec());
     timer = setInterval(scheduler, 25);
     scheduler();
     $("btn-play").classList.add("on");
@@ -763,6 +771,7 @@
     uiQueue = [];
     setNowColumn(-1);
     if (ctx) cutChords(chordLive, ctx.currentTime);
+    btStop();
     S.cueBar = keepCue ? Math.max(0, Math.floor(pos / STEPS)) : 0;
     $("btn-play").classList.remove("on");
     updatePlayButtons();
@@ -786,6 +795,8 @@
     if (wasPlaying) play();
   }
   function updatePlayButtons() {
+    var bp = $("bt-play");
+    if (bp) { bp.textContent = playing ? "❚❚ Pause" : "▶ Play"; bp.classList.toggle("on", playing); }
     var b = $("pr-play");
     if (b) {
       b.textContent = playing ? "❚❚ Pause" : "▶ Play";
@@ -1422,6 +1433,7 @@
   function recLengthSecs() {
     var v = $("rec-length").value;
     if (v === "song") {
+      if (btActive()) return Math.max(1, bt.buf.duration - Math.min(bt.buf.duration, S.cueBar * barSec())) + 1.5;
       var A = arrangement();
       if (!A) return 0; // no structure → free length
       return Math.max(1, totalBars(A) - S.cueBar) * barSec() + 2;
@@ -1527,12 +1539,13 @@
     if (songMode && !A) { toast("Pick a song structure first (Song bar above)."); return; }
     var bars = songMode ? totalBars(A) : +barsSel;
     var total = bars * STEPS;
-    if (!S.chordTrack.on && !patternHasNotes()) { toast("Pattern is empty — add steps first."); return; }
+    if (!btActive() && !S.chordTrack.on && !patternHasNotes()) { toast("Pattern is empty — add steps first."); return; }
     var dur = total * sd + 2.5 + GRAPH_LAT;
     var c = new OfflineAudioContext(2, Math.ceil(SR * dur), SR);
     var G = makeGraph(c, false);
     G.out.connect(c.destination);
     var reg = [], creg = [];
+    if (btActive()) { var bsrc = c.createBufferSource(); bsrc.buffer = bt.buf; bsrc.connect(G.groups.inst); bsrc.start(0); }
     for (var k = 0; k < total; k++) {
       // loop bounces ignore the structure so "4 bars" really means the 4-bar loop
       var info = songMode ? stepInfo(k) : loopInfo(k);
@@ -1555,7 +1568,9 @@
   function saveToVault(blob, dur, label) {
     var item = {
       id: "r_" + Date.now().toString(36),
-      name: label + " · " + kitName(S.kit) + " " + S.bpm + "bpm",
+      name: btActive() && label.indexOf(bt.title) !== -1
+        ? label + (bt.layer ? " + " + kitName(S.kit) : "") + " · " + S.bpm + "bpm"
+        : label + " · " + (btActive() ? bt.title + (bt.layer ? " + " + kitName(S.kit) : "") : kitName(S.kit)) + " " + S.bpm + "bpm",
       created: Date.now(),
       duration: dur,
       size: blob.size,
@@ -1796,11 +1811,13 @@
         S.mixer[g.id].v = r.value / 100;
         val.textContent = r.value + "%";
         applyMixer(); saveSession();
+        if (g.id === "inst") btUI();
       });
       mute.addEventListener("click", function () {
         S.mixer[g.id].m = !S.mixer[g.id].m;
         mute.classList.toggle("on", S.mixer[g.id].m);
         applyMixer(); saveSession();
+        if (g.id === "inst") btUI();
       });
       meterEls[g.id] = st.querySelector(".meter i");
       wrap.appendChild(st);
@@ -1914,6 +1931,7 @@
       drawFrame($("cv-916"));
     }
     refTick();
+    if (activeTab === "beats" && bt.buf) btTick();
     requestAnimationFrame(loop);
   }
 
@@ -2013,6 +2031,7 @@
     openMic().then(function () {
       if (vox.state !== "arming") { closeMic(); return; }
       if (playing) stop(true); // keep the cue: the take starts where the song is cued
+      if (btActive()) S.cueBar = 0; // instrumental: every take starts at 0:00 of the track
       var beat = 60 / S.bpm, t0 = ctx.currentTime + 0.2, start = t0 + beat * 4;
       vox.state = "count"; setVoxButtons();
       for (var i = 0; i < 4; i++) {
@@ -2085,7 +2104,7 @@
     var cut = on > 0 ? Math.max(0, on - Math.round(sr * 0.01)) : 0;
     if (cut) { L = L.subarray(cut); R = R.subarray(cut); V = V.subarray(cut); frames -= cut; }
     var song = getSong(S.lyricSong);
-    vox.last = { L: L, R: R, V: V, frames: frames, sr: sr, title: song ? song.title : "" };
+    vox.last = { L: L, R: R, V: V, frames: frames, sr: sr, title: btActive() ? bt.title : song ? song.title : "" };
     exportVocalMix(true);
     renderLastTake();
   }
@@ -2111,7 +2130,7 @@
     saveToVault(encodeWav(outL, outR, n, t.sr), n / t.sr, first ? name : name + " (re-mix)");
     if (dry) saveToVault(encodeWav(dry, dry, n, t.sr), n / t.sr, "Dry vocal" + (t.title ? " · " + t.title : ""));
     var quiet = vocalPeak(t.V) < 0.003;
-    setVoxStatus("Saved " + fmtTime(n / t.sr) + " vocal + beat mix to Vault" + (quiet ? " — warning: the mic signal was almost silent" : ""), quiet);
+    setVoxStatus("Saved " + fmtTime(n / t.sr) + " vocal + " + (btActive() ? "instrumental" : "beat") + " mix to Vault" + (quiet ? " — warning: the mic signal was almost silent" : ""), quiet);
     if (first) toast("Vocal take saved to Vault (beat + vocal WAV)");
   }
   function renderLastTake() {
@@ -2322,6 +2341,11 @@
       o.textContent = b.title + " — " + kitName(bp.kit) + " " + bp.bpm + " (beat + lyrics)";
       ps.appendChild(o);
     });
+    Object.keys(BACKING_TRACKS).forEach(function (id) {
+      var T = BACKING_TRACKS[id], o = document.createElement("option");
+      o.value = "t:" + id; o.textContent = T.title + " — " + T.artist + " (instrumental · record vocals)";
+      ps.appendChild(o);
+    });
     songStore.songs.forEach(function (x) {
       if (!x.beat) return;
       var o = document.createElement("option");
@@ -2468,7 +2492,7 @@
     var ss = $("struct-sel");
     if (ss) ss.value = S.structure || "";
     var rl = $("rec-length"), so = rl.querySelector('option[value="song"]');
-    so.disabled = !arrangement();
+    so.disabled = !arrangement() && !btActive();
     if (so.disabled && rl.value === "song") rl.value = "30";
     var bb = $("bounce-bars").querySelector('option[value="song"]');
     bb.disabled = !arrangement();
@@ -2531,6 +2555,7 @@
   function applySongPreset(val) {
     if (!val) return;
     var kind = val.charAt(0), id = val.slice(2), beat = null, song = getSong(id), extra = null;
+    if (kind === "t") return loadBacking(id);
     if (kind === "b") {
       var b = BUILTIN_SONGS.filter(function (x) { return x.id === id; })[0];
       extra = b && BEAT_PRESETS[b.preset];
@@ -2544,6 +2569,7 @@
     }
     if (vox.state !== "idle") stopVocalTake();
     stop();
+    if (btActive()) btEject(); // a drum-machine beat replaces the loaded instrumental
     S.kitSwing[S.kit] = S.swing;
     S.bpm = clamp(+beat.bpm || 140, 60, 200);
     S.swing = clamp(+beat.swing || 0, 0, 60);
@@ -3391,6 +3417,236 @@
     };
   }
 
+  /* ---------------- Instrumental / backing track ----------------
+   * A full instrumental (e.g. the artist's own beat) replaces the drum machine as "the beat":
+   *   bufferSource → bt gain → Mixer "Instrumental" fader → (keys-path delay) → master fader → limiter → `master`
+   * Because it lives on `master`, ● Record and Record Vocals capture it sample-aligned with the mic, exactly like
+   * the drum beat; the take file is instrumental + vocal. The drum machine (and chord loop) stay silent while an
+   * instrumental is loaded unless "Layer drum machine" is ticked. Takes always start at 0:00 of the instrumental
+   * after the count-in and end with it (or with Stop take).
+   */
+  var BACKING_TRACKS = {
+    gunwalk: {
+      title: "Gunwalk", artist: "DJ Psycho Fingers", url: "tracks/gunwalk-instrumental.mp3", bpm: 96,
+      credit: "Emmanuel Griffith's own beat (DJ Psycho Fingers) · vocals removed"
+    }
+  };
+  var BT_IDB_KEY = "backing:file"; // an uploaded instrumental is kept in the "pads" store so it survives a reload
+  var bt = { id: null, title: "", artist: "", credit: "", buf: null, bytes: null, prep: null, bpm: 0, layer: false, prevBpm: null,
+    src: null, g: null, startCtx: 0, offset: 0, loading: "", tok: 0 };
+  var btRestore = null; // { id, layer, prevBpm } from the saved session
+  function btActive() { return !!bt.buf; }
+  function drumsOn() { return !bt.buf || bt.layer; }
+  function btDur() { return bt.buf ? bt.buf.duration : 0; }
+  function btPos() {
+    if (!bt.buf) return 0;
+    if (bt.src && ctx) return clamp(bt.offset + Math.max(0, ctx.currentTime - bt.startCtx), 0, btDur());
+    return clamp(S.cueBar * barSec(), 0, btDur());
+  }
+  /* re-decode at the device rate once the live context exists (its resampler instead of on-the-fly resampling) */
+  function btPrepare() {
+    if (!ctx || !bt.buf || !bt.bytes || bt.prep || bt.buf.sampleRate === ctx.sampleRate) return;
+    var tok = bt.tok;
+    bt.prep = new Promise(function (res) {
+      var done = false;
+      var p = ctx.decodeAudioData(bt.bytes.slice(0), function (b) { done = true; res(b); }, function () { if (!done) res(null); });
+      if (p && p.catch) p.catch(function () { if (!done) res(null); });
+    }).then(function (b) {
+      bt.prep = null;
+      if (tok !== bt.tok || !b) return;
+      bt.buf = b; bt.bytes = null;
+    });
+  }
+  function btStart(when, offset) {
+    btStop(when);
+    if (!bt.buf || !ctx) return;
+    offset = clamp(offset || 0, 0, btDur());
+    if (offset >= btDur() - 0.05) return;
+    var src = ctx.createBufferSource(), g = ctx.createGain();
+    src.buffer = bt.buf;
+    src.connect(g); g.connect(groupNodes.inst.gain);
+    src.start(Math.max(ctx.currentTime, when), offset);
+    bt.src = src; bt.g = g; bt.startCtx = when; bt.offset = offset;
+    src.onended = function () {
+      if (bt.src !== src) return;
+      bt.src = null;
+      if (vox.state === "rec") onSongEnded();      // wraps the take up 1.5 s after the last note
+      else if (playing) stop();
+    };
+  }
+  function btStop(t) {
+    if (!bt.src || !ctx) { bt.src = null; return; }
+    var s = bt.src, g = bt.g;
+    bt.src = null;
+    t = Math.max(ctx.currentTime, t || 0);
+    try { g.gain.setTargetAtTime(0, t, 0.012); s.stop(t + 0.08); } catch (e) { /* already stopped */ }
+  }
+  function btInstall(meta, buf, bytes, restoring) {
+    if (vox.state !== "idle") stopVocalTake();
+    if (playing) stop();
+    if (!restoring && bt.prevBpm == null) bt.prevBpm = S.bpm;
+    bt.tok++;
+    bt.id = meta.id; bt.title = meta.title; bt.artist = meta.artist || ""; bt.credit = meta.credit || "";
+    bt.buf = buf; bt.bytes = bytes || null; bt.prep = null; bt.bpm = meta.bpm || 0; bt.loading = "";
+    if (!restoring) bt.layer = false;                   // drum machine muted by default
+    if (bt.bpm) { S.bpm = clamp(Math.round(bt.bpm), 60, 200); $("bpm").value = S.bpm; lastPosLabel = ""; }
+    S.cueBar = 0;
+    if (ctx) cutChords(chordLive, ctx.currentTime);
+    btPrepare();
+    renderTimelines();
+    $("rec-length").value = "song";                   // takes run the full length of the instrumental
+    var ps = $("song-preset");
+    if (ps.querySelector('option[value="t:' + meta.id + '"]')) ps.value = "t:" + meta.id;
+    btUI(); saveSession();
+  }
+  function btLoadBuiltin(id, restoring) {
+    var T = BACKING_TRACKS[id];
+    if (!T) return Promise.resolve(false);
+    var tok = ++bt.tok;
+    bt.loading = T.title; btUI();
+    return fetch(T.url).then(function (r) {
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      return r.arrayBuffer();
+    }).then(function (ab) {
+      return refDecodeOffline(ab.slice(0)).then(function (buf) {
+        if (tok !== bt.tok) return false;
+        btInstall({ id: id, title: T.title, artist: T.artist, bpm: T.bpm, credit: T.credit }, buf, ab, restoring);
+        return true;
+      });
+    }).catch(function (e) {
+      if (tok === bt.tok) { bt.loading = ""; btUI(); toast("Could not load " + T.title + " (" + (e && e.message || "decode error") + ")."); }
+      return false;
+    });
+  }
+  function loadBacking(id) {
+    return btLoadBuiltin(id, false).then(function (ok) {
+      if (ok) toast(bt.title + " loaded — drum machine muted. Tap 🎙 Record Vocals (headphones on).");
+      return ok;
+    });
+  }
+  function btLoadFile(file) {
+    if (!file) return;
+    if (file.size > REF_MAX_BYTES) { toast("That file is too big (max 250 MB)."); return; }
+    if (file.type && !/^audio\//.test(file.type) && !/\.(mp3|wav|m4a|aac|mp4|ogg|oga|opus|flac|webm|aiff?)$/i.test(file.name)) {
+      toast("Please choose an audio file (MP3, WAV, M4A/AAC, OGG, FLAC)."); return;
+    }
+    var tok = ++bt.tok, title = file.name.replace(/\.[^.]+$/, "").slice(0, 80) || "Instrumental";
+    bt.loading = title; btUI();
+    file.arrayBuffer().then(function (ab) {
+      return refDecodeOffline(ab.slice(0)).then(function (buf) {
+        if (tok !== bt.tok) return;
+        var est = null;
+        try { est = refEstimateBpm(buf); } catch (e) { est = null; }
+        var meta = { id: "file", title: title, artist: "", bpm: est ? est.bpm : 0, credit: "Your upload · stays in this browser" };
+        btInstall(meta, buf, ab, false);
+        toast(title + " loaded" + (est ? " · ≈" + est.bpm + " BPM" : "") + " — drum machine muted. Tap 🎙 Record Vocals.");
+        idb("pads", "readwrite", function (st) {
+          return st.put({ key: BT_IDB_KEY, name: file.name, title: title, type: file.type, size: file.size, bpm: meta.bpm, data: ab });
+        }).catch(function () { toast("Instrumental loaded for this session only (browser storage full or blocked)."); });
+      }, function () {
+        if (tok === bt.tok) { bt.loading = ""; btUI(); }
+        toast("This browser can't decode “" + file.name + "”. Try MP3 or WAV.");
+      });
+    }).catch(function () { if (tok === bt.tok) { bt.loading = ""; btUI(); } toast("Could not read that file."); });
+  }
+  function btLoadStoredFile() {
+    var tok = ++bt.tok;
+    bt.loading = "your instrumental"; btUI();
+    return idb("pads", "readonly", function (st) { return st.get(BT_IDB_KEY); }).then(function (row) {
+      if (!row || !row.data) throw new Error("none");
+      return refDecodeOffline(row.data.slice(0)).then(function (buf) {
+        if (tok !== bt.tok) return;
+        btInstall({ id: "file", title: row.title || "Instrumental", bpm: row.bpm || 0, credit: "Your upload · stays in this browser" }, buf, row.data, true);
+      });
+    }).catch(function () { if (tok === bt.tok) { bt.loading = ""; bt.id = null; btUI(); saveSession(); } });
+  }
+  function btEject() {
+    if (!bt.buf && !bt.loading) return;
+    if (vox.state !== "idle") stopVocalTake();
+    if (playing) stop();
+    var wasFile = bt.id === "file";
+    bt.tok++;
+    bt.id = null; bt.buf = null; bt.bytes = null; bt.prep = null; bt.loading = ""; bt.layer = false;
+    if (bt.prevBpm != null) { S.bpm = bt.prevBpm; $("bpm").value = S.bpm; lastPosLabel = ""; }
+    bt.prevBpm = null; S.cueBar = 0;
+    if (wasFile) idb("pads", "readwrite", function (st) { return st.delete(BT_IDB_KEY); }).catch(function () {});
+    var ps = $("song-preset");
+    if (/^t:/.test(ps.value)) ps.value = "";
+    if ($("rec-length").value === "song" && !arrangement()) $("rec-length").value = "30";
+    renderTimelines(); btUI(); saveSession();
+    toast("Instrumental ejected — back to the drum machine.");
+  }
+  function btSetLayer(on) {
+    bt.layer = !!on;
+    if (!bt.layer && ctx) cutChords(chordLive, ctx.currentTime);
+    btUI(); saveSession();
+  }
+  var btLastTime = "";
+  function btTick() {
+    var d = btDur(), p = btPos();
+    var bar = $("bt-bar");
+    if (bar) bar.style.width = (d ? (p / d) * 100 : 0).toFixed(2) + "%";
+    var txt = fmtTime(p) + " / " + fmtTime(d);
+    if (txt !== btLastTime) { btLastTime = txt; var tm = $("bt-time"); if (tm) tm.textContent = txt; }
+  }
+  function btUI() {
+    var on = !!bt.buf;
+    document.body.classList.toggle("bt-on", on);
+    document.body.classList.toggle("bt-layer", on && bt.layer);
+    var panel = $("bt-panel");
+    if (!panel) return;
+    panel.classList.toggle("on", on);
+    $("bt-name").textContent = bt.loading ? "Loading " + bt.loading + "…" : on ? bt.title + (bt.artist ? " — " + bt.artist : "") : "None · Record Vocals uses the drum machine";
+    $("bt-meta").textContent = on ? fmtTime(btDur()) + (bt.bpm ? " · " + Math.round(bt.bpm) + " BPM" : "") + (bt.credit ? " · " + bt.credit : "") : "";
+    $("bt-body").hidden = !on;
+    $("bt-eject").hidden = !on;
+    $("bt-pick").value = bt.id && BACKING_TRACKS[bt.id] ? bt.id : "";
+    $("bt-layer").checked = bt.layer;
+    var lv = Math.round(S.mixer.inst.v * 100);
+    $("bt-level").value = lv;
+    $("bt-level-val").textContent = S.mixer.inst.m ? "muted" : lv + "%";
+    $("bt-note").textContent = !on ? "" : bt.layer
+      ? "Drum machine layered on top (starts with the instrumental at the current BPM). Every take starts at 0:00 after a 1-bar count-in and runs to the end of the track — or tap Stop take."
+      : "Drum machine is muted while the instrumental plays. Every take starts at 0:00 after a 1-bar count-in and runs to the end of the track — or tap Stop take. The take in the Vault is instrumental + your vocal in one WAV.";
+    btLastTime = ""; btTick();
+  }
+  function btInit() {
+    $("bt-pick").addEventListener("change", function (e) { if (e.target.value) loadBacking(e.target.value); });
+    $("bt-file").addEventListener("change", function (e) { btLoadFile(e.target.files[0]); e.target.value = ""; });
+    $("bt-eject").addEventListener("click", btEject);
+    $("bt-layer").addEventListener("change", function (e) { btSetLayer(e.target.checked); });
+    $("bt-play").addEventListener("click", togglePlay);
+    $("bt-level").addEventListener("input", function (e) {
+      S.mixer.inst.v = +e.target.value / 100; S.mixer.inst.m = false;
+      applyMixer(); saveSession(); btUI();
+    });
+    $("bt-level").addEventListener("change", function () { buildMixer(); });
+    $("bt-prog").addEventListener("click", function (e) {
+      if (!bt.buf || vox.state !== "idle") return;
+      var r = e.currentTarget.getBoundingClientRect(), f = clamp((e.clientX - r.left) / r.width, 0, 1);
+      cueTo(Math.floor((f * btDur()) / barSec()));
+    });
+    var q = "";
+    try { q = (new URLSearchParams(location.search).get("beat") || "").toLowerCase(); } catch (e) { q = ""; }
+    btUI();
+    if (BACKING_TRACKS[q]) { // deep link: ?beat=gunwalk → instrumental loaded, Record Vocals ready
+      if (btRestore && btRestore.prevBpm != null) bt.prevBpm = btRestore.prevBpm;
+      btRestore = null;
+      btLoadBuiltin(q, false).then(function (ok) {
+        if (!ok) return;
+        var pn = $("bt-panel");
+        if (pn && pn.scrollIntoView) pn.scrollIntoView({ block: "start" });
+        setVoxStatus("“" + bt.title + "” is loaded. Put headphones on and tap 🎙 Record Vocals: 1-bar count-in, then the instrumental starts from 0:00 and your mic records until the end (or Stop take).");
+      });
+    } else if (btRestore) {
+      var r0 = btRestore;
+      btRestore = null;
+      bt.layer = r0.layer; bt.prevBpm = r0.prevBpm;
+      if (BACKING_TRACKS[r0.id]) btLoadBuiltin(r0.id, true);
+      else if (r0.id === "file") btLoadStoredFile();
+    }
+  }
+
   /* ---------------- Toast ---------------- */
   var toastTimer = null;
   function toast(msg) {
@@ -3640,6 +3896,7 @@
     migrated.then(function () { return loadKit(S.kit, true); }).then(function () { selectPad(S.sel); });
     renderVault();
     refInit();
+    btInit();
     requestAnimationFrame(loop);
   }
 
@@ -3665,7 +3922,13 @@
         })
       };
     },
-    kits: function () { return D.KITS.map(function (k) { return k.id; }); }
+    kits: function () { return D.KITS.map(function (k) { return k.id; }); },
+    backing: function () {
+      return { id: bt.id, title: bt.title, loading: bt.loading, dur: bt.buf ? bt.buf.duration : 0, sr: bt.buf ? bt.buf.sampleRate : 0, bpm: bt.bpm,
+        layer: bt.layer, drumsOn: drumsOn(), playing: !!bt.src, pos: btPos(), bpmNow: S.bpm, recLength: $("rec-length").value,
+        vox: vox.state, recSecs: recLengthSecs() };
+    },
+    backingTempo: function () { try { return bt.buf ? refEstimateBpm(bt.buf) : null; } catch (e) { return null; } }
   };
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);

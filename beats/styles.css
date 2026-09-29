@@ -604,3 +604,42 @@ body.ref-b .tbtn.play.on { background: #3b3160; color: var(--text); border-color
   .seq-head .label { display: none; }
   .seg button { padding: .28rem .45rem; }
 }
+
+/* ---------- Instrumental / backing track ---------- */
+.bt-panel {
+  background: linear-gradient(180deg, #151a26, var(--bg2)); border: 1px solid var(--line); border-left: 3px solid #4b5468;
+  border-radius: var(--radius); padding: .6rem .75rem; margin-bottom: 1rem; min-width: 0;
+}
+.bt-panel.on { border-color: rgba(244,63,94,.45); border-left-color: var(--hot); box-shadow: 0 0 0 1px rgba(244,63,94,.12) inset; }
+.bt-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .5rem .75rem; }
+.bt-title { display: flex; flex-wrap: wrap; align-items: baseline; gap: .3rem .6rem; min-width: 0; flex: 1 1 260px; }
+.bt-name { font-size: .95rem; min-width: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bt-panel:not(.on) .bt-name { color: var(--muted); font-weight: 600; font-size: .85rem; }
+.bt-meta { font-size: .72rem; color: var(--muted); }
+.bt-actions { display: flex; flex-wrap: wrap; align-items: center; gap: .45rem; }
+.bt-actions select { background: var(--bg3); border: 1px solid var(--line); border-radius: 8px; padding: .38rem .5rem; color: var(--text); max-width: 100%; font-weight: 700; }
+.bt-body { margin-top: .6rem; display: grid; gap: .55rem; }
+.bt-prog { position: relative; height: 26px; background: #0e1118; border: 1px solid var(--line); border-radius: 7px; overflow: hidden; cursor: pointer; }
+.bt-prog i { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: linear-gradient(90deg, rgba(244,63,94,.25), rgba(244,63,94,.55)); box-shadow: 1px 0 0 var(--hot); }
+.bt-time { position: absolute; right: .5rem; top: 50%; transform: translateY(-50%); font-size: .74rem; color: var(--text); pointer-events: none; }
+.bt-ctrls { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem .75rem; font-size: .8rem; color: var(--muted); }
+.bt-vox { font-weight: 800; padding: .55rem 1rem; }
+.bt-lvl { display: inline-flex; align-items: center; gap: .35rem; }
+.bt-lvl input { width: 110px; accent-color: var(--hot); }
+.bt-lvl output { min-width: 3.2em; color: var(--text); font-size: .74rem; }
+.bt-note { margin: 0; font-size: .72rem; color: var(--muted); }
+.bt-panel .vox-status { margin: 0; }
+body.bt-on .rec-bar .vox-status { display: none; }
+body.bt-on:not(.bt-layer) .seq-wrap, body.bt-on:not(.bt-layer) .chordloop { opacity: .55; }
+body.bt-on:not(.bt-layer) .seq-head::after {
+  content: "Muted · instrumental loaded"; font: 800 .62rem var(--font); letter-spacing: .1em; text-transform: uppercase;
+  color: var(--hot); border: 1px solid rgba(244,63,94,.45); border-radius: 5px; padding: .15rem .4rem;
+}
+@media (max-width: 560px) {
+  .bt-actions { width: 100%; display: grid; grid-template-columns: 1fr 1fr; }
+  .bt-actions select { grid-column: 1 / -1; width: 100%; }
+  .bt-actions .btn { justify-content: center; }
+  .bt-vox { flex: 1 1 100%; justify-content: center; }
+  .bt-lvl { flex: 1 1 auto; }
+  .bt-lvl input { flex: 1; width: auto; min-width: 0; }
+}
