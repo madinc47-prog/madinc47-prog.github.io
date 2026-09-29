@@ -41,6 +41,8 @@ a{color:inherit}
 .chip:hover{color:var(--fg)}
 .chip[aria-pressed="true"]{background:var(--accent);color:#10231a}
 .shelf{padding-top:1.4rem}
+.shelf[hidden]{display:none}
+.shelf-sub{margin:-.6rem 0 1rem;max-width:44rem}
 .shelf-head{display:flex;align-items:baseline;justify-content:space-between;gap:1rem;flex-wrap:wrap}
 .shelf h2{font-family:var(--display);font-weight:400;font-size:1.7rem;margin:0 0 1rem}
 .soft{color:var(--muted);font-size:1.1rem}

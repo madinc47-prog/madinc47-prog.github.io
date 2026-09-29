@@ -1,8 +1,13 @@
 {
   "shelf": "New & Recent (free & legal)",
   "generated": "2026-09-28",
-  "policy": "Only open-licensed films (Creative Commons), U.S. Government public-domain works, and full films uploaded free by the rights holder (or its licensed showcase) on official channels. No trailers, no unofficial copies.",
-  "count": 23,
+  "policy": "Only open-licensed films (Creative Commons), U.S. Government public-domain works, and full films uploaded free by the rights holder (or its licensed showcase) on official channels. No trailers, no unofficial copies. Action shelves: full films posted free by their rights holder or licensed distributor (e.g. Shout! Studios, iQIYI) or by the filmmakers themselves on their own channels.",
+  "count": 48,
+  "shelves": {
+    "recent": 23,
+    "action-2026": 11,
+    "action-80s": 14
+  },
   "items": [
     {
       "id": "singularity-2026",
@@ -33,7 +38,8 @@
       "source": "Blender Studio (official YouTube)",
       "kind": "open-movie",
       "mediaType": "movie",
-      "runtime": "7 min"
+      "runtime": "7 min",
+      "shelf": "recent"
     },
     {
       "id": "can-trees-save-the-planet-2026",
@@ -61,7 +67,8 @@
       "source": "DW Documentary (official YouTube, verified)",
       "kind": "official-free",
       "mediaType": "documentary",
-      "runtime": "53 min"
+      "runtime": "53 min",
+      "shelf": "recent"
     },
     {
       "id": "deep-sea-fishing-arctic-2026",
@@ -88,7 +95,8 @@
       "source": "DW Documentary (official YouTube, verified)",
       "kind": "official-free",
       "mediaType": "documentary",
-      "runtime": "55 min"
+      "runtime": "55 min",
+      "shelf": "recent"
     },
     {
       "id": "laughing-to-survive-2026",
@@ -116,7 +124,8 @@
       "source": "DW Documentary (official YouTube, verified)",
       "kind": "official-free",
       "mediaType": "documentary",
-      "runtime": "1h 37m"
+      "runtime": "1h 37m",
+      "shelf": "recent"
     },
     {
       "id": "mission-in-the-alps-2026",
@@ -143,7 +152,8 @@
       "source": "DW Documentary (official YouTube, verified)",
       "kind": "official-free",
       "mediaType": "documentary",
-      "runtime": "42 min"
+      "runtime": "42 min",
+      "shelf": "recent"
     },
     {
       "id": "cosmic-dawn-2025",
@@ -172,7 +182,8 @@
       "source": "NASA (official YouTube, verified)",
       "kind": "public-domain-gov",
       "mediaType": "documentary",
-      "runtime": "1h 37m"
+      "runtime": "1h 37m",
+      "shelf": "recent"
     },
     {
       "id": "planetary-defenders-2025",
@@ -201,7 +212,8 @@
       "source": "NASA (official YouTube, verified)",
       "kind": "public-domain-gov",
       "mediaType": "documentary",
-      "runtime": "1h 15m"
+      "runtime": "1h 15m",
+      "shelf": "recent"
     },
     {
       "id": "artemis-i-documentary-2025",
@@ -230,7 +242,8 @@
       "source": "NASA Science (official YouTube)",
       "kind": "public-domain-gov",
       "mediaType": "documentary",
-      "runtime": "34 min"
+      "runtime": "34 min",
+      "shelf": "recent"
     },
     {
       "id": "the-spider-within-2024",
@@ -259,7 +272,8 @@
       "source": "Sony Pictures Animation (official YouTube, verified)",
       "kind": "official-free",
       "mediaType": "movie",
-      "runtime": "7 min"
+      "runtime": "7 min",
+      "shelf": "recent"
     },
     {
       "id": "by-train-through-the-caribbean-2024",
@@ -288,7 +302,8 @@
       "source": "DW Documentary (official YouTube, verified)",
       "kind": "official-free",
       "mediaType": "documentary",
-      "runtime": "26 min"
+      "runtime": "26 min",
+      "shelf": "recent"
     },
     {
       "id": "wing-it-2023",
@@ -323,7 +338,8 @@
       "source": "Blender Studio (official YouTube)",
       "kind": "open-movie",
       "mediaType": "movie",
-      "runtime": "4 min"
+      "runtime": "4 min",
+      "shelf": "recent"
     },
     {
       "id": "once-upon-a-studio-2023",
@@ -352,7 +368,8 @@
       "source": "Walt Disney Animation Studios (official YouTube, verified)",
       "kind": "official-free",
       "mediaType": "movie",
-      "runtime": "9 min"
+      "runtime": "9 min",
+      "shelf": "recent"
     },
     {
       "id": "charge-2022",
@@ -383,7 +400,8 @@
       "source": "Blender Studio (official YouTube)",
       "kind": "open-movie",
       "mediaType": "movie",
-      "runtime": "4 min"
+      "runtime": "4 min",
+      "shelf": "recent"
     },
     {
       "id": "the-flying-sailor-2022",
@@ -411,7 +429,8 @@
       "source": "The New Yorker Screening Room (official YouTube, licensed showcase)",
       "kind": "official-free",
       "mediaType": "movie",
-      "runtime": "8 min"
+      "runtime": "8 min",
+      "shelf": "recent"
     },
     {
       "id": "kerims-climate-odyssey-2022",
@@ -440,7 +459,8 @@
       "source": "Al Jazeera English (official YouTube, verified)",
       "kind": "official-free",
       "mediaType": "documentary",
-      "runtime": "25 min"
+      "runtime": "25 min",
+      "shelf": "recent"
     },
     {
       "id": "sprite-fright-2021",
@@ -471,7 +491,8 @@
       "kind": "open-movie",
       "note": "Played from the Internet Archive copy because Blender Studio's YouTube upload is age-gated and will not play in embeds.",
       "mediaType": "movie",
-      "runtime": "10 min"
+      "runtime": "10 min",
+      "shelf": "recent"
     },
     {
       "id": "down-to-earth-2021",
@@ -500,7 +521,8 @@
       "source": "NASA (official YouTube, verified)",
       "kind": "public-domain-gov",
       "mediaType": "documentary",
-      "runtime": "29 min"
+      "runtime": "29 min",
+      "shelf": "recent"
     },
     {
       "id": "coffee-run-2020",
@@ -529,7 +551,8 @@
       "source": "Blender Studio (official YouTube)",
       "kind": "open-movie",
       "mediaType": "movie",
-      "runtime": "3 min"
+      "runtime": "3 min",
+      "shelf": "recent"
     },
     {
       "id": "out-2020",
@@ -558,7 +581,8 @@
       "source": "Pixar (official YouTube, verified)",
       "kind": "official-free",
       "mediaType": "movie",
-      "runtime": "11 min"
+      "runtime": "11 min",
+      "shelf": "recent"
     },
     {
       "id": "curacao-and-climate-change-2020",
@@ -587,7 +611,8 @@
       "source": "DW Documentary (official YouTube, verified)",
       "kind": "official-free",
       "mediaType": "documentary",
-      "runtime": "13 min"
+      "runtime": "13 min",
+      "shelf": "recent"
     },
     {
       "id": "countdown-to-mars-2020",
@@ -616,7 +641,8 @@
       "source": "NASA (official YouTube, verified)",
       "kind": "public-domain-gov",
       "mediaType": "documentary",
-      "runtime": "22 min"
+      "runtime": "22 min",
+      "shelf": "recent"
     },
     {
       "id": "hair-love-2019",
@@ -646,7 +672,8 @@
       "kind": "official-free",
       "note": "Released Aug/Dec 2019; won the Oscar in Feb 2020 (edge of the 2020+ window).",
       "mediaType": "movie",
-      "runtime": "7 min"
+      "runtime": "7 min",
+      "shelf": "recent"
     },
     {
       "id": "spring-2019",
@@ -677,7 +704,821 @@
       "kind": "open-movie",
       "note": "April 2019 (edge of the 2020+ window).",
       "mediaType": "movie",
-      "runtime": "8 min"
+      "runtime": "8 min",
+      "shelf": "recent"
+    },
+    {
+      "id": "iron-shoulder-2026",
+      "title": "Iron Shoulder",
+      "year": 2026,
+      "duration": 5641,
+      "genres": [
+        "action",
+        "cop"
+      ],
+      "synopsis": "After spotting a new drug route, anti-drug police in Tongchuan send an officer undercover to bring down the ring run by the ruthless 'Long Qi'.",
+      "studio": "iQIYI",
+      "license": "Free · official upload",
+      "licenseUrl": "https://www.youtube.com/watch?v=rCsMuganzGw",
+      "licenseProof": [
+        "https://www.youtube.com/watch?v=rCsMuganzGw",
+        "https://www.youtube.com/@iQIYIEnglish",
+        "https://www.iq.com/"
+      ],
+      "play": {
+        "type": "youtube",
+        "id": "rCsMuganzGw",
+        "embedUrl": "https://www.youtube-nocookie.com/embed/rCsMuganzGw",
+        "watchUrl": "https://www.youtube.com/watch?v=rCsMuganzGw"
+      },
+      "poster": "https://i.ytimg.com/vi/rCsMuganzGw/maxresdefault.jpg",
+      "source": "iQIYI English (official iQIYI YouTube, verified)",
+      "kind": "official-free",
+      "badge": "iQIYI",
+      "shelf": "action-2026",
+      "note": "Chinese online-premiere movie, posted free in full by iQIYI on 28 Sep 2026. Chinese audio with subtitles (turn on CC for English).",
+      "mediaType": "movie",
+      "runtime": "1h 34m"
+    },
+    {
+      "id": "quick-counterattack-2026",
+      "title": "Quick Counterattack",
+      "year": 2026,
+      "duration": 4887,
+      "genres": [
+        "action",
+        "cop"
+      ],
+      "synopsis": "A security contractor back from years abroad storms a seaside town's online-fraud gang, alone, to find his missing daughter, while police close in on the same crime ring.",
+      "studio": "iQIYI",
+      "license": "Free · official upload",
+      "licenseUrl": "https://www.youtube.com/watch?v=Mo9XKo6VK5s",
+      "licenseProof": [
+        "https://www.youtube.com/watch?v=Mo9XKo6VK5s",
+        "https://www.youtube.com/@iQIYIEnglish",
+        "https://www.iq.com/"
+      ],
+      "play": {
+        "type": "youtube",
+        "id": "Mo9XKo6VK5s",
+        "embedUrl": "https://www.youtube-nocookie.com/embed/Mo9XKo6VK5s",
+        "watchUrl": "https://www.youtube.com/watch?v=Mo9XKo6VK5s"
+      },
+      "poster": "https://i.ytimg.com/vi/Mo9XKo6VK5s/maxresdefault.jpg",
+      "source": "iQIYI English (official iQIYI YouTube, verified)",
+      "kind": "official-free",
+      "badge": "iQIYI",
+      "shelf": "action-2026",
+      "note": "Chinese online-premiere movie, posted free in full by iQIYI on 16 Sep 2026. Chinese audio with subtitles (turn on CC for English).",
+      "mediaType": "movie",
+      "runtime": "1h 21m"
+    },
+    {
+      "id": "reckoning-day-2026",
+      "title": "Reckoning Day",
+      "year": 2026,
+      "duration": 6253,
+      "genres": [
+        "action",
+        "war"
+      ],
+      "synopsis": "After witnessing wartime atrocities, a student abroad becomes a resistance fighter and takes on an occupying business cartel plotting to loot national treasures.",
+      "studio": "iQIYI",
+      "license": "Free · official upload",
+      "licenseUrl": "https://www.youtube.com/watch?v=Z15t65NGAw4",
+      "licenseProof": [
+        "https://www.youtube.com/watch?v=Z15t65NGAw4",
+        "https://www.youtube.com/@iQIYIEnglish",
+        "https://www.iq.com/"
+      ],
+      "play": {
+        "type": "youtube",
+        "id": "Z15t65NGAw4",
+        "embedUrl": "https://www.youtube-nocookie.com/embed/Z15t65NGAw4",
+        "watchUrl": "https://www.youtube.com/watch?v=Z15t65NGAw4"
+      },
+      "poster": "https://i.ytimg.com/vi/Z15t65NGAw4/maxresdefault.jpg",
+      "source": "iQIYI English (official iQIYI YouTube, verified)",
+      "kind": "official-free",
+      "badge": "iQIYI",
+      "shelf": "action-2026",
+      "note": "Chinese online-premiere movie, posted free in full by iQIYI on 4 Aug 2026. Chinese audio with subtitles (turn on CC for English).",
+      "mediaType": "movie",
+      "runtime": "1h 44m"
+    },
+    {
+      "id": "new-dragon-gate-inn-2026",
+      "title": "New Dragon Gate Inn",
+      "year": 2026,
+      "duration": 4423,
+      "genres": [
+        "action",
+        "martial-arts"
+      ],
+      "synopsis": "Ming dynasty wuxia: a swordsman protecting a framed minister's daughter and the empire's coastal-defence plan makes his stand at the desert inn of Dragon Gate.",
+      "studio": "iQIYI",
+      "license": "Free · official upload",
+      "licenseUrl": "https://www.youtube.com/watch?v=NILBm7_iAoc",
+      "licenseProof": [
+        "https://www.youtube.com/watch?v=NILBm7_iAoc",
+        "https://www.youtube.com/@iQIYIEnglish",
+        "https://www.iq.com/"
+      ],
+      "play": {
+        "type": "youtube",
+        "id": "NILBm7_iAoc",
+        "embedUrl": "https://www.youtube-nocookie.com/embed/NILBm7_iAoc",
+        "watchUrl": "https://www.youtube.com/watch?v=NILBm7_iAoc"
+      },
+      "poster": "https://i.ytimg.com/vi/NILBm7_iAoc/maxresdefault.jpg",
+      "source": "iQIYI English (official iQIYI YouTube, verified)",
+      "kind": "official-free",
+      "badge": "iQIYI",
+      "shelf": "action-2026",
+      "note": "Chinese online-premiere movie, posted free in full by iQIYI on 21 Jul 2026. Chinese audio with subtitles (turn on CC for English).",
+      "mediaType": "movie",
+      "runtime": "1h 14m"
+    },
+    {
+      "id": "blade-dancer-2026",
+      "title": "Blade Dancer",
+      "year": 2026,
+      "duration": 4931,
+      "genres": [
+        "action",
+        "cop"
+      ],
+      "synopsis": "A retired Interpol expert follows his vanished fiancée to Southeast Asia and walks into a sniper's war waged by an international terror group.",
+      "studio": "iQIYI",
+      "license": "Free · official upload",
+      "licenseUrl": "https://www.youtube.com/watch?v=aCt_ozBInHA",
+      "licenseProof": [
+        "https://www.youtube.com/watch?v=aCt_ozBInHA",
+        "https://www.youtube.com/@iQIYIEnglish",
+        "https://www.iq.com/"
+      ],
+      "play": {
+        "type": "youtube",
+        "id": "aCt_ozBInHA",
+        "embedUrl": "https://www.youtube-nocookie.com/embed/aCt_ozBInHA",
+        "watchUrl": "https://www.youtube.com/watch?v=aCt_ozBInHA"
+      },
+      "poster": "https://i.ytimg.com/vi/aCt_ozBInHA/maxresdefault.jpg",
+      "source": "iQIYI English (official iQIYI YouTube, verified)",
+      "kind": "official-free",
+      "badge": "iQIYI",
+      "shelf": "action-2026",
+      "note": "Chinese online-premiere movie, posted free in full by iQIYI on 10 Mar 2026. Chinese audio with subtitles (turn on CC for English).",
+      "mediaType": "movie",
+      "runtime": "1h 22m"
+    },
+    {
+      "id": "72-hour-golden-operation-2026",
+      "title": "72 Hour Golden Operation",
+      "year": 2026,
+      "duration": 6112,
+      "genres": [
+        "action",
+        "cop"
+      ],
+      "synopsis": "Hong Kong-style cops-versus-gang action in Cantonese: police get 72 hours to smash the 'Disciples' gang terrorising their city. With Michael Tse and Lam Suet.",
+      "studio": "iQIYI",
+      "license": "Free · official upload",
+      "licenseUrl": "https://www.youtube.com/watch?v=abNFqGkpl54",
+      "licenseProof": [
+        "https://www.youtube.com/watch?v=abNFqGkpl54",
+        "https://www.youtube.com/@iQIYIEnglish",
+        "https://www.iq.com/"
+      ],
+      "play": {
+        "type": "youtube",
+        "id": "abNFqGkpl54",
+        "embedUrl": "https://www.youtube-nocookie.com/embed/abNFqGkpl54",
+        "watchUrl": "https://www.youtube.com/watch?v=abNFqGkpl54"
+      },
+      "poster": "https://i.ytimg.com/vi/abNFqGkpl54/maxresdefault.jpg",
+      "source": "iQIYI English (official iQIYI YouTube, verified)",
+      "kind": "official-free",
+      "badge": "iQIYI",
+      "shelf": "action-2026",
+      "note": "Chinese online-premiere movie, posted free in full by iQIYI on 7 Feb 2026. Chinese audio with subtitles (turn on CC for English).",
+      "mediaType": "movie",
+      "runtime": "1h 42m"
+    },
+    {
+      "id": "special-raid-awaken-2026",
+      "title": "Special Raid: Awaken",
+      "year": 2026,
+      "duration": 4858,
+      "genres": [
+        "action",
+        "war"
+      ],
+      "synopsis": "A retired special-forces soldier travelling abroad with his family is dragged into a cartel deal, and goes alone into enemy territory when they are taken.",
+      "studio": "iQIYI",
+      "license": "Free · official upload",
+      "licenseUrl": "https://www.youtube.com/watch?v=vDinsr0zyBg",
+      "licenseProof": [
+        "https://www.youtube.com/watch?v=vDinsr0zyBg",
+        "https://www.youtube.com/@iQIYIEnglish",
+        "https://www.iq.com/"
+      ],
+      "play": {
+        "type": "youtube",
+        "id": "vDinsr0zyBg",
+        "embedUrl": "https://www.youtube-nocookie.com/embed/vDinsr0zyBg",
+        "watchUrl": "https://www.youtube.com/watch?v=vDinsr0zyBg"
+      },
+      "poster": "https://i.ytimg.com/vi/vDinsr0zyBg/maxresdefault.jpg",
+      "source": "iQIYI English (official iQIYI YouTube, verified)",
+      "kind": "official-free",
+      "badge": "iQIYI",
+      "shelf": "action-2026",
+      "note": "Chinese online-premiere movie, posted free in full by iQIYI on 26 Jan 2026. Chinese audio with subtitles (turn on CC for English).",
+      "mediaType": "movie",
+      "runtime": "1h 21m"
+    },
+    {
+      "id": "wild-journey-2026",
+      "title": "Wild Journey",
+      "year": 2026,
+      "duration": 5753,
+      "genres": [
+        "action",
+        "martial-arts"
+      ],
+      "synopsis": "A young fighter trying to make a living in the big city takes on a whole gang of relic thieves to save his friend and recover a stolen jade statue.",
+      "studio": "iQIYI",
+      "license": "Free · official upload",
+      "licenseUrl": "https://www.youtube.com/watch?v=iydS26crD5g",
+      "licenseProof": [
+        "https://www.youtube.com/watch?v=iydS26crD5g",
+        "https://www.youtube.com/@iQIYIEnglish",
+        "https://www.iq.com/"
+      ],
+      "play": {
+        "type": "youtube",
+        "id": "iydS26crD5g",
+        "embedUrl": "https://www.youtube-nocookie.com/embed/iydS26crD5g",
+        "watchUrl": "https://www.youtube.com/watch?v=iydS26crD5g"
+      },
+      "poster": "https://i.ytimg.com/vi/iydS26crD5g/maxresdefault.jpg",
+      "source": "iQIYI English (official iQIYI YouTube, verified)",
+      "kind": "official-free",
+      "badge": "iQIYI",
+      "shelf": "action-2026",
+      "note": "Chinese online-premiere movie, posted free in full by iQIYI on 21 Jan 2026. Chinese audio with subtitles (turn on CC for English).",
+      "mediaType": "movie",
+      "runtime": "1h 36m"
+    },
+    {
+      "id": "no-trouble-2026",
+      "title": "No Trouble",
+      "year": 2026,
+      "duration": 1037,
+      "genres": [
+        "action",
+        "martial-arts",
+        "short"
+      ],
+      "synopsis": "When racist punks threaten a Chinese restaurant, a cook on parole has to decide whether to fight back. Action drama short (BeyondFest, FilmQuest, Dances With Films).",
+      "studio": "Jon Chan",
+      "license": "Free · official upload",
+      "licenseUrl": "https://www.youtube.com/watch?v=MovGF0aOSdQ",
+      "licenseProof": [
+        "https://www.youtube.com/watch?v=MovGF0aOSdQ",
+        "https://www.youtube.com/@jonchanfilm"
+      ],
+      "play": {
+        "type": "youtube",
+        "id": "MovGF0aOSdQ",
+        "embedUrl": "https://www.youtube-nocookie.com/embed/MovGF0aOSdQ",
+        "watchUrl": "https://www.youtube.com/watch?v=MovGF0aOSdQ"
+      },
+      "poster": "https://i.ytimg.com/vi/MovGF0aOSdQ/maxresdefault.jpg",
+      "source": "Jon Chan's own YouTube channel (@jonchanfilm)",
+      "kind": "official-free",
+      "badge": "Filmmaker",
+      "shelf": "action-2026",
+      "note": "Festival run before the filmmaker posted it free in full on 15 May 2026.",
+      "mediaType": "movie",
+      "runtime": "17 min"
+    },
+    {
+      "id": "special-delivery-2026",
+      "title": "Special Delivery",
+      "year": 2026,
+      "duration": 356,
+      "genres": [
+        "action",
+        "martial-arts",
+        "comedy",
+        "short"
+      ],
+      "synopsis": "A food-delivery driver braced for a bad rating ends up in a full-on fight. Action-comedy short written and directed by Matt Thavornkaew, fights by Isaiah Kang.",
+      "studio": "Matt Thavornkaew",
+      "license": "Free · official upload",
+      "licenseUrl": "https://www.youtube.com/watch?v=MK-QcWSbUYg",
+      "licenseProof": [
+        "https://www.youtube.com/watch?v=MK-QcWSbUYg",
+        "https://www.youtube.com/@mattthavornkaew"
+      ],
+      "play": {
+        "type": "youtube",
+        "id": "MK-QcWSbUYg",
+        "embedUrl": "https://www.youtube-nocookie.com/embed/MK-QcWSbUYg",
+        "watchUrl": "https://www.youtube.com/watch?v=MK-QcWSbUYg"
+      },
+      "poster": "https://i.ytimg.com/vi/MK-QcWSbUYg/maxresdefault.jpg",
+      "source": "Matt Thavornkaew's own YouTube channel (@mattthavornkaew)",
+      "kind": "official-free",
+      "badge": "Filmmaker",
+      "shelf": "action-2026",
+      "note": "Posted free in full by the filmmaker on 3 Apr 2026.",
+      "mediaType": "movie",
+      "runtime": "6 min"
+    },
+    {
+      "id": "night-shift-2025",
+      "title": "Night Shift",
+      "year": 2025,
+      "duration": 696,
+      "genres": [
+        "action",
+        "martial-arts",
+        "short"
+      ],
+      "synopsis": "A Saigon scooter-cab driver's past catches up with him over one long night of fights. Award-winning martial-arts short (Best Action Film, London Night Film Festival 2025).",
+      "studio": "Lorenz Hideyoshi Ruwwe",
+      "license": "Free · official upload",
+      "licenseUrl": "https://www.youtube.com/watch?v=syPO8e36YSI",
+      "licenseProof": [
+        "https://www.youtube.com/watch?v=syPO8e36YSI",
+        "https://www.youtube.com/@HideyoshiR"
+      ],
+      "play": {
+        "type": "youtube",
+        "id": "syPO8e36YSI",
+        "embedUrl": "https://www.youtube-nocookie.com/embed/syPO8e36YSI",
+        "watchUrl": "https://www.youtube.com/watch?v=syPO8e36YSI"
+      },
+      "poster": "https://i.ytimg.com/vi/syPO8e36YSI/maxresdefault.jpg",
+      "source": "Lorenz Hideyoshi Ruwwe's own YouTube channel (@HideyoshiR)",
+      "kind": "official-free",
+      "badge": "Filmmaker",
+      "shelf": "action-2026",
+      "note": "Festival premiere 2025; posted free in full by the filmmaker on 21 May 2026.",
+      "mediaType": "movie",
+      "runtime": "12 min"
+    },
+    {
+      "id": "battle-creek-brawl-1980",
+      "title": "Battle Creek Brawl",
+      "year": 1980,
+      "duration": 5751,
+      "genres": [
+        "action",
+        "martial-arts"
+      ],
+      "synopsis": "Jackie Chan's first Hollywood lead: in 1930s Chicago a young kung fu fighter is strong-armed by the mob into a bare-knuckle street-fighting contest in Texas. Directed by Robert Clouse (Enter the Dragon).",
+      "studio": "Shout! Studios (Shout! Factory)",
+      "license": "Free · official upload",
+      "licenseUrl": "https://www.youtube.com/watch?v=c9e1HR5lG5Q",
+      "licenseProof": [
+        "https://www.youtube.com/watch?v=c9e1HR5lG5Q",
+        "https://www.youtube.com/@ShoutStudios"
+      ],
+      "play": {
+        "type": "youtube",
+        "id": "c9e1HR5lG5Q",
+        "embedUrl": "https://www.youtube-nocookie.com/embed/c9e1HR5lG5Q",
+        "watchUrl": "https://www.youtube.com/watch?v=c9e1HR5lG5Q"
+      },
+      "poster": "https://i.ytimg.com/vi/c9e1HR5lG5Q/maxresdefault.jpg",
+      "source": "Shout! Studios (official YouTube, verified; owner of Shout! Factory)",
+      "kind": "official-free",
+      "badge": "Shout!",
+      "shelf": "action-80s",
+      "mediaType": "movie",
+      "runtime": "1h 36m"
+    },
+    {
+      "id": "an-eye-for-an-eye-1981",
+      "title": "An Eye for an Eye",
+      "year": 1981,
+      "duration": 6318,
+      "genres": [
+        "action",
+        "martial-arts",
+        "cop"
+      ],
+      "synopsis": "Chuck Norris is a San Francisco narcotics cop who quits the force to take down the drug ring that killed his partner. With Christopher Lee, Richard Roundtree and Mako.",
+      "studio": "Shout! Studios (Shout! Factory)",
+      "license": "Free · official upload",
+      "licenseUrl": "https://www.youtube.com/watch?v=DaKNMRQT7Vo",
+      "licenseProof": [
+        "https://www.youtube.com/watch?v=DaKNMRQT7Vo",
+        "https://www.youtube.com/@ShoutStudios"
+      ],
+      "play": {
+        "type": "youtube",
+        "id": "DaKNMRQT7Vo",
+        "embedUrl": "https://www.youtube-nocookie.com/embed/DaKNMRQT7Vo",
+        "watchUrl": "https://www.youtube.com/watch?v=DaKNMRQT7Vo"
+      },
+      "poster": "https://i.ytimg.com/vi/DaKNMRQT7Vo/maxresdefault.jpg",
+      "source": "Shout! Studios (official YouTube, verified; owner of Shout! Factory)",
+      "kind": "official-free",
+      "badge": "Shout!",
+      "shelf": "action-80s",
+      "mediaType": "movie",
+      "runtime": "1h 45m"
+    },
+    {
+      "id": "warlords-of-the-21st-century-1982",
+      "title": "Warlords of the 21st Century",
+      "year": 1982,
+      "duration": 5618,
+      "genres": [
+        "action",
+        "post-apocalyptic"
+      ],
+      "synopsis": "After the oil wars, a warlord's armoured battletruck terrorises the last free settlements, until a lone rider on a souped-up motorbike takes it on. Also known as Battletruck.",
+      "studio": "Shout! Studios (Shout! Factory)",
+      "license": "Free · official upload",
+      "licenseUrl": "https://www.youtube.com/watch?v=9FOmPo1Ei7o",
+      "licenseProof": [
+        "https://www.youtube.com/watch?v=9FOmPo1Ei7o",
+        "https://www.youtube.com/@ShoutStudios"
+      ],
+      "play": {
+        "type": "youtube",
+        "id": "9FOmPo1Ei7o",
+        "embedUrl": "https://www.youtube-nocookie.com/embed/9FOmPo1Ei7o",
+        "watchUrl": "https://www.youtube.com/watch?v=9FOmPo1Ei7o"
+      },
+      "poster": "https://i.ytimg.com/vi/9FOmPo1Ei7o/maxresdefault.jpg",
+      "source": "Shout! Studios (official YouTube, verified; owner of Shout! Factory)",
+      "kind": "official-free",
+      "badge": "Shout!",
+      "shelf": "action-80s",
+      "mediaType": "movie",
+      "runtime": "1h 34m"
+    },
+    {
+      "id": "winners-and-sinners-1983",
+      "title": "Winners and Sinners",
+      "year": 1983,
+      "duration": 6520,
+      "genres": [
+        "action",
+        "martial-arts",
+        "comedy"
+      ],
+      "synopsis": "Fresh out of prison, five friends try to go straight and blunder into a Triad counterfeiting war. Sammo Hung directs and stars, with Jackie Chan as a roller-skating cop.",
+      "studio": "Shout! Studios (Shout! Factory)",
+      "license": "Free · official upload",
+      "licenseUrl": "https://www.youtube.com/watch?v=y57iuGqeSjk",
+      "licenseProof": [
+        "https://www.youtube.com/watch?v=y57iuGqeSjk",
+        "https://www.youtube.com/@ShoutStudios"
+      ],
+      "play": {
+        "type": "youtube",
+        "id": "y57iuGqeSjk",
+        "embedUrl": "https://www.youtube-nocookie.com/embed/y57iuGqeSjk",
+        "watchUrl": "https://www.youtube.com/watch?v=y57iuGqeSjk"
+      },
+      "poster": "https://i.ytimg.com/vi/y57iuGqeSjk/maxresdefault.jpg",
+      "source": "Shout! Studios (official YouTube, verified; owner of Shout! Factory)",
+      "kind": "official-free",
+      "badge": "Shout!",
+      "shelf": "action-80s",
+      "mediaType": "movie",
+      "runtime": "1h 49m"
+    },
+    {
+      "id": "the-protector-1985",
+      "title": "The Protector",
+      "year": 1985,
+      "duration": 5700,
+      "genres": [
+        "action",
+        "martial-arts",
+        "cop"
+      ],
+      "synopsis": "Jackie Chan plays a tough New York cop sent to Hong Kong with partner Danny Aiello to rescue a kidnapped heiress from a heroin kingpin.",
+      "studio": "Shout! Studios (Shout! Factory)",
+      "license": "Free · official upload",
+      "licenseUrl": "https://www.youtube.com/watch?v=d4zAkiajuZc",
+      "licenseProof": [
+        "https://www.youtube.com/watch?v=d4zAkiajuZc",
+        "https://www.youtube.com/@ShoutStudios"
+      ],
+      "play": {
+        "type": "youtube",
+        "id": "d4zAkiajuZc",
+        "embedUrl": "https://www.youtube-nocookie.com/embed/d4zAkiajuZc",
+        "watchUrl": "https://www.youtube.com/watch?v=d4zAkiajuZc"
+      },
+      "poster": "https://i.ytimg.com/vi/d4zAkiajuZc/maxresdefault.jpg",
+      "source": "Shout! Studios (official YouTube, verified; owner of Shout! Factory)",
+      "kind": "official-free",
+      "badge": "Shout!",
+      "shelf": "action-80s",
+      "mediaType": "movie",
+      "runtime": "1h 35m"
+    },
+    {
+      "id": "wheels-of-fire-1985",
+      "title": "Wheels of Fire",
+      "year": 1985,
+      "duration": 4796,
+      "genres": [
+        "action",
+        "post-apocalyptic"
+      ],
+      "synopsis": "Road warrior Trace tears across the wasteland in his armoured car to rescue his sister from a marauding gang. Cirio H. Santiago's Mad Max-style drive-in classic.",
+      "studio": "Shout! Studios (Shout! Factory)",
+      "license": "Free · official upload",
+      "licenseUrl": "https://www.youtube.com/watch?v=UJlsupGJf48",
+      "licenseProof": [
+        "https://www.youtube.com/watch?v=UJlsupGJf48",
+        "https://www.youtube.com/@ShoutStudios"
+      ],
+      "play": {
+        "type": "youtube",
+        "id": "UJlsupGJf48",
+        "embedUrl": "https://www.youtube-nocookie.com/embed/UJlsupGJf48",
+        "watchUrl": "https://www.youtube.com/watch?v=UJlsupGJf48"
+      },
+      "poster": "https://i.ytimg.com/vi/UJlsupGJf48/maxresdefault.jpg",
+      "source": "Shout! Studios (official YouTube, verified; owner of Shout! Factory)",
+      "kind": "official-free",
+      "badge": "Shout!",
+      "shelf": "action-80s",
+      "mediaType": "movie",
+      "runtime": "1h 20m"
+    },
+    {
+      "id": "legacy-of-rage-1986",
+      "title": "Legacy of Rage",
+      "year": 1986,
+      "duration": 5255,
+      "genres": [
+        "action",
+        "martial-arts"
+      ],
+      "synopsis": "Brandon Lee's first starring role: framed for a cop's murder by his drug-dealer best friend, a young man comes out of prison looking for payback. Hong Kong gun-and-fist action.",
+      "studio": "Shout! Studios (Shout! Factory)",
+      "license": "Free · official upload",
+      "licenseUrl": "https://www.youtube.com/watch?v=erydodpEqSc",
+      "licenseProof": [
+        "https://www.youtube.com/watch?v=erydodpEqSc",
+        "https://www.youtube.com/@ShoutStudios"
+      ],
+      "play": {
+        "type": "youtube",
+        "id": "erydodpEqSc",
+        "embedUrl": "https://www.youtube-nocookie.com/embed/erydodpEqSc",
+        "watchUrl": "https://www.youtube.com/watch?v=erydodpEqSc"
+      },
+      "poster": "https://i.ytimg.com/vi/erydodpEqSc/maxresdefault.jpg",
+      "source": "Shout! Studios (official YouTube, verified; owner of Shout! Factory)",
+      "kind": "official-free",
+      "badge": "Shout!",
+      "shelf": "action-80s",
+      "mediaType": "movie",
+      "runtime": "1h 28m"
+    },
+    {
+      "id": "peking-opera-blues-1986",
+      "title": "Peking Opera Blues",
+      "year": 1986,
+      "duration": 6326,
+      "genres": [
+        "action",
+        "martial-arts",
+        "comedy"
+      ],
+      "synopsis": "Beijing, 1913: a general's daughter turned revolutionary, a singer chasing jewels and an opera-troupe hopeful team up for stolen documents, rooftop chases and stunts. Tsui Hark directs Brigitte Lin, Sally Yeh and Cherie Chung.",
+      "studio": "Shout! Studios (Shout! Factory)",
+      "license": "Free · official upload",
+      "licenseUrl": "https://www.youtube.com/watch?v=EZGLaGjvF7w",
+      "licenseProof": [
+        "https://www.youtube.com/watch?v=EZGLaGjvF7w",
+        "https://www.youtube.com/@ShoutStudios",
+        "https://www.shoutstudios.com/press/shout-studios-announces-landmark-acquisition-of-golden-princess-movie-library"
+      ],
+      "play": {
+        "type": "youtube",
+        "id": "EZGLaGjvF7w",
+        "embedUrl": "https://www.youtube-nocookie.com/embed/EZGLaGjvF7w",
+        "watchUrl": "https://www.youtube.com/watch?v=EZGLaGjvF7w"
+      },
+      "poster": "https://i.ytimg.com/vi/EZGLaGjvF7w/maxresdefault.jpg",
+      "source": "Shout! Studios (official YouTube, verified; owner of Shout! Factory)",
+      "kind": "official-free",
+      "badge": "Shout!",
+      "shelf": "action-80s",
+      "note": "Part of the Golden Princess library, licensed worldwide (outside parts of Asia) to Shout! Studios in 2025.",
+      "mediaType": "movie",
+      "runtime": "1h 45m"
+    },
+    {
+      "id": "the-messenger-1986",
+      "title": "The Messenger",
+      "year": 1986,
+      "duration": 5835,
+      "genres": [
+        "action",
+        "war"
+      ],
+      "synopsis": "Fred Williamson directs and stars as an ex-Green Beret, just out of prison, who wages a one-man war on the drug syndicate behind his wife's murder, from Chicago to Italy.",
+      "studio": "Shout! Studios (Shout! Factory)",
+      "license": "Free · official upload",
+      "licenseUrl": "https://www.youtube.com/watch?v=846hc_n7F6M",
+      "licenseProof": [
+        "https://www.youtube.com/watch?v=846hc_n7F6M",
+        "https://www.youtube.com/@ShoutStudios"
+      ],
+      "play": {
+        "type": "youtube",
+        "id": "846hc_n7F6M",
+        "embedUrl": "https://www.youtube-nocookie.com/embed/846hc_n7F6M",
+        "watchUrl": "https://www.youtube.com/watch?v=846hc_n7F6M"
+      },
+      "poster": "https://i.ytimg.com/vi/846hc_n7F6M/maxresdefault.jpg",
+      "source": "Shout! Studios (official YouTube, verified; owner of Shout! Factory)",
+      "kind": "official-free",
+      "badge": "Shout!",
+      "shelf": "action-80s",
+      "mediaType": "movie",
+      "runtime": "1h 37m"
+    },
+    {
+      "id": "equalizer-2000-1987",
+      "title": "Equalizer 2000",
+      "year": 1987,
+      "duration": 5220,
+      "genres": [
+        "action",
+        "post-apocalyptic",
+        "sci-fi"
+      ],
+      "synopsis": "In a scorched future where the Ownership hoards the last oil, a soldier builds a monster multi-barrelled gun and turns it on his masters. Richard Norton, with an early Robert Patrick.",
+      "studio": "Shout! Studios (Shout! Factory)",
+      "license": "Free · official upload",
+      "licenseUrl": "https://www.youtube.com/watch?v=q2dHFUnbbSA",
+      "licenseProof": [
+        "https://www.youtube.com/watch?v=q2dHFUnbbSA",
+        "https://www.youtube.com/@ShoutStudios"
+      ],
+      "play": {
+        "type": "youtube",
+        "id": "q2dHFUnbbSA",
+        "embedUrl": "https://www.youtube-nocookie.com/embed/q2dHFUnbbSA",
+        "watchUrl": "https://www.youtube.com/watch?v=q2dHFUnbbSA"
+      },
+      "poster": "https://i.ytimg.com/vi/q2dHFUnbbSA/maxresdefault.jpg",
+      "source": "Shout! Studios (official YouTube, verified; owner of Shout! Factory)",
+      "kind": "official-free",
+      "badge": "Shout!",
+      "shelf": "action-80s",
+      "mediaType": "movie",
+      "runtime": "1h 27m"
+    },
+    {
+      "id": "gunmen-1988",
+      "title": "Gunmen",
+      "year": 1988,
+      "duration": 5225,
+      "genres": [
+        "action",
+        "cop",
+        "war"
+      ],
+      "synopsis": "Shanghai, 1920s: ex-soldiers join the police and go to war on an opium lord. Kirk Wong's gritty shoot-'em-up, produced by Tsui Hark, with Tony Leung Ka-fai, Adam Cheng and Waise Lee.",
+      "studio": "Shout! Studios (Shout! Factory)",
+      "license": "Free · official upload",
+      "licenseUrl": "https://www.youtube.com/watch?v=s-_CMeYG92E",
+      "licenseProof": [
+        "https://www.youtube.com/watch?v=s-_CMeYG92E",
+        "https://www.youtube.com/@ShoutStudios",
+        "https://www.shoutstudios.com/press/shout-studios-announces-landmark-acquisition-of-golden-princess-movie-library"
+      ],
+      "play": {
+        "type": "youtube",
+        "id": "s-_CMeYG92E",
+        "embedUrl": "https://www.youtube-nocookie.com/embed/s-_CMeYG92E",
+        "watchUrl": "https://www.youtube.com/watch?v=s-_CMeYG92E"
+      },
+      "poster": "https://i.ytimg.com/vi/s-_CMeYG92E/maxresdefault.jpg",
+      "source": "Shout! Studios (official YouTube, verified; owner of Shout! Factory)",
+      "kind": "official-free",
+      "badge": "Shout!",
+      "shelf": "action-80s",
+      "note": "Part of the Golden Princess library, licensed worldwide (outside parts of Asia) to Shout! Studios in 2025.",
+      "mediaType": "movie",
+      "runtime": "1h 27m"
+    },
+    {
+      "id": "i-love-maria-1988",
+      "title": "I Love Maria",
+      "year": 1988,
+      "duration": 6019,
+      "genres": [
+        "action",
+        "sci-fi",
+        "comedy"
+      ],
+      "synopsis": "A small-time crook and a hapless reporter take on a gang whose killer robot 'Maria' is tearing up Hong Kong. Cult sci-fi action comedy (aka RoboForce) with Sally Yeh, Tsui Hark and Tony Leung Chiu-wai.",
+      "studio": "Shout! Studios (Shout! Factory)",
+      "license": "Free · official upload",
+      "licenseUrl": "https://www.youtube.com/watch?v=y9-sjq4H0jw",
+      "licenseProof": [
+        "https://www.youtube.com/watch?v=y9-sjq4H0jw",
+        "https://www.youtube.com/@ShoutStudios",
+        "https://www.shoutstudios.com/press/shout-studios-announces-landmark-acquisition-of-golden-princess-movie-library"
+      ],
+      "play": {
+        "type": "youtube",
+        "id": "y9-sjq4H0jw",
+        "embedUrl": "https://www.youtube-nocookie.com/embed/y9-sjq4H0jw",
+        "watchUrl": "https://www.youtube.com/watch?v=y9-sjq4H0jw"
+      },
+      "poster": "https://i.ytimg.com/vi/y9-sjq4H0jw/maxresdefault.jpg",
+      "source": "Shout! Studios (official YouTube, verified; owner of Shout! Factory)",
+      "kind": "official-free",
+      "badge": "Shout!",
+      "shelf": "action-80s",
+      "note": "Part of the Golden Princess library, licensed worldwide (outside parts of Asia) to Shout! Studios in 2025.",
+      "mediaType": "movie",
+      "runtime": "1h 40m"
+    },
+    {
+      "id": "the-big-heat-1988",
+      "title": "The Big Heat",
+      "year": 1988,
+      "duration": 5824,
+      "genres": [
+        "action",
+        "cop"
+      ],
+      "synopsis": "A Hong Kong detective whose gun hand is failing him takes one last case: his partner's murder by a ruthless syndicate. Brutal cop thriller produced by Tsui Hark, directed by Johnnie To and Andrew Kam.",
+      "studio": "Shout! Studios (Shout! Factory)",
+      "license": "Free · official upload",
+      "licenseUrl": "https://www.youtube.com/watch?v=NHiAw2xmWrI",
+      "licenseProof": [
+        "https://www.youtube.com/watch?v=NHiAw2xmWrI",
+        "https://www.youtube.com/@ShoutStudios",
+        "https://www.shoutstudios.com/press/shout-studios-announces-landmark-acquisition-of-golden-princess-movie-library"
+      ],
+      "play": {
+        "type": "youtube",
+        "id": "NHiAw2xmWrI",
+        "embedUrl": "https://www.youtube-nocookie.com/embed/NHiAw2xmWrI",
+        "watchUrl": "https://www.youtube.com/watch?v=NHiAw2xmWrI"
+      },
+      "poster": "https://i.ytimg.com/vi/NHiAw2xmWrI/maxresdefault.jpg",
+      "source": "Shout! Studios (official YouTube, verified; owner of Shout! Factory)",
+      "kind": "official-free",
+      "badge": "Shout!",
+      "shelf": "action-80s",
+      "note": "Part of the Golden Princess library, licensed worldwide (outside parts of Asia) to Shout! Studios in 2025.",
+      "mediaType": "movie",
+      "runtime": "1h 37m"
+    },
+    {
+      "id": "bloodfist-1989",
+      "title": "Bloodfist",
+      "year": 1989,
+      "duration": 5160,
+      "genres": [
+        "action",
+        "martial-arts"
+      ],
+      "synopsis": "Kickboxing champion Don 'The Dragon' Wilson goes to Manila to find his brother's killer and fights his way through an underground tournament. Roger Corman production.",
+      "studio": "Shout! Studios (Shout! Factory)",
+      "license": "Free · official upload",
+      "licenseUrl": "https://www.youtube.com/watch?v=KyQFtwcTw1c",
+      "licenseProof": [
+        "https://www.youtube.com/watch?v=KyQFtwcTw1c",
+        "https://www.youtube.com/@ShoutStudios"
+      ],
+      "play": {
+        "type": "youtube",
+        "id": "KyQFtwcTw1c",
+        "embedUrl": "https://www.youtube-nocookie.com/embed/KyQFtwcTw1c",
+        "watchUrl": "https://www.youtube.com/watch?v=KyQFtwcTw1c"
+      },
+      "poster": "https://i.ytimg.com/vi/KyQFtwcTw1c/maxresdefault.jpg",
+      "source": "Shout! Studios (official YouTube, verified; owner of Shout! Factory)",
+      "kind": "official-free",
+      "badge": "Shout!",
+      "shelf": "action-80s",
+      "mediaType": "movie",
+      "runtime": "1h 26m"
     }
   ]
 }

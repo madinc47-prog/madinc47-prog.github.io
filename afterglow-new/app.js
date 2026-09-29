@@ -1,7 +1,13 @@
 (function(){
   "use strict";
   var DATA = window.AFTERGLOW_NEW || {items: []};
-  var items = DATA.items.slice();
+  var all = DATA.items.slice();
+  // "recent" = the New & Recent shelf; the action shelves only show in the Action view (or in search results).
+  var items = all.filter(function(x){ return !x.shelf || x.shelf === "recent"; });
+  var EXTRA = [
+    {key: "action-80s", el: "shelf-80s"},
+    {key: "action-2026", el: "shelf-2026"}
+  ];
   var THIS_YEAR = 2026;
   var state = {q: "", genre: "all", rights: "all"};
   var $ = function(id){ return document.getElementById(id); };
@@ -11,6 +17,7 @@
   function rightsOf(it){ return it.kind === "open-movie" ? "cc" : it.kind === "public-domain-gov" ? "pd" : "official"; }
   function rightsBadge(it){ var r = rightsOf(it); return r === "cc" ? it.license : r === "pd" ? "Public domain" : "Official free"; }
   function studioShort(it){
+    if (it.badge) return it.badge;
     var s = it.studio || "";
     var map = [["Blender","Blender"],["NASA","NASA"],["DW ","DW"],["Al Jazeera","Al Jazeera"],["Pixar","Pixar"],["Sony","Sony"],["Walt Disney","Disney"],["National Film Board","NFB"]];
     for (var i = 0; i < map.length; i++) if (s.indexOf(map[i][0]) === 0) return map[i][1];
@@ -20,10 +27,11 @@
     var r = rightsOf(it);
     if (r === "cc") return it.license + " · open movie";
     if (r === "pd") return "Public domain · U.S. Government work";
+    if (it.badge === "Filmmaker") return "Free, posted by the filmmaker";
     return "Free, official upload · " + studioShort(it);
   }
 
-  var GENRES = [["all","all"],["animation","animation"],["documentary","documentary"],["space","space"],["caribbean","Caribbean"],["nature","nature & climate"],["comedy","comedy"],["short","shorts"]];
+  var GENRES = [["all","all"],["action","action"],["animation","animation"],["documentary","documentary"],["space","space"],["caribbean","Caribbean"],["nature","nature & climate"],["comedy","comedy"],["short","shorts"]];
   var RIGHTS = [["all","all"],["cc","Creative Commons"],["official","official free"],["pd","public domain"]];
 
   function chips(el, list, key){
@@ -41,7 +49,7 @@
     if (state.rights !== "all" && rightsOf(it) !== state.rights) return false;
     var q = state.q.trim().toLowerCase();
     if (!q) return true;
-    return [it.title, it.studio, it.license, it.source, String(it.year), it.genres.join(" ")].join(" ").toLowerCase().indexOf(q) >= 0;
+    return [it.title, it.studio, it.license, it.source, String(it.year), it.genres.join(" "), it.synopsis, it.shelf === "action-80s" ? "80s eighties classic" : ""].join(" ").toLowerCase().indexOf(q) >= 0;
   }
 
   function card(it){
@@ -57,6 +65,19 @@
     $("grid").innerHTML = list.map(card).join("");
     $("empty").hidden = list.length > 0;
     $("count").textContent = list.length + " of " + items.length + " films · newest first";
+    // Action shelves: always shown in the Action view; in "all" they only appear when a search matches them.
+    var q = state.q.trim();
+    EXTRA.forEach(function(sh){
+      var pool = all.filter(function(x){ return x.shelf === sh.key; });
+      var hits = pool.filter(match);
+      var show = state.genre === "action" || (state.genre === "all" && q !== "" && hits.length > 0);
+      var sec = $(sh.el);
+      sec.hidden = !show;
+      if (!show) { sec.querySelector(".grid").innerHTML = ""; return; }
+      sec.querySelector(".grid").innerHTML = hits.map(card).join("");
+      sec.querySelector(".x-empty").hidden = hits.length > 0;
+      sec.querySelector(".x-count").textContent = hits.length + " of " + pool.length + " films";
+    });
   }
 
   function hero(){
@@ -124,10 +145,10 @@
   }
 
   function open(id, fromHash){
-    var it = items.filter(function(x){ return x.id === id; })[0]; if (!it) return;
+    var it = all.filter(function(x){ return x.id === id; })[0]; if (!it) return;
     lastFocus = document.activeElement;
     window.__agPlayer = {id: it.id, state: "loading", error: null};
-    $("p-eyebrow").textContent = it.mediaType === "documentary" ? "Documentary · New & Recent" : "Film · New & Recent";
+    $("p-eyebrow").textContent = it.shelf === "action-80s" ? "80s Action · Classic, free & legal" : it.shelf === "action-2026" ? "2026 Action · Free & legal" : it.mediaType === "documentary" ? "Documentary · New & Recent" : "Film · New & Recent";
     $("p-title").textContent = it.title;
     $("p-meta").textContent = it.year + " · " + it.runtime + " · " + it.license + " · " + it.studio;
     $("p-syn").textContent = it.synopsis;
@@ -160,7 +181,15 @@
     if (e.key === "Escape") close();
     if ((e.key === "Enter" || e.key === " ") && e.target.matches && e.target.matches(".hero-art")) { e.preventDefault(); open(e.target.getAttribute("data-play")); }
   });
-  function fromHash(){ var m = location.hash.match(/^#watch\/([\w-]+)/); if (m) open(m[1], true); }
+  function setGenre(g){
+    state.genre = g;
+    Array.prototype.forEach.call($("genres").children, function(c){ c.setAttribute("aria-pressed", String(c.getAttribute("data-v") === g)); });
+    render();
+  }
+  function fromHash(){
+    if (/^#action$/.test(location.hash)) { setGenre("action"); return; }
+    var m = location.hash.match(/^#watch\/([\w-]+)/); if (m) open(m[1], true);
+  }
 
   $("q").addEventListener("input", function(e){ state.q = e.target.value; render(); });
   chips($("genres"), GENRES, "genre");
