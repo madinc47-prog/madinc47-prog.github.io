@@ -1,0 +1,86 @@
+/* Afterglow · Local Films: extends ../styles.css (loaded read-only first). */
+html,body{overflow-x:hidden}
+[hidden]{display:none!important}
+.intro{padding-top:2.6rem;padding-bottom:1.2rem;max-width:72rem}
+.intro h1{font-family:var(--display);font-weight:400;font-size:clamp(2rem,4.2vw,3rem);line-height:1.1;margin:0 0 .8rem}
+.intro .lede{color:var(--muted);max-width:40rem;margin:0 0 1.3rem;font-size:1rem}
+.cf-tools{display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;padding-top:.4rem;padding-bottom:.6rem}
+.cf-tools .chips{margin:0;min-width:0;flex:1 1 18rem}
+.toggle{display:inline-flex;align-items:center;gap:.6rem;background:var(--elevated);color:var(--muted);border:0;border-radius:999px;padding:.4rem .9rem .4rem .45rem;font:inherit;font-size:.82rem;cursor:pointer;white-space:nowrap}
+.toggle .knob{width:34px;height:20px;border-radius:999px;background:rgba(243,230,200,.18);position:relative;transition:background .2s}
+.toggle .knob::after{content:"";position:absolute;top:3px;left:3px;width:14px;height:14px;border-radius:50%;background:var(--fg);transition:transform .2s cubic-bezier(.23,1,.32,1)}
+.toggle[aria-pressed="true"]{color:var(--fg)}
+.toggle[aria-pressed="true"] .knob{background:var(--onair)}
+.toggle[aria-pressed="true"] .knob::after{transform:translateX(14px)}
+.toggle:focus-visible,.cf-btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.badge.rate-all{color:var(--accent)}
+.badge.rate-teen{color:var(--onair)}
+.badge.rate-mature{color:#f08a7a}
+.thumb img{position:absolute;inset:0;z-index:1}
+.thumb .badge{z-index:2}
+.thumb .ph{position:absolute;inset:0;display:flex;align-items:flex-end;padding:.8rem;background:radial-gradient(120% 90% at 20% 110%,rgba(232,165,75,.45),transparent 60%),linear-gradient(160deg,#2b2117,#15100b);font-family:var(--display);font-size:1.15rem;line-height:1.15;color:var(--fg)}
+.cf-empty{margin:1rem 0 0;padding:2.2rem 1.6rem;border-radius:20px;background:var(--surface);box-shadow:0 0 0 1px var(--border);text-align:center}
+.cf-empty h3{font-family:var(--display);font-weight:400;font-size:1.5rem;margin:.2rem 0 .5rem}
+.cf-empty p{color:var(--muted);max-width:34rem;margin:0 auto 1.2rem}
+.cf-empty .btns{justify-content:center}
+.cf-hidden-note{margin:.8rem 0 0}
+.linkbtn{background:none;border:0;padding:0;color:var(--accent);font:inherit;cursor:pointer;text-decoration:underline}
+.report-btn{background:transparent;color:var(--muted);border:0;box-shadow:0 0 0 1px var(--border);border-radius:999px;padding:.35rem .8rem;font:500 .8rem var(--sans);cursor:pointer}
+.report-btn:hover{color:var(--fg)}
+.gate{position:absolute;inset:0;display:grid;place-items:center;text-align:center;padding:1.2rem;background:linear-gradient(160deg,#241a12,#0d0906)}
+.gate p{color:var(--muted);max-width:26rem;margin:0 auto 1rem}
+/* forms */
+.submit-layout{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:2rem;align-items:start;padding-bottom:1rem}
+.panel{background:var(--surface);border-radius:20px;box-shadow:0 0 0 1px var(--border);padding:1.4rem}
+.panel h2{font-family:var(--display);font-weight:400;font-size:1.4rem;margin:0 0 .8rem}
+.panel h3{font-size:.95rem;font-weight:600;margin:1.1rem 0 .3rem}
+.panel p,.panel li{color:var(--muted);font-size:.9rem}
+.panel ol,.panel ul{padding-left:1.2rem;margin:.3rem 0 .6rem}
+.panel li{margin:.2rem 0}
+.panel a{color:var(--accent)}
+.guide{position:sticky;top:84px}
+.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:.9rem 1rem}
+.field{display:flex;flex-direction:column;gap:.3rem;min-width:0}
+.field.full{grid-column:1/-1}
+.field label,.field legend{font-size:.82rem;font-weight:500;color:var(--fg)}
+.field .opt{color:var(--muted);font-weight:400}
+.field input[type=text],.field input[type=email],.field input[type=url],.field input[type=number],.field input[type=tel],.field select,.field textarea{width:100%;background:var(--elevated);border:0;border-radius:12px;color:var(--fg);padding:.75rem .8rem;font:inherit;font-size:.9rem;outline:none;box-shadow:0 0 0 1px transparent}
+.field textarea{min-height:7rem;resize:vertical}
+.field select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);background-position:calc(100% - 18px) 55%,calc(100% - 13px) 55%;background-size:5px 5px;background-repeat:no-repeat;padding-right:2rem}
+.field input:focus,.field select:focus,.field textarea:focus{box-shadow:0 0 0 2px var(--accent)}
+.field [aria-invalid="true"]{box-shadow:0 0 0 2px #f08a7a}
+.field ::placeholder{color:rgba(185,167,138,.7)}
+.hint{font-size:.76rem;color:var(--muted);margin:0}
+.err{font-size:.78rem;color:#f5a597;margin:0;min-height:0}
+.err:empty{display:none}
+.detect{font-size:.8rem;margin:0}
+.detect.ok{color:var(--accent)}
+.detect.bad{color:#f5a597}
+fieldset.field{border:0;padding:0;margin:0}
+.radios{display:flex;gap:.5rem;flex-wrap:wrap}
+.radios label{display:inline-flex;align-items:center;gap:.45rem;background:var(--elevated);border-radius:999px;padding:.5rem .9rem;font-size:.84rem;font-weight:400;color:var(--muted);cursor:pointer}
+.radios input{accent-color:var(--accent);margin:0}
+.radios label:has(input:checked){color:var(--fg);box-shadow:0 0 0 1px var(--accent)}
+.check{display:flex;gap:.6rem;align-items:flex-start;font-size:.88rem;line-height:1.4;cursor:pointer}
+.check input{width:18px;height:18px;margin:.1rem 0 0;accent-color:var(--accent);flex:none}
+.hp{position:absolute!important;left:-10000px!important;top:auto!important;width:1px!important;height:1px!important;overflow:hidden!important}
+.form-actions{display:flex;align-items:center;gap:1rem;flex-wrap:wrap;margin-top:1.2rem}
+.status{font-size:.88rem;margin:0}
+.status.ok{color:var(--accent)}
+.status.bad{color:#f5a597}
+.btn[disabled]{opacity:.6;cursor:wait}
+.thanks{text-align:left}
+.thanks h2{margin-bottom:.4rem}
+.poster-preview{margin-top:.4rem;max-width:12rem;border-radius:10px;aspect-ratio:16/10;object-fit:cover;box-shadow:0 0 0 1px var(--border)}
+/* report dialog inside player */
+.report-box{margin-top:.8rem;padding:1rem;border-radius:16px;background:var(--elevated)}
+.report-box .fgrid{grid-template-columns:1fr}
+.report-box .field select,.report-box .field textarea,.report-box .field input[type=text]{background:var(--surface)}
+.report-box textarea{min-height:4.5rem}
+@media (max-width:860px){
+ .submit-layout{grid-template-columns:1fr;gap:1.2rem}
+ .guide{position:static}
+ .fgrid{grid-template-columns:1fr}
+ .intro{padding-top:1.6rem}
+ .panel{padding:1.1rem}
+}

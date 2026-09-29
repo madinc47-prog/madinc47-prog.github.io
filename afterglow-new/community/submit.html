@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#120e0a">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22%3E%3Crect width=%2264%22 height=%2264%22 rx=%2214%22 fill=%22%23120e0a%22/%3E%3Ccircle cx=%2232%22 cy=%2236%22 r=%2216%22 fill=%22%23e8a54b%22/%3E%3Crect x=%228%22 y=%2240%22 width=%2248%22 height=%2216%22 fill=%22%23120e0a%22/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&display=swap">
+<link rel="stylesheet" href="../styles.css">
+<link rel="stylesheet" href="community.css">
+<title>Submit your film — Afterglow Local Films</title>
+<meta name="description" content="Made a film in Dominica? Share it free on Afterglow Local Films. Every film is reviewed before it goes on air.">
+</head>
+<body>
+<header class="top">
+  <div class="wrap top-inner">
+    <a class="brand" href="https://cinder-heart-tulip-harbor.grok.me/"><span class="brand-name">Afterglow</span><span class="brand-tag">Late night television</span></a>
+    <nav class="nav" aria-label="Afterglow">
+      <a href="https://cinder-heart-tulip-harbor.grok.me/">Lounge</a>
+      <a href="https://cinder-heart-tulip-harbor.grok.me/movies">Movies</a>
+      <a href="https://cinder-heart-tulip-harbor.grok.me/series">Series</a>
+      <a href="https://cinder-heart-tulip-harbor.grok.me/documentaries">Docs</a>
+      <a href="../">New &amp; Recent</a>
+      <a href="local-films.html">Local Films</a>
+      <a href="https://cinder-heart-tulip-harbor.grok.me/news">Live News</a>
+      <a href="https://cinder-heart-tulip-harbor.grok.me/radio">Radio</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section class="wrap intro">
+    <p class="eyebrow">Local Films · Submit</p>
+    <h1>Share your film on Afterglow</h1>
+    <p class="lede">Made a short, documentary, music film or feature? Send us the link. It's free. We review every film by hand, and approved films go on the <a href="local-films.html" style="color:var(--accent)">Local Films</a> shelf for everyone to watch.</p>
+  </section>
+
+  <section class="wrap submit-layout">
+    <div class="panel">
+      <form id="submit-form" novalidate>
+        <h2>Your film</h2>
+        <div class="fgrid">
+          <div class="field full"><label for="f-title">Film title</label><input type="text" id="f-title" name="title" maxlength="120" required><p class="err" id="err-title"></p></div>
+          <div class="field full"><label for="f-description">Description</label><textarea id="f-description" name="description" maxlength="1500" required placeholder="What's the film about? Who's in it? Where was it shot?"></textarea><p class="err" id="err-description"></p></div>
+          <div class="field"><label for="f-filmmaker">Filmmaker name</label><input type="text" id="f-filmmaker" name="filmmaker" maxlength="120" autocomplete="name" required><p class="hint">Shown publicly with the film.</p><p class="err" id="err-filmmaker"></p></div>
+          <div class="field"><label for="f-contact">Your email or phone</label><input type="text" id="f-contact" name="contact" maxlength="200" autocomplete="email" inputmode="email" required><p class="hint">Private, only for the moderator. Never shown.</p><p class="err" id="err-contact"></p></div>
+          <div class="field"><label for="f-year">Year made</label><input type="number" id="f-year" name="year" min="1950" max="2027" step="1" inputmode="numeric" required placeholder="2026"><p class="err" id="err-year"></p></div>
+          <div class="field"><label for="f-runtime">Runtime (minutes)</label><input type="number" id="f-runtime" name="runtime" min="1" max="600" step="1" inputmode="numeric" required placeholder="12"><p class="err" id="err-runtime"></p></div>
+          <div class="field"><label for="f-genre">Genre</label>
+            <select id="f-genre" name="genre" required>
+              <option value="">Choose…</option>
+              <option>Drama</option><option>Comedy</option><option>Documentary</option><option>Culture &amp; Heritage</option><option>Animation</option><option>Action</option><option>Thriller</option><option>Horror</option><option>Romance</option><option>Family</option><option>Music</option><option>Experimental</option><option>Other</option>
+            </select><p class="err" id="err-genre"></p></div>
+          <div class="field"><label for="f-country">Country</label><input type="text" id="f-country" name="country" value="Dominica" maxlength="80" required><p class="err" id="err-country"></p></div>
+          <div class="field full"><label for="f-parish">Parish <span class="opt">(optional)</span></label>
+            <select id="f-parish" name="parish">
+              <option value="">Not saying / outside Dominica</option>
+              <option>Saint Andrew</option><option>Saint David</option><option>Saint George</option><option>Saint John</option><option>Saint Joseph</option><option>Saint Luke</option><option>Saint Mark</option><option>Saint Patrick</option><option>Saint Paul</option><option>Saint Peter</option>
+            </select></div>
+          <div class="field full"><label for="f-link">Link to your film</label><input type="url" id="f-link" name="film_link" maxlength="400" required placeholder="https://youtu.be/…  or  https://archive.org/details/…" inputmode="url" autocomplete="off"><p class="hint">YouTube, Vimeo, Google Drive or Internet Archive. See "How to host your film free" for help.</p><p class="detect" id="detect" aria-live="polite"></p><p class="err" id="err-film_link"></p></div>
+          <div class="field full"><label for="f-poster">Poster or still image link <span class="opt">(optional)</span></label><input type="url" id="f-poster" name="poster" maxlength="400" placeholder="https://…jpg" inputmode="url" autocomplete="off"><p class="hint">Leave empty to use the video's thumbnail.</p><img id="poster-preview" class="poster-preview" alt="Poster preview" hidden><p class="err" id="err-poster"></p></div>
+          <fieldset class="field full"><legend>Content rating</legend>
+            <div class="radios">
+              <label><input type="radio" name="rating" value="all"> All ages</label>
+              <label><input type="radio" name="rating" value="teen"> Teen (13+)</label>
+              <label><input type="radio" name="rating" value="mature"> Mature (18+)</label>
+            </div>
+            <p class="hint">Mature: strong language, violence, sexual content or drug use. Mature films stay hidden until a viewer switches them on.</p>
+            <p class="err" id="err-rating"></p></fieldset>
+          <div class="field full"><label class="check"><input type="checkbox" name="rights" id="f-rights" required> <span>I made this film or own the rights, and I allow Afterglow to show it free.</span></label><p class="err" id="err-rights"></p></div>
+          <div class="hp" aria-hidden="true"><label>Leave this empty <input type="text" name="_honey" tabindex="-1" autocomplete="off"></label></div>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary" id="submit-btn">Send for review</button>
+          <p class="status" id="form-status" role="status" aria-live="polite"></p>
+        </div>
+      </form>
+
+      <div id="thanks" class="thanks" hidden tabindex="-1">
+        <p class="eyebrow">Received</p>
+        <h2>Thank you! "<span id="thanks-title"></span>" is in the review queue.</h2>
+        <p class="muted">A person watches every film before it goes on air, usually within a few days. If it's approved it'll appear on the <a href="local-films.html" style="color:var(--accent)">Local Films</a> shelf. If we have questions we'll contact you at <strong id="thanks-contact"></strong>.</p>
+        <div class="btns" style="margin-top:1rem"><a class="btn btn-ghost" href="local-films.html">See Local Films</a><button type="button" class="btn btn-ghost" id="another">Submit another film</button></div>
+      </div>
+    </div>
+
+    <aside class="panel guide" aria-labelledby="guide-title">
+      <h2 id="guide-title">How to host your film free</h2>
+      <p>Afterglow doesn't store video files. Put your film on one of these free services first, then paste its link here.</p>
+      <h3>YouTube (easiest)</h3>
+      <ol><li>Go to <a href="https://studio.youtube.com" target="_blank" rel="noopener">YouTube Studio</a> and press <em>Create → Upload videos</em>.</li><li>Set visibility to <strong>Unlisted</strong> if you don't want it in YouTube search. Unlisted videos still play on Afterglow.</li><li>Keep <em>Allow embedding</em> switched on (Studio → Content → video → Show more).</li><li>Copy the share link (youtu.be/…).</li></ol>
+      <h3>Internet Archive (free, no ads)</h3>
+      <ol><li>Make a free account at <a href="https://archive.org/create" target="_blank" rel="noopener">archive.org</a>.</li><li>Press <em>Upload</em>, add your video file, title and description, and pick a Creative Commons licence if you like.</li><li>Copy the page link (archive.org/details/…).</li></ol>
+      <h3>Vimeo or Google Drive</h3>
+      <ul><li><strong>Vimeo</strong> (free Basic plan): copy the video link. For unlisted videos use the full link that includes the private code.</li><li><strong>Google Drive</strong>: right-click the video → <em>Share</em> → General access: <strong>Anyone with the link</strong> → copy link. Large files can take a while to process before they play.</li></ul>
+      <h3>What happens next</h3>
+      <ul><li>Your film goes to a private review queue. Nothing is public until it's approved.</li><li>We check that it plays, that the rating fits, and that it's yours to share.</li><li>You can ask us to take it down any time, and you keep all your rights.</li></ul>
+    </aside>
+  </section>
+</main>
+
+<footer class="foot wrap">
+  <span>Afterglow · Local Films</span>
+  <a href="local-films.html">← Back to Local Films</a>
+</footer>
+
+<script src="community.js"></script>
+</body>
+</html>

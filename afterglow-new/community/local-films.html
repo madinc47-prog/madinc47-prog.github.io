@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#120e0a">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22%3E%3Crect width=%2264%22 height=%2264%22 rx=%2214%22 fill=%22%23120e0a%22/%3E%3Ccircle cx=%2232%22 cy=%2236%22 r=%2216%22 fill=%22%23e8a54b%22/%3E%3Crect x=%228%22 y=%2240%22 width=%2248%22 height=%2216%22 fill=%22%23120e0a%22/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&display=swap">
+<link rel="stylesheet" href="../styles.css">
+<link rel="stylesheet" href="community.css">
+<title>Local Films — Afterglow</title>
+<meta name="description" content="Afterglow Local Films: short and feature films made by filmmakers in Dominica, shared free by the people who made them.">
+</head>
+<body>
+<header class="top">
+  <div class="wrap top-inner">
+    <a class="brand" href="https://cinder-heart-tulip-harbor.grok.me/"><span class="brand-name">Afterglow</span><span class="brand-tag">Late night television</span></a>
+    <nav class="nav" aria-label="Afterglow">
+      <a href="https://cinder-heart-tulip-harbor.grok.me/">Lounge</a>
+      <a href="https://cinder-heart-tulip-harbor.grok.me/movies">Movies</a>
+      <a href="https://cinder-heart-tulip-harbor.grok.me/series">Series</a>
+      <a href="https://cinder-heart-tulip-harbor.grok.me/documentaries">Docs</a>
+      <a href="../">New &amp; Recent</a>
+      <a href="local-films.html" class="active" aria-current="page">Local Films</a>
+      <a href="https://cinder-heart-tulip-harbor.grok.me/news">Live News</a>
+      <a href="https://cinder-heart-tulip-harbor.grok.me/radio">Radio</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section class="wrap intro">
+    <p class="eyebrow">Local Films · Made in Dominica</p>
+    <h1>Films by our own</h1>
+    <p class="lede">Shorts, documentaries and features from filmmakers in Dominica, shared free by the people who made them. We review every film before it goes on air.</p>
+    <div class="btns">
+      <a class="btn btn-primary" href="submit.html">＋ Submit your film</a>
+      <a class="btn btn-ghost" href="#how">How it works</a>
+    </div>
+  </section>
+
+  <section class="wrap cf-tools" id="cf-tools" hidden>
+    <div class="chips" role="group" aria-label="Genre" id="cf-genre-wrap" hidden><span class="chip-label">Genre</span><div id="cf-genres" class="chip-row"></div></div>
+    <button type="button" class="toggle" id="mature-toggle" aria-pressed="false"><span class="knob" aria-hidden="true"></span>Show mature films (18+)</button>
+  </section>
+
+  <section class="wrap shelf" aria-labelledby="shelf-title">
+    <div class="shelf-head">
+      <h2 id="shelf-title">Local Films <span class="soft">(from the community)</span></h2>
+      <p class="muted" id="cf-count"></p>
+    </div>
+    <div id="cf-grid" class="grid"></div>
+    <p id="cf-none" class="muted empty" hidden>Nothing on this shelf matches that.</p>
+    <p id="cf-hidden-note" class="muted small cf-hidden-note" hidden></p>
+    <div id="cf-empty" class="cf-empty" hidden>
+      <p class="eyebrow">Now accepting films</p>
+      <h3>The first local film could be yours</h3>
+      <p>No community films are on air yet. Made a short, a documentary, a music film or a feature in Dominica? Send us the link and we'll put it on this shelf, free for everyone to watch.</p>
+      <div class="btns"><a class="btn btn-primary" href="submit.html">＋ Submit your film</a></div>
+    </div>
+  </section>
+
+  <section class="wrap note" id="how">
+    <h3>How Local Films works</h3>
+    <p>Filmmakers upload their film free to <strong>YouTube</strong> (unlisted is fine), <strong>Vimeo</strong>, <strong>Google Drive</strong> or the <strong>Internet Archive</strong>, then <a href="submit.html" style="color:var(--accent)">send us the link</a>. Every submission is reviewed by a person before it appears here, and only films the filmmaker made or owns the rights to are accepted. Mature films stay hidden unless you switch them on. See something wrong? Open the film and press <strong>Report this film</strong>.</p>
+  </section>
+</main>
+
+<footer class="foot wrap">
+  <span>Afterglow · Local Films</span>
+  <a href="../">← New &amp; Recent</a>
+</footer>
+
+<div id="player" class="player" hidden role="dialog" aria-modal="true" aria-labelledby="p-title">
+  <div class="player-backdrop" data-close></div>
+  <div class="player-card">
+    <div class="screen"><div id="screen-inner"></div></div>
+    <div class="p-info">
+      <button class="close" data-close aria-label="Close player">✕ Close</button>
+      <p class="eyebrow" id="p-eyebrow"></p>
+      <h2 id="p-title"></h2>
+      <p class="meta" id="p-meta"></p>
+      <p id="p-syn" class="syn"></p>
+      <p id="p-note" class="muted small"></p>
+      <p class="links" id="p-links"></p>
+      <div class="report-box" id="report-box" hidden>
+        <form id="report-form" novalidate>
+          <div class="fgrid">
+            <div class="field">
+              <label for="report-reason">What's wrong?</label>
+              <select id="report-reason" name="reason" required>
+                <option value="">Choose a reason…</option>
+                <option>Not their film / copyright problem</option>
+                <option>Wrong rating / not suitable for this rating</option>
+                <option>Hateful, harmful or illegal content</option>
+                <option>Video doesn't play / broken link</option>
+                <option>Spam or misleading</option>
+                <option>Other</option>
+              </select>
+            </div>
+            <div class="field"><label for="report-details">Details <span class="opt">(optional)</span></label><textarea id="report-details" name="details" maxlength="1000"></textarea></div>
+            <div class="field"><label for="report-contact">Your email or phone <span class="opt">(optional, if you want a reply)</span></label><input type="text" id="report-contact" name="contact" maxlength="200" autocomplete="email"></div>
+            <div class="hp" aria-hidden="true"><label>Leave this empty <input type="text" name="_honey" tabindex="-1" autocomplete="off"></label></div>
+          </div>
+          <div class="form-actions"><button type="submit" class="btn btn-primary">Send report</button><button type="button" class="btn btn-ghost" id="report-cancel">Cancel</button></div>
+        </form>
+        <p class="status" id="report-status" role="status" aria-live="polite"></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="community.js"></script>
+</body>
+</html>
