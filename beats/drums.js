@@ -568,11 +568,11 @@
       desc: "Hard NY boom-bap: knocking kick, cracking snare, 12-bit SP/MPC grit.",
       color: { crush: CRUSH12 }, bus: { thr: -16, ratio: 3, atk: 0.012, rel: 0.12, smash: 0.3, drive: 1.35 },
       pads: [
-        P("QB Kick", "drums", "kick", { f0: 165, f1: 52, fEnd: 46, pitchT: 0.045, dec: 0.38, drive: 3, click: 0.35, knock: 0.45, hold: 0.03 }, { rr: 2, db: 0, L: [lay("kick_gogodze", -8, { hp: 40 })] }),
+        P("QB Kick", "drums", "kick", { f0: 165, f1: 52, fEnd: 46, pitchT: 0.045, dec: 0.38, drive: 3, click: 0.35, knock: 0.45, hold: 0.03 }, { rr: 2, db: 0, L: [lay("kick_gogodze", -8, { hp: 40 }), lay("lib/kick/sg-oldschool-6.mp3", -7, { hp: 45 })] }),
         P("Kick Ghost", "drums", "kick", { f0: 140, f1: 56, fEnd: 50, pitchT: 0.03, dec: 0.17, drive: 2, click: 0.2, knock: 0.3, hold: 0.01 }, { rr: 2, db: -7, L: [lay("kick_gogodze_retro", -9, { hp: 45 })] }),
         b808("808 Sub", -1, { note: 36, dec: 1.2, drive: 3, dirty: 0.25, punch: 7 }),
         P("Filtered Bass Hit", "bass", "bassHit", { note: 36, dec: 0.95, lp: 520 }, { db: -2, ck: "bh", tuned: true, glide: 0.06 }),
-        P("Crack Snare", "drums", "snare", { tone1: 185, tone2: 330, bodyDec: 0.09, noiseDec: 0.2, crack: 0.6, room: 0.18, drive: 2.5 }, { rr: 3, db: -0.5, L: [lay(["snare_retro_1", "snare_retro_2", "snare_retro_3"], -5, { hp: 120 })], nudge: 4, hum: 3 }),
+        P("Crack Snare", "drums", "snare", { tone1: 185, tone2: 330, bodyDec: 0.09, noiseDec: 0.2, crack: 0.6, room: 0.18, drive: 2.5 }, { rr: 3, db: -0.5, L: [lay(["snare_retro_1", "snare_retro_2", "snare_retro_3"], -5, { hp: 120 }), lay("lib/snare/cl-boombap.mp3", -6, { hp: 150 })], nudge: 4, hum: 3 }),
         P("Snare Ghost", "drums", "snare", { tone1: 170, tone2: 300, bodyDec: 0.06, noiseDec: 0.12, crack: 0.2, room: 0.12, drive: 1.5, lp: 6000 }, { rr: 3, db: -11, hum: 4 }),
         P("Rimshot", "drums", "snare", { tone1: 330, tone2: 620, bodyDec: 0.05, noiseDec: 0.1, noiseHP: 2000, crack: 0.9, crackF: 3000, room: 0.12, drive: 3 }, { rr: 2, db: -3, L: [lay("snare_rimshot_alu", -2, { hp: 200 })] }),
         P("Dusty Break Snare", "drums", "snare", { tone1: 160, tone2: 290, noiseDec: 0.28, crack: 0.45, room: 0.35, roomLen: 0.45, lp: 7000, drive: 3 }, { rr: 2, db: -2, L: [lay("snare_retro_3", -3, { rate: 0.9, hp: 100 })], len: 0.8 }),
@@ -601,7 +601,7 @@
         P("Kick Soft", "drums", "kick", { f0: 120, f1: 50, fEnd: 46, dec: 0.25, drive: 2, click: 0.1, knock: 0.3 }, { rr: 2, db: -7 }),
         b808("Low Sub Hit", -2, { note: 36, dec: 0.45, drive: 1.5, dirty: 0.1, punch: 3 }),
         perc("Wood Knock", 380, -6, { parts: [[1, 1, 0.07], [2.6, 0.3, 0.03]], L: [lay("woodblock", -3, { rate: 0.7 })], pan: 0.1 }),
-        P("Grime Snare", "drums", "snare", { tone1: 175, tone2: 310, noiseDec: 0.22, crack: 0.45, room: 0.3, drive: 4, lp: 6500 }, { rr: 3, db: -0.5, L: [lay(["snare_retro_2", "snare_retro_1"], -4, { hp: 120 })], hum: 4 }),
+        P("Grime Snare", "drums", "snare", { tone1: 175, tone2: 310, noiseDec: 0.22, crack: 0.45, room: 0.3, drive: 4, lp: 6500 }, { rr: 3, db: -0.5, L: [lay(["snare_retro_2", "snare_retro_1"], -4, { hp: 120 }), lay("lib/snare/tb-toejam.mp3", -7, { hp: 150, lp: 7000 })], hum: 4 }),
         P("Rim Ghost", "drums", "rim", { f: 1500 }, { rr: 2, db: -10, L: [lay("sidestick_retro", -2)] }),
         snap("Finger Snap", -7),
         P("Reverse Snare Swell", "drums", "snare", { tone1: 180, noiseDec: 0.3, room: 0.6, roomLen: 0.6, crack: 0.3 }, { db: -9, rev: true, len: 0.8 }),
@@ -628,8 +628,8 @@
         P("Kick 2", "drums", "kick", { f0: 260, f1: 62, fEnd: 54, pitchT: 0.025, dec: 0.2, drive: 3, click: 0.8, knock: 0.2, lp: 14000 }, { rr: 2, db: -3 }),
         b808("808 Long", -1, { note: 36, dec: 1.6, drive: 5, dirty: 0.45, punch: 12 }),
         b808("808 Punch", -1, { note: 36, dec: 0.45, drive: 7, dirty: 0.55, punch: 14 }),
-        clapL("Clap", -2, { f: 1300, dec: 0.22, room: 0.15, bursts: 4 }, [lay(["clap_1", "clap_2"], -4, { hp: 300 })]),
-        P("Snare", "drums", "snare", { tone1: 220, tone2: 400, noiseDec: 0.16, noiseHP: 1800, crack: 0.5, room: 0.08, drive: 2 }, { rr: 3, db: -2, L: [lay("snare_close", -8, { hp: 150 })] }),
+        clapL("Clap", -2, { f: 1300, dec: 0.22, room: 0.15, bursts: 4 }, [lay(["clap_1", "clap_2"], -4, { hp: 300 }), lay("lib/clap/sg-clap-2.mp3", -5, { hp: 300 })]),
+        P("Snare", "drums", "snare", { tone1: 220, tone2: 400, noiseDec: 0.16, noiseHP: 1800, crack: 0.5, room: 0.08, drive: 2 }, { rr: 3, db: -2, L: [lay("snare_close", -8, { hp: 150 }), lay("lib/snare/jh-big-trap.mp3", -7, { hp: 200 })] }),
         rim("Rim", -7),
         snap("Snap", -7),
         closedHat("Closed Hat", -9, { dec: 0.04, bright: 1.05 }),
@@ -656,7 +656,7 @@
         P("Kick 2", "drums", "kick", { f0: 180, f1: 55, fEnd: 50, dec: 0.3, drive: 2, click: 0.3 }, { rr: 2, db: -4 }),
         b808("808 Slide", -1, { note: 36, dec: 1.5, drive: 9, dirty: 0.6, punch: 12 }, { glide: 0.1 }),
         b808("808 Glide-Up", -1, { note: 36, dec: 1.2, drive: 9, dirty: 0.6, from: -5, glideT: 0.12 }, { glide: 0.1 }),
-        P("Drill Snare", "drums", "snare", { tone1: 240, tone2: 450, noiseDec: 0.14, noiseHP: 2200, crack: 0.7, room: 0.06, drive: 3 }, { rr: 3, db: -1.5, L: [lay("snare_rimshot_rusty", -6, { hp: 150 })] }),
+        P("Drill Snare", "drums", "snare", { tone1: 240, tone2: 450, noiseDec: 0.14, noiseHP: 2200, crack: 0.7, room: 0.06, drive: 3 }, { rr: 3, db: -1.5, L: [lay("snare_rimshot_rusty", -6, { hp: 150 }), lay("lib/snare/tb-snot-shot.mp3", -6, { hp: 200 })] }),
         rim("Counter Rim", -6, { f: 1900, L: [lay("sidestick_retro", -4)] }),
         clapL("Clap", -4, { f: 1500, dec: 0.18, room: 0.1 }, [lay("clap_2", -5, { hp: 300 })]),
         snap("Snap", -7),
@@ -684,7 +684,7 @@
         P("Kick 2", "drums", "kick", { f0: 200, f1: 58, fEnd: 52, dec: 0.25, drive: 2.5, click: 0.45 }, { rr: 2, db: -4 }),
         b808("808 Slide", -1, { note: 36, dec: 1.8, drive: 4, dirty: 0.35, punch: 10 }, { glide: 0.11 }),
         b808("Sub Glide", -1, { note: 36, dec: 1.4, drive: 1, dirty: 0.05, punch: 5 }, { glide: 0.12 }),
-        P("UK Snare", "drums", "snare", { tone1: 230, tone2: 420, noiseDec: 0.12, crack: 0.6, drive: 2, room: 0.08 }, { rr: 3, db: -1.5, L: [lay("snare_piccolo", -6, { hp: 150 })], nudge: 15 }),
+        P("UK Snare", "drums", "snare", { tone1: 230, tone2: 420, noiseDec: 0.12, crack: 0.6, drive: 2, room: 0.08 }, { rr: 3, db: -1.5, L: [lay("snare_piccolo", -6, { hp: 150 }), lay("lib/snare/tb-no-candy.mp3", -7, { hp: 200 })], nudge: 15 }),
         rim("Rim Click", -7, { f: 2000 }),
         clapL("Clap", -4, { f: 1400, dec: 0.2 }, [lay("clap_1", -5, { hp: 300 })]),
         P("Snare Flam", "drums", "snare", { tone1: 230, tone2: 420, noiseDec: 0.12, crack: 0.5, flam: 0.018, room: 0.08 }, { rr: 2, db: -4 }),
@@ -740,7 +740,7 @@
         P("Kick + Sub", "drums", "kick", { f0: 200, f1: 55, fEnd: 48, dec: 0.3, drive: 3, click: 0.4, sub: 0.6, subDec: 0.6 }, { rr: 1, db: -1, len: 0.9 }),
         b808("808 Short", -1, { note: 36, dec: 0.5, drive: 5, dirty: 0.4, punch: 12 }),
         tomP("Low Tom", 95, -4),
-        clapL("Clap", -2, { f: 1250, dec: 0.25, room: 0.18 }, [lay(["clap_1", "clap_2"], -4, { hp: 300 })]),
+        clapL("Clap", -2, { f: 1250, dec: 0.25, room: 0.18 }, [lay(["clap_1", "clap_2"], -4, { hp: 300 }), lay("lib/clap/ipb-clap-wide.mp3", -5, { hp: 300 })]),
         P("Snare", "drums", "snare", { tone1: 220, tone2: 400, noiseDec: 0.15, crack: 0.55, room: 0.1 }, { rr: 3, db: -3 }),
         P("Squeak", "perc", "squeak", { f: 1000 }, { db: -9, pan: 0.15 }),
         rim("Rim", -7),
@@ -1037,7 +1037,7 @@
   ];
 
   var CATS = [
-    { id: "all", name: "All" }, { id: "boombap", name: "Boom-Bap" }, { id: "trap", name: "Trap & Drill" },
+    { id: "all", name: "All" }, { id: "hhlib", name: "Hip-Hop Sample Kits" }, { id: "boombap", name: "Boom-Bap" }, { id: "trap", name: "Trap & Drill" },
     { id: "afro", name: "Afro & Caribbean" }, { id: "club", name: "Club" }, { id: "rnb", name: "R&B & Lo-Fi" }
   ];
   /* Lo-Fi Tape lives with R&B */
@@ -1050,7 +1050,7 @@
       P("Kick Ghost", "drums", "kick", { f0: 110, f1: 55, fEnd: 50, dec: 0.18, drive: 1.2, click: 0.05, lp: 3500 }, { rr: 2, db: -8 }),
       b808("Warm Sub Bass", -3, { note: 36, dec: 0.8, drive: 1, dirty: 0.1, punch: 3 }),
       rim("Rim Knock", -6, { f: 1400, L: [lay("sidestick_retro", -2)] }),
-      P("Tape Snare", "drums", "snare", { tone1: 190, tone2: 340, noiseDec: 0.18, crack: 0.25, room: 0.25, lp: 7000 }, { rr: 3, db: -3, L: [lay(["snare_retro_1", "snare_retro_2"], -5, { lp: 7000 })], hum: 6 }),
+      P("Tape Snare", "drums", "snare", { tone1: 190, tone2: 340, noiseDec: 0.18, crack: 0.25, room: 0.25, lp: 7000 }, { rr: 3, db: -3, L: [lay(["snare_retro_1", "snare_retro_2"], -5, { lp: 7000 }), lay("lib/snare/dr-lofi-9.mp3", -6, { lp: 7000 })], hum: 6 }),
       P("Snare Ghost", "drums", "snare", { tone1: 180, tone2: 320, noiseDec: 0.1, crack: 0.1, room: 0.2, lp: 5000 }, { rr: 3, db: -13, hum: 6 }),
       snap("Snap", -8),
       P("Brush Swish", "drums", "swish", { d: 0.3 }, { rr: 2, db: -9, L: [lay("brush_snare", 0)], synth: 0.4 }),
@@ -1068,6 +1068,185 @@
         8: "X-o-x-o-X-o-x-o-X-o-x-o-X-o-x-o-", 11: "-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o", 12: "X-------------------------------" }
     }
   });
+  /* ---------------- Hip-Hop Sample Kits: real CC0 one-shots + IPB Originals (samples/lib, see CREDITS.md), fetched lazily per kit ---------------- */
+  function LB(f) { return "lib/" + f + ".mp3"; }
+  /* sample pad: L = [[file, dB, {hp, lp, rate, off}], …] (first entry is the main hit, the rest are layers) */
+  function SP(n, g, v, L, dB, o) {
+    o = o || {};
+    return P(n, g, v, o.p || {}, { db: dB, synth: o.synth || 0, len: o.len || 0.6, ck: o.ck || null, tuned: !!o.tuned, glide: o.glide, pan: o.pan || 0,
+      crush: o.crush, lp: o.lp, rev: o.rev, nudge: o.nudge,
+      L: L.map(function (x) { return lay(LB(x[0]), x[1] || 0, x[2]); }) });
+  }
+  function S808(n, f, dB, len, o) { o = o || {}; return SP(n, "bass", "bass808", [[f, 0]], dB, { len: len, ck: "b8", tuned: true, glide: o.glide || 0.08, crush: false }); }
+  function SHat(n, f, dB, o) { o = o || {}; return SP(n, "hats", "hat", [[f, 0, { hp: o.hp || 0 }]].concat(o.L || []), dB, { len: o.len || 0.3, ck: "hh", pan: o.pan == null ? 0.12 : o.pan, crush: o.crush }); }
+  var LIBKITS = [
+    {
+      id: "trap26", name: "Trap 2026", cat: "hhlib", genre: "Modern Atlanta trap", bpm: 140, swing: 50, lib: true,
+      desc: "Real recorded kick + clap stack, long driven 808, tight hats with pre-rendered rolls, trap hey and dark bell.",
+      color: {}, bus: { thr: -13, ratio: 3, atk: 0.01, rel: 0.1, smash: 0, drive: 1.2 },
+      pads: [
+        SP("Kick", "drums", "kick", [["kick/tb-whats-kickin", 0], ["kick/dr-serum-5", -9, { lp: 2000 }]], 0, { len: 0.5 }),
+        SP("Kick 2", "drums", "kick", [["kick/tb-cooked", 0]], -3, { len: 0.42 }),
+        S808("808 Long", "808/ipb-808-trap-drive", -1, 2.6),
+        S808("808 Punch", "808/ipb-808-punch-short", -1, 0.9),
+        SP("Clap", "drums", "clap", [["clap/ipb-clap-trap", 0], ["clap/sg-clap-2", -4, { hp: 300 }]], -2, { len: 0.6 }),
+        SP("Trap Snare", "drums", "snare", [["snare/jh-big-trap", 0], ["snare/tb-center", -7, { hp: 200 }]], -2, { len: 1.0 }),
+        SP("Rim", "drums", "rim", [["rim/dv-rimclick", 0]], -7, { len: 0.25 }),
+        SP("Snap", "drums", "snap", [["snap/vk-snap", 0]], -7, { len: 0.2 }),
+        SHat("Closed Hat", "hat/ipb-trap-hat-tight", -9),
+        SHat("Hat Roll 1/32", "hat/ipb-roll-32-140", -11, { len: 0.65 }),
+        SHat("Open Hat", "ohat/ipb-trap-open", -11, { len: 1.1, pan: 0.18 }),
+        SP("Perc Knock", "perc", "tone", [["perc/dr-mic-perc", 0]], -9, { len: 0.25, pan: -0.25 }),
+        SP("Riser 2s", "perc", "riser", [["fx/ipb-riser-2s", 0]], -11, { len: 2.0 }),
+        SP("Trap Hey", "keys", "vox", [["vox/sv-trap-hey", 0]], -8, { len: 0.85, tuned: true }),
+        SP("Dark Bell", "keys", "stab", [["melodic/ipb-dark-bell-c5", 0]], -10, { len: 2.5, tuned: true }),
+        SP("Crash", "hats", "crash", [["cym/tb-crash", 0]], -12, { len: 3.5, pan: -0.15 })
+      ],
+      starter: {
+        rows: { 0: "X------x--X-----X-----x-------x-", 2: "X------x--X-----X-----x-------x-", 4: "--------X---------------X-------",
+          5: "--------x---------------x-------", 8: "x-x-x-x-x-x-x---x-x-x-x-x-x-x---", 9: "--------------x---------------x-", 10: "------------------------------x-", 15: "X-------------------------------" },
+        notes: { 2: { 0: -7, 7: -7, 10: -4, 16: -11, 22: -9, 30: -7 } }, slides: { 2: [10, 30] }
+      }
+    },
+    {
+      id: "drill26", name: "Drill UK/NY", cat: "hhlib", genre: "UK & NY drill", bpm: 142, swing: 54, lib: true,
+      desc: "Copper snare + rim stack, distorted sliding 808s, ticking hats with triplet rolls, choir stab, gun-cock foley.",
+      color: {}, bus: { thr: -13, ratio: 3.5, atk: 0.008, rel: 0.1, smash: 0.12, drive: 1.35 },
+      pads: [
+        SP("Kick", "drums", "kick", [["kick/tb-shine", 0, { hp: 30 }], ["kick/dr-web-crawler", -8]], 0, { len: 0.5 }),
+        SP("Kick 2", "drums", "kick", [["kick/dv-dw-open", 0]], -4, { len: 0.55 }),
+        S808("808 Slide", "808/ipb-808-drill-dist", -1, 2.4, { glide: 0.1 }),
+        S808("808 Drill (JH)", "808/jh-drill-808", -1, 2.0, { glide: 0.1 }),
+        SP("Drill Snare", "drums", "snare", [["snare/tb-snot-shot", 0], ["snare/ipb-drill-snare", -6, { hp: 300 }]], -1.5, { len: 0.45 }),
+        SP("Snare 2", "drums", "snare", [["snare/tb-no-candy", 0]], -3, { len: 0.8 }),
+        SP("Counter Rim", "drums", "rim", [["rim/ipb-rim", 0], ["rim/dv-rimclick", -4]], -6, { len: 0.2 }),
+        SP("Clap", "drums", "clap", [["clap/ipb-clap-tight", 0]], -4, { len: 0.5 }),
+        SHat("Hat Tick", "hat/ipb-drill-hat-tick", -9),
+        SHat("Triplet Roll", "hat/ipb-roll-trip-140", -11, { len: 0.65 }),
+        SHat("Open Hat", "ohat/ipb-open-short", -11, { len: 0.8, pan: 0.18 }),
+        SP("Gun Cock", "perc", "noiseHit", [["fx/rx-gun-cock", 0]], -10, { len: 0.6, pan: 0.2 }),
+        SP("Choir Stab", "keys", "stab", [["melodic/ipb-choir-stab-cm", 0]], -9, { len: 1.6, tuned: true }),
+        SP("Shout", "keys", "vox", [["vox/un-shout-2", 0]], -8, { len: 0.55, tuned: true }),
+        SP("Sub Drop", "perc", "rumble", [["fx/ipb-sub-drop", 0]], -6, { len: 2.5 }),
+        SP("China", "hats", "crash", [["cym/tb-china", 0]], -12, { len: 2.4, pan: -0.15 })
+      ],
+      starter: {
+        rows: { 0: "X------x--------X---------x--x--", 2: "X------x--x-----X---------x--x--", 4: "--------X-------------------X---",
+          6: "------o-------o----o-------o----", 8: "x--x--x-x--x--x-x--x--x-x--x----", 9: "------------------------------x-" },
+        notes: { 2: { 0: -10, 7: -10, 10: -7, 16: 0, 26: -3, 29: -10 } }, slides: { 2: [10, 26] }
+      }
+    },
+    {
+      id: "dusty", name: "Boom Bap Dusty", cat: "hhlib", genre: "90s boom-bap", bpm: 90, swing: 60, lib: true,
+      desc: "Oldschool kick and boom-bap snare layered with real drums, 12-bit grit, scratches, crackle and a dark ride.",
+      color: { crush: CRUSH12, lp: 9500 }, bus: { thr: -16, ratio: 3, atk: 0.012, rel: 0.12, smash: 0.3, drive: 1.35 },
+      pads: [
+        SP("Dusty Kick", "drums", "kick", [["kick/sg-oldschool-6", 0], ["kick/tb-dw-24in", -7, { lp: 3500 }]], 0, { len: 0.5 }),
+        SP("Kick Ghost", "drums", "kick", [["kick/dv-dw-open", 0, { lp: 4000 }]], -7, { len: 0.5 }),
+        S808("Boom Sub", "808/ipb-808-boom-sub", -2, 1.6),
+        SP("Floor Tom", "perc", "tom", [["tom/tb-gravity", 0]], -5, { len: 0.4, tuned: true, pan: -0.1 }),
+        SP("Boom Bap Snare", "drums", "snare", [["snare/cl-boombap", 0], ["snare/tb-hard-day", -7, { hp: 150 }]], -0.5, { len: 0.6 }),
+        SP("Oldschool Snare", "drums", "snare", [["snare/sg-oldschool-6", 0]], -2, { len: 0.3 }),
+        SP("Rim", "drums", "rim", [["rim/dv-rimclick", 0]], -8, { len: 0.25 }),
+        SP("Clap", "drums", "clap", [["clap/sg-clap-2", 0]], -4, { len: 0.7 }),
+        SHat("Dry Hat", "hat/cl-dry", -10),
+        SHat("Semi Hat", "hat/dv-semi", -12),
+        SHat("Open Hat", "ohat/sg-oh-1", -12, { len: 0.35, pan: 0.18 }),
+        SP("Shaker", "hats", "shaker", [["perc/sg-shaker", 0]], -13, { len: 0.2, pan: -0.2 }),
+        SP("Scratch 1", "perc", "scratch", [["scratch/bx-scratch-1", 0]], -8, { len: 0.45, pan: -0.1 }),
+        SP("Scratch 2", "perc", "scratch", [["scratch/bx-scratch-3", 0]], -8, { len: 0.65, pan: 0.1 }),
+        SP("Vinyl Crackle", "perc", "vinyl", [["vinyl/cl-crackles", 0]], -17, { len: 3.5, ck: "vinyl", crush: false }),
+        SP("Ride", "hats", "crash", [["cym/dv-ride", 0, { hp: 300 }]], -14, { len: 3.0, pan: -0.2 })
+      ],
+      starter: {
+        rows: { 0: "X------x-X------X-x------X----x-", 1: "---------------------------o----", 4: "----X-------X-------X-------X---",
+          5: "-------o---------------o--------", 8: "X-x-X-x-X-x-X-x-X-x-X-x-X-x-X---", 10: "------------------------------x-", 12: "--------------------------X-----", 14: "X-------------------------------" }
+      }
+    },
+    {
+      id: "westcoast", name: "West Coast", cat: "hhlib", genre: "G-funk / West Coast", bpm: 94, swing: 54, lib: true,
+      desc: "Big DW kick, snare + clap stack, round 808, maraca and open hat, whiny flute lead and saw stab, all tuned.",
+      color: {}, bus: { thr: -15, ratio: 3, atk: 0.012, rel: 0.12, smash: 0.1, drive: 1.25 },
+      pads: [
+        SP("DW Kick", "drums", "kick", [["kick/tb-dw-24in", 0, { hp: 30 }]], 0, { len: 0.7 }),
+        SP("Punch Kick", "drums", "kick", [["kick/tb-whats-kickin", 0]], -3, { len: 0.45 }),
+        S808("Round 808", "808/ipb-808-rnb-round", -2, 2.4),
+        SP("Bass Pluck", "bass", "synthBass", [["melodic/ipb-pluck-c4", 0, { rate: 0.5 }]], -3, { len: 1.2, tuned: true, ck: "bp" }),
+        SP("Snare + Clap", "drums", "snare", [["snare/tb-snare-to-god", 0], ["clap/ns-disco", -4, { hp: 400 }]], -1, { len: 1.0 }),
+        SP("Hand Clap", "drums", "clap", [["clap/am-hand", 0], ["clap/tc-clap-01", -3]], -3, { len: 0.45 }),
+        SP("Snap", "drums", "snap", [["snap/os-snap", 0]], -7, { len: 0.2 }),
+        SP("Rim", "drums", "rim", [["rim/dv-rimclick", 0]], -8, { len: 0.25 }),
+        SHat("Dark Hat", "hat/tb-lifeline", -10),
+        SP("Maraca", "hats", "shaker", [["perc/sc-maraca", 0]], -12, { len: 0.35, pan: -0.2 }),
+        SHat("K Open Hat", "ohat/tb-hellcat", -12, { len: 1.3, pan: 0.18 }),
+        SP("Cowbell", "perc", "cowbell", [["perc/tg-cowbell", 0]], -10, { len: 0.3, pan: 0.25 }),
+        SP("Whistle Lead", "keys", "stab", [["melodic/ipb-flute-lead-c5", 0]], -10, { len: 1.8, tuned: true }),
+        SP("Saw Stab", "keys", "stab", [["melodic/ipb-saw-stab-c4", 0]], -9, { len: 1.0, tuned: true }),
+        SP("Shout", "keys", "vox", [["vox/un-shout-1", 0]], -8, { len: 0.5, tuned: true }),
+        SP("Crash", "hats", "crash", [["cym/dr-cymbal-19", 0]], -13, { len: 4.0, pan: -0.15 })
+      ],
+      starter: {
+        rows: { 0: "X-----x---X-----X-----x-x-------", 2: "X---------X-----X-----------x---", 4: "----X-------X-------X-------X---",
+          8: "x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-", 9: "-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x", 10: "--------------x---------------x-", 15: "X-------------------------------" },
+        notes: { 2: { 0: -5, 10: -5, 16: -7, 28: -2 } }
+      }
+    },
+    {
+      id: "lofilib", name: "Lo-Fi Sampler", cat: "hhlib", genre: "Lo-fi hip-hop", bpm: 80, swing: 60, lib: true,
+      desc: "Soft layered kick, lo-fi snare, dusty hats, warm sub, organ stab, female vocal chop and vinyl, 12-bit.",
+      color: { crush: CRUSH12, lp: 8000 }, bus: { thr: -18, ratio: 2.5, atk: 0.02, rel: 0.15, smash: 0, drive: 1.1 },
+      pads: [
+        SP("Soft Kick", "drums", "kick", [["kick/dr-serum-5", 0], ["kick/tb-shine", -6, { lp: 3000 }]], 0, { len: 0.5 }),
+        SP("Kick Ghost", "drums", "kick", [["kick/dv-dw-open", 0, { lp: 3000 }]], -8, { len: 0.5 }),
+        S808("Warm Sub", "808/ipb-808-clean-long", -3, 2.0),
+        SP("Rim Knock", "drums", "rim", [["rim/dv-rimclick", 0]], -6, { len: 0.25 }),
+        SP("Lo-Fi Snare", "drums", "snare", [["snare/dr-lofi-9", 0], ["snare/tb-toejam", -6, { lp: 7000 }]], -3, { len: 0.6 }),
+        SP("Snare Ghost", "drums", "snare", [["snare/dv-dw-comp", 0, { lp: 5000 }]], -13, { len: 0.3 }),
+        SP("Snap", "drums", "snap", [["snap/vk-snap", 0]], -8, { len: 0.2 }),
+        SP("Clap", "drums", "clap", [["clap/tc-clap-01", 0]], -6, { len: 0.3 }),
+        SHat("Dusty Hat", "hat/ipb-dusty-hat", -12),
+        SHat("Dry Hat", "hat/cl-dry", -13),
+        SHat("Open Hat", "ohat/sg-oh-1", -15, { len: 0.35, pan: 0.18 }),
+        SP("Shaker", "hats", "shaker", [["perc/sg-shaker", 0]], -13, { len: 0.2, pan: -0.2 }),
+        SP("Organ Stab", "keys", "stab", [["melodic/ipb-organ-c4", 0]], -9, { len: 1.4, tuned: true }),
+        SP("Vocal Chop", "keys", "vox", [["vox/cc-chop-1", 0]], -8, { len: 0.4, tuned: true }),
+        SP("Vinyl Crackle", "perc", "vinyl", [["vinyl/os-crackle", 0]], -16, { len: 5.0, ck: "vinyl", crush: false }),
+        SP("Soft Ride", "hats", "crash", [["cym/dv-ride", 0, { hp: 400 }]], -16, { len: 3.0, pan: -0.2 })
+      ],
+      starter: {
+        rows: { 0: "X-------X-x-----X-----x---x-----", 4: "----X-------X-------X-------X---", 5: "-------o------o--------o------o-",
+          8: "X-o-x-o-X-o-x-o-X-o-x-o-X-o-x-o-", 11: "-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o", 14: "X-------------------------------" }
+      }
+    },
+    {
+      id: "jerseylib", name: "Jersey Bounce", cat: "hhlib", genre: "Jersey club", bpm: 140, swing: 50, lib: true,
+      desc: "Triplet kick runs, stacked claps, bed squeak, chopped vocal hits and a hey, built for 140 BPM bounce.",
+      color: {}, bus: { thr: -13, ratio: 3, atk: 0.008, rel: 0.1, smash: 0.1, drive: 1.3 },
+      pads: [
+        SP("Kick", "drums", "kick", [["kick/tb-cooked", 0], ["kick/dr-orion", -6]], 0, { len: 0.42 }),
+        SP("Kick 2", "drums", "kick", [["kick/dr-web-crawler", 0]], -3, { len: 0.3 }),
+        S808("808", "808/ipb-808-punch-short", -2, 0.9),
+        P("Bed Squeak", "perc", "squeak", { f: 1000 }, { db: -6, pan: 0.15 }),
+        SP("Clap", "drums", "clap", [["clap/ipb-clap-tight", 0], ["clap/tc-clap-01", -4]], -2, { len: 0.5 }),
+        SP("Snare", "drums", "snare", [["snare/dr-orion", 0]], -3, { len: 0.2 }),
+        SP("Stacked Clap", "drums", "clap", [["clap/ns-disco", 0]], -4, { len: 0.3 }),
+        SP("Snap", "drums", "snap", [["snap/os-snap", 0]], -7, { len: 0.2 }),
+        SHat("Closed Hat", "hat/ipb-trap-hat-tight", -10),
+        SHat("Soft Hat", "hat/ipb-trap-hat-soft", -13),
+        SHat("Open Hat", "ohat/ipb-open-short", -12, { len: 0.8, pan: 0.18 }),
+        SP("Maraca", "hats", "shaker", [["perc/sc-maraca", 0]], -12, { len: 0.35, pan: -0.2 }),
+        SP("Vox Chop 1", "keys", "vox", [["vox/dr-chop-gm-1", 0]], -8, { len: 0.55, tuned: true }),
+        SP("Vox Chop 2", "keys", "vox", [["vox/dr-chop-gm-3", 0]], -8, { len: 0.45, tuned: true }),
+        SP("Hey", "keys", "vox", [["vox/ms-hey-low", 0]], -8, { len: 0.5, tuned: true }),
+        SP("Laser", "perc", "zap", [["fx/cl-laser", 0]], -11, { len: 1.6 })
+      ],
+      starter: {
+        rows: { 0: "X---X---X---X-X-X---X---X---X-X-", 4: "--x---x---x---x---x---x---x-x-x-", 3: "-------------x-----------------x",
+          8: "x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-", 12: "X-----------X-----------X-------", 13: "--------------------X-------x---" }
+      }
+    }
+  ];
+  LIBKITS.forEach(function (k) { KITS.push(k); });
   var BY_ID = {};
   KITS.forEach(function (k) {
     BY_ID[k.id] = k;
@@ -1076,7 +1255,7 @@
   });
 
   /* drum-bus output trim (dB), calibrated so each starter lands around −11.5 LUFS with ≤ ~2.5 dB of peak limiting */
-  var OUT_TRIM = {"afrobeats": 9.2, "afrohouse": 9.0, "amapiano": 6.7, "bkdrill": 7.5, "bouyon": 8.2, "buffalo": 10.6, "house": 9.0, "jersey": 8.5, "lofi": 10.2, "phonk": 6.1, "pluggnb": 7.2, "qb": 9.4, "rage": 6.5, "rnb": 7.9, "sexydrill": 8.0, "techno": 7.4, "trap": 8.3, "ukdrill": 8.0};
+  var OUT_TRIM = {"trap26": 5.5, "drill26": 4.8, "dusty": 10.1, "westcoast": 5.8, "lofilib": 13.3, "jerseylib": 8.5, "afrobeats": 9.2, "afrohouse": 9.0, "amapiano": 6.7, "bkdrill": 7.5, "bouyon": 8.2, "buffalo": 12.4, "house": 9.0, "jersey": 8.5, "lofi": 12.4, "phonk": 6.1, "pluggnb": 7.2, "qb": 10.3, "rage": 6.5, "rnb": 7.9, "sexydrill": 8.0, "techno": 7.4, "trap": 8.3, "ukdrill": 8.0};
   KITS.forEach(function (k) { k.bus.out = OUT_TRIM[k.id] != null ? OUT_TRIM[k.id] : 8; });
 
   /* starter strings → steps (roll count), velocity, notes, slides. Legend: X accent · x hit · o ghost · r 32nd roll · t triplet roll */

@@ -1196,7 +1196,7 @@
       lv.textContent = "";
     }
   }
-  var CAT_COLOR = { boombap: "#f5b301", trap: "#f43f5e", afro: "#34d399", club: "#22d3ee", rnb: "#a78bfa" };
+  var CAT_COLOR = { hhlib: "#fb923c", boombap: "#f5b301", trap: "#f43f5e", afro: "#34d399", club: "#22d3ee", rnb: "#a78bfa" };
   function refreshKitUI() {
     var k = kitDef(S.kit), cat = (D.CATS.filter(function (c) { return c.id === k.cat; })[0] || {}).name || "";
     $("kit-cat").textContent = cat;
@@ -1208,8 +1208,8 @@
     $("swing-val").textContent = mpcSwing(S.swing) + "%";
   }
   /* the beat maker leans hip-hop: hip-hop kits and genres are listed first (every kit is still there) */
-  var HIPHOP_KITS = ["qb", "buffalo", "lofi", "trap", "bkdrill", "ukdrill", "sexydrill", "pluggnb", "rage", "phonk", "rnb", "jersey"];
-  var CAT_ORDER = ["all", "boombap", "trap", "rnb", "afro", "club"];
+  var HIPHOP_KITS = ["trap26", "drill26", "dusty", "westcoast", "lofilib", "jerseylib", "qb", "buffalo", "lofi", "trap", "bkdrill", "ukdrill", "sexydrill", "pluggnb", "rage", "phonk", "rnb", "jersey"];
+  var CAT_ORDER = ["all", "hhlib", "boombap", "trap", "rnb", "afro", "club"];
   function hipHopKits() {
     function r(k) { var i = HIPHOP_KITS.indexOf(k.id); return i === -1 ? 100 + D.KITS.indexOf(k) : i; }
     return D.KITS.slice().sort(function (a, b) { return r(a) - r(b); });
@@ -1236,6 +1236,7 @@
       b.innerHTML = '<span class="kc-name"></span><span class="kc-meta"></span><span class="kc-desc"></span>';
       b.style.setProperty("--kc", CAT_COLOR[k.cat] || "#f5b301");
       if (k.lead) b.classList.add("lead");
+      if (k.lib) b.classList.add("libkit");
       b.querySelector(".kc-name").textContent = k.name;
       b.querySelector(".kc-meta").textContent = k.genre + " · " + k.bpm + " · " + k.swing + "%";
       b.querySelector(".kc-desc").textContent = k.desc;
@@ -1261,10 +1262,11 @@
   var sampleCache = {}, kitCache = {}, kitSeq = 0;
   function fetchSample(name) {
     if (!sampleCache[name]) {
-      sampleCache[name] = fetch("samples/" + name + ".flac").then(function (r) {
+      var isLib = /\.(mp3|ogg|wav|flac)$/i.test(name); // library files carry their extension ("lib/kick/x.mp3")
+      sampleCache[name] = fetch("samples/" + (isLib ? name : name + ".flac")).then(function (r) {
         if (!r.ok) throw new Error("HTTP " + r.status);
         return r.arrayBuffer();
-      }).then(decode).catch(function (e) {
+      }).then(decode).then(function (b) { return isLib ? trimLead(b) : b; }).catch(function (e) {
         console.warn("Sample " + name + " unavailable — pad falls back to synthesis", e);
         delete sampleCache[name];
         return null;
@@ -1319,6 +1321,18 @@
       c.decodeAudioData(ab, res, function (err) { rej(err || new Error("Could not decode audio")); });
     });
   }
+  /* MP3 decoders may add up to ~50 ms of encoder-delay silence: cut it so library hits land on the grid (max 60 ms, keeps 0.3 ms) */
+  function trimLead(b) {
+    var d = b.getChannelData(0), pk = 0, i;
+    for (i = 0; i < d.length; i++) if (Math.abs(d[i]) > pk) pk = Math.abs(d[i]);
+    var lim = Math.min(d.length, Math.round(b.sampleRate * 0.06)), th = pk * 0.003, at = 0;
+    for (i = 0; i < lim; i++) if (Math.abs(d[i]) > th) break;
+    at = Math.max(0, i - Math.round(b.sampleRate * 0.0003));
+    if (at < 8 || i >= lim) return b;
+    var n = b.length - at, out = new AudioBuffer({ length: n, numberOfChannels: b.numberOfChannels, sampleRate: b.sampleRate });
+    for (var ch = 0; ch < b.numberOfChannels; ch++) out.getChannelData(ch).set(b.getChannelData(ch).subarray(at));
+    return out;
+  }
   function padKey(kit, i) { return "k2:" + kit + ":" + i; }
   /* one-time: pads swapped on the old Trap / Drill / Phonk kits follow their sound to the new layout */
   function migratePads() {
@@ -1343,7 +1357,7 @@
       var mine = (rows || []).filter(function (r) { return String(r.key).indexOf(pre) === 0; });
       return Promise.all(mine.map(function (r) {
         var i = +r.key.slice(pre.length);
-        return decode(r.data.slice(0)).then(function (buf) { return { i: i, buf: buf, name: r.name }; }).catch(function () { return null; });
+        return decode(r.data.slice(0)).then(function (buf) { return { i: i, buf: r.lib ? trimLead(buf) : buf, name: r.name }; }).catch(function () { return null; });
       })).then(function (list) { return list.filter(Boolean); });
     }).catch(function () { return []; });
   }
@@ -1352,22 +1366,119 @@
     if (file.size > 15 * 1024 * 1024) { toast("File too large (max 15 MB)."); return; }
     var i = S.sel, kit = S.kit;
     file.arrayBuffer().then(function (ab) {
-      var keep = ab.slice(0);
-      return decode(ab).then(function (buf) {
-        if (kit !== S.kit) return;
-        customBuf[i] = buf;
-        customName[i] = file.name.replace(/\.[^.]+$/, "");
-        refreshPads(); repaintSeq();
-        toast("Pad " + (i + 1) + " → " + customName[i]);
-        triggerPad(i);
-        return idb("pads", "readwrite", function (st) {
-          return st.put({ key: padKey(kit, i), name: customName[i], data: keep });
-        }).catch(function () { toast("Sample loaded (not saved — storage blocked)."); });
-      });
+      return setPadSample(i, kit, file.name.replace(/\.[^.]+$/, ""), ab, false);
     }).catch(function (e) {
       toast("Could not load that audio file. Try WAV or MP3.");
       console.error(e);
     });
+  }
+  /* put audio bytes on pad i of kit (file upload or library pick); saved in IndexedDB so it survives a reload */
+  function setPadSample(i, kit, name, ab, trim) {
+    var keep = ab.slice(0);
+    return decode(ab).then(function (buf) {
+      if (kit !== S.kit) return;
+      customBuf[i] = trim ? trimLead(buf) : buf;
+      customName[i] = name;
+      refreshPads(); repaintSeq();
+      toast("Pad " + (i + 1) + " → " + name);
+      triggerPad(i);
+      return idb("pads", "readwrite", function (st) {
+        return st.put({ key: padKey(kit, i), name: name, data: keep, lib: !!trim });
+      }).catch(function () { toast("Sample loaded (not saved — storage blocked)."); });
+    });
+  }
+
+  /* ---------------- Sample library (CC0 hip-hop one-shots, samples/lib) — per-pad swap ---------------- */
+  var LIB = { cat: "auto", q: "", loading: null, prevSrc: null, prevId: null };
+  var LIB_FOR_GROUP = { drums: null, bass: "808", hats: "hat", perc: "perc", keys: "melodic" };
+  function libIndex() {
+    if (window.IPBLib) return Promise.resolve(window.IPBLib);
+    if (!LIB.loading) LIB.loading = new Promise(function (res, rej) {
+      var sc = document.createElement("script");
+      sc.src = "samples/lib/index.js?v=1";
+      sc.onload = function () { window.IPBLib ? res(window.IPBLib) : rej(new Error("no index")); };
+      sc.onerror = function () { LIB.loading = null; rej(new Error("Library index unavailable")); };
+      document.head.appendChild(sc);
+    });
+    return LIB.loading;
+  }
+  function libGuessCat() {
+    var d = padDef(S.sel), n = (d.n || "").toLowerCase();
+    var map = [["808", "808"], ["sub", "808"], ["kick", "kick"], ["snare", "snare"], ["clap", "clap"], ["snap", "snap"], ["rim", "rim"],
+      ["open", "ohat"], ["roll", "hat"], ["hat", "hat"], ["crash", "cym"], ["china", "cym"], ["ride", "cym"], ["cymbal", "cym"], ["tom", "tom"],
+      ["shaker", "perc"], ["maraca", "perc"], ["cowbell", "perc"], ["perc", "perc"], ["scratch", "scratch"], ["vinyl", "vinyl"], ["crackle", "vinyl"],
+      ["vox", "vox"], ["vocal", "vox"], ["shout", "vox"], ["hey", "vox"], ["riser", "fx"], ["drop", "fx"], ["fx", "fx"], ["stab", "melodic"], ["bell", "melodic"]];
+    for (var k = 0; k < map.length; k++) if (n.indexOf(map[k][0]) !== -1) return map[k][1];
+    return LIB_FOR_GROUP[d.g] || "kick";
+  }
+  function openLib(open) {
+    var el = $("lib-sheet");
+    if (open === false) { el.hidden = true; libStopPreview(); return; }
+    el.hidden = false;
+    $("lib-pad").textContent = "Pad " + (S.sel + 1) + " · " + padDef(S.sel).n;
+    $("lib-list").innerHTML = '<p class="kb-note">Loading library…</p>';
+    libIndex().then(function () {
+      if (LIB.cat === "auto" || LIB.cat === "pad") LIB.cat = libGuessCat();
+      renderLib();
+      $("lib-q").focus({ preventScroll: true });
+    }).catch(function (e) { $("lib-list").innerHTML = '<p class="kb-note">Could not load the sample library (' + e.message + ').</p>'; });
+  }
+  function renderLib() {
+    var L = window.IPBLib; if (!L) return;
+    var cats = $("lib-cats"), list = $("lib-list"), q = LIB.q.trim().toLowerCase();
+    cats.innerHTML = "";
+    [{ id: "all", name: "All" }].concat(L.CATS).forEach(function (c) {
+      var n = c.id === "all" ? L.ITEMS.length : L.ITEMS.filter(function (it) { return it.c === c.id; }).length;
+      var b = document.createElement("button");
+      b.type = "button"; b.className = "kb-cat" + (LIB.cat === c.id && !q ? " on" : ""); b.textContent = c.name + " · " + n; b.dataset.cat = c.id;
+      b.addEventListener("click", function () { LIB.cat = c.id; LIB.q = ""; $("lib-q").value = ""; renderLib(); });
+      cats.appendChild(b);
+    });
+    var items = L.ITEMS.filter(function (it) {
+      if (LIB.cat !== "all" && it.c !== LIB.cat && !q) return false;
+      return !q || (it.n + " " + it.by + " " + it.c + " " + (it.k || "")).toLowerCase().indexOf(q) !== -1;
+    });
+    list.innerHTML = "";
+    if (!items.length) { list.innerHTML = '<p class="kb-note">No sounds match.</p>'; return; }
+    items.forEach(function (it) {
+      var row = document.createElement("div");
+      row.className = "lib-row" + (LIB.prevId === it.f ? " previewing" : ""); row.dataset.f = it.f;
+      row.innerHTML = '<button type="button" class="lib-play" title="Preview">▶</button><span class="lib-info"><strong></strong><small></small></span><button type="button" class="btn small lib-use">Use</button>';
+      row.querySelector("strong").textContent = it.n;
+      row.querySelector("small").textContent = (it.by === "IPB Original" ? "IPB Original" : "by " + it.by) + " · " + it.d.toFixed(2) + "s" + (it.k ? " · " + it.k : "");
+      row.querySelector(".lib-play").addEventListener("click", function () { libPreview(it); });
+      row.querySelector(".lib-info").addEventListener("click", function () { libPreview(it); });
+      row.querySelector(".lib-use").addEventListener("click", function () { libUse(it); });
+      list.appendChild(row);
+    });
+  }
+  function libStopPreview() {
+    if (LIB.prevSrc) { try { LIB.prevSrc.stop(); } catch (e) { /* ended */ } LIB.prevSrc = null; }
+    LIB.prevId = null;
+    document.querySelectorAll(".lib-row.previewing").forEach(function (r) { r.classList.remove("previewing"); });
+  }
+  function libPreview(it) {
+    if (!ensureCtx()) return;
+    var same = LIB.prevId === it.f;
+    libStopPreview();
+    if (same) return;
+    LIB.prevId = it.f;
+    var row = document.querySelector('.lib-row[data-f="' + it.f + '"]'); if (row) row.classList.add("previewing");
+    fetchSample("lib/" + it.f).then(function (buf) {
+      if (!buf || LIB.prevId !== it.f) return;
+      var src = ctx.createBufferSource(), g = ctx.createGain();
+      src.buffer = buf; g.gain.value = 0.6; src.connect(g); g.connect(master);
+      src.onended = function () { if (LIB.prevSrc === src) libStopPreview(); };
+      LIB.prevSrc = src; src.start();
+    });
+  }
+  function libUse(it) {
+    var i = S.sel, kit = S.kit;
+    libStopPreview();
+    fetch("samples/lib/" + it.f).then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.arrayBuffer(); })
+      .then(function (ab) { return setPadSample(i, kit, it.n, ab, true); })
+      .then(function () { openLib(false); })
+      .catch(function (e) { toast("Could not load " + it.n + " (" + e.message + ")"); });
   }
   function resetPad(i) {
     customBuf[i] = null; customName[i] = null;
@@ -4247,6 +4358,11 @@
       e.target.value = "";
     });
     $("btn-pad-reset").addEventListener("click", function () { resetPad(S.sel); });
+    $("btn-pad-lib").addEventListener("click", function () { LIB.cat = "pad"; openLib(true); });
+    $("lib-close").addEventListener("click", function () { openLib(false); });
+    $("lib-sheet").addEventListener("click", function (e) { if (e.target === $("lib-sheet")) openLib(false); });
+    $("lib-q").addEventListener("input", function (e) { LIB.q = e.target.value; renderLib(); });
+    document.addEventListener("keydown", function (e) { if (e.key === "Escape" && !$("lib-sheet").hidden) openLib(false); });
     PE.forEach(function (pe) {
       var el = $("pad-" + pe.id);
       el.addEventListener("input", function () {
@@ -4446,6 +4562,7 @@
       };
     },
     kits: function () { return D.KITS.map(function (k) { return k.id; }); },
+    lib: function () { return { open: !$("lib-sheet").hidden, cat: LIB.cat, q: LIB.q, prev: LIB.prevId, rows: document.querySelectorAll(".lib-row").length, items: window.IPBLib ? window.IPBLib.ITEMS.length : 0, names: customName.slice() }; },
     backing: function () {
       return { id: bt.id, title: bt.title, loading: bt.loading, dur: bt.buf ? bt.buf.duration : 0, sr: bt.buf ? bt.buf.sampleRate : 0, bpm: bt.bpm,
         layer: bt.layer, drumsOn: drumsOn(), playing: !!bt.src, pos: btPos(), bpmNow: S.bpm, recLength: $("rec-length").value,

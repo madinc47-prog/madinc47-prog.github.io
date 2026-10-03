@@ -747,3 +747,20 @@ body.bt-on:not(.bt-layer) .seq-head::after {
   .kl-grid { grid-template-columns: 1fr; }
   .kl-opts { gap: .45rem .7rem; }
 }
+
+/* ---- Hip-Hop Sample Kits + sample library ---- */
+.kit-card.libkit .kc-name::after { content: "REAL SAMPLES"; white-space: nowrap; display: inline-block; margin-left: .4rem; font-size: .56rem; letter-spacing: .08em; color: var(--kc); border: 1px solid var(--kc); border-radius: 4px; padding: 0 .25rem; vertical-align: 2px; }
+.lib-sheet { position: fixed; inset: 0; z-index: 80; background: rgba(5, 7, 12, .72); display: flex; align-items: center; justify-content: center; padding: 1rem; }
+.lib-sheet[hidden] { display: none; }
+.lib-panel { width: min(760px, 100%); max-height: min(86vh, 760px); display: flex; flex-direction: column; background: var(--bg2); border: 1px solid var(--line); border-radius: 14px; padding: .9rem 1rem; box-shadow: 0 20px 60px rgba(0, 0, 0, .5); }
+.lib-q { width: 100%; background: var(--bg3); border: 1px solid var(--line); border-radius: 8px; padding: .5rem .65rem; color: var(--text); font: inherit; margin-bottom: .55rem; }
+.lib-list { overflow: auto; display: grid; gap: .35rem; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); align-content: start; min-height: 120px; padding-right: .2rem; }
+.lib-row { display: flex; align-items: center; gap: .5rem; background: var(--bg3); border: 1px solid var(--line); border-radius: 9px; padding: .35rem .45rem; }
+.lib-row.previewing { border-color: #fb923c; box-shadow: 0 0 0 1px #fb923c inset; }
+.lib-play { flex: 0 0 auto; width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--line); background: var(--bg2); color: var(--text); cursor: pointer; font-size: .75rem; }
+.lib-row.previewing .lib-play { background: #fb923c; color: #111; border-color: #fb923c; }
+.lib-info { flex: 1 1 auto; min-width: 0; display: grid; cursor: pointer; }
+.lib-info strong { font-size: .82rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lib-info small { font-size: .68rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lib-sheet .kb-note a { color: var(--accent); }
+@media (max-width: 520px) { .lib-panel { max-height: 92vh; padding: .7rem; } .lib-list { grid-template-columns: 1fr; } }
