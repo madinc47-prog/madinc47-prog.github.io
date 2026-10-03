@@ -504,3 +504,50 @@ select.btn { appearance: auto; }
 .mini.automatch { color: #fbbf24; border-color: #5b4513; font-weight: 800; }
 .mini.automatch.on { background: #fbbf24; color: #1f1400; border-color: #fbbf24; }
 @media (max-width: 560px) { .d-match .m-ag { margin-left: 0; } }
+
+/* ---------- sampler: browser, studio, ecosystem ---------- */
+.smp-ctl2 { margin-left: auto; }
+.smp-browser { margin-top: 10px; border: 1px solid var(--line); border-radius: 12px; padding: 10px; background: #0b0e15; }
+.smpb-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+.smpb-head strong { font-size: 14px; }
+.smpb-packs { display: flex; gap: 6px; flex-wrap: wrap; flex: 1; }
+.smpb-pack.on { background: var(--accent2); color: #0b0d12; border-color: var(--accent2); }
+.smpb-tools { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+.smpb-tools .search { flex: 1; min-width: 140px; }
+.smpb-list { max-height: 320px; overflow: auto; display: flex; flex-direction: column; gap: 4px; }
+.smpb-row { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 8px; background: var(--bg3); border-left: 3px solid var(--pc); cursor: grab; }
+.smpb-row.previewing { outline: 1px solid var(--pc); }
+.smpb-play { width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--line); background: #0e1118; color: #fff; cursor: pointer; flex: 0 0 auto; }
+.smpb-main { flex: 1; min-width: 0; display: flex; flex-direction: column; cursor: pointer; }
+.smpb-main strong { font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.smpb-main .mono { font-size: 10.5px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pad.empty .pad-name { opacity: .55; font-size: 10px; }
+.pad.drop { outline: 2px dashed var(--accent); outline-offset: -3px; }
+.studio { max-width: 1400px; width: calc(100% - 24px); margin: 12px auto; background: var(--bg2); border: 1px solid #3b2f63; border-radius: 14px; padding: 12px; box-shadow: 0 0 0 1px #c084fc22, 0 10px 40px #0007; }
+.studio[hidden] { display: none; }
+.st-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+.st-head h2 { margin: 0; font-size: 16px; flex: 0 0 auto; }
+.st-head .mini:last-child { margin-left: auto; }
+.st-busy { color: #fbbf24; font-size: 12px; }
+.st-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 6px 0; }
+.st-time { font-size: 12px; color: #fda4af; min-width: 70px; }
+.st-lvl { flex: 1; min-width: 80px; max-width: 220px; }
+.st-wave { width: 100%; height: 150px; display: block; border-radius: 10px; border: 1px solid var(--line); background: #0b0e15; touch-action: none; cursor: ew-resize; }
+.st-info { font-size: 11px; color: var(--muted); margin: 4px 0; }
+.st-voice { border: 1px solid var(--line); border-radius: 12px; padding: 10px; margin: 8px 0; background: #0d1018; }
+.st-vhead { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.st-vhead h3 { margin: 0; font-size: 14px; }
+.st-vhead .muted { font-size: 11px; flex: 1; }
+.st-ref { max-width: 280px; }
+.st-matchbtn { background: #c084fc; color: #120821; border-color: #c084fc; font-weight: 800; }
+.st-matchinfo { font-size: 10.5px; color: #a5b4fc; min-height: 14px; margin: 2px 0 6px; }
+.st-presets { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+.st-preset.on { background: #c084fc; color: #120821; border-color: #c084fc; }
+.st-sliders { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 6px 14px; }
+.st-sl { display: grid; grid-template-columns: 120px 1fr 52px; align-items: center; gap: 6px; font-size: 12px; }
+.st-sl b { font-size: 11px; text-align: right; color: #e2e8f0; }
+.st-save .search { width: 170px; }
+.eco-offer { position: fixed; left: 50%; transform: translateX(-50%); bottom: 96px; z-index: 60; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: center; max-width: calc(100% - 20px); padding: 8px 12px; border-radius: 12px; background: #1a1230f2; border: 1px solid #ffc53166; box-shadow: 0 8px 30px #000a; font-size: 13px; }
+.eco-offer[hidden] { display: none; }
+.eco-offer #eco-send { background: #ffc531; color: #1a1200; border-color: #ffc531; font-weight: 800; }
+@media (max-width: 560px) { .st-sl { grid-template-columns: 96px 1fr 46px; } .smp-ctl2 { margin-left: 0; } .studio { width: calc(100% - 16px); } }

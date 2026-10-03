@@ -82,18 +82,31 @@
         <button type="button" class="pill small" id="smp-editbtn" title="Edit pads: volume, mode, load your own sample">EDIT</button>
         <button type="button" class="pill small" id="smp-stop" title="Stop all pads (Esc)">■ ALL</button>
       </div>
+      <div class="smp-ctl smp-ctl2">
+        <button type="button" class="btn small" id="smp-browse" title="Sample Browser: DJ Psycho Fingers pack, Beats hip-hop library, your recordings">📂 Sample Browser</button>
+        <button type="button" class="btn small" id="smp-studio" title="Sample Studio: record, trim, loop and style a sample">🎙 Sample Studio</button>
+        <button type="button" class="btn small ghost" id="smp-clear" title="Empty all 64 pads">Clear all pads</button>
+      </div>
     </div>
     <div class="meter meter-h smp-meter"><span class="meter-fill" id="smp-meter"></span></div>
     <div class="smp-grid" id="smp-grid"></div>
+    <div class="smp-browser" id="smp-browser" hidden>
+      <div class="smpb-head"><strong>Sample Browser</strong>
+        <div class="smpb-packs" role="tablist"><button type="button" class="pill small smpb-pack on" data-p="pf">DJ Psycho Fingers</button><button type="button" class="pill small smpb-pack" data-p="beats">Beats hip-hop library</button><button type="button" class="pill small smpb-pack" data-p="mine">My recordings</button></div>
+        <button type="button" class="mini" id="smpb-close" aria-label="Close the browser">✕</button></div>
+      <div class="smpb-tools"><input type="search" id="smpb-q" class="search" placeholder="Search sounds…" aria-label="Search sounds"><select id="smpb-cat" class="btn small" hidden aria-label="Category"><option value="all">All types</option></select><button type="button" class="btn small ghost" id="smpb-layout" title="Put the whole pack on banks A–D in its original layout">Load pack onto all pads</button></div>
+      <div class="smpb-list" id="smpb-list"></div>
+      <p class="lib-note">Tap a sound to preview · drag it onto a pad, or press <b>Load to pad</b> (goes to the selected pad, else the next empty one) · ✎ opens it in the Sample Studio. Beats library sounds are CC0 (<a href="../beats/samples/lib/CREDITS.md" target="_blank" rel="noopener">credits</a>).</p>
+    </div>
     <div class="smp-edit" id="smp-edit" hidden>
       <div class="smp-ed-top"><strong id="smp-ed-title">Pad</strong><span id="smp-ed-name" class="muted"></span><button type="button" class="mini" id="smp-ed-close" aria-label="Close editor">✕</button></div>
       <div class="smp-ed-row">
         <label>Volume <input type="range" id="smp-ed-vol" min="0" max="1.5" step="0.01"> <span id="smp-ed-volv" class="mono"></span></label>
         <label>Mode <select id="smp-ed-mode" class="btn small"><option value="one">One-shot</option><option value="hold">Hold (plays while held, loops)</option><option value="loop">Loop (tap on / off)</option></select></label>
       </div>
-      <div class="smp-ed-row"><button type="button" class="btn small" id="smp-ed-play">▶ / ■ Preview</button><label class="btn small file-btn">Load your own file…<input type="file" id="smp-ed-file" accept="audio/*,.mp3,.wav,.ogg,.m4a,.flac" hidden></label><button type="button" class="btn small ghost" id="smp-ed-reset">Restore pack sample</button></div>
+      <div class="smp-ed-row"><button type="button" class="btn small" id="smp-ed-play">▶ / ■ Preview</button><label class="btn small file-btn">Load your own file…<input type="file" id="smp-ed-file" accept="audio/*,.mp3,.wav,.ogg,.m4a,.flac" hidden></label><button type="button" class="btn small" id="smp-ed-studio">✎ Sample Studio</button><button type="button" class="btn small ghost" id="smp-ed-reset">Clear pad</button></div>
     </div>
-    <p class="lib-note">Keys: <b class="mono">E R T Y · D F G H · C V B N · U I J K</b> = pads 1–16 · <b class="mono">[ ]</b> bank · <b class="mono">Esc</b> stop all. Right-click / EDIT a pad to set its volume, mode or load your own sample (kept on this device). Pack = original samples made for DJ Psycho Fingers with free TTS + synthesis — <a href="https://github.com/madinc47-prog/madinc47-prog.github.io/blob/main/dj/samples/CREDITS.md" target="_blank" rel="noopener">credits &amp; licences</a>.</p>
+    <p class="lib-note">Keys: <b class="mono">E R T Y · D F G H · C V B N · U I J K</b> = pads 1–16 · <b class="mono">[ ]</b> bank · <b class="mono">Esc</b> stop all. Pads start empty: tap an empty pad to make a sound in the Sample Studio, long-press a filled pad to edit it there, or load sounds from the 📂 Sample Browser. Right-click / EDIT a pad for volume and mode. Everything is kept on this device. DJ Psycho Fingers pack = original samples made with free TTS + synthesis — <a href="https://github.com/madinc47-prog/madinc47-prog.github.io/blob/main/dj/samples/CREDITS.md" target="_blank" rel="noopener">credits &amp; licences</a>.</p>
   </section>
 
   <section class="mic" id="mic" aria-label="Microphone">
@@ -118,6 +131,33 @@
   </section>
   </div>
 
+  <section class="studio" id="studio" aria-label="Sample Studio" hidden>
+    <div class="st-head"><h2>🎙 Sample Studio</h2><label class="ad-set">Pad <select id="st-pad" class="btn small" aria-label="Target pad"></select></label><button type="button" class="btn small ghost" id="st-frompad" title="Open the sound that's on this pad">Open pad sound</button><span class="st-busy" id="st-busy" hidden>rendering…</span><button type="button" class="mini" id="st-close" aria-label="Close the Sample Studio">✕</button></div>
+    <div class="st-row">
+      <button type="button" class="rec-btn" id="st-rec">● Record mic</button><label class="ad-set" title="Browser noise suppression on the take"><input type="checkbox" id="st-ns"> Noise supp.</label>
+      <label class="btn small file-btn">Import file…<input type="file" id="st-file" accept="audio/*,.mp3,.wav,.ogg,.m4a,.flac,.webm" hidden></label>
+      <span class="mono st-time" id="st-time"></span><div class="meter meter-h st-lvl"><span class="meter-fill" id="st-lvl"></span></div>
+    </div>
+    <canvas id="st-wave" class="st-wave" aria-label="Waveform: drag S / E to trim, L handles set the loop"></canvas>
+    <p class="mono st-info" id="st-info"></p>
+    <div class="st-row">
+      <button type="button" class="btn small" id="st-play">▶ Preview</button><button type="button" class="btn small" id="st-crop" title="Keep only the selection">Crop</button><button type="button" class="btn small" id="st-rev">Reverse</button><button type="button" class="btn small" id="st-norm">Normalize</button><button type="button" class="btn small ghost" id="st-undo">Undo</button>
+      <label class="ad-set">Fade in <input type="range" id="st-fi" min="0" max="500" step="5" value="5"> <b class="mono" id="st-fi-v">5 ms</b></label>
+      <label class="ad-set">Fade out <input type="range" id="st-fo" min="0" max="1500" step="10" value="30"> <b class="mono" id="st-fo-v">30 ms</b></label>
+      <label class="ad-set"><input type="checkbox" id="st-loop"> Loop points</label>
+    </div>
+    <div class="st-voice">
+      <div class="st-vhead"><h3>Voice Style</h3><span class="muted">DSP-based style matching — pitch, formant, EQ, dynamics, saturation, radio, delay, reverb. Not a voice clone.</span><label class="ad-set"><input type="checkbox" id="st-bypass"> Bypass</label></div>
+      <div class="st-row"><label class="ad-set">Reference <select id="st-ref" class="btn small st-ref"><option value="">Pick a reference sample…</option></select></label><button type="button" class="btn small" id="st-refplay">▶ Ref</button><button type="button" class="btn small st-matchbtn" id="st-match">Match style</button>
+        <label class="ad-set">Match amount <input type="range" id="st-amt" min="0" max="1" step="0.01" value="1"> <b class="mono" id="st-amt-v">100%</b></label></div>
+      <p class="mono st-matchinfo" id="st-matchinfo"></p>
+      <div class="st-presets" id="st-presets"></div>
+      <div class="st-sliders" id="st-sliders"></div>
+    </div>
+    <div class="st-row st-save"><label class="ad-set">Name <input type="text" id="st-name" class="search" maxlength="40" value="My sample"></label>
+      <button type="button" class="btn" id="st-savepad">Save to pad</button><button type="button" class="btn" id="st-savelib" title="Shared library: shows in My recordings here and in Island Pin Beats → Sample library → My Samples">Save to library</button><button type="button" class="btn ghost" id="st-beats" title="Save to the library and open Island Pin Beats with it ready to assign">Send to Beats ↗</button></div>
+  </section>
+
   <section class="vdj" id="vdj" aria-label="Video DJ" hidden>
     <div class="vdj-head"><h2>Video DJ</h2>
       <label class="ad-set">Transition <select id="vdj-trans" class="btn small"><option value="fade">Fade</option><option value="cut">Cut</option><option value="wipe">Wipe</option></select></label>
@@ -140,6 +180,7 @@
         <button type="button" class="lib-tab on" data-lib="beats">His beats &amp; demos</button>
         <button type="button" class="lib-tab" data-lib="mylib">My Library</button>
         <button type="button" class="lib-tab" data-lib="autodj">Auto DJ</button>
+        <button type="button" class="lib-tab" data-lib="frombeats">From Beats</button>
         <button type="button" class="lib-tab" data-lib="vault">Beats Vault</button>
         <button type="button" class="lib-tab" data-lib="mixes">My mixes</button>
       </div>
@@ -153,13 +194,18 @@
     <p>DJ Psycho Fingers · <a href="https://www.youtube.com/@emmanuelgriffith4650" target="_blank" rel="noopener noreferrer">YouTube @emmanuelgriffith4650</a> · <a href="../beats/">Island Pin Beats</a> · <a href="../">IslePin</a></p>
     <p class="muted">Turntables: drag the record to scratch (VINYL mode) · flick it backwards fast, ↺ REWIND, or Z / X for a wheel-up. Keys: Q / P play A / B · W / O cue · A / L sync · 1–4 / 7–0 hot cues · sampler E R T Y / D F G H / C V B N / U I J K, [ ] bank. Headphone cueing needs a second audio output, which browsers don't offer — preview with the channel faders.</p>
   </footer>
+  <div class="eco-offer" id="eco-offer" hidden role="status"><span id="eco-msg"></span><button type="button" class="btn small" id="eco-send">Send to Player</button><a class="btn small" id="eco-open" href="../player/" target="psycho-fingers-player" hidden>Open in Player ↗</a><button type="button" class="mini" aria-label="Dismiss" onclick="this.parentNode.hidden=true">✕</button></div>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
   <script src="dj.js"></script>
+  <script src="dj-voicefx.js"></script>
   <script src="dj-sampler.js"></script>
+  <script src="dj-studio.js"></script>
   <script src="dj-mic.js"></script>
   <script src="dj-video.js"></script>
   <script src="dj-library.js"></script>
   <script src="dj-automatch.js"></script>
   <script src="dj-autodj.js"></script>
+  <script src="dj-eco.js"></script>
+  <script type="module" src="../shared/ecosystem-nav.js"></script>
 </body>
 </html>

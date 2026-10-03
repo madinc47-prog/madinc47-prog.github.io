@@ -685,7 +685,7 @@
   function pickMime(list) { if (!window.MediaRecorder) return null; for (var i = 0; i < list.length; i++) if (MediaRecorder.isTypeSupported(list[i])) return list[i]; return null; }
   function addMix(blob, dur, ext, label) {
     var item = { id: "mix_" + Date.now().toString(36), name: (label || "DJ Psycho Fingers mix") + " · " + new Date().toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }), dur: dur, blob: blob, url: URL.createObjectURL(blob), ext: ext };
-    MIXES.unshift(item); showLib("mixes"); return item;
+    MIXES.unshift(item); showLib("mixes"); setTimeout(function () { emit("mix", item); }, 0); return item;
   }
   function fmtSize(b) { return b > 1073741824 ? (b / 1073741824).toFixed(2) + " GB" : b < 1048576 ? Math.max(1, Math.round(b / 1024)) + " KB" : (b / 1048576).toFixed(1) + " MB"; }
   function toggleRec() {
@@ -976,6 +976,7 @@
     r.querySelector(".to-b").addEventListener("click", function () { loadInto(DECKS[1], item); });
     if (item.url) { var ext = item.ext || "wav", a = document.createElement("a"); a.className = "btn small ghost"; a.textContent = "Download " + ext.toUpperCase(); a.href = item.url; a.download = item.name.replace(/[^\w\- ]+/g, "").replace(/\s+/g, "_") + "." + ext; r.querySelector(".lib-acts").appendChild(a); }
     if (item.noDeck) { r.querySelector(".to-a").remove(); r.querySelector(".to-b").remove(); }
+    if (item.mix && window.PFECO) { var sp = document.createElement("button"); sp.type = "button"; sp.className = "btn small eco-send"; sp.textContent = item.mix.playerId ? "In Player ✓" : "Send to Player"; sp.title = "Save this recording to the Psycho Fingers Player library"; sp.addEventListener("click", function () { window.PFECO.sendMix(item.mix, sp); }); r.querySelector(".lib-acts").appendChild(sp); }
     return r;
   }
   function showLib(tab) {
@@ -985,7 +986,7 @@
     if (tab === "beats") BUILTIN.forEach(function (it) { list.appendChild(row(it)); });
     else if (tab === "mixes") {
       if (!MIXES.length) list.innerHTML = '<p class="empty">Press ● REC in the top bar to record your mix (master output, after the limiter). Recordings stay in this tab until you leave the page — download them to keep.</p>';
-      MIXES.forEach(function (m) { list.appendChild(row({ name: m.name, sub: fmtTime(m.dur) + " · " + (m.ext || "wav").toUpperCase() + " · " + fmtSize(m.blob.size), url: m.url, ext: m.ext, noDeck: m.video, get: function () { return m.blob.arrayBuffer(); } })); });
+      MIXES.forEach(function (m) { list.appendChild(row({ name: m.name, sub: fmtTime(m.dur) + " · " + (m.ext || "wav").toUpperCase() + " · " + fmtSize(m.blob.size), url: m.url, ext: m.ext, noDeck: m.video, mix: m, get: function () { return m.blob.arrayBuffer(); } })); });
     } else if (LIBTABS[tab]) { LIBTABS[tab](list);
     } else {
       list.innerHTML = '<p class="empty">Reading the Island Pin Beats Vault…</p>';

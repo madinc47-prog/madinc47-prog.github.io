@@ -61,3 +61,10 @@ on **Player** with the number of tracks added to the shared store since the Play
 
 For full-height (100vh) layouts prefer `mode=pill` so the bar doesn't push content down.
 `window.IslePinNav.refresh()` re-counts the badge on demand.
+
+## `user-samples.js` — shared user samples (one-shots / loops)
+
+Separate IndexedDB `islepin-samples` (store `samples`, BroadcastChannel `islepin-samples`) so it never forces a
+version bump on `islepin-media`. Written by the DJ booth **Sample Studio → Save to library**, read by Beats
+(**pad Sample library → My Samples**, via `beats/user-samples.js`). API: `saveSample`, `listSamples`, `getSample`,
+`deleteSample`, `onSamplesChange` (also `globalThis.IslePinSamples`). Full docs: [USER-SAMPLES.md](USER-SAMPLES.md).
