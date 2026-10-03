@@ -4014,7 +4014,7 @@
     $("kl-name").textContent = L ? L.name : "Pick a keys loop";
     $("kl-meta").textContent = L
       ? "Piano pattern " + S.piano.slot + " · " + PD.NOTE_NAMES[p.key] + " " + (KL.MODE_NAMES[p.scale] || p.scale) + " · " + patInstLabel(p) + " · at " + S.bpm + " BPM"
-      : KL.LOOPS.length + " hip-hop piano, Rhodes & synth loops · follow song key + BPM";
+      : KL.LOOPS.length + " piano, Rhodes, synth & orchestra loops · follow song key + BPM";
     $("kl-open").style.setProperty("--kit", cat ? cat.color : "#a78bfa");
     var sel = $("kl-slot"); sel.options[0].textContent = "Current pattern (" + S.piano.slot + ")";
   }
