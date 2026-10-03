@@ -112,7 +112,7 @@
   function buildDeckGraph(d) {
     var n = d.n = {};
     n.dry = ctx.createGain();
-    n.dryDelay = ctx.createDelay(0.5); n.dryDelay.delayTime.value = d.keylock ? KL_D / 2 : 0; // same latency as the keylock path
+    n.dryDelay = ctx.createDelay(0.5); n.dryDelay.delayTime.value = klOn(d) ? KL_D / 2 : 0; // same latency as the keylock path
     n.wet = ctx.createGain(); n.wet.gain.value = 0;
     n.sum = ctx.createGain();
     n.trim = ctx.createGain();
@@ -144,14 +144,16 @@
       return { src: src, dl: dl, mg: mg };
     });
   }
+  /* the same shifter also does key shifts (Key Match / manual semitones): pitch factor = (keylock ? 1 / rate : 1) × 2^(semitones / 12) */
+  function klOn(d) { return d.keylock || !!d.keyShift; }
   function applyKeylock(d, t) {
     if (!d.n) return;
     t = t || ctx.currentTime;
-    var r = rate(d), on = d.keylock && Math.abs(r - 1) > 0.0004, n = d.n;
-    n.dryDelay.delayTime.setValueAtTime(d.keylock ? KL_D / 2 : 0, t);
+    var r = rate(d), pf = (d.keylock ? 1 / r : 1) * Math.pow(2, (d.keyShift || 0) / 12), on = klOn(d) && Math.abs(pf - 1) > 0.0004, n = d.n;
+    n.dryDelay.delayTime.setValueAtTime(klOn(d) ? KL_D / 2 : 0, t);
     n.dry.gain.setTargetAtTime(on ? 0 : 1, t, 0.008);
     n.wet.gain.setTargetAtTime(on ? 1 : 0, t, 0.008);
-    var p = 1 / r, f = on ? Math.abs(1 - p) / KL_D : 0, up = p > 1;
+    var p = pf, f = on ? Math.abs(1 - p) / KL_D : 0, up = p > 1;
     n.kl.forEach(function (k) {
       k.src.playbackRate.setValueAtTime(f, t);        // ramp buffer is 1 s long → playbackRate = sweeps per second
       k.dl.delayTime.setValueAtTime(up ? KL_D : 0, t);
@@ -162,7 +164,7 @@
   function applyDeckMix(d, now) {
     if (!d.n || !ctx) return;
     var t = ctx.currentTime, n = d.n, tc = now ? 0.001 : 0.012;
-    n.trim.gain.setTargetAtTime(db2g(d.autoDb + d.trimDb), t, tc);
+    n.trim.gain.setTargetAtTime(db2g(d.autoDb + (d.rideDb || 0) + d.trimDb), t, tc);
     n.low.gain.setTargetAtTime(eqDb(d, 0), t, tc);
     n.mid.gain.setTargetAtTime(eqDb(d, 1), t, tc);
     n.high.gain.setTargetAtTime(eqDb(d, 2), t, tc);
@@ -197,8 +199,8 @@
   /* what you hear right now (the keylock / dry delay makes output KL_D/2 late) */
   function pos(d) {
     var p = rawPos(d);
-    if (d.scr) return d.keylock ? Math.max(0, p - (KL_D / 2) * (d.scrRep ? d.scrRep.rate : 0)) : p;
-    return d.playing && d.keylock ? Math.max(0, p - (KL_D / 2) * rate(d)) : p;
+    if (d.scr) return klOn(d) ? Math.max(0, p - (KL_D / 2) * (d.scrRep ? d.scrRep.rate : 0)) : p;
+    return d.playing && klOn(d) ? Math.max(0, p - (KL_D / 2) * rate(d)) : p;
   }
   function reanchor(d) { if (d.playing && !d.scr) d.anchor = { t: ctx.currentTime, pos: rawPos(d), rate: rate(d) }; }
   function startSrc(d, at, when) {
@@ -388,6 +390,11 @@
     DECKS.forEach(function (x) { if (x !== d && x.sync && isMaster(d)) followTempo(x); });
     ui(d);
   }
+  function setKeyShift(d, st) {
+    d.keyShift = clamp(Math.round(st || 0), -6, 6);
+    reanchor(d); if (ctx) applyKeylock(d);
+    ui(d); emit("keyshift", d);
+  }
   function setBend(d, b) {
     d.bend = b;
     if (d.playing && d.src) { reanchor(d); d.src.playbackRate.setValueAtTime(rate(d), ctx.currentTime); applyKeylock(d); }
@@ -427,7 +434,7 @@
     var m = Math.pow(2, Math.round(Math.log(matchRatio(d, o) / (effBpm(o) / d.bpm)) / Math.LN2)); // 1, or 2 / ½ for double / half time
     var ph = ((((pos(o) + 0.005 * rate(o) - o.grid) / Lo) % 1) + 1) % 1; // other deck's phase when our source starts (+5 ms)
     var LdEff = Ld * m;
-    var lat = d.keylock ? (KL_D / 2) * rate(d) : 0; // our output will be this much behind the source position
+    var lat = klOn(d) ? (KL_D / 2) * rate(d) : 0; // our output will be this much behind the source position
     var f = (at - d.grid) / LdEff, k = Math.round(f - ph);
     return Math.max(0, d.grid + (k + ph) * LdEff + lat);
   }
@@ -567,7 +574,7 @@
       d.buf = buf; d.name = item.name; d.sub = item.sub || ""; d.pos = 0; d.cue = item.grid || 0; d.hot = [null, null, null, null];
       d.loop = { in: null, out: null, on: false }; d.sync = false; d.pitch = 0; d.bend = 0;
       d.peaks = computePeaks(buf); d.ovDirty = true;
-      d.autoDb = clamp(-15 - rmsDb(buf), -12, 6); d.trimDb = 0;
+      d.autoDb = clamp(-15 - rmsDb(buf), -12, 6); d.trimDb = 0; d.rideDb = 0; d.keyShift = 0; d.key = null; // auto-match (dj-automatch.js) refines autoDb + key on "loaded"
       d.bpm = item.bpm || null; d.grid = item.grid || 0; d.bpmSrc = item.bpm ? "tag" : "";
       if (!item.bpm) {
         setTimeout(function () {
@@ -1078,8 +1085,9 @@
   function ui(d) {
     var e = d.el;
     if (!e) return;
-    e.name.textContent = d.loading ? "Loading…" : d.buf ? d.name : "Empty deck";
-    e.sub.textContent = d.buf ? (d.sub ? d.sub + " · " : "") + fmtTime(d.buf.duration) : "Load a track from the crate or your device";
+    e.name.textContent = d.line ? "LINE IN · " + d.line.label : d.loading ? "Loading…" : d.buf ? d.name : "Empty deck";
+    e.sub.textContent = d.line ? "Live input · processing off · through EQ, filter, fader" + (d.buf ? " · track paused: " + d.name : "") : d.buf ? (d.sub ? d.sub + " · " : "") + fmtTime(d.buf.duration) : "Load a track from the crate or your device";
+    e.root.classList.toggle("line", !!d.line);
     e.play.textContent = d.playing ? "❚❚" : "▶"; e.play.classList.toggle("on", d.playing);
     e.xfPlay.textContent = d.id === "A" ? (d.playing ? "❚❚ A" : "▶ A") : (d.playing ? "B ❚❚" : "B ▶"); e.xfPlay.classList.toggle("on", d.playing);
     e.cue.classList.toggle("at", !!d.buf && !d.playing && Math.abs(d.pos - d.cue) < 0.01);
@@ -1109,7 +1117,7 @@
         decks: DECKS.map(function (d) {
           return { id: d.id, name: d.name, loaded: !!d.buf, dur: d.buf ? d.buf.duration : 0, playing: d.playing, pos: pos(d), raw: rawPos(d), cue: d.cue, bpm: d.bpm, grid: d.grid, bpmSrc: d.bpmSrc,
             eff: effBpm(d), rate: rate(d), pitch: d.pitch, range: d.range, keylock: d.keylock, sync: d.sync, hot: d.hot.slice(), loop: JSON.parse(JSON.stringify(d.loop)),
-            vol: d.vol, eq: d.eq.slice(), kill: d.kill.slice(), filter: d.filter, trimDb: d.trimDb, autoDb: d.autoDb,
+            vol: d.vol, eq: d.eq.slice(), kill: d.kill.slice(), filter: d.filter, trimDb: d.trimDb, autoDb: d.autoDb, rideDb: d.rideDb || 0, keyShift: d.keyShift || 0, key: d.key || null, line: !!d.line,
             filt: d.n ? { type: d.n.filt.type, f: d.n.filt.frequency.value } : null, gains: d.n ? { low: d.n.low.gain.value, mid: d.n.mid.gain.value, high: d.n.high.gain.value, fader: d.n.fader.gain.value, xf: d.n.xf.gain.value } : null,
             peak: d.n ? peakOf(d.n.an) : 0 };
         })
@@ -1134,7 +1142,7 @@
     loadInto: loadInto, play: play, pause: pause, toggle: toggle, seek: seek, cue: cue, doSync: doSync, setPitch: setPitch, rewind: rewind,
     pos: pos, rawPos: rawPos, rate: rate, effBpm: effBpm, beatLen: beatLen, estimateBpm: estimateBpm, applyDeckMix: applyDeckMix, applyXf: applyXf, xfGains: xfGains,
     ui: ui, other: other, showLib: showLib, LIBTABS: LIBTABS, addMix: addMix, audioStream: audioStream, pickMime: pickMime, bpmFromName: bpmFromName, isMaster: isMaster,
-    control: control, savePrefs: savePrefs,
+    control: control, savePrefs: savePrefs, setKeyShift: setKeyShift, applyKeylock: applyKeylock, KL_D: KL_D, nowPlaying: nowPlaying,
     get libTab() { return libTab; }, get recording() { return !!(X.rec && X.rec.on); }
   };
   buildUI();

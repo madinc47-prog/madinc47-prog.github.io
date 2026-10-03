@@ -116,6 +116,7 @@
     var mp = mixPoint(cur), incLen = inc.buf ? (inc.buf.duration - inc.pos) * 0.45 * P.rate(cur) : mp.len;
     A.mix = { t0: P.pos(cur), len: Math.max(4, Math.min(mp.len, incLen, cur.buf.duration - P.pos(cur) - 0.3)), swapped: false, curLow: P.CTL[cur.id + ".eqLow"].get(), from: side(cur), to: side(inc) };
     if (cur.bpm && inc.bpm) { inc.sync = false; P.doSync(inc); }
+    if (window.PFMATCH && window.PFMATCH.on) window.PFMATCH.keyMatch(inc, true);   // AUTO MATCH: shift the incoming track to a compatible key (≤ 3 st)
     P.play(inc, true);
     P.toast("Auto DJ: mixing in " + inc.name + " over " + A.bars + " bars");
   }

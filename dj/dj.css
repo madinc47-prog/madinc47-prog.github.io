@@ -484,3 +484,23 @@ select.btn { appearance: auto; }
   .rec-fmt { padding: 4px; }
   .mic-knobs .knob { width: 44px; }
 }
+
+/* ---------- AUTO MATCH: auto gain, key, line in ---------- */
+.d-match { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin: -2px 0 8px; font-size: 11px; }
+.d-match .m-key { padding: 3px 8px; border-radius: 6px; background: #121722; border: 1px solid var(--line); color: #e2e8f0; font-weight: 700; min-width: 74px; text-align: center; }
+.d-match .m-shift { color: var(--muted); min-width: 34px; text-align: center; cursor: default; }
+.d-match .m-shift.on { color: #fbbf24; font-weight: 800; }
+.d-match .m-ag { margin-left: auto; padding: 3px 8px; border-radius: 6px; border: 1px solid #1b5140; color: var(--ok); font-weight: 800; }
+.d-match .m-ag.ride { box-shadow: 0 0 0 1px var(--ok) inset; }
+.d-match .m-ag.off { color: #64748b; border-color: var(--line); opacity: .55; text-decoration: line-through; }
+.d-match .m-km.ok { color: var(--ok); border-color: #1b5140; }
+.d-match .m-km.sug { color: #0b0d12; background: #fbbf24; border-color: #fbbf24; font-weight: 800; }
+.d-match button:disabled { opacity: .35; cursor: not-allowed; }
+.d-match .m-linesel { max-width: 160px; }
+.m-line { white-space: nowrap; }
+.m-line.on { background: #f43f5e; border-color: #f43f5e; color: #fff; }
+.deck.line .platter { opacity: .45; }
+.deck.line .deck-letter { background: #f43f5e; }
+.mini.automatch { color: #fbbf24; border-color: #5b4513; font-weight: 800; }
+.mini.automatch.on { background: #fbbf24; color: #1f1400; border-color: #fbbf24; }
+@media (max-width: 560px) { .d-match .m-ag { margin-left: 0; } }
