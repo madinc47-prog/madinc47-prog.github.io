@@ -237,6 +237,10 @@ body[data-theme=minimal] .switch input:checked+.track .knob{background:#111}
 .hype-sheet.off .hy-grid>:not(:first-child),.hype-sheet.off .hy-names,.hype-sheet.off #hyExtra{opacity:.45}
 @media (max-width:600px){ .hy-grid{grid-template-columns:1fr;gap:10px} .hype-open span{display:none} .hype-open{padding:0 9px} }
 
+.hy-sec{display:flex;flex-direction:column;gap:6px;padding:8px 2px}
+.hy-locrow{display:flex;gap:8px;align-items:center}.hy-locrow select{flex:1;min-width:0}
+.lady-badge{display:inline-block;vertical-align:1px;border:1px solid color-mix(in srgb,#ff7ac8 60%,transparent);background:color-mix(in srgb,#ff4fb0 22%,transparent);color:#ffd0ec;border-radius:999px;font:800 11px system-ui,'Segoe UI Symbol','Noto Sans Symbols 2','Noto Sans Symbols','DejaVu Sans',sans-serif;padding:0 7px;margin-right:6px;line-height:16px;cursor:pointer}
+.lady-badge.guess{border-style:dashed;background:transparent;color:#ffb3df}
 /* ---------- menus / dialogs / toast ---------- */
 .menu{position:fixed;z-index:60;min-width:220px;padding:6px;border-radius:14px;background:rgba(18,13,34,.96);border:1px solid var(--glass-b);box-shadow:0 18px 50px rgba(0,0,0,.6);backdrop-filter:blur(14px)}
 .menu button{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:10px 12px;border:0;border-radius:10px;background:none;font-size:14px}

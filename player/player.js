@@ -5,6 +5,7 @@ import { createViz, THEMES } from './viz.js';
 import { OUTFITS, OUTFIT_FOR_THEME } from './outfits.js';
 import { createEQ } from './eq.js';
 import { createHype } from './hype.js';
+import { createLadies } from './ladies.js';
 import { fmt, hash, isAudioFile, titleFromName, makeCover, makeLabel, readTags, probeDuration, computePeaks } from './util.js';
 
 const $ = (s, r = document) => r.querySelector(s);
@@ -139,7 +140,9 @@ class Deck {
     this.el = new Audio(); this.el.preload = 'auto';
     if (isCrossOrigin(url)) this.el.crossOrigin = 'anonymous';
     ensureCtx();
-    this.src = ctx.createMediaElementSource(this.el); this.gain = ctx.createGain(); this.src.connect(this.gain).connect(slot[slotName]);
+    this.src = ctx.createMediaElementSource(this.el); this.gain = ctx.createGain();
+    this.lp = ctx.createBiquadFilter(); this.lp.type = 'lowpass'; this.lp.frequency.value = ctx.sampleRate / 2; this.lp.Q.value = .5; // used by the ladies-intro brake
+    this.src.connect(this.gain).connect(this.lp).connect(slot[slotName]);
     this.ready = new Promise((res, rej) => {
       const ok = () => { cleanup(); res(); };
       const bad = () => {
@@ -164,7 +167,7 @@ class Deck {
     if (secs <= 0) g.setValueAtTime(v, t); else g.linearRampToValueAtTime(v, t + secs);
   }
   get playing() { return !this.disposed && !this.el.paused; }
-  dispose() { this.disposed = true; try { this.el.pause(); } catch (e) {} try { this.src.disconnect(); this.gain.disconnect(); } catch (e) {} this.el.removeAttribute('src'); try { this.el.load(); } catch (e) {} }
+  dispose() { this.disposed = true; try { this.el.pause(); } catch (e) {} try { this.src.disconnect(); this.gain.disconnect(); this.lp.disconnect(); } catch (e) {} this.el.removeAttribute('src'); try { this.el.load(); } catch (e) {} }
 }
 
 let deck = null;          // active deck (what the transport controls)
@@ -317,7 +320,7 @@ function next(dir = 1) {
 }
 function onEnded() {
   if (S.repeat === 'one' && deck) { const d = deck; scene.needleRedrop(animSpeed(), () => { d.el.currentTime = 0; d.el.play().catch(() => {}); SFX.crackle(); }, SFX); return; }
-  if (transition) return;
+  if (transition || ladies.holdEnd()) return;
   const it = nextItem(1);
   if (it && cued && cued.item.key === it.key) { startTransition({ immediate: true }); return; }
   if (it) playItem(it, { fromUser: false }); else { scene.setPlaying(deck.slot, false); syncPlayUI(); }
@@ -444,6 +447,12 @@ const hype = createHype({
 });
 window.__pfOnTransition = (info) => hype.onTransition(info);
 window.__pfDuckGain = () => (duck ? +duck.gain.value.toFixed(3) : null);
+// "for the ladies" intro (vinyl brake + shout-out before a ladies' tune)
+const ladies = createLadies({
+  hype, LS, toast, getCtx: ensureCtx, placeMenu, closeMenus, startTransition, transitionLead, onChange: () => renderList(),
+  P: { deck: () => deck, cued: () => cued, current: () => current, nextItem: () => nextItem(1), isTransition: () => !!transition },
+});
+window.__pfBeforeTransition = (rem, xf) => ladies.before(rem, xf);
 const wave = $('#wave'), wg = wave.getContext('2d');
 
 function setTheme(k) {
@@ -563,6 +572,7 @@ function renderList() {
     li.querySelector('small').textContent = (it.artist ? it.artist + ' · ' : '') + itemSourceLabel(it);
     li.querySelector('.dur').textContent = it.duration ? fmt(it.duration) : '';
     if (S.liked.has(it.key)) li.classList.add('liked');
+    ladies.decorateRow(li, it);
     li.addEventListener('click', (e) => { if (e.target.closest('.more')) return; userActivated = true; buildOrder(it.key); playItem(it); });
     li.addEventListener('keydown', (e) => { if (e.key === 'Enter') { buildOrder(it.key); playItem(it); } });
     li.querySelector('.more').addEventListener('click', (e) => { e.stopPropagation(); openItemMenu(it, e.currentTarget); });
@@ -585,6 +595,7 @@ $$('.tabs [role=tab]').forEach((b) => b.addEventListener('click', () => { S.tab 
 const itemMenu = $('#itemMenu'); let menuItem = null;
 function openItemMenu(it, anchor) {
   menuItem = it;
+  ladies.syncItemMenu(itemMenu.querySelector('[data-act=ladies]'), it);
   itemMenu.querySelector('[data-act=remove]').hidden = !(it.kind === 'store' || it.kind === 'url' || it.kind === 'session');
   placeMenu(itemMenu, anchor);
 }
@@ -599,6 +610,7 @@ itemMenu.addEventListener('click', async (e) => {
   const b = e.target.closest('button'); if (!b || !menuItem) return; const it = menuItem; closeMenus();
   const act = b.dataset.act;
   if (act === 'play') { buildOrder(it.key); playItem(it); }
+  if (act === 'ladies') ladies.toggle(it);
   if (act === 'next') { if (!queueOrder.length) buildOrder(current && current.key); queueOrder = queueOrder.filter((k) => k !== it.key); const i = current ? queueOrder.indexOf(current.key) : -1; queueOrder.splice(i + 1, 0, it.key); invalidateCue(); toast(`“${it.title}” plays next`); }
   if (act === 'link') {
     let link; if (it.kind === 'store') link = new URL('./?track=' + encodeURIComponent(it.id), location.href).href;
@@ -868,7 +880,7 @@ function loop(now) {
   viz.draw(now, F, anchorsCache);
   F.mixing = !!(transition || (outgoing && outgoing.playing));
   scene.frame(now, F);
-  hype.tick(now);
+  hype.tick(now); ladies.learn(now, current, F, deck);
   if (now - lastUi > 120) {
     lastUi = now;
     if (deck && seekPreview == null) { $('#tCur').textContent = fmt(deck.el.currentTime); drawWave(); }
@@ -899,6 +911,6 @@ async function boot() {
     showBigPlay(`Play “${start.title}”`);
   } else { const first = visible()[0] || DEMO; current = first; updateNowPlaying(first); renderList(); showBigPlay('Tap to drop the needle'); }
   requestAnimationFrame(loop);
-  window.__pf = { get deck() { return deck; }, get cued() { return cued; }, get outgoing() { return outgoing; }, get transition() { return transition; }, XF, xfPos, setXf, get slot() { return slot; }, get ctx() { return ctx; }, startTransition, get activeSlot() { return activeSlot; }, eq, hype, get current() { return current; }, F, scene, playItem, refreshLibrary, get library() { return library; }, next, S, setOutfit, setTheme };
+  window.__pf = { get deck() { return deck; }, get cued() { return cued; }, get outgoing() { return outgoing; }, get transition() { return transition; }, XF, xfPos, setXf, get slot() { return slot; }, get ctx() { return ctx; }, startTransition, get activeSlot() { return activeSlot; }, eq, hype, ladies, get current() { return current; }, F, scene, playItem, refreshLibrary, get library() { return library; }, next, S, setOutfit, setTheme };
 }
 boot();

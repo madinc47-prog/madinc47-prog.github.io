@@ -1,7 +1,7 @@
 // Psycho Fingers Player — service worker (app shell cache; audio is never cached here)
-const VERSION = 'pf-player-v7';
+const VERSION = 'pf-player-v8';
 const SHELL = [
-  './', './index.html', './player.css?v=7', './player.js?v=7', './scene.js', './outfits.js', './eq.js', './hype.js', './viz.js', './util.js',
+  './', './index.html', './player.css?v=8', './player.js?v=8', './scene.js', './outfits.js', './eq.js', './hype.js', './ladies.js', './viz.js', './util.js',
   './manifest.webmanifest', './icons/icon.svg', './icons/icon-192.png', './icons/icon-512.png',
   '../shared/media-store.js', '../shared/ecosystem-nav.js',
 ];

@@ -18,7 +18,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
-  <link rel="stylesheet" href="player.css?v=7">
+  <link rel="stylesheet" href="player.css?v=8">
 </head>
 <body data-theme="club">
   <canvas id="viz" aria-hidden="true"></canvas>
@@ -128,6 +128,7 @@
     <button role="menuitem" data-act="play">Play now</button>
     <button role="menuitem" data-act="next">Play next</button>
     <button role="menuitem" data-act="link">Copy link</button>
+    <button role="menuitemcheckbox" data-act="ladies" aria-checked="false"><span class="chk"></span>♀ For the ladies</button>
     <button role="menuitem" data-act="remove" class="danger">Remove from My Tracks</button>
   </div>
 
@@ -159,6 +160,6 @@
   <input type="file" id="dirIn" multiple webkitdirectory hidden>
 
   <script type="module" src="../shared/ecosystem-nav.js"></script>
-  <script type="module" src="player.js?v=7"></script>
+  <script type="module" src="player.js?v=8"></script>
 </body>
 </html>
