@@ -7,7 +7,7 @@
   var P = window.PFDJ; if (!P) return;
   var $ = function (id) { return document.getElementById(id); };
   var AK = "pfdj_autodj_v1", CK = "pfdj_anal_v1";
-  var A = { on: false, queue: [], bars: 16, shuffle: false, order: "queue", bassSwap: true, phase: "idle", cur: null, inc: null, mix: null, glide: null, prepped: null, loadingNext: false, nextItem: null, analyzing: 0, msg: "" };
+  var A = { on: false, paused: false, played: [], loop: true, queue: [], bars: 16, shuffle: false, order: "queue", bassSwap: true, phase: "idle", cur: null, inc: null, mix: null, glide: null, prepped: null, loadingNext: false, nextItem: null, analyzing: 0, msg: "" };
   try { var s = JSON.parse(localStorage.getItem(AK) || "null"); if (s) { A.bars = [4, 8, 16, 32].indexOf(s.bars) >= 0 ? s.bars : 16; A.shuffle = !!s.shuffle; A.order = s.order === "bpm" ? "bpm" : "queue"; A.bassSwap = s.bassSwap !== false; } } catch (e) { /* ignore */ }
   var cache = {}; try { cache = JSON.parse(localStorage.getItem(CK) || "{}") || {}; } catch (e) { cache = {}; }
   function save() { try { localStorage.setItem(AK, JSON.stringify({ bars: A.bars, shuffle: A.shuffle, order: A.order, bassSwap: A.bassSwap })); } catch (e) { /* ignore */ } }
@@ -48,7 +48,11 @@
     render();
   }
   function bpmOf(it) { var a = anaOf(it); return (a && a.bpm) || it.bpm || it.bpmHint || null; }
+  function onDeckKeys() { return P.DECKS.map(function (d) { return d.item ? (d.item.key || (d.item.id ? "builtin:" + d.item.id : "")) : ""; }); }
   function pickNext() {
+    if (!A.queue.length && A.loop && A.played.length) {             // loop the set: re-queue what has played (not what's on the decks)
+      var busy = onDeckKeys(); A.queue = A.played.filter(function (it) { return busy.indexOf(it.key) < 0; }); A.played = A.played.filter(function (it) { return busy.indexOf(it.key) >= 0; });
+    }
     if (!A.queue.length) return null;
     var k = 0;
     if (A.shuffle) k = Math.floor(Math.random() * A.queue.length);
@@ -56,9 +60,24 @@
       var ref = P.effBpm(A.cur), best = 1e9;
       A.queue.forEach(function (it, i) { var b = bpmOf(it); if (!b) return; var dd = Math.min(Math.abs(b - ref), Math.abs(b * 2 - ref), Math.abs(b / 2 - ref)); if (dd < best) { best = dd; k = i; } });
     }
-    return A.queue.splice(k, 1)[0];
+    var it = A.queue.splice(k, 1)[0];
+    A.played.push(it);
+    return it;
   }
-  function builtins() { P.BUILTIN.forEach(function (b) { add({ name: b.name, sub: b.sub, bpm: b.bpm, grid: b.grid, key: "builtin:" + b.id, get: b.get }, true); }); P.toast("Queued his beats & demos"); }
+  function builtinItem(b) { return { name: b.name, sub: b.sub, bpm: b.bpm, grid: b.grid, key: "builtin:" + b.id, get: b.get }; }
+  function builtins(quiet) { P.BUILTIN.forEach(function (b) { add(builtinItem(b), true); }); if (!quiet) P.toast("Queued his beats & demos"); }
+  /* empty queue → fill it from what's in the crate: the library view if that tab is open and has tracks, plus any
+     extra crates registered by other modules (PFAUTODJ.sources), else his beats & demos. Tracks already on a deck are skipped. */
+  var SOURCES = [];
+  function fillQueue() {
+    var busy = onDeckKeys(), before = A.queue.length, items = [];
+    if (P.libTab === "mylib" && window.PFLIB && window.PFLIB.L.tracks.length) items = window.PFLIB.L.tracks.map(window.PFLIB.item);
+    if (!items.length) SOURCES.forEach(function (fn) { try { items = items.concat(fn() || []); } catch (e) { /* ignore */ } });
+    if (!items.length) items = P.BUILTIN.map(builtinItem);
+    items.forEach(function (it) { if (busy.indexOf(it.key) < 0) add(it, true); });
+    if (!A.queue.length && busy.some(Boolean)) P.BUILTIN.forEach(function (b) { var it = builtinItem(b); if (busy.indexOf(it.key) < 0) add(it, true); });
+    return A.queue.length - before;
+  }
 
   /* ---------- engine ---------- */
   function side(d) { var s = d === P.DECKS[0] ? -1 : 1; return P.X.ham ? -s : s; }
@@ -94,8 +113,8 @@
   }
   function startMix(cur, inc) {
     A.inc = inc; A.phase = "mixing";
-    var mp = mixPoint(cur);
-    A.mix = { t0: P.pos(cur), len: mp.len, swapped: false, curLow: P.CTL[cur.id + ".eqLow"].get(), from: side(cur), to: side(inc) };
+    var mp = mixPoint(cur), incLen = inc.buf ? (inc.buf.duration - inc.pos) * 0.45 * P.rate(cur) : mp.len;
+    A.mix = { t0: P.pos(cur), len: Math.max(4, Math.min(mp.len, incLen, cur.buf.duration - P.pos(cur) - 0.3)), swapped: false, curLow: P.CTL[cur.id + ".eqLow"].get(), from: side(cur), to: side(inc) };
     if (cur.bpm && inc.bpm) { inc.sync = false; P.doSync(inc); }
     P.play(inc, true);
     P.toast("Auto DJ: mixing in " + inc.name + " over " + A.bars + " bars");
@@ -112,17 +131,21 @@
   function tick() {
     if (!A.on) return;
     var D = P.DECKS;
-    if (!A.cur || (!A.cur.playing && A.phase !== "mixing")) {                  // start / restart
+    if (A.phase !== "mixing" && (!A.cur || !A.cur.playing)) {                  // start / restart
       var playing = D.filter(function (d) { return d.playing; })[0];
       if (playing) { A.cur = playing; A.phase = "playing"; }
       else if (A.phase !== "starting") {
+        if (A.loadingNext) return;                                           // next track still loading — wait for it
+        var ready = D.filter(function (d) { return d.buf && d.adItem && !d.playing && d.pos < d.buf.duration - 1; })[0];
+        if (ready) { prep(ready); eqLow(ready, 0); setXf(side(ready)); P.play(ready, true); A.cur = ready; A.phase = "playing"; A.prepped = null; render(); return; }
         var d0 = D[0], it = pickNext();
-        if (!it) { stop("Auto DJ: the queue is empty — add tracks from your library or the crate."); return; }
-        A.phase = "starting";
+        if (!it && fillQueue()) it = pickNext();
+        if (!it) { stop("Auto DJ: nothing to play — add tracks from your library or the crate."); return; }
+        A.phase = "starting"; A.msg = "Loading " + it.name + "…"; renderStatus();
         var a = anaOf(it), li = Object.assign({}, it); if (a && a.bpm) { li.bpm = a.bpm; li.grid = a.grid; }
         P.loadInto(d0, li, true).then(function (ok) {
           if (!A.on) return;
-          if (!ok) { A.phase = "idle"; return; }
+          if (!ok) { A.phase = "idle"; A.cur = null; return; }
           d0.adItem = it; setXf(side(d0)); eqLow(d0, 0); P.play(d0, true); A.cur = d0; A.phase = "playing";
           if (!anaOf(it)) setTimeout(function () { if (d0.buf) setAna(it, analyzeBuf(d0.buf, { bpm: d0.bpm, grid: d0.grid })); }, 400);
           render();
@@ -130,9 +153,15 @@
         return;
       } else return;
     }
+    if (A.phase === "idle" || A.phase === "starting") A.phase = "playing";
     var cur = A.cur, idle = P.other(cur);
     if (A.phase === "playing") {
-      if (!idle.playing && !A.loadingNext && (!idle.adItem || !idle.buf)) { if (!loadNext(idle)) { if (!A.queue.length && P.pos(cur) > cur.buf.duration - 1) stop("Auto DJ: end of the queue."); } }
+      if (!idle.playing && !A.loadingNext && (!idle.adItem || !idle.buf)) {
+        if (!A.queue.length && !A.played.length) fillQueue();
+        if (!loadNext(idle)) { A.msg = "Playing " + cur.name + " — queue is empty"; if (P.pos(cur) > cur.buf.duration - 1) stop("Auto DJ: end of the queue."); }
+      }
+      if (A.loadingNext && A.nextItem) A.msg = "Loading next: " + A.nextItem.name + "…";
+      else if (idle.buf && idle.adItem && A.prepped !== idle.buf) A.msg = "Analyzing " + idle.name + "…";
       if (idle.buf && idle.adItem && !idle.playing && (idle.bpm || Date.now() - (idle.adLoaded || 0) > 3000)) prep(idle);
       if (A.glide) {
         var gl = A.glide, u = Math.min(1, (P.pos(gl.d) - gl.t0) / gl.len);
@@ -140,7 +169,7 @@
       }
       if (cur.buf && idle.buf && idle.adItem && A.prepped === idle.buf) {
         var mp = mixPoint(cur);
-        A.msg = "Mix in " + P.fmtTime(Math.max(0, (mp.start - P.pos(cur)) / P.rate(cur))) + " → " + idle.name;
+        A.msg = "Next: " + idle.name + (idle.bpm ? " (" + Math.round(idle.bpm) + " BPM)" : "") + " · mixing in " + P.fmtTime(Math.max(0, (mp.start - P.pos(cur)) / P.rate(cur)));
         if (P.pos(cur) >= mp.start) { A.glide = null; startMix(cur, idle); }
       } else if (cur.buf && P.pos(cur) > cur.buf.duration - 0.3) { A.cur = null; }
     } else if (A.phase === "mixing") {
@@ -149,7 +178,7 @@
       var sm = uu * uu * (3 - 2 * uu);
       setXf(m.from + (m.to - m.from) * sm);
       if (A.bassSwap && !m.swapped && uu >= 0.5) { m.swapped = true; eqLow(cur, -26); eqLow(inc, 0); }
-      A.msg = "Mixing " + Math.round(uu * 100) + "% → " + inc.name;
+      A.msg = "Mixing into " + inc.name + " · " + Math.round(uu * 100) + "%" + (A.bassSwap ? (m.swapped ? " · bass swapped" : " · bass swap at 50%") : "");
       if (uu >= 1) finishMix();
     }
     renderStatus();
@@ -157,29 +186,42 @@
   var timer = null;
   function start() {
     P.ensureCtx();
-    if (!A.queue.length && !P.DECKS.some(function (d) { return d.playing; })) { builtins(); }
-    A.on = true; A.phase = A.cur && A.cur.playing ? "playing" : "idle"; A.cur = P.DECKS.filter(function (d) { return d.playing; })[0] || null;
+    var added = A.queue.length ? 0 : fillQueue();
+    A.on = true; A.paused = false; A.mix = null; A.inc = null;
+    A.cur = P.DECKS.filter(function (d) { return d.playing; })[0] || null;
+    A.phase = A.cur ? "playing" : "idle";
+    A.msg = A.cur ? "Taking over from " + A.cur.name + "…" : "Starting…";
     if (!timer) timer = setInterval(tick, 80);
     tick(); pump(); render();
-    P.toast("Auto DJ on — touch any deck, fader or EQ to take over");
+    P.toast("Auto DJ on" + (added ? " — queued " + added + " track" + (added === 1 ? "" : "s") + " from the crate" : "") + " · touch any deck, EQ or the crossfader to take over");
   }
-  function stop(msg) {
+  function stop(msg, pause) {
+    var wasMixing = A.phase === "mixing";
     A.on = false; clearInterval(timer); timer = null;
-    if (A.phase === "mixing" && A.inc) { A.inc.sync = false; }
-    A.phase = "idle"; A.mix = null; A.glide = null; A.msg = "";
+    if (wasMixing && A.inc) { A.inc.sync = false; }
+    if (A.prepped && !wasMixing) { var idle = A.cur ? P.other(A.cur) : null; if (idle && idle.buf === A.prepped && !idle.playing) eqLow(idle, 0); }
+    A.phase = "idle"; A.mix = null; A.glide = null; A.prepped = null;
+    A.paused = !!pause; A.msg = pause ? "Auto DJ paused — you have control" : "";
     render(); if (msg) P.toast(msg);
   }
   // manual takeover: any touch on the decks, mixer strips or crossfader (not the master knob, not the Auto DJ button)
   document.addEventListener("pointerdown", function (e) {
     if (!A.on || !e.isTrusted) return;
     var t = e.target;
-    if (t.closest && t.closest(".console, .xfbar, .waves") && !t.closest("#autodj-btn, .master, .xf-play")) stop("Auto DJ off — you've got the controls");
+    if (t.closest && t.closest(".console, .xfbar, .waves") && !t.closest("#autodj-btn, .master, .xf-play, #ad-live")) stop("Auto DJ paused — you've got the controls (tap Resume to hand back)", true);
   }, true);
-  P.on("manual", function () { if (A.on) stop("Auto DJ off — you've got the controls"); });
+  P.on("manual", function () { if (A.on) stop("Auto DJ paused — you've got the controls (tap Resume to hand back)", true); });
 
   /* ---------- UI ---------- */
   function renderStatus() {
     var b = $("autodj-btn"); if (b) { b.classList.toggle("on", A.on); b.textContent = A.on ? "AUTO DJ ●" : "AUTO DJ"; }
+    var lv = $("ad-live");
+    if (lv) {
+      lv.hidden = !A.on && !A.paused;
+      $("ad-live-msg").textContent = A.on ? "Auto DJ · " + (A.msg || "Running…") + (A.analyzing && !/Analyzing/.test(A.msg) ? " · analysing " + A.analyzing + "…" : "") : A.msg;
+      $("ad-resume").hidden = A.on || !A.paused;
+      $("ad-live").classList.toggle("paused", !A.on && A.paused);
+    }
     var st = $("ad-status"); if (st) st.textContent = A.on ? (A.msg || "Running…") + (A.analyzing ? " · analysing " + A.analyzing + "…" : "") : (A.analyzing ? "Analysing BPM / outros: " + A.analyzing + " left" : "Off");
   }
   function render() {
@@ -220,7 +262,9 @@
   P.LIBTABS.autodj = tab;
   var btn = $("autodj-btn");
   if (btn) btn.addEventListener("click", function () { if (A.on) stop("Auto DJ off"); else { start(); } if (P.libTab === "autodj") P.showLib("autodj"); });
+  var rs = $("ad-resume"); if (rs) rs.addEventListener("click", function () { start(); });
+  var rx = $("ad-live-x"); if (rx) rx.addEventListener("click", function () { if (A.on) stop("Auto DJ off"); else { A.paused = false; A.msg = ""; renderStatus(); } });
   renderStatus();
-  window.PFAUTODJ = { A: A, add: add, start: start, stop: stop, analyzeBuf: analyzeBuf, mixPoint: mixPoint, builtins: builtins,
+  window.PFAUTODJ = { A: A, add: add, fillQueue: fillQueue, sources: SOURCES, start: start, stop: stop, analyzeBuf: analyzeBuf, mixPoint: mixPoint, builtins: builtins,
     info: function () { return { on: A.on, phase: A.phase, queue: A.queue.map(function (q) { return { name: q.name, bpm: bpmOf(q), ana: anaOf(q) }; }), cur: A.cur && A.cur.id, inc: A.inc && A.inc.id, msg: A.msg, bars: A.bars, mix: A.mix }; } };
 })();
