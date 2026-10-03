@@ -124,6 +124,7 @@
             <button type="button" class="btn small" id="bt-play" title="Play / pause (Space)">▶ Play</button>
             <label class="chk" title="Play your drum pattern (and chord loop) on top of the instrumental"><input type="checkbox" id="bt-layer"> Layer drum machine</label>
             <label class="bt-lvl">Level <input type="range" id="bt-level" min="0" max="100" value="85" aria-label="Instrumental level"> <output id="bt-level-val" class="mono">85%</output></label>
+            <span class="hp-wrap"><span class="hp-chip js-hp-chip" role="status">🔈 Speaker mode · take will be cleaned</span><label class="chk hp-tog"><input type="checkbox" class="js-hp-toggle"> I'm on headphones</label><a href="#" class="hp-auto js-hp-auto" hidden title="Go back to automatic headphone detection">auto</a></span>
           </div>
           <div class="vox-status js-vox-status" role="status"></div>
           <p class="bt-note" id="bt-note"></p>
@@ -157,7 +158,8 @@
           <button type="button" class="btn rec vox js-vox">🎙 Record Vocals</button>
         </div>
         <span id="rec-status" class="rec-status">Ready</span>
-        <div class="vox-status js-vox-status" role="status">Record Vocals: 1-bar count-in, then the beat plays and your mic records. Use headphones.</div>
+        <span class="hp-wrap"><span class="hp-chip js-hp-chip" role="status">🔈 Speaker mode · take will be cleaned</span><label class="chk hp-tog"><input type="checkbox" class="js-hp-toggle"> I'm on headphones</label><a href="#" class="hp-auto js-hp-auto" hidden title="Go back to automatic headphone detection">auto</a></span>
+        <div class="vox-status js-vox-status" role="status">Record Vocals: 1-bar count-in, then the beat plays and your mic records. On headphones the take is kept as-is; on the speaker it's cleaned afterwards.</div>
       </div>
 
       <!-- REFERENCE TRACK (monitor only: never recorded, bounced or saved to Vault) -->
@@ -383,6 +385,7 @@
         <div class="ly-actions">
           <button type="button" class="btn js-open-prompter primary">Teleprompter</button>
           <button type="button" class="btn rec vox js-vox">🎙 Record Vocals</button>
+          <span class="hp-wrap"><span class="hp-chip js-hp-chip" role="status">🔈 Speaker mode · take will be cleaned</span><label class="chk hp-tog"><input type="checkbox" class="js-hp-toggle"> I'm on headphones</label><a href="#" class="hp-auto js-hp-auto" hidden title="Go back to automatic headphone detection">auto</a></span>
         </div>
       </div>
       <div class="ly-bar">
@@ -489,10 +492,22 @@
         <div class="vox-opts">
           <button type="button" id="vox-check" class="btn small">Mic check</button>
           <label class="chk"><input type="checkbox" id="vox-monitor"> Hear mic while recording (headphones only)</label>
+          <span class="hp-wrap"><span class="hp-chip js-hp-chip" role="status">🔈 Speaker mode · take will be cleaned</span><label class="chk hp-tog"><input type="checkbox" class="js-hp-toggle"> I'm on headphones</label><a href="#" class="hp-auto js-hp-auto" hidden title="Go back to automatic headphone detection">auto</a></span>
           <label class="chk"><input type="checkbox" id="vox-dry"> Also save dry vocal WAV</label>
           <label>Latency comp <span id="vox-lat" class="mono">auto</span> + nudge
             <input type="number" id="vox-nudge" min="-300" max="300" step="5" value="0" aria-label="Vocal timing nudge in ms"> ms
           </label>
+        </div>
+        <div class="vox-spk">
+          <strong>Speaker mode <small>(no headphones)</small></strong>
+          <p class="sub">The beat plays out loud so you can perform to it. Afterwards the take is cleaned on this device: the beat your mic picked up is subtracted, room noise is removed, and your clean vocal is mixed with the clean beat — like you wore headphones. Loud, distorted speaker playback can't be removed perfectly: keep the phone volume moderate.</p>
+          <div class="vox-opts">
+            <label class="bt-lvl">Speaker beat level <input type="range" id="vox-spk" min="10" max="100" value="80" aria-label="Beat level on the speaker during a take"> <output id="vox-spk-val" class="mono">80%</output></label>
+            <label class="chk" title="Plays the beat much quieter (−10 dB) during the take: just enough to follow. Cleanest result."><input type="checkbox" id="vox-guide"> Low guide level</label>
+            <label class="chk"><input type="checkbox" id="vox-clean" checked> Clean the take after recording</label>
+            <label class="chk" title="Asks the browser / phone for its own echo canceller, noise suppression and auto gain while recording. Turn off if your phone makes the beat quieter or chops your vocal."><input type="checkbox" id="vox-aec" checked> Phone echo-cancel while recording</label>
+            <label class="chk"><input type="checkbox" id="vox-raw" checked> Also save the raw take</label>
+          </div>
         </div>
         <div class="vox-opts">
           <span id="vox-last" class="mono">No take yet this session.</span>
@@ -573,6 +588,21 @@
       </label>
       <label>Size <input type="range" id="pr-size" min="0.6" max="1.8" step="0.1" value="1"></label>
       <button type="button" class="btn rec vox js-vox">🎙 Record Vocals</button>
+    </div>
+  </div>
+
+  <div class="vc-sheet" id="vc-sheet" hidden role="dialog" aria-label="Vocal take cleanup">
+    <div class="vc-head"><strong id="vc-title">Cleaning take…</strong><button type="button" id="vc-close" class="btn small ghost" aria-label="Close">✕</button></div>
+    <div class="vc-prog" id="vc-prog"><div class="vc-bar"><i id="vc-bar"></i></div><span id="vc-step" class="mono">Preparing…</span><p class="sub">Runs on this device — nothing is uploaded. You can keep using the app.</p></div>
+    <div class="vc-ab" id="vc-ab" hidden>
+      <div class="vc-row">
+        <div class="vc-seg" role="group" aria-label="Compare raw and cleaned"><button type="button" data-ab="raw" aria-pressed="false">A · Raw take</button><button type="button" data-ab="clean" class="on" aria-pressed="true">B · Cleaned</button></div>
+        <button type="button" id="vc-play" class="btn">▶ Play</button>
+        <label class="chk"><input type="checkbox" id="vc-solo"> Vocal only</label>
+      </div>
+      <div class="vc-seek" id="vc-seek" title="Tap to jump"><i id="vc-pos"></i><span id="vc-time" class="mono">0:00 / 0:00</span></div>
+      <div class="vc-stats mono" id="vc-stats"></div>
+      <div class="vc-row"><button type="button" id="vc-saveraw" class="btn small">Save raw take to Vault</button><span id="vc-saved" class="muted"></span></div>
     </div>
   </div>
 
