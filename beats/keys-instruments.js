@@ -1,43 +1,85 @@
 /* Island Pin Beats — keys / melodic instruments (window.IPBKeys).
- * Mostly pure Web Audio synthesis. The Orchestra instruments (strings, pizzicato, brass, flute, clarinet, orchestral
- * hit) and the Marimba play compact multisamples cut from Versilian Studios' VS Chamber Orchestra 2: Community
- * Edition (CC0 1.0, see samples/orch/CREDITS.txt); they load on first use and fall back to a synth voice until ready. Shared by the Piano Roll, and meant to be reused by
- * future loop banks: every voice is play(ctx, destination, midi, when, dur, vel, instId) and works the same in a live
- * AudioContext and an OfflineAudioContext, so live playback, Record, Bounce and exports sound identical.
+ * 100% Web Audio synthesis — no sample files. The "2026 Rap" instruments (tuned 808 with glide + drive, Reese/drill
+ * bass, trap pluck, digital bell, dark/felt/lo-fi trap pianos, hyper supersaw lead, sidechain-pumping pad, vocal
+ * chops, hip-hop horn stab, trap flute, guitar pluck, 16th arp) were designed for this app: layered oscillators,
+ * filter envelopes, saturation and stereo spread, so they sound polished on phones and big speakers alike.
+ * Shared by the Piano Roll and the keys-loop bank: every voice is play(ctx, destination, midi, when, dur, vel, instId,
+ * gain, tone) and works the same in a live AudioContext and an OfflineAudioContext, so live playback, Record, Bounce
+ * and exports sound identical. tone = { drive 0–1, glide 0–1 } (per pattern; missing = the instrument's defaults).
+ * Tempo-synced voices (sidechain pad, arp) follow IPBKeys.setTempo(bpm).
  * Levels: one voice peaks around −12 dBFS at full velocity so chords stay clean into the master limiter.
+ * Older songs that used the removed Orchestra / Island instruments are re-mapped by migrate() (see LEGACY).
  */
 (function () {
   "use strict";
   function mf(m) { return 440 * Math.pow(2, (m - 69) / 12); }
   function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
 
+  /* dr = drive handled inside the voice; gl = mono voice with glide/slide; drive/glide = defaults */
   var INSTRUMENTS = [
-    { id: "grand", name: "Grand Piano", cat: "Keys", poly: true },
-    { id: "rhodes", name: "Rhodes EP", cat: "Keys", poly: true },
-    { id: "lofi", name: "Dusty Keys (lo-fi EP)", cat: "Keys", poly: true },
-    { id: "organ", name: "Soul Organ", cat: "Keys", poly: true },
-    { id: "pad", name: "Dark Pad", cat: "Pads", poly: true },
-    { id: "strings", name: "Cinematic Strings", cat: "Pads", poly: true },
-    { id: "bass", name: "Sub Bass", cat: "Bass", poly: false },
-    { id: "synthbass", name: "Analog Bass", cat: "Bass", poly: false },
-    { id: "pluck", name: "Pluck", cat: "Synth", poly: true },
-    { id: "bell", name: "Bell / Glock", cat: "Synth", poly: true },
-    { id: "lead", name: "Soft Lead", cat: "Synth", poly: false },
-    { id: "whine", name: "G-Funk Whine Lead", cat: "Synth", poly: false },
-    { id: "ostrings", name: "Ensemble Strings (legato)", cat: "Orchestra", poly: true, smp: true },
-    { id: "pizz", name: "Pizzicato Strings", cat: "Orchestra", poly: true, smp: true },
-    { id: "brass", name: "Brass Section Stab", cat: "Orchestra", poly: true, smp: true },
-    { id: "flute", name: "Flute", cat: "Orchestra", poly: true, smp: true },
-    { id: "clarinet", name: "Clarinet", cat: "Orchestra", poly: true, smp: true },
-    { id: "orchhit", name: "Orchestral Hit", cat: "Orchestra", poly: true, smp: true },
-    { id: "steelpan", name: "Steel Pan", cat: "Island", poly: true },
-    { id: "marimba", name: "Marimba", cat: "Island", poly: true, smp: true },
-    { id: "kalimba", name: "Kalimba", cat: "Island", poly: true }
+    { id: "808", name: "Tuned 808 (glide + drive)", cat: "2026 Rap · Bass", poly: false, dr: true, gl: true, drive: 0.4, glide: 0.5 },
+    { id: "reese", name: "Reese / Drill Bass", cat: "2026 Rap · Bass", poly: false, dr: true, gl: true, drive: 0.45, glide: 0.6 },
+    { id: "trappluck", name: "Trap Pluck", cat: "2026 Rap · Melody", poly: true, drive: 0.1 },
+    { id: "dbell", name: "Digital Bell", cat: "2026 Rap · Melody", poly: true, drive: 0 },
+    { id: "trappiano", name: "Dark Trap Piano", cat: "2026 Rap · Melody", poly: true, drive: 0.12 },
+    { id: "feltpiano", name: "Felt Piano (melodic rap)", cat: "2026 Rap · Melody", poly: true, drive: 0 },
+    { id: "lofipiano", name: "Lo-Fi Trap Piano", cat: "2026 Rap · Melody", poly: true, drive: 0.25 },
+    { id: "hyperlead", name: "Hyper Supersaw Lead", cat: "2026 Rap · Melody", poly: true, drive: 0.2 },
+    { id: "trapflute", name: "Trap Flute Lead", cat: "2026 Rap · Melody", poly: false, gl: true, drive: 0.08, glide: 0.3 },
+    { id: "gtrpluck", name: "Guitar Pluck", cat: "2026 Rap · Melody", poly: true, drive: 0.05 },
+    { id: "arp", name: "16th Octave Arp", cat: "2026 Rap · Melody", poly: true, drive: 0.12 },
+    { id: "horn", name: "Hip-Hop Horn Stab", cat: "2026 Rap · Stabs & Vox", poly: true, drive: 0.3 },
+    { id: "voxah", name: "Vocal Chop · Ahh", cat: "2026 Rap · Stabs & Vox", poly: true, drive: 0.05 },
+    { id: "voxoo", name: "Vocal Chop · Ooh", cat: "2026 Rap · Stabs & Vox", poly: true, drive: 0.05 },
+    { id: "sidepad", name: "Sidechain Pumping Pad", cat: "2026 Rap · Pads", poly: true, drive: 0.08 },
+    { id: "grand", name: "Grand Piano", cat: "Classic keys", poly: true },
+    { id: "rhodes", name: "Rhodes EP", cat: "Classic keys", poly: true },
+    { id: "lofi", name: "Dusty Keys (lo-fi EP)", cat: "Classic keys", poly: true },
+    { id: "organ", name: "Soul Organ", cat: "Classic keys", poly: true },
+    { id: "pad", name: "Dark Pad", cat: "Classic pads & synths", poly: true },
+    { id: "strings", name: "Cinematic Strings (synth)", cat: "Classic pads & synths", poly: true },
+    { id: "pluck", name: "Pluck", cat: "Classic pads & synths", poly: true },
+    { id: "bell", name: "Bell / Glock", cat: "Classic pads & synths", poly: true },
+    { id: "lead", name: "Soft Lead", cat: "Classic pads & synths", poly: false },
+    { id: "whine", name: "G-Funk Whine Lead", cat: "Classic pads & synths", poly: false },
+    { id: "bass", name: "Sub Bass", cat: "Classic bass", poly: false },
+    { id: "synthbass", name: "Analog Bass", cat: "Classic bass", poly: false }
   ];
   var BY_ID = {};
   INSTRUMENTS.forEach(function (i) { BY_ID[i.id] = i; });
+  var DEFAULT = "trappluck";
+  /* removed Orchestra / Island instruments → the closest modern sound (old songs, patterns and imports still load) */
+  var LEGACY = { ostrings: "strings", pizz: "gtrpluck", brass: "horn", flute: "trapflute", clarinet: "trapflute", orchhit: "horn",
+    steelpan: "dbell", marimba: "trappluck", kalimba: "trappluck", brasssynth: "horn", marimbasynth: "trappluck" };
+  function migrate(id) {
+    if (typeof id !== "string") return null;
+    if (BY_ID[id]) return id;
+    return LEGACY[id] || null;
+  }
+  /* one-tap Piano Roll presets: instrument + tone */
+  var PRESETS = [
+    { id: "bounce26", name: "2026 Bounce Pluck", inst: "trappluck", tone: { drive: 0.1 } },
+    { id: "808slide", name: "808 Slide · hard", inst: "808", tone: { drive: 0.65, glide: 0.6 } },
+    { id: "808clean", name: "808 Clean Sub", inst: "808", tone: { drive: 0.1, glide: 0.35 } },
+    { id: "drill", name: "Drill Reese Slide", inst: "reese", tone: { drive: 0.5, glide: 0.75 } },
+    { id: "rage", name: "Rage Supersaw", inst: "hyperlead", tone: { drive: 0.4 } },
+    { id: "bellmel", name: "Digital Bell Melody", inst: "dbell", tone: { drive: 0 } },
+    { id: "darkkeys", name: "Dark Trap Keys", inst: "trappiano", tone: { drive: 0.12 } },
+    { id: "felt", name: "Felt Piano · melodic rap", inst: "feltpiano", tone: { drive: 0 } },
+    { id: "lofikeys", name: "Lo-Fi Trap Piano", inst: "lofipiano", tone: { drive: 0.25 } },
+    { id: "flute", name: "Trap Flute Lead", inst: "trapflute", tone: { drive: 0.08, glide: 0.3 } },
+    { id: "horns", name: "Hip-Hop Horn Stab", inst: "horn", tone: { drive: 0.3 } },
+    { id: "voxah", name: "Vocal Chop · Ahh", inst: "voxah", tone: { drive: 0.05 } },
+    { id: "voxoo", name: "Vocal Chop · Ooh", inst: "voxoo", tone: { drive: 0.05 } },
+    { id: "pump", name: "Pumping Pad", inst: "sidepad", tone: { drive: 0.08 } },
+    { id: "gtr", name: "Melodic Guitar Pluck", inst: "gtrpluck", tone: { drive: 0.05 } },
+    { id: "arp", name: "16th Octave Arp", inst: "arp", tone: { drive: 0.12 } }
+  ];
+  var DEFAULT_PRESET = "bounce26";
+  var TEMPO = 120;
+  function setTempo(b) { b = +b; if (isFinite(b) && b > 0) TEMPO = clamp(b, 40, 260); return TEMPO; }
 
-  /* per-context caches (PeriodicWaves and noise can't be shared between contexts) */
+  /* per-context caches (PeriodicWaves, curves, noise and plucked-string tables can't be shared between contexts) */
   var caches = typeof WeakMap === "function" ? new WeakMap() : null;
   function cache(c) {
     if (!caches) return (c.__ipbk || (c.__ipbk = {}));
@@ -59,8 +101,33 @@
     for (var i = 0; i < n; i++) { x = (x * 1103515245 + 12345) & 0x7fffffff; d[i] = (x / 0x3fffffff) - 1; } // deterministic
     return (k.noise = b);
   }
+  function tanhCurve(c) {
+    var k = cache(c);
+    if (k.tanh) return k.tanh;
+    var cur = new Float32Array(2048);
+    for (var i = 0; i < 2048; i++) { var x = (i / 1023.5 - 1) * 4; cur[i] = Math.tanh(x); }
+    return (k.tanh = cur); // input range ±4 → output ±1 (WaveShaper maps −1…1 of the input to the curve)
+  }
+  /* saturation stage: in → pre gain → tanh → makeup → out. `lvl` = typical peak going in (keeps loudness steady) */
+  function driveStage(c, out, amt, lvl) {
+    var G = 1 + amt * 9, pre = c.createGain(), sh = c.createWaveShaper(), post = c.createGain();
+    lvl = lvl || 0.25;
+    pre.gain.value = G / 4; // curve spans ±4
+    sh.curve = tanhCurve(c); sh.oversample = "2x";
+    post.gain.value = lvl / Math.tanh(lvl * G);
+    pre.connect(sh); sh.connect(post); post.connect(out);
+    return pre;
+  }
+  function pan(c, x, target) {
+    if (!c.createStereoPanner || !x) return target;
+    var p = c.createStereoPanner(); p.pan.value = clamp(x, -1, 1); p.connect(target);
+    return p;
+  }
+  function gainTo(c, val, target) { var g = c.createGain(); g.gain.value = val; g.connect(target); return g; }
   /* piano-ish spectrum: odd/even partials, soft top */
   var PIANO_AMPS = [1, 0.62, 0.38, 0.26, 0.2, 0.13, 0.1, 0.07, 0.05, 0.035, 0.025, 0.018];
+  var DARK_AMPS = [1, 0.5, 0.26, 0.17, 0.1, 0.06, 0.04, 0.025, 0.015];
+  var FELT_AMPS = [1, 0.34, 0.14, 0.07, 0.035, 0.015];
   var EP_AMPS = [1, 0.08, 0.03];
   var ORGAN_AMPS = [1, 0.7, 0.45, 0.5, 0.12, 0.3, 0, 0.25]; // 16' 8' 5⅓' 4' … drawbar-ish
 
@@ -81,17 +148,22 @@
     v.nodes.push(o);
     return o;
   }
+  function noiseSrc(v, c, t, target) {
+    var nb = c.createBufferSource(); nb.buffer = noise(c); nb.loop = true;
+    nb.connect(target); nb.start(t); v.nodes.push(nb);
+    return nb;
+  }
   function finish(v, stopAt) {
     v.end = stopAt;
     v.nodes.forEach(function (n) { try { n.stop(stopAt); } catch (e) { /* ignore */ } });
-    v.stop = function (t) { // cut early (transport stop / pattern change) with a short fade
+    v.stop = function (t) { // cut early (transport stop / pattern change / mono retrigger) with a short fade
       try {
         var g = v.out.gain;
         if (g.cancelAndHoldAtTime) g.cancelAndHoldAtTime(t); else { g.cancelScheduledValues(t); }
-        g.setTargetAtTime(0, t, 0.02);
-        v.nodes.forEach(function (n) { try { n.stop(t + 0.15); } catch (e) { /* ignore */ } });
+        g.setTargetAtTime(0, t, 0.012);
+        v.nodes.forEach(function (n) { try { n.stop(t + 0.12); } catch (e) { /* ignore */ } });
       } catch (e) { /* already stopped */ }
-      v.end = Math.min(v.end, t + 0.15);
+      v.end = Math.min(v.end, t + 0.12);
     };
     return v;
   }
@@ -105,81 +177,265 @@
     g.setTargetAtTime(0, off, rel / 4);
     return off + rel * 1.6 + 0.05;
   }
+  /* mono voices (808, Reese, trap flute): a note that starts while the previous one still holds cuts it and — with
+     glide > 0 — slides from its pitch (overlap two notes in the Piano Roll = 808 slide). Notes starting together
+     (chords) stay polyphonic. State lives per context, so live and offline renders behave the same. */
+  function monoPrev(c, id, t) { // previous note of this mono voice if it is still sounding (incl. release) at t
+    var k = cache(c), st = k["mono_" + id];
+    if (!st || t < st.t + 0.002 || !st.v || t >= st.v.end) return null;
+    st.overlap = t < st.off - 0.004; // started before the previous note was let go → slide
+    return st;
+  }
+  function monoSet(c, id, m, t, dur, v) { cache(c)["mono_" + id] = { m: m, t: t, off: t + dur, v: v }; }
+  function glideFreq(o, prev, f, t, g) {
+    if (!prev) return;
+    var from = mf(prev.m);
+    o.frequency.cancelScheduledValues(t);
+    o.frequency.setValueAtTime(from * (o.__mul || 1), t);
+    o.frequency.exponentialRampToValueAtTime(f * (o.__mul || 1), t + g);
+  }
 
-
-  /* ---- multisample engine (Orchestra + Marimba) ----
-   * One mono MP3 per instrument: a sync click at 50 ms, then the zones. Zone times are relative to the click, so any
-   * decoder padding (MP3 encoder delay) is measured and removed at load. Sustained zones carry a crossfaded loop with a
-   * continuation tail, so long notes hold seamlessly. AudioBuffers are context-free: one decode serves live playback,
-   * Record and offline Bounce. */
-  var SMP = {"ostrings":{"file":"samples/orch/ostrings.mp3","kind":"sus","zones":[{"m":40,"s":0.13,"l":3.35,"ls":1.4,"le":3.2},{"m":43,"s":3.54,"l":3.35,"ls":1.4,"le":3.2},{"m":47,"s":6.95,"l":3.35,"ls":1.4,"le":3.2},{"m":50,"s":10.36,"l":3.35,"ls":1.4,"le":3.2},{"m":53,"s":13.77,"l":3.35,"ls":1.4,"le":3.2},{"m":55,"s":17.18,"l":3.35,"ls":1.4,"le":3.2},{"m":59,"s":20.59,"l":3.35,"ls":1.4,"le":3.2},{"m":62,"s":24.0,"l":3.35,"ls":1.4,"le":3.2},{"m":66,"s":27.41,"l":3.35,"ls":1.4,"le":3.2},{"m":69,"s":30.82,"l":3.35,"ls":1.4,"le":3.2},{"m":72,"s":34.23,"l":3.35,"ls":1.4,"le":3.2},{"m":76,"s":37.64,"l":3.35,"ls":1.4,"le":3.2},{"m":79,"s":41.05,"l":3.35,"ls":1.4,"le":3.2},{"m":83,"s":44.46,"l":3.35,"ls":1.4,"le":3.2},{"m":86,"s":47.87,"l":3.35,"ls":1.4,"le":3.2}]},"pizz":{"file":"samples/orch/pizz.mp3","kind":"dec","zones":[{"m":40,"s":0.13,"l":1.25},{"m":43,"s":1.44,"l":1.25},{"m":47,"s":2.75,"l":1.25},{"m":48,"s":4.06,"l":1.25},{"m":52,"s":5.37,"l":0.9993},{"m":55,"s":6.42927,"l":1.25},{"m":59,"s":7.73927,"l":1.25},{"m":62,"s":9.04927,"l":1.25},{"m":66,"s":10.35927,"l":0.8875},{"m":69,"s":11.30676,"l":1.1018},{"m":72,"s":12.46855,"l":1.0483},{"m":76,"s":13.57683,"l":1.1564},{"m":79,"s":14.79324,"l":1.0804},{"m":83,"s":15.93361,"l":0.6009},{"m":86,"s":16.59451,"l":0.6458}]},"brass":{"file":"samples/orch/brass.mp3","kind":"dec","zones":[{"m":41,"s":0.13,"l":0.85},{"m":46,"s":1.04,"l":0.85},{"m":50,"s":1.95,"l":0.7932},{"m":53,"s":2.80324,"l":0.85},{"m":57,"s":3.71324,"l":0.85},{"m":60,"s":4.62324,"l":0.85},{"m":63,"s":5.53324,"l":0.85},{"m":65,"s":6.44324,"l":0.85},{"m":67,"s":7.35324,"l":0.85},{"m":70,"s":8.26324,"l":0.85},{"m":74,"s":9.17324,"l":0.85},{"m":77,"s":10.08324,"l":0.85},{"m":81,"s":10.99324,"l":0.85},{"m":84,"s":11.90324,"l":0.85}]},"flute":{"file":"samples/orch/flute.mp3","kind":"sus","zones":[{"m":60,"s":0.13,"l":3.15,"ls":1.3,"le":3.0},{"m":64,"s":3.34,"l":3.15,"ls":1.3,"le":3.0},{"m":69,"s":6.55,"l":3.15,"ls":1.3,"le":3.0},{"m":72,"s":9.76,"l":3.15,"ls":1.3,"le":3.0},{"m":76,"s":12.97,"l":3.15,"ls":1.3,"le":3.0},{"m":81,"s":16.18,"l":3.15,"ls":1.3,"le":3.0},{"m":84,"s":19.39,"l":3.15,"ls":1.3,"le":3.0},{"m":88,"s":22.6,"l":3.15,"ls":1.3,"le":3.0},{"m":93,"s":25.81,"l":3.15,"ls":1.3,"le":3.0},{"m":96,"s":29.02,"l":3.15,"ls":1.3,"le":3.0}]},"clarinet":{"file":"samples/orch/clarinet.mp3","kind":"sus","zones":[{"m":50,"s":0.13,"l":3.15,"ls":1.3,"le":3.0},{"m":53,"s":3.34,"l":3.15,"ls":1.3,"le":3.0},{"m":58,"s":6.55,"l":3.15,"ls":1.3,"le":3.0},{"m":62,"s":9.76,"l":3.15,"ls":1.3,"le":3.0},{"m":65,"s":12.97,"l":3.15,"ls":1.3,"le":3.0},{"m":70,"s":16.18,"l":3.15,"ls":1.3,"le":3.0},{"m":74,"s":19.39,"l":3.15,"ls":1.3,"le":3.0},{"m":77,"s":22.6,"l":3.15,"ls":1.3,"le":3.0},{"m":82,"s":25.81,"l":3.15,"ls":1.3,"le":3.0},{"m":86,"s":29.02,"l":3.15,"ls":1.3,"le":3.0},{"m":89,"s":32.23,"l":3.15,"ls":1.3,"le":3.0}]},"marimba":{"file":"samples/orch/marimba.mp3","kind":"dec","zones":[{"m":41,"s":0.13,"l":1.6},{"m":48,"s":1.79,"l":1.6},{"m":55,"s":3.45,"l":1.6},{"m":59,"s":5.11,"l":1.6},{"m":65,"s":6.77,"l":1.6},{"m":72,"s":8.43,"l":1.6},{"m":79,"s":10.09,"l":1.6},{"m":83,"s":11.75,"l":1.6},{"m":89,"s":13.41,"l":1.6},{"m":96,"s":15.07,"l":1.6}]},"orchhit":{"file":"samples/orch/orchhit.mp3","kind":"dec","zones":[{"m":48,"s":0.13,"l":1.8},{"m":53,"s":1.99,"l":1.8},{"m":58,"s":3.85,"l":1.8},{"m":63,"s":5.71,"l":1.8},{"m":68,"s":7.57,"l":1.8}]}};
-  /* level trims: one note at velocity 0.8 sits at the same loudness as the synth voices (measured offline) */
-  var SLVL = { ostrings: 0.88, pizz: 1.0, brass: 0.85, flute: 0.87, clarinet: 0.94, orchhit: 1.0, marimba: 0.94 };
-  var SREL = { ostrings: 0.5, flute: 0.28, clarinet: 0.3, brass: 0.16, pizz: 0.12, marimba: 0.25, orchhit: 0.3 };
-  var BASE = (document.currentScript && document.currentScript.src) || (typeof location !== "undefined" ? location.href : "");
-  var SBUF = {}, SLOAD = {};
-  function smpUrl(f) { try { return new URL(f, BASE).href; } catch (e) { return f; } }
-  function decodeAB(ab) {
-    return new Promise(function (res, rej) {
-      var C = window.OfflineAudioContext || window.webkitOfflineAudioContext, c = new C(1, 2, 44100), done = false;
-      var p = c.decodeAudioData(ab, function (b) { done = true; res(b); }, function (e) { if (!done) rej(e || new Error("decode")); });
-      if (p && p.catch) p.catch(function (e) { if (!done) rej(e || new Error("decode")); });
-    });
-  }
-  function syncOffset(b) {
-    var d = b.getChannelData(0), n = Math.min(d.length, Math.round(b.sampleRate * 0.25)), bi = 0, bv = 0;
-    for (var i = 0; i < n; i++) { var a = Math.abs(d[i]); if (a > bv) { bv = a; bi = i; } }
-    return bi / b.sampleRate - 0.05;
-  }
-  function loadOne(id) {
-    if (!SMP[id]) return Promise.resolve(true);
-    if (SBUF[id]) return Promise.resolve(true);
-    if (SLOAD[id]) return SLOAD[id];
-    SLOAD[id] = fetch(smpUrl(SMP[id].file)).then(function (r) {
-      if (!r.ok) throw new Error("HTTP " + r.status);
-      return r.arrayBuffer();
-    }).then(decodeAB).then(function (b) {
-      SBUF[id] = { buf: b, off: syncOffset(b) };
-      return true;
-    }).catch(function () { SLOAD[id] = null; return false; });
-    return SLOAD[id];
-  }
-  /* load the sample sets for these instrument ids (strings or arrays; non-sampled ids are ignored) */
-  function load(ids) {
-    var list = [].concat(ids || []).filter(function (id, i, a) { return SMP[id] && a.indexOf(id) === i; });
-    return Promise.all(list.map(loadOne)).then(function (r) { return r.every(Boolean); });
-  }
-  function ready(ids) { return [].concat(ids || []).every(function (id) { return !SMP[id] || !!SBUF[id]; }); }
-  function sampled(c, dest, m, t, dur, vel, id) {
-    var S = SMP[id], B = SBUF[id];
-    if (!B) { loadOne(id); return VOICES[FALLBACK[id]](c, dest, m, t, dur, vel); }
-    var z = S.zones[0], best = 1e9;
-    S.zones.forEach(function (q) { var d = Math.abs(m - q.m) + (m > q.m ? 0.1 : 0); if (d < best) { best = d; z = q; } }); // tie → pitch down
-    var rate = Math.pow(2, (m - z.m) / 12), st = Math.max(0, B.off + z.s), sus = S.kind === "sus";
-    var v = voiceBase(c, dest, t), src = c.createBufferSource();
-    src.buffer = B.buf; src.playbackRate.setValueAtTime(rate, t);
-    var lp = c.createBiquadFilter(); lp.type = "lowpass"; lp.Q.value = 0.5;
-    lp.frequency.setValueAtTime(Math.min(18000, (sus ? 1600 : 2600) + vel * vel * 15000), t);
-    src.connect(lp); lp.connect(v.out);
-    var amp = (SLVL[id] || 0.5) * (sus ? 0.35 + 0.65 * vel : 0.2 + 0.8 * Math.pow(vel, 1.2)) / 0.84, g = v.out.gain, rel = SREL[id] || 0.2, end;
-    g.setValueAtTime(0, t); g.linearRampToValueAtTime(amp, t + (sus ? 0.012 : 0.002));
-    var natural = t + z.l / rate - 0.005;
-    if (z.ls != null) {
-      src.loop = true; src.loopStart = st + z.ls; src.loopEnd = st + z.le;
-      var off = t + Math.max(0.06, dur);
-      g.setTargetAtTime(0, off, rel / 4); end = off + rel * 1.6 + 0.05;
-    } else if (id === "brass") {
-      var offb = t + Math.max(0.16, dur);
-      if (offb < natural) { g.setTargetAtTime(0, offb, rel / 4); end = Math.min(natural, offb + rel * 1.6 + 0.05); } else end = natural;
-    } else {
-      end = natural; // pizzicato, marimba, hits ring out naturally
-      if (natural - t > 0.05) { g.setValueAtTime(amp, natural - 0.04); g.linearRampToValueAtTime(0, natural); }
-    }
-    src.start(t, st); v.nodes.push(src);
-    return finish(v, end);
+  /* Karplus–Strong plucked string table for one MIDI note (deterministic, generated once per context) */
+  function ksBuffer(c, m) {
+    var k = cache(c), key = "ks" + m;
+    if (k[key]) return k[key];
+    var sr = c.sampleRate, f = mf(m), N = Math.max(2, Math.round(sr / f - 0.5)), len = Math.floor(sr * 2.4);
+    var b = c.createBuffer(1, len, sr), d = b.getChannelData(0), x = 1234 + m * 977, lp = 0, peak = 0;
+    var damp = clamp(0.9965 + (m - 40) * 0.00003, 0.9955, 0.9992);
+    for (var i = 0; i < N; i++) { x = (x * 1103515245 + 12345) & 0x7fffffff; var r = (x / 0x3fffffff) - 1; lp += 0.55 * (r - lp); d[i] = lp; }
+    for (var j = N; j < len; j++) d[j] = damp * 0.5 * (d[j - N] + (j - N - 1 >= 0 ? d[j - N - 1] : 0));
+    var dc = 0; for (var q = 0; q < N; q++) dc += d[q]; dc /= N;
+    for (var z = 0; z < len; z++) { d[z] -= dc * Math.pow(damp, z / N); var a = Math.abs(d[z]); if (a > peak) peak = a; }
+    if (peak > 0) for (var w = 0; w < len; w++) d[w] /= peak;
+    return (k[key] = { buf: b, rate: f / (sr / (N + 0.5)) });
   }
 
   var VOICES = {
+    /* ================= 2026 rap / hip-hop instruments ================= */
+    /* Tuned 808: sine body with a quick pitch "knock", tanh drive (harmonics so it cuts through on phones) blended with
+       a clean sub; overlapping notes slide (glide time 35–255 ms) */
+    "808": function (c, dest, m, t, dur, vel, o) {
+      var v = voiceBase(c, dest, t), f = mf(m), prev = monoPrev(c, "808", t), gt = 0.035 + o.glide * 0.22;
+      if (prev && prev.v && prev.v.stop) prev.v.stop(t + 0.004);
+      var slide = prev && prev.overlap && o.glide > 0.01 && prev.m !== m;
+      var lp = c.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = Math.min(9000, 1400 + o.drive * 4200 + f * 3); lp.Q.value = 0.5; lp.connect(v.out);
+      var dIn = driveStage(c, lp, 0.15 + o.drive * 0.85, 0.9);
+      var body = osc(v, c, "sine", f, t, 0, dIn);
+      var h2 = gainTo(c, 0.22, dIn); var tri = osc(v, c, "triangle", f, t, 0, h2);
+      var sub = gainTo(c, 0.55 + 0.25 * o.drive, v.out); var so = osc(v, c, "sine", f, t, 0, sub);
+      if (slide) [body, tri, so].forEach(function (x) { glideFreq(x, prev, f, t, gt); });
+      else [body, tri, so].forEach(function (x) { x.frequency.setValueAtTime(f * 1.9, t); x.frequency.exponentialRampToValueAtTime(f, t + 0.045); });
+      if (!slide) { // click transient
+        var hp = c.createBiquadFilter(); hp.type = "highpass"; hp.frequency.value = 2500;
+        var ng = c.createGain(); ng.gain.setValueAtTime(0.35 * vel, t); ng.gain.exponentialRampToValueAtTime(0.0005, t + 0.008);
+        hp.connect(ng); ng.connect(v.out); noiseSrc(v, c, t, hp);
+      }
+      var end = env(v, t, dur, 0.2 * (0.5 + 0.5 * vel), slide ? 0.008 : 0.003, 0.62, 1.1, 0.09);
+      monoSet(c, "808", m, t, dur, v);
+      return finish(v, end);
+    },
+    /* Reese / drill bass: detuned saw pair (slow beating, panned wide) through a moving low-pass + drive, clean sub */
+    reese: function (c, dest, m, t, dur, vel, o) {
+      var v = voiceBase(c, dest, t), f = mf(m), prev = monoPrev(c, "reese", t), gt = 0.04 + o.glide * 0.24;
+      if (prev && prev.v && prev.v.stop) prev.v.stop(t + 0.004);
+      var slide = prev && prev.overlap && o.glide > 0.01 && prev.m !== m;
+      var post = c.createBiquadFilter(); post.type = "lowpass"; post.frequency.value = 3800; post.connect(v.out);
+      var dIn = driveStage(c, post, 0.2 + o.drive * 0.8, 0.5);
+      var lp = c.createBiquadFilter(); lp.type = "lowpass"; lp.Q.value = 2.2; lp.connect(dIn);
+      var base = 260 + vel * 520 + f * 1.5;
+      lp.frequency.setValueAtTime(base * 2.4, t); lp.frequency.setTargetAtTime(base, t + 0.01, 0.12);
+      var lfo = c.createOscillator(); lfo.frequency.value = 0.45; var lg = c.createGain(); lg.gain.value = base * 0.45;
+      lfo.connect(lg); lg.connect(lp.frequency); lfo.start(t); v.nodes.push(lfo);
+      var a = osc(v, c, "sawtooth", f, t, -15, gainTo(c, 0.42, pan(c, -0.55, lp)));
+      var b = osc(v, c, "sawtooth", f, t, 15, gainTo(c, 0.42, pan(c, 0.55, lp)));
+      var sq = osc(v, c, "square", f / 2, t, 0, gainTo(c, 0.12, lp));
+      sq.__mul = 0.5;
+      var sub = osc(v, c, "sine", f, t, 0, gainTo(c, 0.5, v.out));
+      if (slide) [a, b, sq, sub].forEach(function (x) { glideFreq(x, prev, f, t, gt); });
+      var end = env(v, t, dur, 0.3 * (0.55 + 0.45 * vel), slide ? 0.01 : 0.006, 0.85, 0.8, 0.1);
+      monoSet(c, "reese", m, t, dur, v);
+      return finish(v, end);
+    },
+    /* trap pluck: wide detuned saws + an octave square, snappy resonant filter envelope, sine body, pick tick */
+    trappluck: function (c, dest, m, t, dur, vel) {
+      var v = voiceBase(c, dest, t), f = mf(m);
+      var lp = c.createBiquadFilter(); lp.type = "lowpass"; lp.Q.value = 4.5; lp.connect(v.out);
+      lp.frequency.setValueAtTime(Math.min(16000, 2200 + vel * 7500 + f * 2), t); lp.frequency.exponentialRampToValueAtTime(Math.max(320, f * 1.6), t + 0.24);
+      osc(v, c, "sawtooth", f, t, -9, gainTo(c, 0.5, pan(c, -0.5, lp)));
+      osc(v, c, "sawtooth", f, t, 9, gainTo(c, 0.5, pan(c, 0.5, lp)));
+      osc(v, c, "square", f * 2, t, 3, gainTo(c, 0.14, lp));
+      osc(v, c, "sine", f, t, 0, gainTo(c, 0.45, v.out));
+      var hp = c.createBiquadFilter(); hp.type = "highpass"; hp.frequency.value = 3500;
+      var ng = c.createGain(); ng.gain.setValueAtTime(0.16 * vel, t); ng.gain.exponentialRampToValueAtTime(0.0005, t + 0.006);
+      hp.connect(ng); ng.connect(v.out); noiseSrc(v, c, t, hp);
+      var end = env(v, t, Math.min(dur, 1.4), 0.36 * (0.4 + 0.6 * vel), 0.002, 0.0001, 0.26 + 0.12 * clamp((72 - m) / 24, 0, 1), 0.18);
+      return finish(v, end);
+    },
+    /* digital bell: two FM pairs (inharmonic 3.5:1 strike + a softer 2:1 tone) spread left/right, glassy top partial */
+    dbell: function (c, dest, m, t, dur, vel) {
+      var v = voiceBase(c, dest, t), f = mf(m);
+      function fm(cr, mr, idx, tau, amp, p) {
+        var car = osc(v, c, "sine", f * cr, t, 0, gainTo(c, amp, pan(c, p, v.out)));
+        var mod = c.createOscillator(); mod.frequency.value = f * mr;
+        var mi = c.createGain(); mi.gain.setValueAtTime(f * idx, t); mi.gain.setTargetAtTime(f * idx * 0.08, t, tau);
+        mod.connect(mi); mi.connect(car.frequency); mod.start(t); v.nodes.push(mod);
+      }
+      fm(1, 3.5, 1.2 + vel * 2.2, 0.22, 1, -0.3);
+      fm(2, 1, 0.7, 0.4, 0.32, 0.35);
+      var g3 = c.createGain(); g3.gain.setValueAtTime(0.12 * vel, t); g3.gain.setTargetAtTime(0, t, 0.09); g3.connect(pan(c, 0.15, v.out));
+      osc(v, c, "sine", f * 4.02, t, 0, g3);
+      var ring = 0.45 + 0.6 * clamp((90 - m) / 36, 0, 1);
+      var end = env(v, t, Math.max(dur, 0.7), 0.22 * (0.4 + 0.6 * vel), 0.002, 0.0001, ring, 0.6);
+      return finish(v, end);
+    },
+    /* dark trap piano: warm partials, closing low-pass, wide detuned pair, soft hammer, a touch of grit */
+    trappiano: function (c, dest, m, t, dur, vel, o) {
+      var v = voiceBase(c, dest, t), f = mf(m), per = wave(c, "darkpiano", DARK_AMPS);
+      var lp = c.createBiquadFilter(); lp.type = "lowpass"; lp.Q.value = 0.5; lp.connect(v.out);
+      lp.frequency.setValueAtTime(Math.min(12000, 700 + vel * vel * 3000 + f * 1.8), t);
+      lp.frequency.setTargetAtTime(Math.min(9000, 380 + f * 1.7), t + 0.01, 0.4);
+      osc(v, c, null, f, t, -4, pan(c, -0.3, lp), per); osc(v, c, null, f, t, 4, pan(c, 0.3, lp), per);
+      osc(v, c, "sine", f, t, 0, gainTo(c, m < 60 ? 0.32 : 0.14, lp));
+      var bp = c.createBiquadFilter(); bp.type = "bandpass"; bp.frequency.value = Math.min(6000, f * 4 + 600); bp.Q.value = 0.8;
+      var ng = c.createGain(); ng.gain.setValueAtTime(0.06 * vel, t); ng.gain.exponentialRampToValueAtTime(0.0005, t + 0.03);
+      bp.connect(ng); ng.connect(v.out); noiseSrc(v, c, t, bp);
+      var decay = 1.8 + 3.5 * (1 - (m - 21) / 88);
+      var end = env(v, t, dur, 0.27 * (0.35 + 0.65 * vel), 0.004, 0.0001, decay / 3, 0.4);
+      return finish(v, end);
+    },
+    /* felt piano: muted, intimate — soft attack, very dark partials, felt thump, a slow chorus between two strings */
+    feltpiano: function (c, dest, m, t, dur, vel) {
+      var v = voiceBase(c, dest, t), f = mf(m), per = wave(c, "felt", FELT_AMPS);
+      var lp = c.createBiquadFilter(); lp.type = "lowpass"; lp.Q.value = 0.3; lp.connect(v.out);
+      lp.frequency.setValueAtTime(Math.min(8000, 520 + vel * 1500 + f * 1.3), t);
+      lp.frequency.setTargetAtTime(Math.min(6000, 300 + f * 1.2), t + 0.02, 0.6);
+      var a = osc(v, c, null, f, t, -3, pan(c, -0.22, lp), per), b = osc(v, c, null, f, t, 3.5, pan(c, 0.22, lp), per);
+      var ch = c.createOscillator(); ch.frequency.value = 0.35 + (m % 7) * 0.03; var cg = c.createGain(); cg.gain.value = 3;
+      ch.connect(cg); cg.connect(a.detune); ch.start(t); v.nodes.push(ch);
+      var tl = c.createBiquadFilter(); tl.type = "lowpass"; tl.frequency.value = 260;
+      var ng = c.createGain(); ng.gain.setValueAtTime(0.5 * vel, t); ng.gain.exponentialRampToValueAtTime(0.0005, t + 0.035);
+      tl.connect(ng); ng.connect(v.out); noiseSrc(v, c, t, tl);
+      void b;
+      var decay = 1.4 + 2.6 * (1 - (m - 21) / 88);
+      var end = env(v, t, dur, 0.25 * (0.35 + 0.65 * vel), 0.008, 0.0001, decay / 3, 0.5);
+      return finish(v, end);
+    },
+    /* lo-fi trap piano: tape wow, telephone-ish band, saturation and a breath of hiss */
+    lofipiano: function (c, dest, m, t, dur, vel) {
+      var v = voiceBase(c, dest, t), f = mf(m), per = wave(c, "piano", PIANO_AMPS);
+      var lp = c.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = 2600 + vel * 900; lp.Q.value = 0.7; lp.connect(v.out);
+      var hp = c.createBiquadFilter(); hp.type = "highpass"; hp.frequency.value = 170; hp.connect(lp);
+      var a = osc(v, c, null, f, t, -5, pan(c, -0.25, hp), per), b = osc(v, c, null, f, t, 5, pan(c, 0.25, hp), per);
+      var wob = c.createOscillator(); wob.frequency.value = 0.55 + (m % 5) * 0.05; var wg = c.createGain(); wg.gain.value = 11;
+      wob.connect(wg); wg.connect(a.detune); wg.connect(b.detune); wob.start(t); v.nodes.push(wob);
+      var hs = c.createBiquadFilter(); hs.type = "highpass"; hs.frequency.value = 5000;
+      var hg = c.createGain(); hg.gain.value = 0.012; hs.connect(hg); hg.connect(v.out); noiseSrc(v, c, t, hs);
+      var decay = 1.3 + 3 * (1 - (m - 21) / 88);
+      var end = env(v, t, dur, 0.25 * (0.35 + 0.65 * vel), 0.004, 0.0001, decay / 3, 0.35);
+      return finish(v, end);
+    },
+    /* hyper supersaw: 7 detuned saws fanned across the stereo field + square body, bright filter snap, glides on slides */
+    hyperlead: function (c, dest, m, t, dur, vel) {
+      var v = voiceBase(c, dest, t), f = mf(m);
+      var lp = c.createBiquadFilter(); lp.type = "lowpass"; lp.Q.value = 0.8; lp.connect(v.out);
+      var top = Math.min(15000, 3800 + vel * 8000);
+      lp.frequency.setValueAtTime(f * 3, t); lp.frequency.linearRampToValueAtTime(top, t + 0.025); lp.frequency.setTargetAtTime(top * 0.6, t + 0.03, 0.35);
+      var hp = c.createBiquadFilter(); hp.type = "highpass"; hp.frequency.value = 140; hp.connect(lp);
+      [[-31, -0.95], [-19, -0.62], [-8, -0.3], [0, 0], [8, 0.3], [19, 0.62], [31, 0.95]].forEach(function (d) {
+        osc(v, c, "sawtooth", f, t, d[0], gainTo(c, 0.17, pan(c, d[1], hp)));
+      });
+      osc(v, c, "square", f / 2, t, 0, gainTo(c, 0.1, hp));
+      var end = env(v, t, dur, 0.32 * (0.5 + 0.5 * vel), 0.005, 0.78, 0.35, 0.22);
+      return finish(v, end);
+    },
+    /* trap flute: breathy sine/triangle tone with a chiff, delayed vibrato, a scoop into each note; mono with glide */
+    trapflute: function (c, dest, m, t, dur, vel, o) {
+      var v = voiceBase(c, dest, t), f = mf(m), prev = monoPrev(c, "trapflute", t), gt = 0.03 + o.glide * 0.18;
+      if (prev && prev.v && prev.v.stop) prev.v.stop(t + 0.004);
+      var slide = prev && prev.overlap && o.glide > 0.01 && prev.m !== m;
+      var lp = c.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = 5200; lp.Q.value = 0.4; lp.connect(v.out);
+      var oscs = [osc(v, c, "sine", f, t, -4, pan(c, -0.22, lp)), osc(v, c, "sine", f, t, 4, gainTo(c, 0.8, pan(c, 0.22, lp))),
+        osc(v, c, "triangle", f, t, 0, gainTo(c, 0.28, lp))];
+      var h2 = osc(v, c, "sine", f * 2, t, 0, gainTo(c, 0.1, lp)); h2.__mul = 2; oscs.push(h2);
+      if (slide) oscs.forEach(function (x) { glideFreq(x, prev, f, t, gt); });
+      else oscs.forEach(function (x) { var mm = x.__mul || 1; x.frequency.setValueAtTime(f * mm * 0.966, t); x.frequency.exponentialRampToValueAtTime(f * mm, t + 0.06); });
+      var vib = c.createOscillator(); vib.frequency.value = 5.3; var vg = c.createGain();
+      vg.gain.setValueAtTime(0, t); vg.gain.setValueAtTime(0, t + 0.16); vg.gain.linearRampToValueAtTime(18, t + 0.5);
+      vib.connect(vg); oscs.forEach(function (x) { vg.connect(x.detune); }); vib.start(t); v.nodes.push(vib);
+      var bp = c.createBiquadFilter(); bp.type = "bandpass"; bp.frequency.value = Math.min(9000, f * 2.2); bp.Q.value = 1.6;
+      var bg = c.createGain(); bg.gain.setValueAtTime(slide ? 0.05 : 0.5 * vel, t); bg.gain.setTargetAtTime(0.06 + 0.04 * vel, t + 0.02, 0.04);
+      bp.connect(bg); bg.connect(v.out); noiseSrc(v, c, t, bp);
+      var end = env(v, t, dur, 0.16 * (0.5 + 0.5 * vel), slide ? 0.012 : 0.028, 0.85, 0.4, 0.14);
+      monoSet(c, "trapflute", m, t, dur, v);
+      return finish(v, end);
+    },
+    /* guitar pluck: Karplus–Strong string (real plucked decay), doubled and detuned left/right, body + brightness by velocity */
+    gtrpluck: function (c, dest, m, t, dur, vel) {
+      var v = voiceBase(c, dest, t), ks = ksBuffer(c, m);
+      var lp = c.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = Math.min(16000, 1800 + vel * 6500); lp.Q.value = 0.6;
+      var body = c.createBiquadFilter(); body.type = "peaking"; body.frequency.value = 220; body.Q.value = 1; body.gain.value = 4;
+      var hp = c.createBiquadFilter(); hp.type = "highpass"; hp.frequency.value = 75;
+      lp.connect(body); body.connect(hp); hp.connect(v.out);
+      var maxLen = 2.4 / ks.rate - 0.02;
+      [[1, -0.3, 1], [Math.pow(2, 5 / 1200), 0.3, 0.75]].forEach(function (d, i) {
+        var s = c.createBufferSource(); s.buffer = ks.buf; s.playbackRate.setValueAtTime(ks.rate * d[0], t);
+        s.connect(gainTo(c, d[2], pan(c, d[1], lp))); s.start(t + i * 0.006); v.nodes.push(s);
+      });
+      var end = Math.min(t + maxLen, env(v, t, Math.min(dur + 0.25, maxLen), 0.38 * (0.4 + 0.6 * vel), 0.001, 1, 5, 0.12));
+      return finish(v, end);
+    },
+    /* 16th octave arp: each held note re-triggers on the 16th grid (root / octave), ping-ponging left-right */
+    arp: function (c, dest, m, t, dur, vel) {
+      var v = voiceBase(c, dest, t), f = mf(m), step = 60 / TEMPO / 4, n = clamp(Math.ceil((dur - 0.005) / step), 1, 64);
+      var seq = [0, 12, 0, 12, 0, 12, 7, 12];
+      for (var k = 0; k < n; k++) {
+        var st = t + k * step, fk = f * Math.pow(2, seq[k % seq.length] / 12), sg = c.createGain();
+        sg.gain.setValueAtTime(0, st); sg.gain.linearRampToValueAtTime(k % 4 === 0 ? 1 : 0.72, st + 0.003); sg.gain.setTargetAtTime(0, st + 0.004, step * 0.32);
+        var lp = c.createBiquadFilter(); lp.type = "lowpass"; lp.Q.value = 3;
+        lp.frequency.setValueAtTime(Math.min(14000, 1600 + vel * 5200 + fk), st); lp.frequency.exponentialRampToValueAtTime(Math.max(300, fk * 1.3), st + step * 0.9);
+        lp.connect(sg); sg.connect(pan(c, k % 2 ? 0.38 : -0.38, v.out));
+        [["sawtooth", -7], ["square", 7]].forEach(function (w) {
+          var ox = c.createOscillator(); ox.type = w[0]; ox.frequency.value = fk; ox.detune.value = w[1];
+          ox.connect(lp); ox.start(st); ox.stop(st + step + 0.05);
+        });
+      }
+      var g = v.out.gain; g.setValueAtTime(0.155 * (0.45 + 0.55 * vel), t);
+      var endT = t + n * step + 0.1;
+      g.setValueAtTime(0.155 * (0.45 + 0.55 * vel), endT - 0.02); g.linearRampToValueAtTime(0, endT);
+      return finish(v, endT);
+    },
+    /* hip-hop horn stab: saw section + octave trumpet layer, brassy filter "blat", scoop, saturation (modern, not orchestral) */
+    horn: function (c, dest, m, t, dur, vel) {
+      var v = voiceBase(c, dest, t), f = mf(m);
+      var lp = c.createBiquadFilter(); lp.type = "lowpass"; lp.Q.value = 1.3; lp.connect(v.out);
+      lp.frequency.setValueAtTime(f * 1.2, t); lp.frequency.linearRampToValueAtTime(Math.min(13000, f * (5 + vel * 6)), t + 0.035);
+      lp.frequency.setTargetAtTime(Math.min(8000, f * 2.6 + 500), t + 0.05, 0.2);
+      var oscs = [osc(v, c, "sawtooth", f, t, -11, gainTo(c, 0.34, pan(c, -0.45, lp))), osc(v, c, "sawtooth", f, t, 0, gainTo(c, 0.34, lp)),
+        osc(v, c, "sawtooth", f, t, 11, gainTo(c, 0.34, pan(c, 0.45, lp)))];
+      var tr = osc(v, c, "sawtooth", f * 2, t, 4, gainTo(c, 0.12, pan(c, 0.2, lp))); tr.__mul = 2; oscs.push(tr);
+      oscs.forEach(function (x) { var mm = x.__mul || 1; x.frequency.setValueAtTime(f * mm * 0.972, t); x.frequency.exponentialRampToValueAtTime(f * mm, t + 0.05); });
+      var end = env(v, t, dur, 0.34 * (0.5 + 0.5 * vel), 0.012, 0.55, 0.22, 0.13);
+      return finish(v, end);
+    },
+    voxah: function (c, dest, m, t, dur, vel) { return vox(c, dest, m, t, dur, vel, FORMANTS.ah); },
+    voxoo: function (c, dest, m, t, dur, vel) { return vox(c, dest, m, t, dur, vel, FORMANTS.oo); },
+    /* sidechain pumping pad: wide saw stack, slow filter swell, ducks on every beat (tempo-synced) like a kick sidechain */
+    sidepad: function (c, dest, m, t, dur, vel) {
+      var v = voiceBase(c, dest, t), f = mf(m), beat = 60 / TEMPO;
+      var pump = c.createGain(); pump.connect(v.out);
+      var lp = c.createBiquadFilter(); lp.type = "lowpass"; lp.Q.value = 0.6; lp.connect(pump);
+      lp.frequency.setValueAtTime(700, t); lp.frequency.linearRampToValueAtTime(1900 + vel * 1800, t + 0.5);
+      [[-15, -0.75], [-5, -0.28], [5, 0.28], [15, 0.75]].forEach(function (d) { osc(v, c, "sawtooth", f, t, d[0], gainTo(c, 0.25, pan(c, d[1], lp))); });
+      osc(v, c, "triangle", f * 2, t, 0, gainTo(c, 0.12, lp));
+      var end = env(v, t, dur, 0.55 * (0.5 + 0.5 * vel), 0.06, 0.9, 0.8, 0.45);
+      pump.gain.setValueAtTime(1, t);
+      for (var tb = t, i = 0; tb < end && i < 160; tb += beat, i++) {
+        pump.gain.setTargetAtTime(0.12, tb, 0.004);
+        pump.gain.setTargetAtTime(1, tb + 0.03, beat * 0.2);
+      }
+      return finish(v, end);
+    },
+    /* ================= classic voices ================= */
     grand: function (c, dest, m, t, dur, vel) {
       var v = voiceBase(c, dest, t), f = mf(m), per = wave(c, "piano", PIANO_AMPS);
       var lp = c.createBiquadFilter(); lp.type = "lowpass"; lp.Q.value = 0.4; lp.connect(v.out);
@@ -310,75 +566,56 @@
       var end = env(v, t, dur, 0.13 * (0.5 + 0.5 * vel), 0.025, 0.85, 0.5, 0.22);
       return finish(v, end);
     },
-    /* ---- Island colours (synthesized) ---- */
-    /* steel pan: fundamental + tuned octave and twelfth (the pan's note-area modes), the octave blooms in just after
-       the stick; a soft rubber-stick thump and a slight pitch settle */
-    steelpan: function (c, dest, m, t, dur, vel) {
-      var v = voiceBase(c, dest, t), f = mf(m), lpf = c.createBiquadFilter();
-      lpf.type = "lowpass"; lpf.frequency.value = Math.min(15000, 2500 + vel * 6000 + f * 3); lpf.connect(v.out);
-      var ring = 0.5 + 1.1 * clamp((84 - m) / 36, 0, 1);
-      [[1, 1, 0, ring], [1, 0.5, 3, ring * 0.9], [2, 0.55, 2, ring * 0.55], [3, 0.2, -3, ring * 0.3], [4, 0.07, 4, ring * 0.18]].forEach(function (pp, i) {
-        var g = c.createGain(), pk = pp[1] * (i === 2 ? 0.6 + 0.4 * vel : 1);
-        g.gain.setValueAtTime(0, t);
-        g.gain.linearRampToValueAtTime(pk * (i === 2 ? 0.35 : 1), t + 0.004);
-        if (i === 2) g.gain.linearRampToValueAtTime(pk, t + 0.045); // octave bloom
-        g.gain.setTargetAtTime(0, t + 0.05, pp[3] / 3);
-        g.connect(lpf);
-        var o = osc(v, c, "sine", f * pp[0], t, pp[2], g);
-        o.frequency.setValueAtTime(f * pp[0] * 1.012, t); o.frequency.exponentialRampToValueAtTime(f * pp[0], t + 0.035);
-      });
-      var nb = c.createBufferSource(); nb.buffer = noise(c);
-      var bp = c.createBiquadFilter(); bp.type = "bandpass"; bp.frequency.value = Math.min(6000, f * 3 + 900); bp.Q.value = 1.2;
-      var ng = c.createGain(); ng.gain.setValueAtTime(0.18 * vel, t); ng.gain.exponentialRampToValueAtTime(0.0005, t + 0.02);
-      nb.connect(bp); bp.connect(ng); ng.connect(v.out); nb.start(t); v.nodes.push(nb);
-      var end = env(v, t, Math.max(dur, ring * 0.8), 0.127 * (0.35 + 0.65 * vel), 0.002, 0.6, ring / 2, 0.35);
-      return finish(v, end);
-    },
-    /* kalimba: sine tine with its high inharmonic overtone, a short pluck click and a little box warmth */
-    kalimba: function (c, dest, m, t, dur, vel) {
-      var v = voiceBase(c, dest, t), f = mf(m);
-      var ring = 0.7 + 1.4 * clamp((96 - m) / 48, 0, 1);
-      var o = osc(v, c, "sine", f, t);
-      o.frequency.setValueAtTime(f * 1.006, t); o.frequency.exponentialRampToValueAtTime(f, t + 0.05);
-      var g2 = c.createGain(); g2.gain.setValueAtTime(0.32 * (0.5 + 0.5 * vel), t); g2.gain.setTargetAtTime(0, t, 0.06); g2.connect(v.out);
-      osc(v, c, "sine", f * 5.92, t, 0, g2);
-      var g3 = c.createGain(); g3.gain.setValueAtTime(0.1 * vel, t); g3.gain.setTargetAtTime(0, t, 0.02); g3.connect(v.out);
-      osc(v, c, "sine", f * 13.3, t, 0, g3);
-      var g4 = c.createGain(); g4.gain.setValueAtTime(0.14, t); g4.gain.setTargetAtTime(0, t, ring / 4); g4.connect(v.out);
-      osc(v, c, "triangle", f * 2, t, 2, g4);
-      var nb = c.createBufferSource(); nb.buffer = noise(c);
-      var hp = c.createBiquadFilter(); hp.type = "highpass"; hp.frequency.value = 2500;
-      var ng = c.createGain(); ng.gain.setValueAtTime(0.1 * vel, t); ng.gain.exponentialRampToValueAtTime(0.0005, t + 0.008);
-      nb.connect(hp); hp.connect(ng); ng.connect(v.out); nb.start(t); v.nodes.push(nb);
-      var end = env(v, t, Math.max(dur, ring * 0.7), 0.17 * (0.35 + 0.65 * vel), 0.002, 0.5, ring / 2.5, 0.3);
-      return finish(v, end);
-    },
-    /* fallbacks while a sample set is still loading */
-    brasssynth: function (c, dest, m, t, dur, vel) {
-      var v = voiceBase(c, dest, t), f = mf(m);
-      var lp = c.createBiquadFilter(); lp.type = "lowpass"; lp.Q.value = 1; lp.connect(v.out);
-      lp.frequency.setValueAtTime(f * 1.5, t); lp.frequency.linearRampToValueAtTime(Math.min(12000, f * (4 + vel * 6)), t + 0.04); lp.frequency.setTargetAtTime(f * 3, t + 0.05, 0.2);
-      osc(v, c, "sawtooth", f, t, -6, lp); osc(v, c, "sawtooth", f, t, 6, lp);
-      var end = env(v, t, Math.min(dur, 0.5), 0.09 * (0.5 + 0.5 * vel), 0.02, 0.6, 0.2, 0.12);
-      return finish(v, end);
-    },
-    marimbasynth: function (c, dest, m, t, dur, vel) {
-      var v = voiceBase(c, dest, t), f = mf(m);
-      osc(v, c, "sine", f, t);
-      var g2 = c.createGain(); g2.gain.setValueAtTime(0.3 * vel, t); g2.gain.setTargetAtTime(0, t, 0.05); g2.connect(v.out); osc(v, c, "sine", f * 4, t, 0, g2);
-      var end = env(v, t, 0.8, 0.18 * (0.35 + 0.65 * vel), 0.002, 0.0001, 0.35 * clamp((100 - m) / 50, 0.3, 1.2), 0.2);
-      return finish(v, end);
-    }
   };
-  var FALLBACK = { ostrings: "strings", pizz: "pluck", brass: "brasssynth", flute: "lead", clarinet: "lead", orchhit: "brasssynth", marimba: "marimbasynth" };
-  Object.keys(SMP).forEach(function (id) { VOICES[id] = function (c, dest, m, t, dur, vel) { return sampled(c, dest, m, t, dur, vel, id); }; });
-
-  /* play one note. dur = held length in seconds (release follows). gain = optional linear level trim. Returns { stop(t), end } */
-  function play(c, dest, midi, when, dur, vel, instId, gain) {
-    var fn = VOICES[instId] || VOICES.grand;
-    if (gain != null && gain !== 1 && isFinite(gain)) { var g = c.createGain(); g.gain.value = clamp(gain, 0, 8); g.connect(dest); dest = g; }
-    return fn(c, dest, clamp(Math.round(midi), 0, 127), Math.max(0, when), Math.max(0.02, dur || 0.25), clamp(vel == null ? 0.8 : +vel, 0.05, 1));
+  /* vocal chop: doubled saw "vocal folds" (scoop + vibrato) through parallel formant band-passes, plus breath */
+  var FORMANTS = {
+    ah: { mk: 5.5, f: [[800, 1, 7], [1150, 0.55, 9], [2900, 0.22, 11], [3900, 0.1, 12]] },
+    oo: { mk: 1.9, f: [[320, 1, 6], [800, 0.42, 9], [2500, 0.07, 12], [3400, 0.04, 12]] }
+  };
+  function vox(c, dest, m, t, dur, vel, fm) {
+    var v = voiceBase(c, dest, t), f = mf(m), src = c.createGain(), shift = clamp((m - 60) / 48, -0.25, 0.4);
+    var mk = c.createGain(); mk.gain.value = fm.mk; mk.connect(v.out);
+    fm.f.forEach(function (F) {
+      var bp = c.createBiquadFilter(); bp.type = "bandpass"; bp.frequency.value = F[0] * (1 + shift * 0.35); bp.Q.value = F[2];
+      src.connect(bp); bp.connect(gainTo(c, F[1], mk));
+    });
+    var hp = c.createBiquadFilter(); hp.type = "highpass"; hp.frequency.value = 120; hp.connect(src);
+    var a = osc(v, c, "sawtooth", f, t, -8, pan(c, -0.3, hp)), b = osc(v, c, "sawtooth", f, t, 8, pan(c, 0.3, hp));
+    [a, b].forEach(function (x) { x.frequency.setValueAtTime(f * 0.955, t); x.frequency.exponentialRampToValueAtTime(f, t + 0.05); });
+    var vib = c.createOscillator(); vib.frequency.value = 5.6; var vg = c.createGain();
+    vg.gain.setValueAtTime(0, t); vg.gain.setValueAtTime(0, t + 0.2); vg.gain.linearRampToValueAtTime(14, t + 0.5);
+    vib.connect(vg); vg.connect(a.detune); vg.connect(b.detune); vib.start(t); v.nodes.push(vib);
+    var ng = c.createGain(); ng.gain.value = 0.25; ng.connect(src); noiseSrc(v, c, t, ng);
+    var end = env(v, t, dur, 0.2 * (0.5 + 0.5 * vel), 0.012, 0.85, 0.5, 0.12);
+    return finish(v, end);
   }
-  window.IPBKeys = { INSTRUMENTS: INSTRUMENTS, BY_ID: BY_ID, play: play, has: function (id) { return !!VOICES[id]; },
-    load: load, ready: ready, isSampled: function (id) { return !!SMP[id]; }, CREDITS: "samples/orch/CREDITS.txt" };
+  function toneOf(id, tone) {
+    var d = BY_ID[id] || {}, o = { drive: d.drive || 0, glide: d.glide || 0 };
+    if (tone && typeof tone === "object") {
+      if (isFinite(+tone.drive)) o.drive = clamp(+tone.drive, 0, 1);
+      if (isFinite(+tone.glide)) o.glide = clamp(+tone.glide, 0, 1);
+    }
+    return o;
+  }
+  /* play one note. dur = held length in seconds (release follows). gain = optional linear level trim.
+     tone = optional { drive, glide } (pattern sound settings). Returns { stop(t), end } */
+  function play(c, dest, midi, when, dur, vel, instId, gain, tone) {
+    var id = migrate(instId) || DEFAULT, fn = VOICES[id], def = BY_ID[id] || {}, o = toneOf(id, tone);
+    if (gain != null && gain !== 1 && isFinite(gain)) { var g = c.createGain(); g.gain.value = clamp(gain, 0, 8); g.connect(dest); dest = g; }
+    if (!def.dr && o.drive > 0.02) dest = driveStage(c, dest, o.drive, 0.22);
+    return fn(c, dest, clamp(Math.round(midi), 0, 127), Math.max(0, when), Math.max(0.02, dur || 0.25), clamp(vel == null ? 0.8 : +vel, 0.05, 1), o);
+  }
+  function presetOf(inst, tone) {
+    var o = toneOf(inst, tone);
+    for (var i = 0; i < PRESETS.length; i++) {
+      var P = PRESETS[i], po = toneOf(P.inst, P.tone);
+      if (P.inst === inst && Math.abs(po.drive - o.drive) < 0.011 && (!(BY_ID[inst] || {}).gl || Math.abs(po.glide - o.glide) < 0.011)) return P.id;
+    }
+    return "";
+  }
+  window.IPBKeys = { INSTRUMENTS: INSTRUMENTS, BY_ID: BY_ID, PRESETS: PRESETS, DEFAULT: DEFAULT, DEFAULT_PRESET: DEFAULT_PRESET, LEGACY: LEGACY,
+    play: play, migrate: migrate, toneOf: toneOf, presetOf: presetOf, setTempo: setTempo, tempo: function () { return TEMPO; },
+    has: function (id) { return !!VOICES[migrate(id)]; },
+    /* kept for API compatibility: every instrument is synthesized now, nothing to fetch */
+    load: function () { return Promise.resolve(true); }, ready: function () { return true; }, isSampled: function () { return false; } };
 })();

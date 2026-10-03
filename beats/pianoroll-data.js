@@ -3,8 +3,10 @@
  * produced by loop banks:
  *   { v: 1, name, inst, bars: 1|2|4, grid: "1/8"|"1/16"|"1/16t"|"1/32", key: 0–11, scale: "off"|"major"|"minor"|…,
  *     snapScale: bool, notes: [{ p: midi, s: startTick, l: lengthTicks, v: velocity 0.05–1, i?: instrument id }] }
- * A note's optional `i` plays that note on another instrument (layered loops, e.g. steel pan over strings); notes
- * without it use the pattern's `inst`. Older data has no `i`, so it loads unchanged.
+ * A note's optional `i` plays that note on another instrument (layered loops, e.g. an 808 under a trap pluck); notes
+ * without it use the pattern's `inst`. Older data has no `i`, so it loads unchanged. Optional `tone: { drive, glide }`
+ * (0–1) holds the pattern's sound settings. Instrument ids of removed sounds (the old Orchestra / Island set) are
+ * re-mapped through IPBKeys.migrate(), so old songs and imports load with a sensible modern instrument.
  * Time is in ticks: 24 per beat, 96 per 4/4 bar (1/16 = 6, 1/16 triplet = 4, 1/8 = 12).
  */
 (function () {
@@ -23,9 +25,10 @@
   };
   var SCALE_NAMES = { off: "No scale", major: "Major", minor: "Minor", harmonic: "Harmonic minor", phrygian: "Phrygian", dorian: "Dorian" };
   var NOTE_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
-  var DEFAULT_INST = "grand";
+  var DEFAULT_INST = (window.IPBKeys && window.IPBKeys.DEFAULT) || "trappluck"; // upbeat 2026 rap sound
 
   function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
+  function mig(id) { var K = window.IPBKeys; return typeof id === "string" ? (K && K.migrate ? K.migrate(id) : id) : null; }
   function noteName(p) { return NOTE_NAMES[((p % 12) + 12) % 12] + (Math.floor(p / 12) - 1); }
   function empty(o) {
     o = o || {};
@@ -43,7 +46,13 @@
     p.name = typeof o.name === "string" ? o.name.slice(0, 80) : "";
     if (typeof o.src === "string" && o.src) p.src = o.src.slice(0, 60); // origin tag, e.g. "kl:dusty-ninths" (keys loop bank)
     if (isFinite(+o.gain) && +o.gain) p.gain = clamp(Math.round(+o.gain * 2) / 2, -12, 12); // level trim in dB (loop bank balance)
-    if (typeof o.inst === "string" && (!instOk || instOk(o.inst))) p.inst = o.inst;
+    var oi = mig(o.inst);
+    if (oi && (!instOk || instOk(oi))) p.inst = oi;
+    if (o.tone && typeof o.tone === "object") {
+      var tn = {};
+      ["drive", "glide"].forEach(function (k) { if (o.tone[k] != null && isFinite(+o.tone[k])) tn[k] = clamp(Math.round(+o.tone[k] * 100) / 100, 0, 1); });
+      if (Object.keys(tn).length) p.tone = tn;
+    }
     var L = lenTicks(p), seen = {};
     (Array.isArray(o.notes) ? o.notes : []).forEach(function (n) {
       if (!n || typeof n !== "object") return;
@@ -51,7 +60,7 @@
       if (!isFinite(pitch) || !isFinite(s) || pitch < LOW || pitch > HIGH || s < 0 || s >= L) return;
       if (!isFinite(l) || l < 1) l = STEP;
       l = Math.min(l, L - s);
-      var ni = typeof n.i === "string" && n.i !== p.inst && (!instOk || instOk(n.i)) ? n.i.slice(0, 24) : null;
+      var mi = mig(n.i), ni = mi && mi !== p.inst && (!instOk || instOk(mi)) ? mi.slice(0, 24) : null;
       var key = pitch + ":" + s + ":" + (ni || "");
       if (seen[key]) return; // no stacked duplicates
       seen[key] = 1;

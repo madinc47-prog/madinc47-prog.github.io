@@ -56,3 +56,14 @@ Library licences checked at the source:
 Not bundled on purpose: TR-808/909 ROM sets, famous breaks (Amen, Think, etc.), Freesound previews and commercial "free" packs.
 
 All other drum sounds are synthesised in the browser (`drums.js`).
+
+## Piano Roll / keys-loop instruments (no sample files)
+
+All Piano Roll instruments are **synthesized live in the browser** with the Web Audio API (`beats/keys-instruments.js`) —
+original sound designs for Island Pin Beats, no recordings and no third-party samples: Tuned 808 (glide + drive),
+Reese / Drill Bass, Trap Pluck, Digital Bell, Dark Trap Piano, Felt Piano, Lo-Fi Trap Piano, Hyper Supersaw Lead,
+Trap Flute Lead, Guitar Pluck (Karplus–Strong string model), 16th Octave Arp, Hip-Hop Horn Stab, Vocal Chop Ahh / Ooh
+(formant synthesis), Sidechain Pumping Pad, plus the classic keys/pads/basses.
+
+The earlier Orchestra / Island multisamples (VS Chamber Orchestra 2: Community Edition, CC0) were removed from the app on
+3 Oct 2026 (`beats/samples/orch/` deleted); songs that used those instruments now load with the closest synth sound.

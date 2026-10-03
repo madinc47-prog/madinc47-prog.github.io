@@ -1685,7 +1685,7 @@
   function loopInfo(k) { var L = plen(); return { k: k, patStep: k % L, fire: true, feel: "full", mb: k / STEPS, m16: k }; }
   /* Offline bounce of the pattern + chord loop (clean render, no live keys) through the same graph as live playback.
      With a song structure selected, "Full song" renders the whole arrangement. */
-  /* sampled instruments (Orchestra, Marimba) used by any piano slot: fetch + decode once, before offline renders */
+  /* instruments used by any piano slot (all synthesized now; PK.load/ready are kept as no-op hooks) */
   function pianoInsts() {
     var out = [];
     SLOT_IDS.forEach(function (id) { var p = S.piano.slots[id]; if (p) PD.instsOf(p).forEach(function (i) { if (out.indexOf(i) === -1) out.push(i); }); });
@@ -1694,7 +1694,7 @@
   function pianoSamplesLoad() { return PK.load ? PK.load(pianoInsts()) : Promise.resolve(true); }
   function bounce(barsSel) {
     if (PK.ready && !PK.ready(pianoInsts())) {
-      $("rec-status").textContent = "Loading orchestral samples…";
+      $("rec-status").textContent = "Loading instrument samples…";
       pianoSamplesLoad().then(function () { bounceNow(barsSel); });
       return;
     }
@@ -3837,9 +3837,10 @@
     var s16 = pianoStepOf(info), t0 = s16 * PD.STEP, tickSec = len / PD.STEP;
     var sw = s16 % 2 === 1 ? len * (S.swing / 100) : 0;
     var ns = PD.notesStarting(p, t0, t0 + PD.STEP), gl = PD.gainLin(p);
+    if (PK.setTempo) PK.setTempo(S.bpm); // tempo-synced voices (sidechain pad, arp)
     for (var i = 0; i < ns.length; i++) {
       var n = ns[i];
-      G.preg.push(PK.play(c, G.groups.piano, n.p, t + (n.s - t0) * tickSec + (n.s === t0 ? sw : 0), n.l * tickSec, n.v, n.i || p.inst, gl));
+      G.preg.push(PK.play(c, G.groups.piano, n.p, t + (n.s - t0) * tickSec + (n.s === t0 ? sw : 0), n.l * tickSec, n.v, n.i || p.inst, gl, n.i ? null : p.tone));
     }
     if (G.preg.length > 96) G.preg = G.preg.filter(function (v) { return v.end > c.currentTime; });
   }
@@ -3853,7 +3854,30 @@
   }
   function pianoPreview(m, v) {
     if (!ensureCtx()) return;
-    PK.play(ctx, LG.groups.piano, m, ctx.currentTime + 0.005, 0.32, v == null ? 0.8 : v, pianoPat().inst, PD.gainLin(pianoPat()));
+    if (PK.setTempo) PK.setTempo(S.bpm);
+    PK.play(ctx, LG.groups.piano, m, ctx.currentTime + 0.005, 0.32, v == null ? 0.8 : v, pianoPat().inst, PD.gainLin(pianoPat()), pianoPat().tone);
+  }
+  /* Sound row: preset, drive and glide reflect the current pattern (tone missing = instrument defaults) */
+  function pianoToneUI(p) {
+    var def = PK.BY_ID[p.inst] || {}, o = PK.toneOf(p.inst, p.tone);
+    $("pn-preset").value = PK.presetOf(p.inst, p.tone);
+    $("pn-drive").value = Math.round(o.drive * 100); $("pn-drive-val").textContent = Math.round(o.drive * 100);
+    $("pn-glide").value = Math.round(o.glide * 100); $("pn-glide-val").textContent = def.gl ? Math.round(o.glide * 100) : "–";
+    $("pn-glide").disabled = !def.gl;
+    $("pn-glide-wrap").classList.toggle("off", !def.gl);
+    $("pn-glide-wrap").title = def.gl ? "Glide / slide time: overlap two notes and the second one slides from the first (808 slide)" : "Glide works on mono sounds: Tuned 808, Reese / Drill Bass, Trap Flute";
+  }
+  function pianoAudition() {
+    var p = pianoPat(), def = PK.BY_ID[p.inst] || {};
+    if (!ensureCtx()) return;
+    if (def.gl) { // mono: play a slide so glide is audible
+      var t = ctx.currentTime + 0.01, base = p.inst === "trapflute" ? 72 : 36;
+      if (PK.setTempo) PK.setTempo(S.bpm);
+      PK.play(ctx, LG.groups.piano, base, t, 0.32, 0.85, p.inst, PD.gainLin(p), p.tone);
+      PK.play(ctx, LG.groups.piano, base + 7, t + 0.26, 0.4, 0.85, p.inst, PD.gainLin(p), p.tone);
+      return;
+    }
+    pianoPreview(60, 0.8); setTimeout(function () { pianoPreview(64, 0.7); pianoPreview(67, 0.7); }, 90);
   }
   function pianoSummary() {
     var p = pianoPat(), inst = PK.BY_ID[p.inst];
@@ -3875,7 +3899,8 @@
     document.querySelectorAll("#pn-bars button").forEach(function (b) { b.classList.toggle("on", +b.dataset.bars === p.bars); });
     document.querySelectorAll("#pn-grid button").forEach(function (b) { b.classList.toggle("on", b.dataset.grid === p.grid); });
     document.querySelectorAll("#pn-tool button").forEach(function (b) { b.classList.toggle("on", b.dataset.tool === pianoEd.tool()); });
-    $("pn-inst").value = PK.BY_ID[p.inst] ? p.inst : "grand";
+    $("pn-inst").value = PK.BY_ID[p.inst] ? p.inst : PK.DEFAULT;
+    pianoToneUI(p);
     $("pn-key").value = String(p.key);
     $("pn-scale").value = p.scale;
     $("pn-snapscale").checked = !!p.snapScale;
@@ -4045,10 +4070,26 @@
     document.querySelectorAll("#pn-tool button").forEach(function (b) { b.addEventListener("click", function () { pianoEd.setTool(b.dataset.tool); pianoUI(false); }); });
     $("pn-zin").addEventListener("click", function () { pianoEd.zoom(1.25); });
     $("pn-zout").addEventListener("click", function () { pianoEd.zoom(0.8); });
+    var psel = $("pn-preset");
+    PK.PRESETS.forEach(function (P) { var o = document.createElement("option"); o.value = P.id; o.textContent = P.name + (P.id === PK.DEFAULT_PRESET ? " (default)" : ""); psel.appendChild(o); });
+    var pc = document.createElement("option"); pc.value = ""; pc.textContent = "Custom"; psel.appendChild(pc);
+    psel.addEventListener("change", function () {
+      var P = PK.PRESETS.filter(function (x) { return x.id === psel.value; })[0];
+      if (!P) return;
+      var p = pianoPat(); p.inst = P.inst; p.tone = { drive: P.tone.drive || 0, glide: P.tone.glide || 0 };
+      saveSession(); pianoUI(false); pianoAudition();
+    });
+    ["drive", "glide"].forEach(function (k) {
+      $("pn-" + k).addEventListener("input", function (e) {
+        var p = pianoPat(), cur = PK.toneOf(p.inst, p.tone);
+        cur[k] = Math.round(+e.target.value) / 100; p.tone = cur;
+        $("pn-" + k + "-val").textContent = e.target.value; $("pn-preset").value = PK.presetOf(p.inst, p.tone);
+      });
+      $("pn-" + k).addEventListener("change", function () { saveSession(); pianoUI(false); pianoAudition(); });
+    });
     isel.addEventListener("change", function () {
-      pianoPat().inst = isel.value; saveSession(); pianoUI(false);
-      var go = function () { pianoPreview(60, 0.8); setTimeout(function () { pianoPreview(64, 0.7); pianoPreview(67, 0.7); }, 90); };
-      if (PK.ready && !PK.ready(isel.value)) { toast("Loading " + klInstName(isel.value) + " samples…"); PK.load(isel.value).then(go); } else go();
+      pianoPat().inst = isel.value; delete pianoPat().tone; saveSession(); pianoUI(false); // new sound starts from its own default drive / glide
+      pianoAudition();
     });
     $("pn-key").addEventListener("change", function (e) { pianoPat().key = +e.target.value; pianoEd.paintKeys(); pianoUI(false); saveSession(); });
     $("pn-scale").addEventListener("change", function (e) { pianoPat().scale = e.target.value; pianoEd.paintKeys(); pianoUI(false); saveSession(); });
@@ -4109,9 +4150,9 @@
    * BPM + swing. Preview plays through the Piano Roll mixer channel; while the beat is playing it joins on the next
    * bar, in time with the drums, and the current piano pattern steps aside for it.
    */
-  var KL = window.IPBKeysLoops, klPrev = null, klReady = false, klCat = "boombap", klWhere = "beats";
+  var KL = window.IPBKeysLoops, klPrev = null, klReady = false, klCat = "rap", klWhere = "beats";
   function klInstName(id) { var i = PK.BY_ID[id]; return i ? i.name : id; }
-  function patInstLabel(p) { return PD.instsOf(p).map(klInstName).join(" + "); } // "Steel Pan + Ensemble Strings (legato) + …"
+  function patInstLabel(p) { return PD.instsOf(p).map(klInstName).join(" + "); } // "Trap Pluck + Tuned 808 (glide + drive) + …"
   function loopInstLabel(L) { return (L.insts || [L.inst]).map(klInstName).join(" + "); }
   function klTarget() { var v = $("kl-slot").value; return SLOT_IDS.indexOf(v) !== -1 ? v : S.piano.slot; }
   function klBuild(id) { return KL.build(id, { key: S.songKey }); }
@@ -4125,7 +4166,7 @@
     $("kl-name").textContent = L ? L.name : "Pick a keys loop";
     $("kl-meta").textContent = L
       ? "Piano pattern " + S.piano.slot + " · " + PD.NOTE_NAMES[p.key] + " " + (KL.MODE_NAMES[p.scale] || p.scale) + " · " + patInstLabel(p) + " · at " + S.bpm + " BPM"
-      : KL.LOOPS.length + " piano, Rhodes, synth & orchestra loops · follow song key + BPM";
+      : KL.LOOPS.length + " loops · 2026 rap & hip-hop first · follow song key + BPM";
     $("kl-open").style.setProperty("--kit", cat ? cat.color : "#a78bfa");
     var sel = $("kl-slot"); sel.options[0].textContent = "Current pattern (" + S.piano.slot + ")";
   }
@@ -4197,10 +4238,10 @@
     klStopPreview();
     if (!ensureCtx()) return;
     var Li = KL.BY_ID[id], need = Li && (Li.insts || [Li.inst]);
-    if (need && PK.ready && !PK.ready(need)) { // orchestral loops: fetch their sample sets first (once), then preview
+    if (need && PK.ready && !PK.ready(need)) { // sampled loops (none today): fetch their sample sets first (once), then preview
       if (klLoading === id) return;
       klLoading = id;
-      toast("Loading orchestral samples for “" + Li.name + "”…");
+      toast("Loading samples for “" + Li.name + "”…");
       PK.load(need).then(function () { if (klLoading === id) { klLoading = null; klPreview(id); } });
       return;
     }
@@ -4209,10 +4250,11 @@
     var t0 = ctx.currentTime + 0.08, synced = false;
     if (playing && drumsOn()) { var barK = Math.ceil(curK / STEPS) * STEPS; t0 = nextTime + (barK - curK) * sd; synced = true; }
     var voices = [], dest = LG.groups.piano;
+    if (PK.setTempo) PK.setTempo(S.bpm);
     for (var r = 0; r < passes; r++) {
       p.notes.forEach(function (n) {
         var s16 = Math.floor(n.s / PD.STEP), sw = (n.s % PD.STEP === 0 && s16 % 2 === 1) ? sd * (S.swing / 100) : 0;
-        voices.push(PK.play(ctx, dest, n.p, t0 + (r * L + n.s) * tick + sw, n.l * tick, n.v, n.i || p.inst, PD.gainLin(p)));
+        voices.push(PK.play(ctx, dest, n.p, t0 + (r * L + n.s) * tick + sw, n.l * tick, n.v, n.i || p.inst, PD.gainLin(p), n.i ? null : p.tone));
       });
     }
     var end = t0 + passes * L * tick;

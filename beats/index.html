@@ -13,7 +13,7 @@
   <meta property="og:type" content="website">
   <meta name="theme-color" content="#0b0d12">
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css?v=20261003r">
 </head>
 <body>
   <header class="topbar">
@@ -74,7 +74,7 @@
       </div>
       <div id="kl-host-beats">
         <div id="kl-browser" class="kit-browser kl-browser" hidden>
-          <div class="kb-head"><span class="label">Keys loops · piano, Rhodes, synth &amp; orchestra · follow song key + BPM</span><button id="kl-close" class="btn small ghost" type="button">Close</button></div>
+          <div class="kb-head"><span class="label">Keys loops · 2026 rap &amp; hip-hop first · 808s, plucks, bells, piano · follow song key + BPM</span><button id="kl-close" class="btn small ghost" type="button">Close</button></div>
           <div class="kl-opts">
             <label>Song key <select class="js-songkey" id="kl-key2" aria-label="Song key (keys loops)"></select></label>
             <label>Load into <select id="kl-slot" aria-label="Load into piano pattern"><option value="">Current pattern (A)</option><option value="A">Pattern A</option><option value="B">Pattern B</option><option value="C">Pattern C</option><option value="D">Pattern D</option></select></label>
@@ -83,7 +83,7 @@
           </div>
           <div id="kl-cats" class="kb-cats" role="group" aria-label="Keys loop style"></div>
           <div id="kl-grid" class="kb-grid kl-grid"></div>
-          <p class="kb-note">Original progressions and melodies, played in your browser: synth voices plus free CC0 orchestral samples (VSCO-2 CE) for the Orchestra and Island sounds. Orchestra loops layer several instruments in one pattern (layer notes show in teal in the Piano Roll). Loops play at the song BPM and swing and are transposed to the song key. Tap a card to preview it (while the beat plays it joins on the next bar). Load puts the loop into a Piano Roll pattern (A–D), where every note can be edited, and it plays with the drums.</p>
+          <p class="kb-note">Original progressions, 808 lines and melodies, synthesized live in your browser (no samples to download). Rap and Hip-Hop lead the bank with 2026 sounds: tuned 808s with slides, Reese drill bass, trap plucks, digital bells, dark and felt trap pianos, supersaw leads, trap flute, vocal chops and horn stabs. Many loops layer several instruments in one pattern (layer notes show in teal in the Piano Roll). Loops play at the song BPM and swing and are transposed to the song key. Tap a card to preview it (while the beat plays it joins on the next bar). Load puts the loop into a Piano Roll pattern (A–D), where every note can be edited, and it plays with the drums.</p>
         </div>
       </div>
 
@@ -341,7 +341,10 @@
         <div class="pn-zoom" role="group" aria-label="Zoom"><button type="button" class="btn small ghost" id="pn-zout" aria-label="Zoom out">−</button><button type="button" class="btn small ghost" id="pn-zin" aria-label="Zoom in">+</button></div>
       </div>
       <div class="pn-bar">
+        <label class="pn-lbl" title="One-tap sound presets (instrument + drive + glide)">Preset <select id="pn-preset" aria-label="Sound preset"></select></label>
         <label class="pn-lbl">Sound <select id="pn-inst" aria-label="Instrument"></select></label>
+        <label class="pn-lbl pn-tone" title="Drive: saturation / distortion amount (808 grit, horn bite)">Drive <input type="range" id="pn-drive" min="0" max="100" value="10"> <output id="pn-drive-val" class="mono">10</output></label>
+        <label class="pn-lbl pn-tone" id="pn-glide-wrap">Glide <input type="range" id="pn-glide" min="0" max="100" value="50"> <output id="pn-glide-val" class="mono">50</output></label>
         <label class="pn-lbl">Key <select id="pn-key" aria-label="Key"></select></label>
         <select id="pn-scale" aria-label="Scale"></select>
         <label class="chk" title="New and moved notes snap to the scale"><input type="checkbox" id="pn-snapscale"> Snap to scale</label>
@@ -588,11 +591,11 @@
 
   <footer class="foot">Free · runs in your browser · synthesized drums + CC0 one-shots (<a href="samples/CREDITS.md">credits</a>), no paid APIs · instrumental “Gunwalk” © Emmanuel Griffith / DJ Psycho Fingers (<a href="tracks/CREDITS.md">credits</a>) · <a href="../dj/">DJ booth</a> · <a href="../">IslePin</a></footer>
 
-  <script src="drums.js"></script>
-  <script src="keys-instruments.js"></script>
-  <script src="pianoroll-data.js"></script>
-  <script src="keys-loops.js"></script>
-  <script src="pianoroll.js"></script>
-  <script src="app.js"></script>
+  <script src="drums.js?v=20261003r"></script>
+  <script src="keys-instruments.js?v=20261003r"></script>
+  <script src="pianoroll-data.js?v=20261003r"></script>
+  <script src="keys-loops.js?v=20261003r"></script>
+  <script src="pianoroll.js?v=20261003r"></script>
+  <script src="app.js?v=20261003r"></script>
 </body>
 </html>
