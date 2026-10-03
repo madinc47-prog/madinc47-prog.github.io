@@ -586,7 +586,8 @@ export function createScene(container) {
     const bpm = dn.bpm || 100;
     if (playing) dn.phase += dt * bpm / 60;
     if (a.beat && playing) { // pull the clock onto the detected onset (tempo changes stay in sync)
-      const err = Math.round(dn.phase) - dn.phase; dn.phase += err * (dn.bpm ? .35 : .8);
+      const lag = .07 * bpm / 60; // onset detection fires ~70 ms after the kick → the beat is already that far behind us
+      const err = Math.round(dn.phase - lag) + lag - dn.phase; dn.phase += err * (dn.bpm ? .35 : .8);
       if (!dn.bpm && dn.lastBeat) { const iv = tsec - dn.lastBeat; if (iv > .33 && iv < 1.2) dn.bpm = 60 / iv; }
       dn.lastBeat = tsec;
     }
