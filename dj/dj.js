@@ -161,7 +161,11 @@
     });
   }
   function eqDb(d, i) { return d.kill[i] ? -40 : d.eq[i]; }
+  /* external decks (YouTube player): no Web Audio path — volume = channel fader × crossfader × trim × master via the player */
+  function extVol(d) { if (d.ext) d.ext.vol(clamp(Math.pow(d.vol, 1.6) * xfGains()[d === DECKS[0] ? 0 : 1] * X.master * db2g(d.trimDb), 0, 1)); }
+  function extRate(d) { if (d.ext) d.ext.rate(rate(d)); }
   function applyDeckMix(d, now) {
+    extVol(d);
     if (!d.n || !ctx) return;
     var t = ctx.currentTime, n = d.n, tc = now ? 0.001 : 0.012;
     n.trim.gain.setTargetAtTime(db2g(d.autoDb + (d.rideDb || 0) + d.trimDb), t, tc);
@@ -182,6 +186,7 @@
     return [Math.cos(x * Math.PI / 2), Math.sin(x * Math.PI / 2)];
   }
   function applyXf() {
+    DECKS.forEach(extVol);
     if (!ctx) return;
     var g = xfGains(), t = ctx.currentTime, tc = X.curve === "scratch" ? 0.0012 : 0.006;
     DECKS[0].n.xf.gain.setTargetAtTime(g[0], t, tc);
@@ -190,6 +195,7 @@
 
   /* ---------------- transport ---------------- */
   function rawPos(d) {
+    if (d.ext) return d.playing ? clamp(d.ext.time(), 0, d.buf ? d.buf.duration : 1e9) : d.pos;
     if (d.scr && ctx) { var r = d.scrRep; if (!r) return d.scr.p0; return clamp(r.pos + Math.max(0, ctx.currentTime - r.time) * r.rate, 0, d.buf ? d.buf.duration : 1e9); }
     if (!d.playing || !d.anchor || !ctx) return d.pos;
     var p = d.anchor.pos + Math.max(0, ctx.currentTime - d.anchor.t) * d.anchor.rate;
@@ -198,12 +204,14 @@
   }
   /* what you hear right now (the keylock / dry delay makes output KL_D/2 late) */
   function pos(d) {
+    if (d.ext) return rawPos(d);
     var p = rawPos(d);
     if (d.scr) return klOn(d) ? Math.max(0, p - (KL_D / 2) * (d.scrRep ? d.scrRep.rate : 0)) : p;
     return d.playing && klOn(d) ? Math.max(0, p - (KL_D / 2) * rate(d)) : p;
   }
   function reanchor(d) { if (d.playing && !d.scr) d.anchor = { t: ctx.currentTime, pos: rawPos(d), rate: rate(d) }; }
   function startSrc(d, at, when) {
+    if (d.ext) { d.ext.seek(at, true); d.ext.rate(rate(d)); d.ext.play(); d.anchor = { t: ctx ? ctx.currentTime : 0, pos: at, rate: rate(d) }; return; }
     if (d.scr) { scrSeek(d, at); scrLoop(d); return; }
     stopSrc(d);
     var s = ctx.createBufferSource(), tok = ++d.srcTok;
@@ -216,8 +224,9 @@
     s.onended = function () { if (tok === d.srcTok && d.playing) { d.playing = false; d.pos = d.buf.duration; d.src = null; ui(d); } };
     d.src = s; d.anchor = { t: when, pos: at, rate: rate(d) };
   }
-  function stopSrc(d) { if (d.src) { d.srcTok++; try { d.src.stop(); } catch (e) { /* ignore */ } d.src.disconnect(); d.src = null; } }
+  function stopSrc(d) { if (d.ext) { d.ext.pause(); return; } if (d.src) { d.srcTok++; try { d.src.stop(); } catch (e) { /* ignore */ } d.src.disconnect(); d.src = null; } }
   function play(d, instant) {
+    if (d.ext && d.buf && !d.playing) { if (d.pos >= d.buf.duration - 0.3) d.pos = d.cue || 0; ensureCtx(); d.playing = true; var at0 = d.pos; if (d.sync && other(d).playing && !other(d).ext) at0 = phaseTarget(d, at0); startSrc(d, at0); ui(d); nowPlaying(); emit("play", d); return; }
     if (!d.buf || !ensureCtx()) { if (!d.buf) toast("Load a track into deck " + d.id + " first."); return; }
     if (d.playing) return;
     if (d.scr) { d.playing = true; if (!d.scr.hold) scrRate(d, rate(d), 0.07); ui(d); nowPlaying(); emit("play", d); return; }
@@ -241,7 +250,7 @@
     if (!d.buf) return;
     t = clamp(t, 0, d.buf.duration - 0.01);
     if (d.loop.on && (t < d.loop.in || t >= d.loop.out)) setLoopOn(d, false);
-    if (d.scr) scrSeek(d, t); else if (d.playing) startSrc(d, t); else d.pos = t;
+    if (d.scr) scrSeek(d, t); else if (d.playing) startSrc(d, t); else { d.pos = t; if (d.ext) d.ext.seek(t, true); }
     ui(d);
   }
 
@@ -306,6 +315,7 @@
   function rewind(d) {
     if (!d.buf || !ensureCtx()) return;
     emit("manual", d);
+    if (d.ext) { seek(d, d.cue || 0); if (!d.playing) play(d, true); toast("YouTube deck: back to the cue (no spin-back sound — the audio stays inside YouTube's player)"); return; }
     if (!scratchOK(d)) { var was = d.playing; seek(d, d.cue || 0); if (!was) play(d, true); toast("Rewind — back to the cue"); return; }
     var sc = scrBegin(d), g = ++sc.gen;
     sc.hold = true;
@@ -331,6 +341,7 @@
     if (e.button > 0 || d.tt.hand) return;
     e.preventDefault();
     if (!d.buf) { toast("Load a track into deck " + d.id + " to scratch."); return; }
+    if (d.ext) { toast("Scratching isn't possible on a YouTube deck — YouTube's audio can't be processed. Use a file or a beat for scratching."); return; }
     if (!ensureCtx()) return;
     emit("manual", d);
     try { el.setPointerCapture(e.pointerId); } catch (er) { /* ignore */ }
@@ -377,13 +388,14 @@
     if (!d.buf) return;
     ensureCtx();
     if (d.scr && !d.playing) scrKill(d);
-    if (d.playing) { pause(d, true); d.pos = d.cue; }
+    if (d.playing) { pause(d, true); d.pos = d.cue; if (d.ext) d.ext.seek(d.cue, true); }
     else if (Math.abs(d.pos - d.cue) < 0.01) { /* already at the cue */ }
     else { d.cue = snapBeat(d, d.pos, true); d.pos = d.cue; toast("Deck " + d.id + " cue set at " + fmtTime(d.cue)); }
     ui(d);
   }
   function setPitch(d, pct) {
     d.pitch = clamp(pct, -d.range, d.range);
+    if (d.ext) { d.pitch = d.ext.quant(d.pitch); extRate(d); }
     if (d.scr && !d.scr.hold && !d.tt.hand && d.playing) scrRate(d, rate(d), 0.05);
     if (d.playing && d.src) { reanchor(d); d.src.playbackRate.setValueAtTime(rate(d), ctx.currentTime); }
     if (ctx) applyKeylock(d);
@@ -391,12 +403,14 @@
     ui(d);
   }
   function setKeyShift(d, st) {
+    if (d.ext) { d.keyShift = 0; if (st) toast("Key shift isn't possible on a YouTube deck — its audio stays inside YouTube's player."); return; }
     d.keyShift = clamp(Math.round(st || 0), -6, 6);
     reanchor(d); if (ctx) applyKeylock(d);
     ui(d); emit("keyshift", d);
   }
   function setBend(d, b) {
     d.bend = b;
+    if (d.ext) { extRate(d); return; }
     if (d.playing && d.src) { reanchor(d); d.src.playbackRate.setValueAtTime(rate(d), ctx.currentTime); applyKeylock(d); }
   }
 
@@ -422,6 +436,7 @@
     if (Math.abs(pct) > 16) { toast("Tempos too far apart to sync (" + Math.round(effBpm(o)) + " vs " + Math.round(d.bpm) + " BPM)."); return false; }
     if (Math.abs(pct) > d.range) { d.range = 16; }
     d.pitch = pct;
+    if (d.ext) { d.pitch = d.ext.quant(pct); extRate(d); }
     if (d.playing && d.src) { reanchor(d); d.src.playbackRate.setValueAtTime(rate(d), ctx.currentTime); }
     if (ctx) applyKeylock(d);
     ui(d);
@@ -443,6 +458,7 @@
     if (!d.buf || !o.buf) { toast("Load both decks to sync."); return; }
     if (!d.bpm || !o.bpm) { toast("Both decks need a BPM — tap it in with TAP."); return; }
     if (d.sync) { d.sync = false; ui(d); return; }
+    if (d.ext && !o.ext) { toast("YouTube speeds only go in 5% steps — syncing deck " + o.id + " to this YouTube deck instead."); doSync(o); return; }
     if (!followTempo(d)) return;
     d.sync = true; o.sync = false;
     if (d.playing && o.playing) startSrc(d, phaseTarget(d, rawPos(d)));
@@ -501,7 +517,7 @@
     ensureCtx();
     if (clear) { d.hot[i] = null; toast("Hot cue " + (i + 1) + " cleared"); ui(d); return; }
     if (d.hot[i] == null) { d.hot[i] = snapBeat(d, pos(d), true); toast("Deck " + d.id + " hot cue " + (i + 1) + " set"); }
-    else { if (d.playing || d.scr) startSrc(d, d.hot[i]); else d.pos = d.hot[i]; }
+    else { if (d.playing || d.scr) startSrc(d, d.hot[i]); else { d.pos = d.hot[i]; if (d.ext) d.ext.seek(d.pos, true); } }
     ui(d);
   }
   function setLoopOn(d, on) {
@@ -511,15 +527,17 @@
     else { l.on = on; if (on && (d.pos < l.in || d.pos >= l.out)) d.pos = l.in; }
     ui(d);
   }
-  function loopIn(d) { if (!d.buf) return; d.loop.in = snapBeat(d, pos(d), true); d.loop.out = null; if (d.loop.on) setLoopOn(d, false); ui(d); }
+  function loopIn(d) { if (!d.buf || extNo(d, "Loops")) return; d.loop.in = snapBeat(d, pos(d), true); d.loop.out = null; if (d.loop.on) setLoopOn(d, false); ui(d); }
+  function extNo(d, what) { if (!d.ext) return false; toast(what + " aren't available on a YouTube deck — the player can only jump, not loop seamlessly."); return true; }
   function loopOut(d) {
+    if (d.buf && extNo(d, "Loops")) return;
     if (!d.buf || d.loop.in == null) { toast("Set loop IN first."); return; }
     var o = snapBeat(d, pos(d), true);
     if (o <= d.loop.in + 0.05) { toast("Loop OUT must be after IN."); return; }
     d.loop.out = o; setLoopOn(d, true);
   }
   function autoLoop(d, beats) {
-    if (!d.buf) return;
+    if (!d.buf || extNo(d, "Loops")) return;
     if (!d.bpm) { toast("Loops by beat need a BPM — use IN / OUT or TAP."); return; }
     var L = beatLen(d), p = pos(d), start = d.grid + Math.floor((p - d.grid) / L + 1e-6) * L;
     if (start < 0) start = 0;
@@ -564,6 +582,7 @@
   /* item: { name, get: () => Promise<ArrayBuffer|AudioBuffer>, bpm?, grid?, sub? } */
   function loadInto(d, item, force) {
     if (d.playing && !force && !confirm("Deck " + d.id + " is playing. Load “" + item.name + "” anyway?")) return Promise.resolve(false);
+    if (item.load) return item.load(d, true);
     if (!ensureCtx()) return Promise.resolve(false);
     var tok = (d.loadTok = (d.loadTok || 0) + 1);
     d.loading = true; ui(d);
@@ -571,6 +590,7 @@
     return item.get().then(function (x) { return x instanceof AudioBuffer ? x : decode(x); }).then(function (buf) {
       if (tok !== d.loadTok) return false;
       pause(d, true); scrKill(d);
+      if (d.ext) { var ox = d.ext; d.ext = null; ox.destroy(); }
       d.buf = buf; d.name = item.name; d.sub = item.sub || ""; d.pos = 0; d.cue = item.grid || 0; d.hot = [null, null, null, null];
       d.loop = { in: null, out: null, on: false }; d.sync = false; d.pitch = 0; d.bend = 0;
       d.peaks = computePeaks(buf); d.ovDirty = true;
@@ -597,6 +617,24 @@
       return false;
     });
   }
+  /* external source (YouTube player) on a deck: ext = { kind, duration(), time(), play(), pause(), seek(t), rate(r), quant(pct), vol(v), destroy() } */
+  function setExt(d, ext, item) {
+    d.loadTok = (d.loadTok || 0) + 1;
+    pause(d, true); scrKill(d); stopSrc(d);
+    if (d.ext && d.ext !== ext) { var ox = d.ext; d.ext = null; ox.destroy(); }
+    d.ext = ext;
+    d.buf = { ext: true, duration: ext.duration() || 1, sampleRate: 44100, length: 0, numberOfChannels: 0 };
+    d.name = item.name; d.sub = item.sub || ""; d.pos = item.start || 0; d.cue = item.start || 0; d.hot = [null, null, null, null];
+    d.loop = { in: null, out: null, on: false }; d.sync = false; d.pitch = 0; d.bend = 0; d.peaks = null; d.ovDirty = true;
+    d.autoDb = 0; d.rideDb = 0; d.keyShift = 0; d.trimDb = 0; d.bpm = item.bpm || bpmFromName(item.name) || null; d.grid = item.grid || 0; d.bpmSrc = d.bpm ? "tag" : "";
+    d.loading = false; d.item = item; d.wlBuf = null;
+    extVol(d); extRate(d);
+    if (CTL[d.id + ".trim"]) CTL[d.id + ".trim"].set(0);
+    ui(d); nowPlaying(); emit("loaded", d, item);
+    toast("Deck " + d.id + ": " + item.name + " (YouTube) — tap TAP on the beat to set its BPM");
+  }
+  function extEnded(d) { if (!d.ext) return; d.playing = false; d.pos = d.buf.duration; ui(d); nowPlaying(); }
+  function extState(d, playing) { if (!d.ext || d.playing === playing) return; if (!playing) d.pos = d.ext.time(); d.playing = playing; ui(d); nowPlaying(); emit(playing ? "play" : "pause", d); }
   function fileItem(f) { return { name: f.name.replace(/\.[a-z0-9]+$/i, ""), sub: "Your file", get: function () { return f.arrayBuffer(); }, bpmHint: bpmFromName(f.name) }; }
   function bpmFromName(s) { var m = /(\d{2,3}(?:\.\d)?)\s*bpm/i.exec(s || ""); var v = m ? +m[1] : NaN; return v >= 60 && v <= 200 ? v : null; }
   function fetchAB(url) { return fetch(url).then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.arrayBuffer(); }); }
@@ -884,7 +922,7 @@
       q(".d-rw").addEventListener("click", function () { rewind(d); });
       q(".d-cue").addEventListener("click", function () { cue(d); });
       q(".d-sync").addEventListener("click", function () { doSync(d); });
-      q(".d-key").addEventListener("click", function () { d.keylock = !d.keylock; reanchor(d); if (ctx) applyKeylock(d); ui(d); savePrefs(); toast("Deck " + d.id + " keylock " + (d.keylock ? "on" : "off")); });
+      q(".d-key").addEventListener("click", function () { if (d.ext) { toast("YouTube decks always keep their key when the speed changes (the player preserves pitch)."); return; } d.keylock = !d.keylock; reanchor(d); if (ctx) applyKeylock(d); ui(d); savePrefs(); toast("Deck " + d.id + " keylock " + (d.keylock ? "on" : "off")); });
       q(".d-range").addEventListener("click", function () { d.range = d.range === 8 ? 16 : 8; setPitch(d, d.pitch); CTL[d.id + ".pitch"].set(d.pitch / d.range); savePrefs(); });
       q(".d-tap").addEventListener("click", function () { tapTempo(d); });
       q(".d-half").addEventListener("click", function () { scaleBpm(d, 0.5); });
@@ -934,7 +972,7 @@
     });
     control($("xf"), { name: "xf", kind: "hfader", min: -1, max: 1, value: X.xf, def: 0, snap: 0, center: 0, onChange: function (v) { X.xf = v; applyXf(); savePrefs(); } });
     control(document.querySelector(".m-vol"), { name: "master", kind: "knob", min: 0, max: 1, value: X.master, def: 0.85, fmt: function (v) { return Math.round(v * 100) + "%"; },
-      onChange: function (v) { X.master = v; if (ctx) M.vol.gain.setTargetAtTime(v, ctx.currentTime, 0.01); savePrefs(); emit("master", v); } });
+      onChange: function (v) { X.master = v; DECKS.forEach(extVol); if (ctx) M.vol.gain.setTargetAtTime(v, ctx.currentTime, 0.01); savePrefs(); emit("master", v); } });
     var curveName = function () { return X.curve === "cut" ? "Cut" : X.curve === "scratch" ? "Scratch" : "Smooth"; };
     $("xf-curve").textContent = curveName();
     $("xf-curve").addEventListener("click", function () { X.curve = X.curve === "smooth" ? "cut" : X.curve === "cut" ? "scratch" : "smooth"; $("xf-curve").textContent = curveName(); applyXf(); savePrefs(); toast("Crossfader curve: " + curveName() + (X.curve === "scratch" ? " (razor-sharp cut for scratching)" : X.curve === "cut" ? " (fast cut)" : " (smooth blend)")); });
@@ -1036,7 +1074,7 @@
     var c = d.el.zoom, g = c.getContext("2d"), W = c.width, H = c.height, dpr = c._dpr || 1, mid = H / 2;
     g.fillStyle = "#0b0e15"; g.fillRect(0, 0, W, H);
     g.fillStyle = "rgba(255,255,255,.35)"; g.font = (10 * dpr) + "px ui-monospace, monospace"; g.fillText(d.id, 5 * dpr, 12 * dpr);
-    if (!d.buf || !d.peaks) { g.fillStyle = "rgba(255,255,255,.25)"; g.fillText("Deck " + d.id + " · empty", 18 * dpr, 12 * dpr); return; }
+    if (!d.buf || !d.peaks) { g.fillStyle = "rgba(255,255,255,.25)"; g.fillText(d.ext ? "Deck " + d.id + " · YouTube — no waveform (audio stays in YouTube's player) · " + (d.playing ? "▶ " : "") + fmtTime(pos(d)) : "Deck " + d.id + " · empty", 18 * dpr, 12 * dpr); return; }
     var span = 6, p = pos(d), sr = d.buf.sampleRate, bs = d.peaks.bs, dm = d.peaks.dmax, dl = d.peaks.dlow, t0 = p - span / 2, col = deckColor(d);
     var secPerPx = span / W;
     for (var x = 0; x < W; x++) {
@@ -1102,6 +1140,7 @@
     e.lexit.textContent = d.loop.on ? "EXIT" : "RELOOP"; e.lexit.classList.toggle("on", d.loop.on);
     e.root.classList.toggle("playing", d.playing); e.root.classList.toggle("loaded", !!d.buf);
     e.vinyl.textContent = d.vinyl ? "VINYL" : "CDJ"; e.vinyl.classList.toggle("on", d.vinyl);
+    e.root.classList.toggle("ext", !!d.ext); e.strip.classList.toggle("ext", !!d.ext);
     var pc = CTL[d.id + ".pitch"]; if (pc && Math.abs(pc.get() * d.range - d.pitch) > 0.01) pc.set(d.pitch / d.range);
   }
   function nowPlaying() {
@@ -1116,7 +1155,7 @@
         ctx: ctx ? ctx.state : "none", sr: ctx ? ctx.sampleRate : 0, xf: X.xf, curve: X.curve, xfGains: xfGains(), master: X.master, masterPeakMax: masterPeakMax,
         limiting: M ? M.lim.reduction : 0, rec: !!(X.rec && X.rec.on), mixes: MIXES.map(function (m) { return { name: m.name, dur: m.dur, size: m.blob.size, peak: m.peak }; }),
         decks: DECKS.map(function (d) {
-          return { id: d.id, name: d.name, loaded: !!d.buf, dur: d.buf ? d.buf.duration : 0, playing: d.playing, pos: pos(d), raw: rawPos(d), cue: d.cue, bpm: d.bpm, grid: d.grid, bpmSrc: d.bpmSrc,
+          return { id: d.id, ext: d.ext ? d.ext.kind : null, name: d.name, loaded: !!d.buf, dur: d.buf ? d.buf.duration : 0, playing: d.playing, pos: pos(d), raw: rawPos(d), cue: d.cue, bpm: d.bpm, grid: d.grid, bpmSrc: d.bpmSrc,
             eff: effBpm(d), rate: rate(d), pitch: d.pitch, range: d.range, keylock: d.keylock, sync: d.sync, hot: d.hot.slice(), loop: JSON.parse(JSON.stringify(d.loop)),
             vol: d.vol, eq: d.eq.slice(), kill: d.kill.slice(), filter: d.filter, trimDb: d.trimDb, autoDb: d.autoDb, rideDb: d.rideDb || 0, keyShift: d.keyShift || 0, key: d.key || null, line: !!d.line,
             filt: d.n ? { type: d.n.filt.type, f: d.n.filt.frequency.value } : null, gains: d.n ? { low: d.n.low.gain.value, mid: d.n.mid.gain.value, high: d.n.high.gain.value, fader: d.n.fader.gain.value, xf: d.n.xf.gain.value } : null,
@@ -1144,6 +1183,7 @@
     pos: pos, rawPos: rawPos, rate: rate, effBpm: effBpm, beatLen: beatLen, estimateBpm: estimateBpm, applyDeckMix: applyDeckMix, applyXf: applyXf, xfGains: xfGains,
     ui: ui, other: other, showLib: showLib, LIBTABS: LIBTABS, addMix: addMix, audioStream: audioStream, pickMime: pickMime, bpmFromName: bpmFromName, isMaster: isMaster,
     control: control, savePrefs: savePrefs, setKeyShift: setKeyShift, applyKeylock: applyKeylock, KL_D: KL_D, nowPlaying: nowPlaying,
+    setExt: setExt, extEnded: extEnded, extState: extState, extVol: extVol,
     get libTab() { return libTab; }, get recording() { return !!(X.rec && X.rec.on); }
   };
   buildUI();

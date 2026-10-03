@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DJ Psycho Fingers — Program out</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #000; overflow: hidden; font: 13px system-ui, sans-serif; color: #8a93a8; }
+  #prog-canvas, #yt { position: absolute; inset: 0; width: 100%; height: 100%; }
+  #prog-canvas { object-fit: contain; }
+  #yt { display: none; }
+  body.yt #yt { display: block; }
+  body.yt #prog-canvas { visibility: hidden; }
+  #hint { position: absolute; left: 10px; bottom: 8px; opacity: .6; pointer-events: none; }
+</style>
+</head>
+<body>
+<video id="prog-canvas" autoplay muted playsinline title="Double-click for fullscreen"></video>
+<div id="yt"><div id="ytp"></div></div>
+<div id="hint">Program output · double-click for fullscreen · sound plays from the DJ booth tab</div>
+<script>
+/* Pop-out program screen for the DJ booth. The booth sets the canvas stream on #prog-canvas; when a YouTube deck owns
+   the crossfader it shows a muted twin YouTube player here, kept in step over BroadcastChannel('pfdj-program'). */
+(function () {
+  var bc = null, player = null, ready = false, cur = null, S = null;
+  try { bc = new BroadcastChannel("pfdj-program"); } catch (e) {}
+  document.addEventListener("dblclick", function () { var el = document.documentElement; (el.requestFullscreen || el.webkitRequestFullscreen || function () {}).call(el); });
+  setTimeout(function () { document.getElementById("hint").style.display = "none"; }, 6000);
+  function loadApi() {
+    if (window.YT && YT.Player) return start();
+    window.onYouTubeIframeAPIReady = start;
+    var s = document.createElement("script"); s.src = "https://www.youtube.com/iframe_api"; document.head.appendChild(s);
+  }
+  function start() {
+    player = new YT.Player("ytp", { host: "https://www.youtube-nocookie.com", width: "100%", height: "100%", playerVars: { playsinline: 1, controls: 0, rel: 0, mute: 1, iv_load_policy: 3, origin: location.origin },
+      events: { onReady: function () { ready = true; player.mute(); apply(); } } });
+  }
+  function apply() {
+    if (!S) return;
+    document.body.classList.toggle("yt", S.show === "yt" && !!S.id);
+    if (S.show !== "yt" || !S.id) { if (ready && player.getPlayerState() === 1) player.pauseVideo(); return; }
+    if (!player) { loadApi(); return; }
+    if (!ready) return;
+    if (cur !== S.id) { cur = S.id; player.loadVideoById({ videoId: S.id, startSeconds: S.t || 0 }); player.mute(); }
+    var t = player.getCurrentTime() || 0;
+    if (Math.abs(t - S.t) > 0.5) player.seekTo(S.t + (S.playing ? 0.15 : 0), true);
+    if (Math.abs(player.getPlaybackRate() - S.rate) > 0.01) player.setPlaybackRate(S.rate);
+    var st = player.getPlayerState();
+    if (S.playing && st !== 1 && st !== 3) player.playVideo();
+    if (!S.playing && st === 1) player.pauseVideo();
+  }
+  if (bc) { bc.onmessage = function (e) { if (e.data && e.data.type === "state") { S = e.data; apply(); } }; bc.postMessage({ type: "hello" }); }
+})();
+</script>
+</body>
+</html>

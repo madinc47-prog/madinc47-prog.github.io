@@ -27,7 +27,7 @@
   function anaOf(it) { return it.ana || cache[it.key] || null; }
   function setAna(it, a) { it.ana = a; if (it.libId && window.PFLIB) window.PFLIB.saveAnalysis(it.libId, a); else if (it.key) { cache[it.key] = a; saveCache(); } }
   var anaQ = [], anaBusy = false;
-  function analyzeLater(it) { if (anaOf(it) || anaQ.indexOf(it) >= 0) return; anaQ.push(it); pump(); }
+  function analyzeLater(it) { if (it.ext || !it.get || anaOf(it) || anaQ.indexOf(it) >= 0) return; anaQ.push(it); pump(); }
   function pump() {
     if (anaBusy || !anaQ.length) return;
     if (!P.ctx) return; // decoding needs the audio context (starts on first tap)
@@ -92,7 +92,7 @@
       A.loadingNext = false;
       if (!ok) { A.nextItem = null; P.toast("Auto DJ: couldn't load " + it.name + " — skipping"); return; }
       d.adItem = it; d.adLoaded = Date.now();
-      if (!anaOf(it)) setTimeout(function () { if (d.buf) setAna(it, analyzeBuf(d.buf, { bpm: d.bpm, grid: d.grid, bpmHint: it.bpmHint })); render(); }, 400);
+      if (!anaOf(it) && !it.ext) setTimeout(function () { if (d.buf && !d.buf.ext) setAna(it, analyzeBuf(d.buf, { bpm: d.bpm, grid: d.grid, bpmHint: it.bpmHint })); render(); }, 400);
       render();
     });
     return true;
@@ -105,6 +105,7 @@
   }
   function mixPoint(d) {
     var it = d.adItem, a = it && anaOf(it), dur = d.buf.duration, bar = d.bpm ? 240 / d.bpm : 8, len = A.bars * bar;
+    if (d.ext || P.other(d).ext) len = Math.min(len, 12);                      // YouTube: plain volume crossfade, ~12 s
     var end = a && a.end ? Math.min(dur, a.end) : dur, outro = a && a.outro ? a.outro : end;
     var start = Math.min(end - len, Math.max(outro - len * 0.25, end - len * 1.5));
     if (d.bpm) start = d.grid + Math.floor((start - d.grid) / (bar * 4)) * bar * 4;  // 4-bar phrase boundary
@@ -115,8 +116,10 @@
     A.inc = inc; A.phase = "mixing";
     var mp = mixPoint(cur), incLen = inc.buf ? (inc.buf.duration - inc.pos) * 0.45 * P.rate(cur) : mp.len;
     A.mix = { t0: P.pos(cur), len: Math.max(4, Math.min(mp.len, incLen, cur.buf.duration - P.pos(cur) - 0.3)), swapped: false, curLow: P.CTL[cur.id + ".eqLow"].get(), from: side(cur), to: side(inc) };
-    if (cur.bpm && inc.bpm) { inc.sync = false; P.doSync(inc); }
-    if (window.PFMATCH && window.PFMATCH.on) window.PFMATCH.keyMatch(inc, true);   // AUTO MATCH: shift the incoming track to a compatible key (≤ 3 st)
+    A.mix.volOnly = !!(cur.ext || inc.ext);                                   // YouTube involved → volume crossfade only (no sync / EQ)
+    if (cur.bpm && inc.bpm && !A.mix.volOnly) { inc.sync = false; P.doSync(inc); }
+    if (A.mix.volOnly) eqLow(inc, 0);
+    if (window.PFMATCH && window.PFMATCH.on && !A.mix.volOnly) window.PFMATCH.keyMatch(inc, true);   // AUTO MATCH: shift the incoming track to a compatible key (≤ 3 st)
     P.play(inc, true);
     P.toast("Auto DJ: mixing in " + inc.name + " over " + A.bars + " bars");
   }
@@ -148,7 +151,7 @@
           if (!A.on) return;
           if (!ok) { A.phase = "idle"; A.cur = null; return; }
           d0.adItem = it; setXf(side(d0)); eqLow(d0, 0); P.play(d0, true); A.cur = d0; A.phase = "playing";
-          if (!anaOf(it)) setTimeout(function () { if (d0.buf) setAna(it, analyzeBuf(d0.buf, { bpm: d0.bpm, grid: d0.grid })); }, 400);
+          if (!anaOf(it) && !it.ext) setTimeout(function () { if (d0.buf && !d0.buf.ext) setAna(it, analyzeBuf(d0.buf, { bpm: d0.bpm, grid: d0.grid })); }, 400);
           render();
         });
         return;
@@ -178,8 +181,8 @@
       if (!cur.playing) uu = 1;
       var sm = uu * uu * (3 - 2 * uu);
       setXf(m.from + (m.to - m.from) * sm);
-      if (A.bassSwap && !m.swapped && uu >= 0.5) { m.swapped = true; eqLow(cur, -26); eqLow(inc, 0); }
-      A.msg = "Mixing into " + inc.name + " · " + Math.round(uu * 100) + "%" + (A.bassSwap ? (m.swapped ? " · bass swapped" : " · bass swap at 50%") : "");
+      if (A.bassSwap && !m.volOnly && !m.swapped && uu >= 0.5) { m.swapped = true; eqLow(cur, -26); eqLow(inc, 0); }
+      A.msg = "Mixing into " + inc.name + " · " + Math.round(uu * 100) + "%" + (m.volOnly ? " · volume crossfade (YouTube)" : A.bassSwap ? (m.swapped ? " · bass swapped" : " · bass swap at 50%") : "");
       if (uu >= 1) finishMix();
     }
     renderStatus();
