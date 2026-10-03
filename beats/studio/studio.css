@@ -165,3 +165,10 @@ body.embed .st-standalone { display: none; }
 .ex-actions { flex-wrap: wrap; }
 .ex-status { margin: .6rem 0 0; line-height: 1.9; }
 .ex-status a.btn { text-decoration: none; }
+.rs-hp { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem .9rem; margin: 0 0 .6rem; font-size: .82rem; }
+.rs-hp label.chk { display: flex; align-items: center; gap: .35rem; }
+#clean-sheet .vc-prog, #clean-sheet .vc-ab { margin-top: .4rem; }
+/* Clean take: a floating card, not a modal, so you can keep working (or record the next take) while it runs */
+#clean-sheet { inset: auto 1rem 4.2rem auto; background: none; padding: 0; pointer-events: none; z-index: 85; }
+#clean-sheet .st-panel { pointer-events: auto; width: min(460px, calc(100vw - 2rem)); border-color: rgba(52, 211, 153, .45); }
+@media (max-width: 640px) { #clean-sheet { inset: auto .5rem 4rem .5rem; } #clean-sheet .st-panel { width: 100%; } }

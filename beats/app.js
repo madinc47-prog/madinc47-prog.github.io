@@ -99,7 +99,7 @@
     lyricSong: "streets", // song shown in Lyrics / Teleprompter
     bpl: "auto",          // teleprompter bars per line ("auto" = fit song sections)
     prSize: 1,
-    vox: { nudge: 0, monitor: false, dry: false },
+    vox: { nudge: 0, monitor: false, dry: false, clean: true, aec: true, raw: true, spk: 80, guide: false },
     tool: "hit", lane: "vel", page: 0,
     piano: { slot: "A", slots: { A: PD.empty(), B: PD.empty(), C: PD.empty(), D: PD.empty() } }, // piano-roll pattern slots
     songKey: null,        // song key 0–11 for the keys loop bank (null = the first loaded loop sets it)
@@ -225,6 +225,11 @@
         S.vox.nudge = clamp(+d.vox.nudge || 0, -300, 300);
         S.vox.monitor = !!d.vox.monitor;
         S.vox.dry = !!d.vox.dry;
+        if (typeof d.vox.clean === "boolean") S.vox.clean = d.vox.clean;   // speaker-mode fields: absent in older sessions
+        if (typeof d.vox.aec === "boolean") S.vox.aec = d.vox.aec;
+        if (typeof d.vox.raw === "boolean") S.vox.raw = d.vox.raw;
+        if (typeof d.vox.guide === "boolean") S.vox.guide = d.vox.guide;
+        if (isFinite(+d.vox.spk) && d.vox.spk != null) S.vox.spk = clamp(Math.round(+d.vox.spk), 10, 100);
       }
       return true;
     } catch (e) { return false; }
@@ -449,7 +454,7 @@
    * Keys skip the drum bus. → master fader → limiter → safety clipper (ceiling −0.3 dBFS) → `master`
    * The same graph is built for live playback, Bounce and Level match, so all three sound identical.
    * Web Audio compressors add automatic make-up gain; it is trimmed back out so faders mean what they say. */
-  var ctx = null, master = null, masterAnalyser = null, beatMon = null, LG = null;
+  var ctx = null, master = null, masterAnalyser = null, beatMon = null, spkGain = null, LG = null;
   var groupNodes = {};
   var liveVoices = [];
   var livePeak = 0;
@@ -562,7 +567,9 @@
     // speaker feed of the beat goes through the A/B gate; recordings tap `master` upstream of it
     beatMon = ctx.createGain();
     masterAnalyser.connect(beatMon);
-    beatMon.connect(ctx.destination);
+    spkGain = ctx.createGain();             // speaker-mode beat level during a vocal take (speakers only, never recorded)
+    beatMon.connect(spkGain);
+    spkGain.connect(ctx.destination);
     GROUPS.forEach(function (g) { groupNodes[g.id] = { gain: LG.groups[g.id], an: LG.an[g.id] }; });
     applyMixer();
     setupRecorder();
@@ -582,7 +589,9 @@
     GROUPS.forEach(function (g) { groupNodes[g.id].gain.gain.setTargetAtTime(mixGain(g.id), t, 0.01); });
     LG.fader.gain.setTargetAtTime(mixGain("master"), t, 0.01);
     if (vocalFader) vocalFader.gain.setTargetAtTime(mixGain("vocal"), t, 0.01);
-    if (monitorGain) monitorGain.gain.setTargetAtTime(S.vox.monitor ? 1 : 0, t, 0.01);
+    // mic monitoring only on headphones: through a speaker it would feed back and end up in the take
+    if (monitorGain) monitorGain.gain.setTargetAtTime(S.vox.monitor && hpMode() === "hp" ? 1 : 0, t, 0.01);
+    if (spkGain) spkGain.gain.setTargetAtTime(vox.state !== "idle" && vox.takeMode === "spk" ? spkBeatGain() : 1, t, 0.02);
   }
   function hasPad(i) { return !!(customBuf[i] || stockBufs[i]); }
   function audible(p) { return !S.mute[p] && (!S.solo.some(Boolean) || S.solo[p]); }
@@ -2108,6 +2117,7 @@
     refTick();
     if (activeTab === "beats" && bt.buf) btTick();
     if (activeTab === "piano" && pianoEd) pianoTick();
+    if (vc.src || vc.off) vcTick();
     requestAnimationFrame(loop);
   }
 
@@ -2124,23 +2134,30 @@
     if (n === "AbortError") return "Opening the mic was interrupted. Try again.";
     return "Could not open the mic" + (e && e.message ? ": " + e.message : ".");
   }
+  function micWantsProcessing() { return hpMode() === "spk" && S.vox.aec; }
   function openMic() {
     if (!window.isSecureContext || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       return Promise.reject({ name: "Unsupported" });
     }
-    if (vox.stream) return Promise.resolve(vox.stream);
+    var proc = micWantsProcessing();
+    if (vox.stream && vox.streamProc === proc) return Promise.resolve(vox.stream);
+    if (vox.stream) closeMic(); // mode changed since the mic was opened → reopen with the right processing
     var md = navigator.mediaDevices;
-    return md.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } })
+    // headphones: raw mic (best quality). Speaker mode: ask the browser / phone for its echo canceller, noise
+    // suppression and auto gain as a first pass; the take is cleaned properly afterwards either way.
+    return md.getUserMedia({ audio: { echoCancellation: proc, noiseSuppression: proc, autoGainControl: proc } })
       .catch(function (e) {
         if (e && (e.name === "OverconstrainedError" || e.name === "TypeError")) return md.getUserMedia({ audio: true });
         throw e;
       })
       .then(function (stream) {
-        vox.stream = stream;
+        vox.stream = stream; vox.streamProc = proc;
         vox.src = ctx.createMediaStreamSource(stream);
         vox.src.connect(vocalBus);
         var tr = stream.getAudioTracks()[0];
         var st = tr && tr.getSettings ? tr.getSettings() : {};
+        vox.micSettings = { echoCancellation: st.echoCancellation, noiseSuppression: st.noiseSuppression, autoGainControl: st.autoGainControl, label: tr ? tr.label : "", requested: proc };
+        hpDetect(); // labels are readable once the mic is allowed
         vox.inLat = typeof st.latency === "number" && st.latency < 0.5 ? st.latency : 0;
         updateLatencyLabel();
         return stream;
@@ -2179,6 +2196,8 @@
     if (bs) bs.disabled = !(rec.on || vox.state !== "idle");
     var mc = $("vox-check");
     if (mc) { mc.disabled = vox.state !== "idle"; mc.classList.toggle("on", vox.check); mc.textContent = vox.check ? "Stop mic check" : "Mic check"; }
+    if (vc.busy) document.querySelectorAll(".js-vox").forEach(function (b) { b.disabled = true; b.textContent = "Cleaning take…"; });
+    hpUI(); applyMixer();
     refVoxChanged();
   }
   function click(t, accent) {
@@ -2202,6 +2221,8 @@
     if (rec.on) { toast("Finish the current recording first."); return; }
     if (!ensureCtx()) return;
     if (vox.check) stopMicCheck();
+    if (vc.busy) { toast("Still cleaning the last take — one moment."); return; }
+    vox.takeMode = hpMode();
     vox.state = "arming"; setVoxButtons();
     setVoxStatus("Requesting microphone…");
     openMic().then(function () {
@@ -2280,8 +2301,11 @@
     var cut = on > 0 ? Math.max(0, on - Math.round(sr * 0.01)) : 0;
     if (cut) { L = L.subarray(cut); R = R.subarray(cut); V = V.subarray(cut); frames -= cut; }
     var song = getSong(S.lyricSong);
-    vox.last = { L: L, R: R, V: V, frames: frames, sr: sr, title: btActive() ? bt.title : song ? song.title : "" };
-    exportVocalMix(true);
+    vox.last = { L: L, R: R, V: V, frames: frames, sr: sr, title: btActive() ? bt.title : song ? song.title : "", mode: vox.takeMode || "hp", clean: null, lat: null,
+      mic: vox.micSettings || null, spk: vox.takeMode === "spk" ? spkBeatGain() : 1 };
+    applyMixer();
+    if (vox.last.mode === "spk" && S.vox.clean) cleanTake(vox.last);
+    else exportVocalMix(true);
     renderLastTake();
   }
   function vocalPeak(V) {
@@ -2289,36 +2313,43 @@
     for (var i = 0; i < V.length; i += 4) { var a = Math.abs(V[i]); if (a > p) p = a; }
     return p;
   }
-  function vocalMix(first) { // beat + vocal (latency-shifted, vocal fader) of the last take → { L, R, n, sr, dry }
-    var t = vox.last;
-    var sh = Math.round((autoLatency() + S.vox.nudge / 1000) * t.sr); // mic arrives late → pull it earlier
-    var vg = mixGain("vocal");
-    var n = t.frames, outL = new Float32Array(n), outR = new Float32Array(n), dry = S.vox.dry && first ? new Float32Array(n) : null;
-    for (var i = 0; i < n; i++) {
-      var j = i + sh;
-      var v = j >= 0 && j < n ? t.V[j] : 0;
-      if (dry) dry[i] = v;
-      outL[i] = t.L[i] + v * vg;
-      outR[i] = t.R[i] + v * vg;
-    }
-    return { L: outL, R: outR, n: n, sr: t.sr, dry: dry };
+  function takeShift(t) { // mic arrives late → pull it earlier. Speaker takes measure the real round trip from the beat bleed.
+    return Math.round(((t.lat != null ? t.lat : autoLatency()) + S.vox.nudge / 1000) * t.sr);
   }
-  function exportVocalMix(first) {
+  // which: "clean" (speaker take after cleanup), "raw" (as recorded) or undefined (clean if there is one)
+  function vocalMixArrays(t, which, solo) {
+    var useClean = which === "clean" || (which == null && t.clean);
+    var V = useClean && t.clean ? t.clean : t.V, sh = takeShift(t), vg = mixGain("vocal");
+    var n = t.frames, outL = new Float32Array(n), outR = solo ? outL : new Float32Array(n);
+    for (var i = 0; i < n; i++) {
+      var j = i + sh, v = j >= 0 && j < n ? V[j] : 0;
+      if (solo) { outL[i] = v; continue; }
+      outL[i] = t.L[i] + v * vg; outR[i] = t.R[i] + v * vg;
+    }
+    return { L: outL, R: outR, V: V, sh: sh };
+  }
+  function exportVocalMix(first, which) {
     var t = vox.last;
     if (!t) { toast("No vocal take yet."); return; }
-    var mx = vocalMix(first), n = mx.n, outL = mx.L, outR = mx.R, dry = mx.dry;
-    var name = "Vocal take" + (t.title ? " · " + t.title : "");
-    saveToVault(encodeWav(outL, outR, n, t.sr), n / t.sr, first ? name : name + " (re-mix)");
-    if (dry) saveToVault(encodeWav(dry, dry, n, t.sr), n / t.sr, "Dry vocal" + (t.title ? " · " + t.title : ""));
+    var clean = !!t.clean && which !== "raw";
+    var mx = vocalMixArrays(t, clean ? "clean" : "raw"), n = t.frames;
+    var name = "Vocal take" + (t.mode === "spk" && t.clean ? (clean ? " (cleaned)" : " (raw, speaker)") : "") + (t.title ? " · " + t.title : "");
+    saveToVault(encodeWav(mx.L, mx.R, n, t.sr), n / t.sr, first ? name : name + " (re-mix)");
+    if (S.vox.dry && first) {
+      var dry = new Float32Array(n);
+      for (var i = 0; i < n; i++) { var j = i + mx.sh; dry[i] = j >= 0 && j < n ? mx.V[j] : 0; }
+      saveToVault(encodeWav(dry, dry, n, t.sr), n / t.sr, "Dry vocal" + (clean ? " (cleaned)" : "") + (t.title ? " · " + t.title : ""));
+    }
+    if (which === "raw") return;
     var quiet = vocalPeak(t.V) < 0.003;
-    setVoxStatus("Saved " + fmtTime(n / t.sr) + " vocal + " + (btActive() ? "instrumental" : "beat") + " mix to Vault" + (quiet ? " — warning: the mic signal was almost silent" : ""), quiet);
-    if (first) sendOffer("Vocal take saved to Vault (beat + vocal WAV).", function (dest) { sendVocal(dest); });
+    setVoxStatus("Saved " + fmtTime(n / t.sr) + " vocal + " + (btActive() ? "instrumental" : "beat") + " mix to Vault" + (clean ? " (cleaned: no speaker beat, no room noise)" : "") + (quiet ? " — warning: the mic signal was almost silent" : ""), quiet);
+    if (first) sendOffer(clean ? "Cleaned vocal take saved to Vault." : "Vocal take saved to Vault (beat + vocal WAV).", function (dest) { sendVocal(dest); });
   }
   function sendVocal(dest) {
     var t = vox.last;
     if (!t) { toast("Record a vocal take first (🎙 Record Vocals)."); return; }
-    var mx = vocalMix(false);
-    sendOut(dest, encodeWav(mx.L, mx.R, mx.n, mx.sr), mx.n / mx.sr, (t.title || songTitle()) + " (vocal take)");
+    var mx = vocalMixArrays(t); // the cleaned vocal when the take was cleaned (speaker mode), else as recorded
+    sendOut(dest, encodeWav(mx.L, mx.R, t.frames, t.sr), t.frames / t.sr, (t.title || songTitle()) + (t.clean ? " (vocal take, cleaned)" : " (vocal take)"));
   }
 
   /* ---------------- IslePin ecosystem: send audio to the Player / DJ booth ----------------
@@ -2400,6 +2431,176 @@
     if (vox.state === "idle") closeMic();
     setVoxButtons();
     setVoxStatus("Mic off");
+  }
+
+  /* ---------------- Headphones vs speaker ----------------
+   * Headphones: the take is recorded exactly as before (raw mic, optional monitoring).
+   * Speaker (the default, since phones rarely say what's plugged in): the beat plays out loud, the mic hears it, and
+   * the take is cleaned on this device afterwards (vocal-clean-worker.js): the known beat is subtracted, then room
+   * noise is removed, then the clean vocal is mixed with the clean digital beat. */
+  var HP_KEY = "ipb_hp_mode_v1";
+  var hp = { pref: "auto", detected: false, label: "", labels: false };
+  try { var hpv = localStorage.getItem(HP_KEY); if (hpv === "hp" || hpv === "spk") hp.pref = hpv; } catch (e) { /* ignore */ }
+  function hpMode() { return hp.pref === "hp" ? "hp" : hp.pref === "spk" ? "spk" : hp.detected ? "hp" : "spk"; }
+  function hpIsHeadphones(label) { return window.IPBVocalCleanClient ? window.IPBVocalCleanClient.isHeadphones(label) : false; }
+  function hpDetect() {
+    var md = navigator.mediaDevices;
+    if (!md || !md.enumerateDevices) { hpUI(); return Promise.resolve(); }
+    return md.enumerateDevices().then(function (list) {
+      var outs = list.filter(function (d) { return d.kind === "audiooutput" && d.label; });
+      var ins = list.filter(function (d) { return d.kind === "audioinput" && d.label; });
+      hp.labels = outs.length + ins.length > 0;
+      var found = "";
+      var defOut = outs.filter(function (d) { return d.deviceId === "default"; })[0] || (outs.length === 1 ? outs[0] : null);
+      if (defOut) { if (hpIsHeadphones(defOut.label)) found = defOut.label; }       // desktop: the default output says it
+      else ins.forEach(function (d) { if (!found && hpIsHeadphones(d.label)) found = d.label; }); // Android: a headset mic is listed only while connected
+      var was = hpMode();
+      hp.detected = !!found; hp.label = found;
+      hpUI();
+      if (was !== hpMode()) applyMixer();
+    }).catch(function () { hpUI(); });
+  }
+  function spkBeatGain() { return Math.max(0.1, Math.min(1, S.vox.spk / 100)) * (S.vox.guide ? 0.3 : 1); }
+  function hpUI() {
+    var m = hpMode(), txt, tip;
+    if (m === "hp") {
+      txt = (hp.pref === "hp" ? "🎧 Headphones (confirmed)" : "🎧 Headphones detected") + " · monitoring " + (S.vox.monitor ? "on" : "off");
+      tip = hp.pref === "hp" ? "You said you're on headphones: takes are recorded as-is, no cleanup." : "Detected: " + hp.label + ". Takes are recorded as-is, no cleanup.";
+    } else {
+      txt = "🔈 Speaker mode · " + (S.vox.clean ? "take will be cleaned" : "take saved as recorded");
+      tip = hp.pref === "spk" ? "You chose speaker mode." : hp.labels ? "No headphones detected (phones often can't tell). Tick “I'm on headphones” if you are." : "Headphones can't be detected until the mic is allowed. Tick “I'm on headphones” if you are.";
+    }
+    document.querySelectorAll(".js-hp-chip").forEach(function (el) { el.textContent = txt; el.title = tip; el.classList.toggle("hp", m === "hp"); el.classList.toggle("spk", m !== "hp"); });
+    document.querySelectorAll(".js-hp-toggle").forEach(function (el) { el.checked = m === "hp"; el.disabled = vox.state !== "idle"; });
+    document.querySelectorAll(".js-hp-auto").forEach(function (el) { el.hidden = hp.pref === "auto"; });
+  }
+  function hpSetPref(p) {
+    hp.pref = p; try { localStorage.setItem(HP_KEY, p); } catch (e) { /* ignore */ }
+    if (vox.check && vox.stream && vox.streamProc !== micWantsProcessing()) { closeMic(); startMicCheck(); }
+    applyMixer(); hpUI();
+  }
+
+  /* ---------------- Speaker-mode cleanup ---------------- */
+  var vc = { busy: false, ab: "clean", solo: false, src: null, t0: 0, off: 0, bufs: {}, rawSaved: false, lastInfo: null };
+  // the cleaner itself lives in vocal-clean-client.js (shared with the Studio's "Clean take"): resample to 48 kHz → worker
+  function vcRun(mic, L, R, sr, opts, onProg, comps) {
+    if (!window.IPBVocalCleanClient) return Promise.reject(new Error("cleanup script not loaded"));
+    return window.IPBVocalCleanClient.run(mic, L, R, sr, opts, onProg, comps);
+  }
+
+  var VC_STEPS = { align: "Finding the beat in your mic (latency)…", aec: "Removing the speaker beat…", res: "Removing leftover echo…", denoise: "Removing room noise…", gate: "Finishing…" };
+  function cleanTake(t) {
+    vc.busy = true; vc.rawSaved = false; vc.bufs = {}; vcStop();
+    var sheet = $("vc-sheet"); sheet.hidden = false; sheet.classList.remove("done");
+    $("vc-title").textContent = "Cleaning take…"; $("vc-ab").hidden = true; $("vc-prog").hidden = false;
+    $("vc-bar").style.width = "2%"; $("vc-step").textContent = "Preparing…";
+    setVoxStatus("Cleaning take on this device… (the page stays usable)");
+    setVoxButtons();
+    var T0 = performance.now();
+    vcRun(t.V, t.L, t.R, t.sr, {}, function (stage, p) {
+      $("vc-bar").style.width = Math.max(2, Math.round(p * 100)) + "%";
+      $("vc-step").textContent = (VC_STEPS[stage] || "Working…") + " " + Math.round(p * 100) + "%";
+    }).then(function (m) {
+      if (vox.last !== t) return;
+      var info = m.info; info.wallMs = Math.round(performance.now() - T0);
+      t.clean = m.out; t.info = info;
+      if (info.bleedFound && info.delayMs > 3 && info.delayMs < 900) t.lat = info.delayMs / 1000;
+      vc.lastInfo = info;
+      exportVocalMix(true, "clean");
+      if (S.vox.raw) { exportVocalMix(true, "raw"); vc.rawSaved = true; }
+      vcShowResult(t);
+    }).catch(function (e) {
+      if (vox.last !== t) return;
+      vc.lastInfo = { error: String(e && e.message || e) };
+      exportVocalMix(true, "raw");
+      $("vc-title").textContent = "Couldn't clean this take";
+      $("vc-step").textContent = "Saved as recorded instead. (" + (e && e.message ? e.message : "cleanup unavailable in this browser") + ")";
+      setVoxStatus("Saved the take as recorded — cleanup isn't available in this browser.", true);
+    }).then(function () { vc.busy = false; setVoxButtons(); });
+  }
+  function fmtDbv(x) { return (x > 0 ? "+" : "") + x.toFixed(0) + " dB"; }
+  function vcShowResult(t) {
+    var i = t.info, sheet = $("vc-sheet");
+    sheet.classList.add("done");
+    $("vc-title").textContent = "Take cleaned ✓";
+    $("vc-prog").hidden = true; $("vc-ab").hidden = false;
+    var parts = [];
+    if (i.bleedFound) {
+      parts.push("Beat in mic: " + fmtDbv(i.bleedDb - i.micDb) + " vs whole mic");
+      parts.push("latency " + Math.round(i.delayMs) + " ms (used for timing)");
+    } else parts.push("No beat bleed found (browser echo-cancel or low speaker) — noise cleanup only");
+    if (i.floorInDb != null) parts.push("between lines: " + Math.round(i.floorInDb) + " → " + Math.round(i.floorOutDb) + " dBFS (beat + noise −" + Math.round(i.floorInDb - i.floorOutDb) + " dB)");
+    parts.push("noise removal " + (i.rnnoise ? "RNNoise " + i.rnnoise : "off") + (i.voicedPct != null ? " · voice in " + i.voicedPct + "% of take" : ""));
+    parts.push("done in " + (i.wallMs / 1000).toFixed(1) + " s");
+    if (t.mic) parts.push("phone echo-cancel " + (t.mic.echoCancellation ? "on" : "off"));
+    $("vc-stats").textContent = parts.join(" · ");
+    $("vc-saveraw").disabled = vc.rawSaved; $("vc-saveraw").textContent = vc.rawSaved ? "Raw take saved ✓" : "Save raw take to Vault";
+    $("vc-saved").textContent = "Saved to Vault: cleaned mix" + (vc.rawSaved ? " + raw mix" : "") + (S.vox.dry ? " + dry vocal" : "");
+    vcSetAB("clean");
+  }
+  function vcBuf(which, solo) {
+    var key = which + (solo ? "-solo" : "");
+    if (vc.bufs[key]) return vc.bufs[key];
+    var t = vox.last, mx = vocalMixArrays(t, which, solo), b = ctx.createBuffer(2, t.frames, t.sr);
+    var sc = solo ? 1 : peakScale(mx.L, mx.R, t.frames);
+    var l = b.getChannelData(0), r = b.getChannelData(1);
+    for (var i = 0; i < t.frames; i++) { l[i] = mx.L[i] * sc; r[i] = mx.R[i] * sc; }
+    return (vc.bufs[key] = b);
+  }
+  function vcPos() { return vc.src ? vc.off + (ctx.currentTime - vc.t0) : vc.off; }
+  function vcStop(keepPos) {
+    if (vc.src) { var p = vcPos(); try { vc.src.onended = null; vc.src.stop(); } catch (e) { /* ignore */ } vc.src = null; vc.off = keepPos ? p : 0; }
+    else if (!keepPos) vc.off = 0;
+    var b = $("vc-play"); if (b) b.textContent = "▶ Play";
+  }
+  function vcPlay() {
+    if (!vox.last || !vox.last.clean || !ensureCtx()) return;
+    if (vox.state !== "idle") return;
+    if (playing) stop(true);
+    var b = vcBuf(vc.ab, vc.solo), s = ctx.createBufferSource();
+    if (vc.off >= b.duration) vc.off = 0;
+    s.buffer = b; s.connect(ctx.destination); // straight to the speakers: never into master / recordings
+    s.start(ctx.currentTime + 0.02, vc.off); vc.t0 = ctx.currentTime + 0.02; vc.src = s;
+    s.onended = function () { if (vc.src === s) { vc.src = null; vc.off = 0; $("vc-play").textContent = "▶ Play"; } };
+    $("vc-play").textContent = "■ Stop";
+  }
+  function vcSetAB(ab) {
+    var was = !!vc.src; vc.ab = ab;
+    document.querySelectorAll("#vc-ab [data-ab]").forEach(function (b) { b.classList.toggle("on", b.dataset.ab === ab); b.setAttribute("aria-pressed", b.dataset.ab === ab ? "true" : "false"); });
+    if (was) { vcStop(true); vcPlay(); }
+  }
+  function vcTick() {
+    if (!vox.last || $("vc-sheet").hidden || !vox.last.clean) return;
+    var d = vox.last.frames / vox.last.sr, p = Math.min(d, vcPos());
+    $("vc-pos").style.width = (p / d * 100).toFixed(2) + "%";
+    $("vc-time").textContent = fmtTime(p) + " / " + fmtTime(d);
+  }
+  function initVocalClean() {
+    document.querySelectorAll(".js-hp-toggle").forEach(function (el) {
+      el.addEventListener("change", function () { hpSetPref(el.checked ? "hp" : hp.detected ? "spk" : "auto"); toast(el.checked ? "Headphones: takes are recorded as-is" : "Speaker mode: takes will be cleaned"); });
+    });
+    document.querySelectorAll(".js-hp-auto").forEach(function (el) { el.addEventListener("click", function (e) { e.preventDefault(); hpSetPref("auto"); }); });
+    if (navigator.mediaDevices && navigator.mediaDevices.addEventListener) navigator.mediaDevices.addEventListener("devicechange", hpDetect);
+    var sp = $("vox-spk"), so = $("vox-spk-val");
+    sp.value = S.vox.spk; so.textContent = S.vox.spk + "%";
+    sp.addEventListener("input", function () { S.vox.spk = clamp(Math.round(+sp.value), 10, 100); so.textContent = S.vox.spk + "%"; applyMixer(); saveSession(); });
+    [["vox-guide", "guide"], ["vox-clean", "clean"], ["vox-aec", "aec"], ["vox-raw", "raw"]].forEach(function (p) {
+      var el = $(p[0]); el.checked = !!S.vox[p[1]];
+      el.addEventListener("change", function () {
+        S.vox[p[1]] = el.checked; saveSession(); applyMixer(); hpUI();
+        if (p[1] === "aec" && vox.check) { closeMic(); startMicCheck(); }
+      });
+    });
+    $("vc-close").addEventListener("click", function () { vcStop(); $("vc-sheet").hidden = true; });
+    $("vc-play").addEventListener("click", function () { vc.src ? vcStop(true) : vcPlay(); });
+    document.querySelectorAll("#vc-ab [data-ab]").forEach(function (b) { b.addEventListener("click", function () { vcSetAB(b.dataset.ab); }); });
+    $("vc-solo").addEventListener("change", function (e) { var was = !!vc.src; vc.solo = e.target.checked; if (was) { vcStop(true); vcPlay(); } });
+    $("vc-seek").addEventListener("click", function (e) {
+      if (!vox.last) return; var r = e.currentTarget.getBoundingClientRect(), was = !!vc.src;
+      vcStop(); vc.off = clamp((e.clientX - r.left) / r.width, 0, 1) * vox.last.frames / vox.last.sr; if (was) vcPlay(); vcTick();
+    });
+    $("vc-saveraw").addEventListener("click", function () { if (!vox.last || vc.rawSaved) return; exportVocalMix(true, "raw"); vc.rawSaved = true; vcShowResult(vox.last); toast("Raw take saved to Vault"); });
+    hpDetect();
   }
 
   /* ---------------- Songs (lyrics) storage ---------------- */
@@ -4668,7 +4869,7 @@
     $("vox-monitor").checked = S.vox.monitor;
     $("vox-dry").checked = S.vox.dry;
     $("vox-nudge").value = S.vox.nudge;
-    $("vox-monitor").addEventListener("change", function (e) { S.vox.monitor = e.target.checked; applyMixer(); saveSession(); });
+    $("vox-monitor").addEventListener("change", function (e) { S.vox.monitor = e.target.checked; applyMixer(); saveSession(); hpUI(); });
     $("vox-dry").addEventListener("change", function (e) { S.vox.dry = e.target.checked; saveSession(); });
     $("vox-nudge").addEventListener("change", function (e) {
       S.vox.nudge = clamp(Math.round(+e.target.value || 0), -300, 300);
@@ -4676,6 +4877,7 @@
     });
     $("vox-remix").addEventListener("click", function () { exportVocalMix(false); });
     $("vox-check").addEventListener("click", function () { vox.check ? stopMicCheck() : startMicCheck(); });
+    initVocalClean();
     window.addEventListener("beforeunload", function (e) {
       if (ly.dirty || vox.state === "rec") { e.preventDefault(); e.returnValue = ""; }
     });
@@ -4759,6 +4961,17 @@
         peakNow: ctx && masterAnalyser ? peak(masterAnalyser) : 0 };
     },
     backingTempo: function () { try { return bt.buf ? refEstimateBpm(bt.buf) : null; } catch (e) { return null; } }
+  };
+  window.IPBVocalClean = {
+    run: function (mic, L, R, sr, opts, comps) { return vcRun(mic, L, R, sr, opts, null, comps); },
+    state: function () {
+      return { pref: hp.pref, detected: hp.detected, label: hp.label, labels: hp.labels, mode: hpMode(), busy: vc.busy, monitorGain: monitorGain ? monitorGain.gain.value : null,
+        spkGain: spkGain ? spkGain.gain.value : null, spkTarget: spkBeatGain(), opts: JSON.parse(JSON.stringify(S.vox)), mic: vox.micSettings || null, takeMode: vox.takeMode || null,
+        last: vox.last ? { mode: vox.last.mode, frames: vox.last.frames, sr: vox.last.sr, cleaned: !!vox.last.clean, lat: vox.last.lat, info: vox.last.info || null } : null,
+        lastInfo: vc.lastInfo, ab: vc.ab, playingAB: !!vc.src, chip: (document.querySelector(".js-hp-chip") || {}).textContent || "" };
+    },
+    lastArrays: function () { var t = vox.last; return t ? { V: t.V, clean: t.clean, L: t.L, R: t.R, sr: t.sr } : null; },
+    detect: hpDetect
   };
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);

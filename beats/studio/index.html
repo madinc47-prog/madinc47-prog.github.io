@@ -8,8 +8,8 @@
   <link rel="canonical" href="https://madinc47-prog.github.io/beats/studio/">
   <meta name="theme-color" content="#0b0d12">
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="../styles.css?v=20261003t">
-  <link rel="stylesheet" href="studio.css?v=20261003t">
+  <link rel="stylesheet" href="../styles.css?v=20261003u">
+  <link rel="stylesheet" href="studio.css?v=20261003u">
 </head>
 <body class="studio">
   <header class="topbar st-top">
@@ -80,6 +80,7 @@
           <button id="btn-paste" class="btn small" type="button" title="Paste at the playhead on the selected track (Ctrl+V)">Paste</button>
           <button id="btn-dup" class="btn small" type="button" title="Duplicate the selected clip right after itself (Ctrl+D)">Duplicate</button>
           <button id="btn-del" class="btn small" type="button" title="Delete the selected clip (Delete)">Delete</button>
+          <button id="btn-clean" class="btn small" type="button" title="Clean take: remove the beat that leaked from the speaker plus room noise from the selected recorded clip (makes a new version; the raw take is kept)">🧹 Clean take</button>
           <label class="st-cgain" title="Clip gain: volume of the selected clip only, in dB (the audio itself is not changed)">Clip <input id="clip-gain" type="number" step="0.5" min="-40" max="24" value="0" disabled aria-label="Clip gain dB"> dB</label>
           <span class="sep"></span>
           <button id="btn-undo" class="btn small ghost" type="button" title="Undo (Ctrl+Z)">↶ Undo</button>
@@ -124,6 +125,7 @@
           <button id="wv-all" class="btn small ghost" type="button" title="Select everything (Ctrl+A)">Select all</button>
           <button class="btn small ghost" data-op="undo" type="button" title="Undo (Ctrl+Z)">↶</button>
           <button class="btn small ghost" data-op="redo" type="button" title="Redo (Ctrl+Y)">↷</button>
+          <button id="wv-clean" class="btn small" type="button" title="Clean take: remove speaker beat bleed and room noise (new version of this clip; the raw take is kept)">🧹 Clean take</button>
           <button class="btn small ghost" data-op="revert" type="button" title="Throw away every waveform edit on this clip and go back to the original recording (edits are never written over the original)">⟲ Original</button>
         </div>
         <canvas id="wave" class="wv-canvas" aria-label="Waveform: drag to select, shift-click to extend, wheel to zoom"></canvas>
@@ -141,7 +143,7 @@
       <div class="kb-head"><span class="label">How to · quick start</span><button id="howto-close" class="btn small ghost" type="button">Close</button></div>
       <ol>
         <li><b>Bring in a beat.</b> Press <i>＋ Import</i> and choose the <i>Gunwalk beat</i>, an audio file, or something from your Beats Vault. In the beat maker, <i>Send to Studio</i> bounces the current beat or pattern straight into a track.</li>
-        <li><b>Record your voice.</b> Press <b class="r">R</b> on a track to arm it (it turns red), put the playhead where you want to start, then press <b class="r">●</b>. The other tracks play while you record. Press <b>■</b> to stop. You get a 1-bar count-in (change it in <i>🎧 Rec setup</i>). Wear headphones so the beat doesn't leak into the mic. Arm another track for doubles and ad-libs; every take stacks on its own track.</li>
+        <li><b>Record your voice.</b> Press <b class="r">R</b> on a track to arm it (it turns red), put the playhead where you want to start, then press <b class="r">●</b>. The other tracks play while you record. Press <b>■</b> to stop. You get a 1-bar count-in (change it in <i>🎧 Rec setup</i>). Headphones give the cleanest takes. On the speaker, each take gets <i>🧹 Clean take</i> automatically: the beat that leaked into the mic and the room noise are removed, and the raw take stays in the project (A/B to compare, Undo to go back). Arm another track for doubles and ad-libs; every take stacks on its own track.</li>
         <li><b>Edit clips.</b> Drag a clip to move it (it snaps to beats when ⌗ Snap is on). Drag its left or right edge to trim, and the small squares at the top corners to fade in or out. <i>✂ Split</i> cuts at the playhead; Copy, Paste and Duplicate work like a word processor.</li>
         <li><b>Fine-tune.</b> Double-click a clip to open <i>Waveform Edit</i>. Drag to select, then Cut, Delete, Silence, Normalize, Amplify, Fade, Reverse or Trim. Edits never overwrite your recording: Undo steps back, and <i>⟲ Original</i> restores the untouched take.</li>
         <li><b>Mix.</b> Use each track's volume and pan, or the <i>Mixer</i> tab. <i>FX</i> adds EQ, compressor, noise gate, delay and reverb (try a preset). M mutes a track; S solos it.</li>
@@ -165,7 +167,12 @@
   <div id="recset-sheet" class="st-sheet" hidden role="dialog" aria-modal="true" aria-label="Recording setup">
     <div class="st-panel narrow">
       <div class="kb-head"><span class="label">Recording setup</span><button id="recset-close" class="btn small ghost" type="button">Close</button></div>
-      <p class="st-warn">🎧 <b>Use headphones</b> (wired is best). Speakers leak the beat into the mic, and Bluetooth adds a lot of delay.</p>
+      <p class="st-warn">🎧 <b>Headphones give the cleanest takes</b> (wired is best; Bluetooth adds a lot of delay). No headphones? Speaker mode records with the phone's echo-cancel on and the 🧹 Clean take button removes most of the beat that leaks into the mic.</p>
+      <div class="rs-hp">
+        <span class="hp-chip" id="rs-hpchip">🔈 Speaker mode</span>
+        <label class="chk"><input type="checkbox" id="rs-hpon"> I'm on headphones</label>
+        <label class="chk"><input type="checkbox" id="rs-autoclean" checked> Clean speaker-mode takes automatically</label>
+      </div>
       <div class="ex-grid">
         <label>Count-in before the take <select id="rs-count"><option value="0">Off</option><option value="1">1 bar</option><option value="2">2 bars</option></select></label>
         <label>Latency compensation <select id="rs-latmode"><option value="auto">Auto</option><option value="manual">Manual</option></select></label>
@@ -173,6 +180,21 @@
       </div>
       <p class="kb-note">Auto: <span id="rs-auto"></span>. Each take is moved earlier by this much, so it lines up with what you heard. <span id="rs-last"></span></p>
       <p class="kb-note">Take sounds late or early? Select it and nudge it by ear: <button id="rs-nudge-m" class="btn small" type="button">◀ 5 ms earlier</button> <button id="rs-nudge-p" class="btn small" type="button">5 ms later ▶</button> (the next takes use the new setting).</p>
+    </div>
+  </div>
+  <div id="clean-sheet" class="st-sheet" hidden role="dialog" aria-label="Clean take">
+    <div class="st-panel narrow">
+      <div class="kb-head"><span class="label" id="cl-title">Cleaning take…</span><button id="clean-close" class="btn small ghost" type="button">Close</button></div>
+      <div class="vc-prog" id="cl-prog"><div class="vc-bar"><i id="cl-bar"></i></div><span id="cl-step" class="mono">Preparing…</span><p class="kb-note">Runs on this device: nothing is uploaded.</p></div>
+      <div class="vc-ab" id="cl-ab" hidden>
+        <div class="vc-row">
+          <div class="vc-seg" role="group" aria-label="Compare raw and cleaned"><button type="button" data-ab="raw" aria-pressed="false">A · Raw take</button><button type="button" data-ab="clean" class="on" aria-pressed="true">B · Cleaned</button></div>
+          <button id="cl-play" class="btn small" type="button">▶ Play</button>
+          <button id="cl-stop" class="btn small ghost" type="button">■</button>
+        </div>
+        <div class="vc-stats mono" id="cl-stats"></div>
+        <p class="kb-note">The cleaned take is a new version of the clip. The raw recording stays in the project: <button id="cl-raw" class="btn small" type="button">Use raw take</button> (or ⟲ Original in Waveform Edit).</p>
+      </div>
     </div>
   </div>
   <div id="vault-sheet" class="st-sheet" hidden role="dialog" aria-modal="true" aria-label="Import from Beats Vault">
@@ -206,10 +228,11 @@
   </div>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
-  <script src="core.js?v=20261003t"></script>
-  <script src="audio.js?v=20261003t"></script>
-  <script src="wave.js?v=20261003t"></script>
-  <script src="ui.js?v=20261003t"></script>
+  <script src="core.js?v=20261003u"></script>
+  <script src="audio.js?v=20261003u"></script>
+  <script src="wave.js?v=20261003u"></script>
+  <script src="../vocal-clean-client.js?v=20261003u"></script>
+  <script src="ui.js?v=20261003u"></script>
   <script>/* Beats | DJ Booth | Player switcher on the stand-alone Studio page (inside the Beats tab, Beats shows it) */
     if (!/[?&]embed=1/.test(location.search)) { var nav = document.createElement("script"); nav.type = "module"; nav.src = "../../shared/ecosystem-nav.js?mode=pill&pos=bl"; document.body.appendChild(nav); }
   </script>

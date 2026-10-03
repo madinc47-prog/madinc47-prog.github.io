@@ -309,8 +309,13 @@
       return;
     }
     var from = playhead, bars = P.countIn == null ? 1 : P.countIn, pre = bars * 4 * beat();
-    if (!hpWarned) { hpWarned = true; toast("🎧 Wear headphones so the beat doesn't bleed into your vocal. " + (bars ? "Count-in: " + bars + " bar" + (bars > 1 ? "s" : "") + "." : ""), 3200); }
-    E.startRecord(P, from, pre).then(function () {
+    var spk = speakerMode();
+    E.stopBuffer(); if (!CL.busy) $("clean-sheet").hidden = true;
+    if (!hpWarned) {
+      hpWarned = true;
+      toast((spk ? "🔈 Speaker mode: echo-cancel is on and the take gets cleaned after you stop. Headphones still sound best. " : "🎧 Headphones mode. ") + (bars ? "Count-in: " + bars + " bar" + (bars > 1 ? "s" : "") + "." : ""), 3600);
+    }
+    E.startRecord(P, from, pre, { speaker: spk }).then(function () {
       $("t-rec").classList.add("on"); $("t-play").classList.add("on"); $("t-in").hidden = false;
       playFrom = from;
       recClips = armed.map(function (tr) {
@@ -338,8 +343,131 @@
       selClip = made[0].id; selTrack = made[0].track;
       playhead = playFrom;
       changed();
-      toast(name + " recorded (" + buf.duration.toFixed(1) + "s). Double-click it to edit.");
+      if (res.speaker && P.autoClean !== false && window.IPBVocalCleanClient) { cleanClip(made[0].id, { auto: true, mic: res.mic }); return; }
+      toast(name + " recorded (" + buf.duration.toFixed(1) + "s). " + (res.speaker ? "Press 🧹 Clean take to remove the speaker bleed. " : "") + "Double-click it to edit.");
     });
+  }
+
+  /* ---------------- headphones / speaker mode + "Clean take" (shared cleaner: ../vocal-clean-client.js) ---------------- */
+  var hp = { found: false, label: "", manual: null };
+  try { var hm = localStorage.getItem("ipbs_hp"); hp.manual = hm === "1" ? true : hm === "0" ? false : null; } catch (e) { /* ignore */ }
+  function onHeadphones() { return hp.manual != null ? hp.manual : hp.found; }
+  function speakerMode() { return !onHeadphones(); }
+  function hpUI() {
+    var chip = $("rs-hpchip"); if (!chip) return;
+    var on = onHeadphones();
+    chip.className = "hp-chip " + (on ? "hp" : "spk");
+    chip.textContent = on ? "🎧 Headphones" + (hp.manual ? " (you said so)" : hp.label ? ": " + hp.label : "") : "🔈 Speaker mode" + (hp.manual === false ? " (you said so)" : "") + " · echo-cancel + Clean take";
+    $("rs-hpon").checked = on;
+    $("rs-autoclean").checked = P ? P.autoClean !== false : true;
+    $("rs-autoclean").disabled = on;
+  }
+  function hpDetect() {
+    var C = window.IPBVocalCleanClient; if (!C) return Promise.resolve();
+    return C.detect().then(function (d) { hp.found = d.found; hp.label = d.label || ""; hpUI(); });
+  }
+  var CL = { raw: null, clean: null, ab: "clean", clip: null, busy: false };
+  var CL_STEPS = { align: "Finding the beat in the take…", aec: "Removing the beat (echo canceller)…", res: "Removing what's left of the beat…", denoise: "Removing room noise (RNNoise)…", gate: "Gating the gaps…" };
+  function clClipBuf(c) { // the visible part of the clip's current audio, as its own buffer
+    var s = S.sources[c.src]; if (!s) return null;
+    var sr = s.buf.sampleRate, a = Math.round(c.offset * sr), b = Math.min(s.buf.length, a + Math.round(c.dur * sr));
+    return (a === 0 && b === s.buf.length) ? s.buf : OPS.slice(s.buf, a, b);
+  }
+  // the beat the singer heard while this clip was recorded = the project rendered without this clip's track (and
+  // without any other clip made from the same recording), from 0.3 s before the clip to its end
+  function clReference(c, pre) {
+    var Q = JSON.parse(JSON.stringify({ tracks: P.tracks, clips: P.clips, bpm: P.bpm, loop: P.loop, master: P.master, name: P.name }));
+    Q.master.limiter = false;
+    Q.tracks.forEach(function (t) { t.solo = false; if (t.id === c.track) t.mute = true; }); // solo is a listening aid, not what was heard
+    Q.clips = Q.clips.filter(function (x) { return x.track !== c.track && x.src !== c.src && !(c.orig && (x.src === c.orig.src || (x.orig && x.orig.src === c.orig.src))); });
+    if (!Q.clips.length) return Promise.resolve(null);
+    var from = c.start - pre;
+    if (from < 0) { Q.clips.forEach(function (x) { x.start -= from; }); from = 0; } // render can't start before 0: shift everything
+    return E.render(Q, from, from + pre + c.dur);
+  }
+  function clSheet(state) {
+    $("clean-sheet").hidden = false;
+    $("cl-prog").hidden = state !== "prog"; $("cl-ab").hidden = state !== "done";
+    if (state === "prog") { $("cl-title").textContent = "Cleaning take…"; $("cl-bar").style.width = "2%"; $("cl-step").textContent = "Preparing…"; }
+  }
+  function clSetAB(w) {
+    CL.ab = w;
+    document.querySelectorAll("#cl-ab [data-ab]").forEach(function (b) { var on = b.dataset.ab === w; b.classList.toggle("on", on); b.setAttribute("aria-pressed", String(on)); });
+  }
+  function clPlay() {
+    var b = CL.ab === "raw" ? CL.raw : CL.clean; if (!b) return;
+    E.playBuffer(b, 0, b.duration, function () { $("cl-play").textContent = "▶ Play"; }).then(function () { $("cl-play").textContent = "▶ Playing " + (CL.ab === "raw" ? "A" : "B"); });
+  }
+  function cleanClip(id, o) {
+    o = o || {};
+    var C = window.IPBVocalCleanClient, c = clipById(id || selClip);
+    if (!C) { toast("The take cleaner didn't load. Reload the page."); return Promise.resolve(null); }
+    if (!c) { toast("Select a recorded clip first, then press 🧹 Clean take."); return Promise.resolve(null); }
+    if (CL.busy) { toast("Already cleaning a take…"); return Promise.resolve(null); }
+    if (c.clean) { toast(c.name + " is already cleaned. ⟲ Original (Waveform Edit) or Undo brings back the raw take."); return Promise.resolve(null); }
+    var raw = clClipBuf(c); if (!raw) return Promise.resolve(null);
+    if (raw.duration > 600) { toast("Clean take works on clips up to 10 minutes. Split it first."); return Promise.resolve(null); }
+    if (E.playing) pause();
+    E.stopBuffer();
+    CL.busy = true; CL.clip = c.id; CL.raw = raw; CL.clean = null; clSheet("prog");
+    var sr = raw.sampleRate, PRE = 0.3, SHIFT = 0.25, T0 = performance.now();
+    var mono = new Float32Array(raw.length);
+    for (var ch = 0; ch < raw.numberOfChannels; ch++) { var d = raw.getChannelData(ch); for (var i = 0; i < raw.length; i++) mono[i] += d[i] / raw.numberOfChannels; }
+    return E.ensure().then(function () { return clReference(c, PRE); }).then(function (ref) {
+      // mic padded by PRE + SHIFT s of silence: the beat gets PRE s of history, and SHIFT s lets the canceller find a
+      // take whose latency compensation overshot (bleed slightly *earlier* than the beat)
+      var pad = Math.round((PRE + SHIFT) * sr), n = pad + mono.length, mic = new Float32Array(n), L = new Float32Array(n), R = new Float32Array(n);
+      mic.set(mono, pad);
+      if (ref) { var rl = ref[0], rr = ref[1], m = Math.min(n, rl.length); L.set(rl.subarray(0, m)); R.set(rr.subarray(0, m)); }
+      return C.run(mic, L, ref ? R : null, sr, o.opts || {}, function (stage, p) {
+        $("cl-bar").style.width = Math.max(2, Math.round(p * 100)) + "%";
+        $("cl-step").textContent = (CL_STEPS[stage] || "Working…") + " " + Math.round(p * 100) + "%";
+      }).then(function (r) { return { r: r, pad: pad, hadRef: !!ref }; });
+    }).then(function (x) {
+      var out = x.r.out.subarray(x.pad, x.pad + mono.length), info = x.r.info;
+      info.wallMs = Math.round(performance.now() - T0);
+      if (info.delayMs != null) info.latencyErrMs = Math.round(info.delayMs - SHIFT * 1000);
+      var nb = S.bufFrom([new Float32Array(out)], sr);
+      var c2 = clipById(CL.clip); if (!c2) throw new Error("the clip was deleted");
+      S.pushUndo(P, "clean take");
+      var nid = S.addSource(nb, c2.name + " (cleaned)");
+      var stat = { bleed: info.bleedFound, lat: info.latencyErrMs, fin: info.floorInDb, fout: info.floorOutDb, rnn: info.rnnoise || null, ms: info.wallMs };
+      // every clip made from the same recording region (several armed tracks) gets the same cleaned version
+      P.clips.forEach(function (k) {
+        if (k !== c2 && !(k.src === c2.src && Math.abs(k.offset - c2.offset) < 1e-6 && Math.abs(k.dur - c2.dur) < 1e-6)) return;
+        if (!k.orig) k.orig = { src: k.src, offset: k.offset, dur: k.dur }; // non-destructive: the raw take stays in the project
+        k.src = nid; k.offset = 0; k.dur = nb.duration; k.clean = stat;
+      });
+      CL.clean = nb; CL.busy = false; CL.last = { info: info, clip: c2.id, hadRef: x.hadRef };
+      if (view === "wave" && waveClip === c2.id) loadWave(c2, true);
+      changed("clean take");
+      $("cl-title").textContent = "Take cleaned ✓";
+      var parts = [];
+      if (!x.hadRef) parts.push("No other tracks playing: noise cleanup only");
+      else if (info.bleedFound) parts.push("Beat found in the mic" + (info.latencyErrMs != null ? " (timing off by " + info.latencyErrMs + " ms)" : "") + " and removed");
+      else parts.push("No beat bleed found (headphones, echo-cancel or a quiet speaker): noise cleanup only");
+      if (info.floorInDb != null) parts.push("between lines: " + Math.round(info.floorInDb) + " → " + Math.round(info.floorOutDb) + " dBFS (−" + Math.round(info.floorInDb - info.floorOutDb) + " dB)");
+      parts.push("noise removal " + (info.rnnoise ? "RNNoise " + info.rnnoise : "off") + (info.voicedPct != null ? " · voice in " + info.voicedPct + "% of take" : ""));
+      parts.push("done in " + (info.wallMs / 1000).toFixed(1) + " s");
+      if (o.mic) parts.push("browser echo-cancel " + (o.mic.echoCancellation ? "on" : "off"));
+      $("cl-stats").textContent = parts.join(" · ");
+      clSetAB("clean"); clSheet("done");
+      toast((o.auto ? "Speaker-mode take cleaned" : c2.name + " cleaned") + ". Compare A/B, or Undo for the raw take.", 3600);
+      return CL.last;
+    }).catch(function (e) {
+      CL.busy = false; $("clean-sheet").hidden = true;
+      toast("Clean take failed: " + (e && e.message || e) + ". The raw take is unchanged.", 4200);
+      return null;
+    });
+  }
+  function clUseRaw() {
+    var c = clipById(CL.clip);
+    E.stopBuffer();
+    if (!c || !c.clean || !c.orig) { $("clean-sheet").hidden = true; return; }
+    S.pushUndo(P, "use raw take");
+    P.clips.forEach(function (k) { if (k.clean && k.src === c.src) { k.src = k.orig.src; k.offset = k.orig.offset; k.dur = k.orig.dur; delete k.orig; delete k.clean; } });
+    if (view === "wave" && waveClip === c.id) loadWave(c, false);
+    changed(); $("clean-sheet").hidden = true; toast("Back to the raw take (Undo brings the cleaned one back).");
   }
 
   /* ---------------- clip edit commands ---------------- */
@@ -499,7 +627,7 @@
     var c = clipById(waveClip) || selected();
     if (!c || !c.orig || !S.sources[c.orig.src]) { toast("This clip has no waveform edits to revert."); return; }
     S.pushUndo(P, "revert to original");
-    c.src = c.orig.src; c.offset = c.orig.offset; c.dur = c.orig.dur; delete c.orig;
+    c.src = c.orig.src; c.offset = c.orig.offset; c.dur = c.orig.dur; delete c.orig; delete c.clean;
     c.fadeIn = Math.min(c.fadeIn || 0, c.dur / 2); c.fadeOut = Math.min(c.fadeOut || 0, c.dur / 2);
     if (view === "wave" && waveClip === c.id) loadWave(c, false);
     changed(); toast("Restored the original recording of " + c.name + " (Undo brings your edits back).");
@@ -515,9 +643,10 @@
     $("rs-lat").disabled = P.latencyMs == null;
     $("rs-lat").value = P.latencyMs == null ? (auto == null ? "" : auto) : P.latencyMs;
     $("rs-auto").textContent = auto == null ? "measured when audio starts" : auto + " ms detected on this device";
+    hpUI();
     $("rs-last").textContent = lastTake ? "Last take was shifted earlier by " + lastTake.latencyMs + " ms." : "";
   }
-  function openRecSet() { E.ensure().then(recSetUI); recSetUI(); $("recset-sheet").hidden = false; }
+  function openRecSet() { E.ensure().then(recSetUI); recSetUI(); hpDetect(); $("recset-sheet").hidden = false; }
   function nudgeTake(dt) { // slide the selected clip by 5 ms (fix sync by ear) and remember it as manual latency
     var c = selected(); if (!c) { toast("Select a recorded clip first."); return; }
     S.pushUndo(P, "nudge"); c.start = Math.max(0, c.start + dt);
@@ -849,6 +978,21 @@
     $("rs-count").addEventListener("change", function () { P.countIn = +$("rs-count").value; changed(null, true); });
     $("rs-latmode").addEventListener("change", function () { P.latencyMs = $("rs-latmode").value === "auto" ? null : Math.round(+$("rs-lat").value || 0); recSetUI(); changed(null, true); });
     $("rs-lat").addEventListener("change", function () { if (P.latencyMs != null) { P.latencyMs = S.clamp(Math.round(+$("rs-lat").value || 0), -200, 1000); changed(null, true); } recSetUI(); });
+    $("rs-hpon").addEventListener("change", function () {
+      hp.manual = $("rs-hpon").checked ? true : (hp.found ? false : null);
+      try { if (hp.manual == null) localStorage.removeItem("ipbs_hp"); else localStorage.setItem("ipbs_hp", hp.manual ? "1" : "0"); } catch (e) { /* ignore */ }
+      hpUI();
+    });
+    $("rs-autoclean").addEventListener("change", function () { P.autoClean = $("rs-autoclean").checked; changed(null, true); });
+    if (navigator.mediaDevices && navigator.mediaDevices.addEventListener) navigator.mediaDevices.addEventListener("devicechange", function () { hpDetect(); });
+    hpDetect();
+    $("btn-clean").addEventListener("click", function () { cleanClip(selClip); });
+    $("wv-clean").addEventListener("click", function () { cleanClip(waveClip || selClip); });
+    $("clean-close").addEventListener("click", function () { E.stopBuffer(); $("clean-sheet").hidden = true; });
+    $("cl-play").addEventListener("click", clPlay);
+    $("cl-stop").addEventListener("click", function () { E.stopBuffer(); $("cl-play").textContent = "▶ Play"; });
+    $("cl-raw").addEventListener("click", clUseRaw);
+    document.querySelectorAll("#cl-ab [data-ab]").forEach(function (b) { b.addEventListener("click", function () { clSetAB(b.dataset.ab); if (E.bufferPos() != null) clPlay(); }); });
     $("rs-nudge-m").addEventListener("click", function () { nudgeTake(-0.005); });
     $("rs-nudge-p").addEventListener("click", function () { nudgeTake(0.005); });
     lw.addEventListener("wheel", function (e) { if (e.ctrlKey || e.metaKey) { e.preventDefault(); var r = $("lanes").getBoundingClientRect(); zoomTo(pps * (e.deltaY < 0 ? 1.25 : 0.8), (e.clientX - r.left) / pps); } }, { passive: false });
@@ -943,7 +1087,7 @@
     ready: false,
     project: function () { return P; },
     state: function () {
-      return { tracks: P.tracks.length, clips: P.clips.map(function (c) { return { id: c.id, track: P.tracks.indexOf(trackById(c.track)), name: c.name, start: +c.start.toFixed(4), dur: +c.dur.toFixed(4), offset: +c.offset.toFixed(4), fadeIn: c.fadeIn, fadeOut: c.fadeOut, src: c.src }; }),
+      return { tracks: P.tracks.length, clips: P.clips.map(function (c) { return { id: c.id, track: P.tracks.indexOf(trackById(c.track)), name: c.name, start: +c.start.toFixed(4), dur: +c.dur.toFixed(4), offset: +c.offset.toFixed(4), fadeIn: c.fadeIn, fadeOut: c.fadeOut, src: c.src, clean: c.clean || null, orig: !!c.orig }; }),
         selClip: selClip, selTrack: P.tracks.indexOf(trackById(selTrack)), playhead: playhead, playing: E.playing, recording: E.recording, view: view, pps: pps, bpm: P.bpm, loop: P.loop, undo: S.H.undo.length, redo: S.H.redo.length,
         wave: waveBuf ? { len: waveBuf.length, sr: waveBuf.sampleRate, sel: [waveEd.sel.a, waveEd.sel.b] } : null, sources: Object.keys(S.sources).length, name: P.name, id: P.id };
     },
@@ -961,6 +1105,13 @@
       });
     }, importGunwalk: importGunwalk, importFiles: importFiles, revertClip: revertClip, lastTake: function () { return lastTake; },
     arm: function (i, on) { var t = P.tracks[i]; if (t) { t.arm = on !== false; render(); } }, record: record, stop: stopAll, play: play, latency: function () { return E.ctx ? E.latency() : null; },
+    addTake: function (data, sr, start, ti, name) { // tests: put a mono "recording" on track ti as if it had just been recorded
+      S.pushUndo(P, "record"); var buf = S.bufFrom([data], sr), id = S.addSource(buf, name || "Take " + (takeN++)), tr = P.tracks[ti] || P.tracks[0];
+      var c = { id: S.uid("c"), track: tr.id, src: id, start: start || 0, offset: 0, dur: buf.duration, gain: 0, fadeIn: 0.005, fadeOut: 0.01, name: name || "Take" };
+      P.clips.push(c); selClip = c.id; selTrack = tr.id; changed(); return c.id;
+    },
+    cleanClip: cleanClip, cleanState: function () { return { busy: CL.busy, last: CL.last || null, speaker: speakerMode(), hp: { found: hp.found, label: hp.label, manual: hp.manual } }; },
+    setHeadphones: function (v) { hp.manual = v == null ? null : !!v; hpUI(); return speakerMode(); }, hpDetect: hpDetect,
     saveNow: saveNow, render: render, meters: function () { return E.ctx ? E.meters() : null; }, zoomFit: zoomFit
   };
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init); else init();

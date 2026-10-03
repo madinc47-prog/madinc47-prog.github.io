@@ -190,17 +190,21 @@
   }
   function latency() { return E.P && E.P.latencyMs != null ? E.P.latencyMs / 1000 : autoLatency(); }
   function countLeft() { return E.playing && E.ctx && E.ctx.currentTime < E.countEnd ? E.countEnd - E.ctx.currentTime : 0; }
-  function startRecord(P, from, pre) {
+  // opts.speaker: no headphones → let the browser's echo-cancel / noise-suppression / auto-gain help (the take can be
+  // cleaned further afterwards with "Clean take"); with headphones keep the mic signal untouched
+  function startRecord(P, from, pre, opts) {
+    var spk = !!(opts && opts.speaker);
     var armed = P.tracks.filter(function (t) { return t.arm; });
     if (!armed.length) return Promise.reject(new Error("Arm a track first (press R on a track)."));
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return Promise.reject(new Error("This browser cannot record from a microphone."));
     return ensure().then(function () {
       if (!E.hasWorklet) throw new Error("Recording needs AudioWorklet support (use an up-to-date browser).");
-      return navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: 1 } });
+      return navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: spk, noiseSuppression: spk, autoGainControl: spk, channelCount: 1 } });
     }).then(function (stream) {
+      var mic = {}; try { mic = stream.getAudioTracks()[0].getSettings() || {}; } catch (e) { /* ignore */ }
       try { var st = stream.getAudioTracks()[0].getSettings(); E.inLat = st && typeof st.latency === "number" && st.latency < 0.5 ? st.latency : 0; } catch (e) { E.inLat = 0; }
       var c = E.ctx, src = c.createMediaStreamSource(stream), node = new AudioWorkletNode(c, "ipb-rec", { numberOfInputs: 1, numberOfOutputs: 0 });
-      var R = { stream: stream, src: src, node: node, chunks: [], t: [], armed: armed.map(function (t) { return t.id; }), from: from, an: c.createAnalyser() };
+      var R = { stream: stream, src: src, node: node, chunks: [], t: [], armed: armed.map(function (t) { return t.id; }), from: from, an: c.createAnalyser(), speaker: spk, mic: { echoCancellation: !!mic.echoCancellation, noiseSuppression: !!mic.noiseSuppression, autoGainControl: !!mic.autoGainControl } };
       R.an.fftSize = 1024; src.connect(R.an);
       node.port.onmessage = function (e) { if (e.data.ch) { R.chunks.push(e.data.ch[0]); R.t.push(e.data.t); } };
       src.connect(node);
@@ -230,7 +234,7 @@
         var cut = 0;
         if (startTl < R.from) { cut = Math.round((R.from - startTl) * c.sampleRate); startTl = R.from; }
         var data = all.subarray(Math.min(cut, all.length - 1));
-        res({ data: new Float32Array(data), start: startTl, armed: R.armed, sr: c.sampleRate, latency: lat });
+        res({ data: new Float32Array(data), start: startTl, armed: R.armed, sr: c.sampleRate, latency: lat, speaker: R.speaker, mic: R.mic });
       }, 120);
     });
   }
