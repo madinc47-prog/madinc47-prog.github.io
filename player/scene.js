@@ -1,4 +1,5 @@
 // Psycho Fingers Player — DJ booth scene (original layered SVG art, IK arms, choreography)
+// Two turntables (Deck A / Deck B) with a mixer + crossfader in the middle; the DJ stands behind the mixer.
 import { applyOutfit } from './outfits.js';
 const NS = 'http://www.w3.org/2000/svg';
 const D2R = Math.PI / 180;
@@ -9,7 +10,10 @@ const ease = {
   lin: (t) => t,
 };
 
-// key geometry (viewBox 0 0 1000 660)
+// key geometry (viewBox 0 0 1000 660). Turntable art is drawn in deck-local units and scaled by DS.
+const DS = 0.64;
+const DECKS = { A: { tx: 58, ty: 214.7 }, B: { tx: 438, ty: 214.7 } };
+const DJX = 130; // the DJ is centred behind the mixer (x = 600)
 const G = {
   platter: { x: 545, y: 498, r: 168, k: 0.37 },
   arm: { x: 742, y: 440, len: 130, rest: -8, play0: 40, play1: 55 },
@@ -18,7 +22,60 @@ const G = {
   crate: { x: 140, y: 474 },
   sleeveUp: { x: 182, y: 300 },
   fly: 68,
+  xf: { x0: 572, x1: 628, y: 592 },
 };
+const deckSvg = (d) => `<g id="deck${d}" class="deck" transform="translate(${DECKS[d].tx},${DECKS[d].ty}) scale(${DS})">
+    <path d="M352,418 L748,418 L772,586 L328,586 Z" fill="url(#plinth)" stroke="#3a3c46" stroke-width="1.5"/>
+    <path d="M328,586 L772,586 L772,602 L328,602 Z" fill="#0d0e12"/>
+    <path d="M330,586 L770,586" stroke="#4a4d58" stroke-width="1"/>
+    <rect x="352" y="560" width="34" height="14" rx="3" fill="#22242b" stroke="#454854"/>
+    <rect class="t-startBtn" x="355" y="563" width="28" height="8" rx="2" fill="var(--c2)" opacity=".25"/>
+    <circle cx="400" cy="567" r="4" fill="#3a3d47"/><circle cx="414" cy="567" r="4" fill="#3a3d47"/>
+    <rect x="722" y="470" width="10" height="92" rx="4" fill="#0c0d10" stroke="#3a3d47"/>
+    <rect class="t-pitchCap" x="715" y="508" width="24" height="12" rx="2" fill="url(#metal)"/>
+    <circle cx="372" cy="436" r="8" fill="#1b1c22" stroke="#4a4d58"/><circle class="t-targetLight" cx="372" cy="436" r="3" fill="var(--c3)" opacity=".5"/>
+    <g class="t-neon" transform="translate(545,500)">
+      <ellipse rx="190" ry="72" fill="none" stroke="var(--c1)" stroke-width="14" opacity=".08" class="neonGlow"/>
+      <ellipse rx="190" ry="72" fill="none" stroke="var(--c1)" stroke-width="7" opacity=".18" class="neonGlow"/>
+      <ellipse rx="190" ry="72" fill="none" stroke="var(--c1)" stroke-width="2.4" opacity=".95" class="neonCore"/>
+      <ellipse rx="198" ry="76" fill="none" stroke="var(--c2)" stroke-width="6" opacity=".12" class="neonGlow2"/>
+      <ellipse rx="198" ry="76" fill="none" stroke="var(--c2)" stroke-width="1.6" opacity=".8" class="neonCore2"/>
+    </g>
+    <g class="t-ringBars" transform="translate(545,500)"></g>
+    <ellipse cx="545" cy="506" rx="180" ry="67" fill="#0b0b0e"/>
+    <ellipse cx="545" cy="502" rx="180" ry="67" fill="url(#metal)" opacity=".8"/>
+    <ellipse cx="545" cy="500" rx="176" ry="65" fill="#1a1b20"/>
+    <g class="t-strobe" transform="translate(545,500) scale(1,0.37)"><circle r="174" fill="none" stroke="#8d919b" stroke-width="4" stroke-dasharray="2 7"/></g>
+    <g transform="translate(545,498) scale(1,0.37)">
+      <g class="t-platterRec">
+        <circle r="168" fill="url(#vinyl)"/>
+        <g fill="none" stroke="#2c2c31" stroke-width="1.2"><circle r="160"/><circle r="148"/><circle r="136"/><circle r="122"/><circle r="110"/><circle r="96"/><circle r="84"/><circle r="72"/></g>
+        <circle r="150" fill="none" stroke="#0a0a0c" stroke-width="3"/><circle r="104" fill="none" stroke="#0a0a0c" stroke-width="2.5"/>
+        <g class="t-platterRot">
+          <image class="t-labelImg" href="" x="-56" y="-56" width="112" height="112" clip-path="url(#clipLabel)" preserveAspectRatio="xMidYMid slice"/>
+          <circle r="56" fill="none" stroke="#000" stroke-opacity=".35" stroke-width="2"/>
+          <rect x="-3" y="-54" width="6" height="16" rx="2" fill="#fff" opacity=".55"/>
+          <path d="M-160,0 A160 160 0 0 1 -150,-55" stroke="#55565e" stroke-width="3" fill="none" opacity=".7"/>
+          <path d="M150,55 A160 160 0 0 1 120,105" stroke="#55565e" stroke-width="3" fill="none" opacity=".5"/>
+        </g>
+        <circle r="168" fill="url(#sheen)"/>
+      </g>
+      <circle r="5" fill="url(#metal)"/>
+    </g>
+    <!-- tonearm -->
+    <circle cx="742" cy="440" r="22" fill="#1f2026" stroke="#4a4d58" stroke-width="2"/>
+    <circle cx="742" cy="440" r="14" fill="url(#metal)"/>
+    <ellipse class="t-needleShadow" cx="0" cy="0" rx="10" ry="4" fill="#000" opacity=".4"/>
+    <g class="t-tonearm">
+      <g class="t-armLift">
+        <rect x="-7" y="-36" width="14" height="22" rx="4" fill="url(#metal)"/>
+        <path d="M0,-8 L0,104 L-14,122" fill="none" stroke="url(#metal)" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M0,-8 L0,104 L-14,122" fill="none" stroke="#fff" stroke-width="1.2" stroke-linecap="round" opacity=".4"/>
+        <g transform="translate(-16,126) rotate(30)"><rect x="-10" y="-5" width="24" height="16" rx="3" fill="#202128" stroke="#5c5f6a"/><rect x="-6" y="-2" width="14" height="6" rx="1" fill="var(--c3)" opacity=".85"/><path d="M14,0 L24,-4" stroke="url(#metal)" stroke-width="3" stroke-linecap="round"/></g>
+      </g>
+    </g>
+    <text class="deck-letter" x="550" y="598" text-anchor="middle" font-family="system-ui,sans-serif" font-weight="900" font-size="14" letter-spacing="4" fill="#4a4d58">DECK ${d}</text>
+  </g>`;
 
 const svgMarkup = `
 <svg class="scene-svg" viewBox="0 0 1000 660" preserveAspectRatio="xMidYMax meet" role="img" aria-label="Animated DJ performing at turntables">
@@ -59,7 +116,7 @@ const svgMarkup = `
 </defs>
 
 <!-- ===== DJ body (behind booth) ===== -->
-<g id="dj">
+<g id="dj" transform="translate(130,0)">
   <g id="body">
     <g data-ov="hood" style="display:none"><path d="M372,292 C366,236 414,214 470,214 C526,214 574,236 568,292 C548,276 508,268 470,268 C432,268 392,276 372,292Z" fill="url(#jacket)" stroke="#060607" stroke-width="2"/><path d="M392,284 C404,250 436,240 470,240 C504,240 536,250 548,284" fill="none" stroke="#000" stroke-opacity=".45" stroke-width="6"/></g>
     <path class="o-ph-band" d="M422,286 C418,240 522,240 518,286" fill="none" stroke="#0c0c0e" stroke-width="11" stroke-linecap="round"/>
@@ -123,7 +180,7 @@ const svgMarkup = `
       <ellipse cx="0" cy="16" rx="5" ry="3" fill="#8a5a3d" opacity=".35"/>
       <g id="eyes">
         <ellipse cx="-22" cy="2" rx="9" ry="4.2" fill="#e9e1d6"/><ellipse cx="22" cy="2" rx="9" ry="4.2" fill="#e9e1d6"/>
-        <circle cx="-21" cy="3.4" r="3.9" fill="#1b0f09"/><circle cx="23" cy="3.4" r="3.9" fill="#1b0f09"/>
+        <circle class="pupil" cx="-21" cy="3.4" r="3.9" fill="#1b0f09"/><circle class="pupil" cx="23" cy="3.4" r="3.9" fill="#1b0f09"/>
         <path d="M-32,1 C-26,-4 -18,-4 -12,0 L-12,1.6 C-18,-1.2 -26,-1.2 -32,2.4Z M32,1 C26,-4 18,-4 12,0 L12,1.6 C18,-1.2 26,-1.2 32,2.4Z" fill="#160c07"/>
       </g>
       <path d="M-35,-11 C-28,-17 -17,-17 -9,-12 L-10,-8 C-18,-12 -27,-12 -34,-7Z M35,-11 C28,-17 17,-17 9,-12 L10,-8 C18,-12 27,-12 34,-7Z" fill="#0f0907"/>
@@ -158,6 +215,7 @@ const svgMarkup = `
   </g>
 </g>
 
+
 <!-- ===== booth ===== -->
 <g id="booth">
   <path d="M150,410 L1000,410 L1000,604 L118,604 Z" fill="url(#table)"/>
@@ -165,78 +223,28 @@ const svgMarkup = `
   <rect x="100" y="604" width="900" height="60" fill="#09080d"/>
   <rect id="ledStrip" x="110" y="606" width="890" height="5" fill="url(#led)" opacity=".7"/>
   <rect x="110" y="611" width="890" height="40" fill="url(#led)" opacity=".06" id="ledGlow"/>
-  <!-- turntable -->
-  <g id="turntable">
-    <path d="M352,418 L748,418 L772,586 L328,586 Z" fill="url(#plinth)" stroke="#3a3c46" stroke-width="1.5"/>
-    <path d="M328,586 L772,586 L772,602 L328,602 Z" fill="#0d0e12"/>
-    <path d="M330,586 L770,586" stroke="#4a4d58" stroke-width="1"/>
-    <rect x="352" y="560" width="34" height="14" rx="3" fill="#22242b" stroke="#454854"/>
-    <rect id="startBtn" x="355" y="563" width="28" height="8" rx="2" fill="var(--c2)" opacity=".25"/>
-    <circle cx="400" cy="567" r="4" fill="#3a3d47"/><circle cx="414" cy="567" r="4" fill="#3a3d47"/>
-    <rect x="722" y="470" width="10" height="92" rx="4" fill="#0c0d10" stroke="#3a3d47"/>
-    <rect id="pitchCap" x="715" y="508" width="24" height="12" rx="2" fill="url(#metal)"/>
-    <circle cx="372" cy="436" r="8" fill="#1b1c22" stroke="#4a4d58"/><circle id="targetLight" cx="372" cy="436" r="3" fill="var(--c3)" opacity=".5"/>
-    <g id="neon" transform="translate(545,500)">
-      <ellipse rx="190" ry="72" fill="none" stroke="var(--c1)" stroke-width="14" opacity=".08" class="neonGlow"/>
-      <ellipse rx="190" ry="72" fill="none" stroke="var(--c1)" stroke-width="7" opacity=".18" class="neonGlow"/>
-      <ellipse rx="190" ry="72" fill="none" stroke="var(--c1)" stroke-width="2.4" opacity=".95" class="neonCore"/>
-      <ellipse rx="198" ry="76" fill="none" stroke="var(--c2)" stroke-width="6" opacity=".12" class="neonGlow2"/>
-      <ellipse rx="198" ry="76" fill="none" stroke="var(--c2)" stroke-width="1.6" opacity=".8" class="neonCore2"/>
-    </g>
-    <g id="ringBars" transform="translate(545,500)"></g>
-    <ellipse cx="545" cy="506" rx="180" ry="67" fill="#0b0b0e"/>
-    <ellipse cx="545" cy="502" rx="180" ry="67" fill="url(#metal)" opacity=".8"/>
-    <ellipse cx="545" cy="500" rx="176" ry="65" fill="#1a1b20"/>
-    <g id="strobe" transform="translate(545,500) scale(1,0.37)"><circle r="174" fill="none" stroke="#8d919b" stroke-width="4" stroke-dasharray="2 7"/></g>
-    <g transform="translate(545,498) scale(1,0.37)">
-      <g id="platterRec">
-        <circle r="168" fill="url(#vinyl)"/>
-        <g fill="none" stroke="#2c2c31" stroke-width="1.2"><circle r="160"/><circle r="148"/><circle r="136"/><circle r="122"/><circle r="110"/><circle r="96"/><circle r="84"/><circle r="72"/></g>
-        <circle r="150" fill="none" stroke="#0a0a0c" stroke-width="3"/><circle r="104" fill="none" stroke="#0a0a0c" stroke-width="2.5"/>
-        <g id="platterRot">
-          <image id="labelImg" href="" x="-56" y="-56" width="112" height="112" clip-path="url(#clipLabel)" preserveAspectRatio="xMidYMid slice"/>
-          <circle r="56" fill="none" stroke="#000" stroke-opacity=".35" stroke-width="2"/>
-          <rect x="-3" y="-54" width="6" height="16" rx="2" fill="#fff" opacity=".55"/>
-          <path d="M-160,0 A160 160 0 0 1 -150,-55" stroke="#55565e" stroke-width="3" fill="none" opacity=".7"/>
-          <path d="M150,55 A160 160 0 0 1 120,105" stroke="#55565e" stroke-width="3" fill="none" opacity=".5"/>
-        </g>
-        <circle r="168" fill="url(#sheen)"/>
-      </g>
-      <circle r="5" fill="url(#metal)"/>
-    </g>
-    <!-- tonearm -->
-    <circle cx="742" cy="440" r="22" fill="#1f2026" stroke="#4a4d58" stroke-width="2"/>
-    <circle cx="742" cy="440" r="14" fill="url(#metal)"/>
-    <ellipse id="needleShadow" cx="0" cy="0" rx="10" ry="4" fill="#000" opacity=".4"/>
-    <g id="tonearm">
-      <g id="armLift">
-        <rect x="-7" y="-36" width="14" height="22" rx="4" fill="url(#metal)"/>
-        <path d="M0,-8 L0,104 L-14,122" fill="none" stroke="url(#metal)" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M0,-8 L0,104 L-14,122" fill="none" stroke="#fff" stroke-width="1.2" stroke-linecap="round" opacity=".4"/>
-        <g transform="translate(-16,126) rotate(30)"><rect x="-10" y="-5" width="24" height="16" rx="3" fill="#202128" stroke="#5c5f6a"/><rect x="-6" y="-2" width="14" height="6" rx="1" fill="var(--c3)" opacity=".85"/><path d="M14,0 L24,-4" stroke="url(#metal)" stroke-width="3" stroke-linecap="round"/></g>
-      </g>
-    </g>
+  ${deckSvg('A')}
+  ${deckSvg('B')}
+  <!-- mixer + crossfader (centre) -->
+  <g id="mixer">
+    <path d="M556,484 L644,484 L654,600 L546,600 Z" fill="#191a20" stroke="#3a3c46" stroke-width="1.5"/>
+    <path d="M546,600 L654,600 L654,612 L546,612 Z" fill="#0c0d11"/>
+    <rect x="572" y="490" width="56" height="16" rx="2" fill="#050608" stroke="#2c2e36"/>
+    <text id="bpmText" x="600" y="502" text-anchor="middle" font-family="ui-monospace,Menlo,monospace" font-size="10" font-weight="700" fill="var(--c2)">--- BPM</text>
+    <g id="mixKnobs"></g>
+    <g id="vu"></g>
+    <rect x="569" y="556" width="6" height="28" rx="3" fill="#050608"/><rect x="625" y="556" width="6" height="28" rx="3" fill="#050608"/>
+    <rect id="chA" x="563" y="556" width="18" height="8" rx="2" fill="url(#metal)"/><rect id="chB" x="619" y="556" width="18" height="8" rx="2" fill="url(#metal)"/>
+    <text x="572" y="517" text-anchor="middle" font-family="system-ui" font-size="8" font-weight="800" fill="#6b6f7c">A</text><text x="628" y="517" text-anchor="middle" font-family="system-ui" font-size="8" font-weight="800" fill="#6b6f7c">B</text>
+    <rect x="566" y="589" width="68" height="5" rx="2.5" fill="#050608"/>
+    <rect id="xf" x="565" y="584" width="14" height="14" rx="3" fill="url(#metal)" stroke="var(--c3)" stroke-width=".8"/>
+  </g>
+</g>
     <g id="spark" opacity="0">
       <g stroke="var(--c3)" stroke-width="2.2" stroke-linecap="round"><path d="M0,-10 L0,-22 M8,-6 L18,-14 M-8,-6 L-18,-14 M10,2 L22,0 M-10,2 L-22,0"/></g>
       <circle r="5" fill="#fff"/>
       <text x="16" y="-18" font-family="system-ui,sans-serif" font-size="13" font-weight="800" font-style="italic" fill="var(--c3)">crackle</text>
     </g>
-  </g>
-  <!-- mixer -->
-  <g id="mixer">
-    <path d="M788,422 L972,422 L992,590 L780,590 Z" fill="#191a20" stroke="#3a3c46" stroke-width="1.5"/>
-    <path d="M780,590 L992,590 L992,604 L780,604 Z" fill="#0c0d11"/>
-    <rect x="852" y="430" width="56" height="18" rx="2" fill="#050608" stroke="#2c2e36"/>
-    <text id="bpmText" x="880" y="443" text-anchor="middle" font-family="ui-monospace,Menlo,monospace" font-size="11" font-weight="700" fill="var(--c2)">--- BPM</text>
-    <g id="mixKnobs"></g>
-    <g id="vu"></g>
-    <rect x="806" y="520" width="6" height="44" rx="3" fill="#050608"/><rect x="948" y="520" width="6" height="44" rx="3" fill="#050608"/>
-    <rect id="chA" x="799" y="526" width="20" height="9" rx="2" fill="url(#metal)"/><rect id="chB" x="941" y="526" width="20" height="9" rx="2" fill="url(#metal)"/>
-    <rect x="835" y="572" width="96" height="6" rx="3" fill="#050608"/>
-    <rect id="xf" x="873" y="567" width="16" height="16" rx="3" fill="url(#metal)"/>
-    <text x="882" y="600" text-anchor="middle" font-family="system-ui,sans-serif" font-size="8" font-weight="800" fill="#6b6f7c" letter-spacing="2">PF-2X</text>
-  </g>
-</g>
 
 <!-- ===== crate ===== -->
 <g id="crate">
@@ -284,17 +292,21 @@ export function createScene(container) {
   container.insertAdjacentHTML('beforeend', svgMarkup);
   const svg = container.querySelector('svg.scene-svg');
   const $ = (id) => svg.getElementById ? svg.getElementById(id) : svg.querySelector('#' + id);
+  const dq = (d, c) => $('deck' + d).querySelector('.t-' + c);
+  const deckEls = (d) => ({
+    g: $('deck' + d), platterRec: dq(d, 'platterRec'), platterRot: dq(d, 'platterRot'), labelImg: dq(d, 'labelImg'), strobe: dq(d, 'strobe'),
+    tonearm: dq(d, 'tonearm'), armLift: dq(d, 'armLift'), needleShadow: dq(d, 'needleShadow'), startBtn: dq(d, 'startBtn'), targetLight: dq(d, 'targetLight'),
+    ringBars: dq(d, 'ringBars'), neonCore: $('deck' + d).querySelectorAll('.neonCore,.neonCore2'), neonGlow: $('deck' + d).querySelectorAll('.neonGlow,.neonGlow2'),
+    letter: $('deck' + d).querySelector('.deck-letter'), pitchCap: dq(d, 'pitchCap'),
+  });
   const el = {
-    body: $('body'), head: $('head'), eyes: $('eyes'), dj: $('dj'), rimL: $('rimL'), rimR: $('rimR'),
-    platterRec: $('platterRec'), platterRot: $('platterRot'), labelImg: $('labelImg'), strobe: $('strobe'),
-    tonearm: $('tonearm'), armLift: $('armLift'), needleShadow: $('needleShadow'), spark: $('spark'),
+    body: $('body'), head: $('head'), eyes: $('eyes'), dj: $('dj'), rimL: $('rimL'), rimR: $('rimR'), spark: $('spark'),
     sleeve: $('sleeve'), sleeveImg: $('sleeveImg'), sleeveRecWrap: $('sleeveRecWrap'), sleeveRecLabel: $('sleeveRecLabel'),
     fly: $('fly'), flyScale: $('flyScale'), flyRot: $('flyRot'), flyLabel: $('flyLabel'),
-    led: $('ledStrip'), ledGlow: $('ledGlow'), startBtn: $('startBtn'), targetLight: $('targetLight'),
-    neonCore: svg.querySelectorAll('.neonCore,.neonCore2'), neonGlow: svg.querySelectorAll('.neonGlow,.neonGlow2'),
-    ringBars: $('ringBars'), bpmText: $('bpmText'), xf: $('xf'), chA: $('chA'), chB: $('chB'), pitchCap: $('pitchCap'),
-    mixKnobs: $('mixKnobs'), vu: $('vu'), crateRecs: $('crateRecs'),
+    led: $('ledStrip'), ledGlow: $('ledGlow'), bpmText: $('bpmText'), xf: $('xf'), chA: $('chA'), chB: $('chB'),
+    mixKnobs: $('mixKnobs'), vu: $('vu'), crateRecs: $('crateRecs'), pupils: svg.querySelectorAll('.pupil'),
     arms: { L: $('armL'), R: $('armR') }, neonStrips: svg.querySelector('.neon-strips'),
+    deck: { A: deckEls('A'), B: deckEls('B') },
   };
   const setHref = (img, url) => { img.setAttribute('href', url || ''); };
 
@@ -306,92 +318,124 @@ export function createScene(container) {
     g.innerHTML = `<rect x="${x}" y="${top}" width="19" height="${92 - (i % 4) * 5}" rx="2" fill="#15151a" stroke="#000"/><rect x="${x + 2}" y="${top + 2}" width="15" height="${88 - (i % 4) * 5}" rx="1" fill="${c}" opacity=".85"/><rect x="${x + 2}" y="${top + 2}" width="4" height="${88 - (i % 4) * 5}" fill="#fff" opacity=".18"/>`;
     el.crateRecs.appendChild(g);
   });
-  // mixer knobs + vu
+  // mixer knobs + vu (centre mixer)
   const knobs = [];
-  [[826, 462], [826, 486], [826, 508], [934, 462], [934, 486], [934, 508]].forEach(([x, y]) => {
+  [[572, 528], [572, 546], [628, 528], [628, 546]].forEach(([x, y]) => {
     const g = document.createElementNS(NS, 'g'); g.setAttribute('transform', `translate(${x},${y})`);
-    g.innerHTML = `<circle r="8" fill="#0c0d10" stroke="#3a3d47"/><g class="kr"><circle r="6" fill="#2a2c33"/><path d="M0,0 L0,-6" stroke="var(--c3)" stroke-width="2" stroke-linecap="round"/></g>`;
+    g.innerHTML = `<circle r="6.5" fill="#0c0d10" stroke="#3a3d47"/><g class="kr"><circle r="4.8" fill="#2a2c33"/><path d="M0,0 L0,-4.8" stroke="var(--c3)" stroke-width="1.8" stroke-linecap="round"/></g>`;
     el.mixKnobs.appendChild(g); knobs.push(g.querySelector('.kr'));
   });
   const vuCells = [[], []];
-  for (let ch = 0; ch < 2; ch++) for (let i = 0; i < 12; i++) {
+  for (let ch = 0; ch < 2; ch++) for (let i = 0; i < 10; i++) {
     const r = document.createElementNS(NS, 'rect');
-    const x = ch ? 898 : 856, y = 548 - i * 7.6;
-    r.setAttribute('x', x); r.setAttribute('y', y); r.setAttribute('width', 6); r.setAttribute('height', 5.6); r.setAttribute('rx', 1);
-    r.setAttribute('fill', i > 9 ? '#ff3b5c' : i > 6 ? '#ffc531' : '#22e39a'); r.setAttribute('opacity', '.12');
+    const x = ch ? 603 : 591, y = 572 - i * 6;
+    r.setAttribute('x', x); r.setAttribute('y', y); r.setAttribute('width', 6); r.setAttribute('height', 4.4); r.setAttribute('rx', 1);
+    r.setAttribute('fill', i > 7 ? '#ff3b5c' : i > 5 ? '#ffc531' : '#22e39a'); r.setAttribute('opacity', '.12');
     el.vu.appendChild(r); vuCells[ch].push(r);
   }
-  for (let ch = 0; ch < 2; ch++) { const t = document.createElementNS(NS, 'text'); t.setAttribute('x', ch ? 901 : 859); t.setAttribute('y', 566); t.setAttribute('font-size', 7); t.setAttribute('fill', '#6b6f7c'); t.setAttribute('text-anchor', 'middle'); t.setAttribute('font-family', 'system-ui'); t.textContent = ch ? 'B' : 'A'; el.vu.appendChild(t); }
-  // spectrum bars around the deck
-  const BARS = 72, bars = [];
-  for (let i = 0; i < BARS; i++) {
-    const a = (i / BARS) * Math.PI * 2; const l = document.createElementNS(NS, 'line');
-    l.setAttribute('stroke', i % 2 ? 'var(--c2)' : 'var(--c1)'); l.setAttribute('stroke-width', '3'); l.setAttribute('stroke-linecap', 'round');
-    el.ringBars.appendChild(l); bars.push({ l, c: Math.cos(a), s: Math.sin(a) });
-  }
+  // spectrum bars around each deck (only the active deck's ring is drawn)
+  const BARS = 72, bars = { A: [], B: [] };
+  ['A', 'B'].forEach((d) => {
+    for (let i = 0; i < BARS; i++) {
+      const a = (i / BARS) * Math.PI * 2; const l = document.createElementNS(NS, 'line');
+      l.setAttribute('stroke', i % 2 ? 'var(--c2)' : 'var(--c1)'); l.setAttribute('stroke-width', '3'); l.setAttribute('stroke-linecap', 'round');
+      el.deck[d].ringBars.appendChild(l); bars[d].push({ l, c: Math.cos(a), s: Math.sin(a) });
+    }
+  });
 
   // ---------------- state ----------------
+  const mkDeck = () => ({ arm: G.arm.rest, lift: 1, spin: 0, spinTarget: 0, rot: Math.random() * 360, rate: 1, visible: false, progress: 0, held: false, label: '' });
   const st = {
-    arm: G.arm.rest, lift: 1, spin: 0, spinTarget: 0, rot: 0, rate: 1, platterVisible: false,
+    decks: { A: mkDeck(), B: mkDeck() }, active: 'A', turn: -1, lean: 0, leanT: 0, leanV: 0, leanHold: false,
     sleeve: { x: G.crate.x, y: G.crate.y, rot: 0, slide: 0, show: false, rec: true },
     fly: { x: 0, y: 0, sx: 1, sy: 1, o: 0, show: false, rot: 0 },
     hands: {
-      L: { x: 430, y: 470, vx: 0, vy: 0, tx: 430, ty: 470, mode: 'idle', follow: null, grip: 0 },
-      R: { x: 830, y: 470, vx: 0, vy: 0, tx: 830, ty: 470, mode: 'idle', follow: null, grip: 0 },
+      L: { x: 450, y: 540, vx: 0, vy: 0, mode: 'idle', follow: null, grip: 0 },
+      R: { x: 750, y: 540, vx: 0, vy: 0, mode: 'idle', follow: null, grip: 0 },
     },
     nod: 0, nodV: 0, bounce: 0, blink: 0, nextBlink: 2, pose: 0, poseBeat: 0, beats: 0,
-    spark: 0, xf: 0.5, progress: 0, busy: false, energy: 0,
+    spark: 0, sparkDeck: 'A', xf: 0, busy: false, energy: 0, instant: false,
+    get platterVisible() { return st.decks[st.active].visible; },
   };
   const tweens = new Set();
   function tween(obj, to, dur, fn = ease.io) {
     return new Promise((resolve) => {
-      if (dur <= 0) { Object.assign(obj, to); resolve(); return; }
+      if (dur <= 0 || st.instant) { Object.assign(obj, to); resolve(); return; }
       const from = {}; for (const k in to) from[k] = obj[k];
       tweens.add({ obj, from, to, dur, t: 0, fn, resolve });
     });
   }
+  function flush() { tweens.forEach((t) => { Object.assign(t.obj, t.to); t.resolve(); }); tweens.clear(); }
   const wait = (s) => tween({ v: 0 }, { v: 1 }, s, ease.lin);
 
-  function armTip(angle = st.arm, lift = st.lift) {
+  const toS = (d, x, y) => ({ x: DECKS[d].tx + DS * x, y: DECKS[d].ty + DS * y });
+  const platterS = (d) => toS(d, G.platter.x, G.platter.y);
+  const PR = G.platter.r * DS; // platter radius in scene units
+  function armTipLocal(angle, lift) {
     const a = angle * D2R; const L = G.arm.len - 2;
-    // headshell tip (after the small bend)
-    const x = G.arm.x - Math.sin(a) * L - Math.cos(a) * 18, y = G.arm.y + Math.cos(a) * L - Math.sin(a) * 18 - lift * 8;
-    return { x, y };
+    return { x: G.arm.x - Math.sin(a) * L - Math.cos(a) * 18, y: G.arm.y + Math.cos(a) * L - Math.sin(a) * 18 - lift * 8 };
   }
+  function armTip(d, angle = st.decks[d].arm, lift = st.decks[d].lift) { const t = armTipLocal(angle, lift); return toS(d, t.x, t.y); }
+  const armHand = (d) => (d === 'A' ? 'L' : 'R'); // hand that works each deck's tonearm
   function moveHand(side, x, y, dur, fn) {
     const h = st.hands[side]; const p = { x: h.x, y: h.y }; h.mode = 'anim'; h.follow = () => p; h.vx = h.vy = 0;
     return tween(p, { x, y }, dur, fn);
   }
   function follow(side, f) { const h = st.hands[side]; h.mode = 'anim'; h.follow = f; }
   function release(side) { const h = st.hands[side]; h.mode = 'idle'; h.follow = null; }
-
   const recEdgeR = () => ({ x: st.fly.x + G.fly * st.fly.sx - 14, y: st.fly.y - 4 });
+  function leanTo(v) { st.leanT = v; st.leanHold = true; }
 
-  // ---------------- choreography ----------------
-  let gen = 0;
-  function sparkle() { st.spark = 1; }
+  // ---------------- choreography (serialised queue) ----------------
+  let gen = 0, chain = Promise.resolve(), pending = 0;
+  function enqueue(fn) {
+    const my = gen; pending++; st.busy = true;
+    const p = chain.then(() => (my === gen ? fn(my) : null)).catch((e) => console.warn('[scene]', e)).finally(() => { pending--; if (!pending) { st.busy = false; st.leanHold = false; } });
+    chain = p; return p;
+  }
+  function sparkle(d) { st.spark = 1; st.sparkDeck = d; }
 
-  async function lift(speed, sounds) {
-    if (!st.platterVisible) return;
-    await moveHand('R', armTip().x - 6, armTip().y - 14, .26 / speed);
-    follow('R', () => { const t = armTip(); return { x: t.x - 6, y: t.y - 14 }; });
-    await tween(st, { lift: 1 }, .1 / speed); sounds && sounds.click && sounds.click();
-    await tween(st, { arm: G.arm.rest }, .3 / speed);
-    st.spinTarget = 0;
-    await moveHand('R', G.platter.x + G.platter.r - 16, G.platter.y - 4, .2 / speed);
-    // record leaves the platter
-    st.platterVisible = false;
-    Object.assign(st.fly, { x: G.platter.x, y: G.platter.y, sx: G.platter.r / G.fly, sy: G.platter.r * G.platter.k / G.fly, o: 1, show: true });
-    setHref(el.flyLabel, el.labelImg.getAttribute('href'));
+  async function lowerNeedle(d, speed, onDrop, my) {
+    const D = st.decks[d], hs = armHand(d);
+    D.held = true;
+    const t0 = armTip(d); await moveHand(hs, t0.x - 4, t0.y - 10, .22 / speed);
+    follow(hs, () => { const t = armTip(d); return { x: t.x - 4, y: t.y - 10 }; });
+    await tween(D, { arm: G.arm.play0 + D.progress * (G.arm.play1 - G.arm.play0) }, .32 / speed);
+    await tween(D, { lift: 0 }, .14 / speed, ease.in);
+    sparkle(d); D.spinTarget = 1; D.held = false;
+    if (onDrop && my === gen) onDrop();
+    await wait(.12); release(hs);
+  }
+  async function raiseNeedle(d, speed, sounds) {
+    const D = st.decks[d], hs = armHand(d);
+    if (D.lift >= 1 && D.arm === G.arm.rest) { D.spinTarget = 0; return; }
+    D.held = true;
+    const t0 = armTip(d); await moveHand(hs, t0.x - 4, t0.y - 10, .24 / speed);
+    follow(hs, () => { const t = armTip(d); return { x: t.x - 4, y: t.y - 10 }; });
+    await tween(D, { lift: 1 }, .1 / speed); sounds && sounds.click && sounds.click();
+    D.spinTarget = 0;
+    await tween(D, { arm: G.arm.rest }, .3 / speed);
+    D.held = false; release(hs);
+  }
+  async function recordOff(d, speed, sounds) {
+    const D = st.decks[d]; if (!D.visible) return;
+    await raiseNeedle(d, speed, sounds);
+    const P = platterS(d);
+    await moveHand('R', P.x + PR - 12, P.y - 4, .22 / speed);
+    D.visible = false;
+    Object.assign(st.fly, { x: P.x, y: P.y, sx: PR / G.fly, sy: PR * G.platter.k / G.fly, o: 1, show: true });
+    setHref(el.flyLabel, D.label);
     follow('R', recEdgeR);
-    await tween(st.fly, { x: 905, y: 330, sx: 1, sy: 1 }, .42 / speed, ease.io);
-    tween(st.fly, { o: 0 }, .18 / speed).then(() => { st.fly.show = false; });
+    const away = d === 'A' ? { x: 300, y: 330 } : { x: 960, y: 330 };
+    await tween(st.fly, { x: away.x, y: away.y, sx: 1, sy: 1 }, .4 / speed, ease.io);
+    tween(st.fly, { o: 0 }, .16 / speed).then(() => { st.fly.show = false; });
     release('R');
   }
   async function pull(speed, coverUrl, labelUrl) {
     setHref(el.sleeveImg, coverUrl); setHref(el.sleeveRecLabel, labelUrl);
     Object.assign(st.sleeve, { x: G.crate.x, y: G.crate.y, rot: 0, slide: 0, show: true, rec: true });
-    await moveHand('L', G.crate.x - 4, G.crate.y - 70, .32 / speed);
+    leanTo(-150);
+    await moveHand('L', G.crate.x - 4, G.crate.y - 70, .36 / speed);
     follow('L', () => ({ x: st.sleeve.x - 4, y: st.sleeve.y - 70 }));
     st.hands.L.grip = 1;
     await tween(st.sleeve, { x: G.sleeveUp.x, y: G.sleeveUp.y, rot: -5 }, .42 / speed, ease.out);
@@ -402,81 +446,75 @@ export function createScene(container) {
     st.hands.R.grip = 1;
     await tween(st.sleeve, { slide: 118 }, .38 / speed, ease.io);
   }
-  async function carry(speed, labelUrl) {
+  async function carry(d, speed, labelUrl) {
+    const D = st.decks[d], P = platterS(d);
     Object.assign(st.fly, { x: st.sleeve.x + st.sleeve.slide, y: st.sleeve.y, sx: 1, sy: 1, o: 1, show: true });
     setHref(el.flyLabel, labelUrl); st.sleeve.rec = false;
     follow('R', recEdgeR);
+    leanTo(d === 'A' ? -70 : 40);
     const back = (async () => {
       await tween(st.sleeve, { x: G.crate.x, y: G.crate.y, rot: 0 }, .46 / speed, ease.io);
       st.sleeve.show = false; st.hands.L.grip = 0; release('L');
     })();
-    await tween(st.fly, { x: G.platter.x, y: G.platter.y, sx: G.platter.r / G.fly, sy: G.platter.r * G.platter.k / G.fly }, .5 / speed, ease.io);
-    setHref(el.labelImg, labelUrl);
-    st.platterVisible = true; st.fly.show = false; st.hands.R.grip = 0;
+    await tween(st.fly, { x: P.x, y: P.y, sx: PR / G.fly, sy: PR * G.platter.k / G.fly }, .52 / speed, ease.io);
+    setHref(D.labelEl, labelUrl); D.label = labelUrl;
+    D.visible = true; st.fly.show = false; st.hands.R.grip = 0; release('R');
     await back;
+    leanTo(d === 'A' ? -25 : 25);
   }
-  async function drop(speed, onDrop, sounds) {
-    const t0 = armTip();
-    await moveHand('R', t0.x - 6, t0.y - 14, .22 / speed);
-    follow('R', () => { const t = armTip(); return { x: t.x - 6, y: t.y - 14 }; });
-    await tween(st, { arm: G.arm.play0 + st.progress * (G.arm.play1 - G.arm.play0) }, .32 / speed);
-    await tween(st, { lift: 0 }, .14 / speed, ease.in);
-    sparkle();
-    st.spinTarget = 1;
-    if (onDrop) onDrop();
-    await wait(.12);
-    release('R');
+  const instantSpeed = (speed) => speed >= 50;
+  function placeInstant(d, label, drop) {
+    const D = st.decks[d]; setHref(D.labelEl, label); D.label = label; D.visible = true;
+    if (drop) { D.arm = G.arm.play0 + D.progress * (G.arm.play1 - G.arm.play0); D.lift = 0; D.spinTarget = 1; } else { D.arm = G.arm.rest; D.lift = 1; D.spinTarget = 0; }
   }
 
-  /** Full load: [lift old || pull new] → slide → carry → drop. */
-  async function loadRecord({ cover, label, speed = 1, onDrop, sounds, preDrop } = {}) {
-    const my = ++gen; st.busy = true;
-    try {
-      if (speed >= 50) { // instant (animation off)
-        setHref(el.labelImg, label); st.platterVisible = true; st.arm = G.arm.play0; st.lift = 0; st.spinTarget = 1;
-        onDrop && onDrop(); return;
-      }
-      await Promise.all([lift(speed, sounds), pull(speed, cover, label)]);
-      if (my !== gen) return;
+  /** Full load onto a deck: old record off (if any) + pull new from the crate → slide → carry → drop needle. */
+  function loadRecord({ deck = st.active, cover, label, speed = 1, onDrop, sounds } = {}) {
+    return enqueue(async (my) => {
+      if (instantSpeed(speed) || st.instant) { placeInstant(deck, label, true); onDrop && onDrop(); return; }
+      await Promise.all([recordOff(deck, speed, sounds), pull(speed, cover, label)]); if (my !== gen) return;
       await slide(speed); if (my !== gen) return;
-      if (preDrop) await preDrop();
-      await carry(speed, label); if (my !== gen) return;
-      await drop(speed, onDrop, sounds);
-    } finally { if (my === gen) st.busy = false; }
+      await carry(deck, speed, label); if (my !== gen) return;
+      await lowerNeedle(deck, speed, onDrop, my);
+    });
   }
-  /** Two-phase load for crossfades: prepare() pulls the sleeve and readies the record (old one keeps spinning);
-   *  commit() lifts the old record, places the new one and drops the needle. */
-  function prepareRecord({ cover, label, speed = 1 }) {
-    const my = ++gen; st.busy = true;
-    const ready = (async () => { await pull(speed, cover, label); if (my === gen) await slide(speed); })();
-    return {
-      ready,
-      async commit({ onLift, onDrop, sounds }) {
-        await ready; if (my !== gen) return;
-        onLift && onLift();
-        // lift old record with the right hand while the left holds the new one
-        const L = st.hands.L; const hold = { x: st.sleeve.x + st.sleeve.slide, y: st.sleeve.y };
-        Object.assign(st.fly, { x: hold.x, y: hold.y, sx: 1, sy: 1, o: 1, show: false });
-        await lift(speed, sounds); if (my !== gen) return;
-        // right hand comes back for the new record
-        await moveHand('R', st.sleeve.x + 64 + st.sleeve.slide, st.sleeve.y + 4, .22 / speed);
-        await carry(speed, label); if (my !== gen) return;
-        await drop(speed, onDrop, sounds);
-        if (my === gen) st.busy = false;
-        void L;
-      },
-    };
+  /** Cue the next record on a deck (needle stays up). */
+  function cueRecord({ deck, cover, label, speed = 1, sounds } = {}) {
+    return enqueue(async (my) => {
+      if (instantSpeed(speed) || st.instant) { placeInstant(deck, label, false); return; }
+      await Promise.all([recordOff(deck, speed, sounds), pull(speed, cover, label)]); if (my !== gen) return;
+      await slide(speed); if (my !== gen) return;
+      await carry(deck, speed, label);
+    });
   }
-  async function needleRedrop(speed = 1, onDrop, sounds) {
-    const my = ++gen; st.busy = true;
-    await moveHand('R', armTip().x - 6, armTip().y - 14, .2 / speed);
-    follow('R', () => { const t = armTip(); return { x: t.x - 6, y: t.y - 14 }; });
-    await tween(st, { lift: 1 }, .12); sounds && sounds.click && sounds.click();
-    await tween(st, { arm: G.arm.play0 }, .25 / speed);
-    await tween(st, { lift: 0 }, .12, ease.in); sparkle(); onDrop && onDrop();
-    release('R'); if (my === gen) st.busy = false;
+  function dropNeedle({ deck, speed = 1, onDrop } = {}) {
+    return enqueue(async (my) => {
+      if (instantSpeed(speed) || st.instant) { const D = st.decks[deck]; D.visible = true; D.arm = G.arm.play0; D.lift = 0; D.spinTarget = 1; sparkle(deck); onDrop && onDrop(); return; }
+      await lowerNeedle(deck, speed, onDrop, my);
+    });
   }
-  function cancel() { gen++; tweens.forEach((t) => { Object.assign(t.obj, t.to); t.resolve(); }); tweens.clear(); release('L'); release('R'); st.busy = false; st.sleeve.show = false; st.fly.show = false; }
+  function liftNeedle({ deck, speed = 1, sounds } = {}) {
+    return enqueue(async () => {
+      if (instantSpeed(speed) || st.instant) { const D = st.decks[deck]; D.lift = 1; D.arm = G.arm.rest; D.spinTarget = 0; return; }
+      await raiseNeedle(deck, speed, sounds);
+    });
+  }
+  function needleRedrop(speed = 1, onDrop, sounds) {
+    const d = st.active;
+    return enqueue(async () => {
+      const D = st.decks[d], hs = armHand(d);
+      if (instantSpeed(speed) || st.instant) { sparkle(d); onDrop && onDrop(); return; }
+      D.held = true;
+      await moveHand(hs, armTip(d).x - 4, armTip(d).y - 10, .2 / speed);
+      follow(hs, () => { const t = armTip(d); return { x: t.x - 4, y: t.y - 10 }; });
+      await tween(D, { lift: 1 }, .12); sounds && sounds.click && sounds.click();
+      await tween(D, { arm: G.arm.play0 }, .25 / speed);
+      await tween(D, { lift: 0 }, .12, ease.in); sparkle(d); D.held = false; onDrop && onDrop();
+      release(hs);
+    });
+  }
+  function cancel() { gen++; flush(); chain = Promise.resolve(); release('L'); release('R'); st.sleeve.show = false; st.fly.show = false; ['A', 'B'].forEach((d) => { st.decks[d].held = false; }); }
+  ['A', 'B'].forEach((d) => { st.decks[d].labelEl = el.deck[d].labelImg; });
 
   // ---------------- IK + render ----------------
   function ik(S, T, side) {
@@ -493,12 +531,12 @@ export function createScene(container) {
     return { E, W };
   }
   const f1 = (n) => n.toFixed(1);
+  const shoulder = (side, dy) => ({ x: G.sh[side].x + DJX + st.lean + (st.shX ? st.shX[side] : 0), y: G.sh[side].y + dy + (st.shY ? st.shY[side] : 0) });
   function drawArm(side, bodyDy) {
-    const h = st.hands[side]; const S = { x: G.sh[side].x, y: G.sh[side].y + bodyDy };
+    const h = st.hands[side]; const S = shoulder(side, bodyDy);
     const { E, W } = ik(S, h, side);
     const g = el.arms[side];
     const ang = Math.atan2(W.y - E.y, W.x - E.x);
-    // forearm ends a bit before the wrist so the cuff shows
     const Wc = { x: W.x - Math.cos(ang) * 14, y: W.y - Math.sin(ang) * 14 };
     const up = `M${f1(S.x)},${f1(S.y)} L${f1(E.x)},${f1(E.y)}`;
     const fo = `M${f1(E.x)},${f1(E.y)} L${f1(Wc.x)},${f1(Wc.y)}`;
@@ -515,19 +553,34 @@ export function createScene(container) {
     p.hand.setAttribute('transform', `translate(${f1(W.x)},${f1(W.y)}) rotate(${f1(ang / D2R)})`);
   }
 
-  let last = performance.now();
-  const IDLE = {
-    // [L target, R target]
-    0: (t, p) => [{ x: 418 + Math.sin(t * 2) * 6, y: 486 + p * 6 }, { x: 828 + Math.cos(t * 3) * 5, y: 480 + p * 8 }],
-    1: (t, p) => [{ x: 300, y: 150 + (1 - p) * 26 }, { x: 830 + Math.sin(t * 2.4) * 8, y: 486 + p * 8 }],
-    2: (t, p) => [{ x: 420 + Math.sin(t * 6) * 10 * p, y: 490 }, { x: 880 + Math.sin(t * .9) * 22, y: 562 + p * 4 }],
-    3: (t, p) => [{ x: 418, y: 486 + p * 5 }, { x: 640, y: 150 + (1 - p) * 26 }],
-    rest: (t) => [{ x: 420, y: 500 + Math.sin(t * 1.2) * 3 }, { x: 836, y: 500 + Math.cos(t * 1.1) * 3 }],
+  // key hand spots (scene coords)
+  const SPOT = {
+    platA: () => { const P = platterS('A'); return { x: P.x + 34, y: P.y - 6 }; },
+    platB: () => { const P = platterS('B'); return { x: P.x - 34, y: P.y - 6 }; },
+    mix: { x: 600, y: 534 }, xfader: () => ({ x: G.xf.x0 + st.xf * (G.xf.x1 - G.xf.x0) + 8, y: G.xf.y - 2 }),
   };
+  /** Hand targets while performing (no choreography running). Returns [L, R]. */
+  function poseTargets(t, p, playing) {
+    const A = st.active === 'A';
+    if (!playing) return [{ x: 452, y: 548 + Math.sin(t * 1.2) * 3 }, { x: 748, y: 548 + Math.cos(t * 1.1) * 3 }];
+    const plat = A ? SPOT.platA() : SPOT.platB();
+    const deckHand = { x: plat.x + Math.sin(t * 2) * 6, y: plat.y + p * 6 };
+    const mixHand = { x: SPOT.mix.x + Math.cos(t * 3) * 5 + (A ? 12 : -12), y: SPOT.mix.y + p * 6 };
+    const xfH = SPOT.xfader();
+    const up = (side) => ({ x: side === 'L' ? G.sh.L.x + DJX + st.lean - 60 : G.sh.R.x + DJX + st.lean + 60, y: 150 + (1 - p) * 26 });
+    let L, R;
+    switch (st.pose) {
+      case 1: [L, R] = A ? [deckHand, up('R')] : [up('L'), deckHand]; break;
+      case 2: [L, R] = A ? [deckHand, xfH] : [xfH, deckHand]; break;
+      case 3: [L, R] = A ? [{ x: deckHand.x + Math.sin(t * 6) * 10 * p, y: deckHand.y }, mixHand] : [mixHand, { x: deckHand.x + Math.sin(t * 6) * 10 * p, y: deckHand.y }]; break;
+      default: [L, R] = A ? [deckHand, mixHand] : [mixHand, deckHand];
+    }
+    return [L, R];
+  }
 
+  let last = performance.now();
   function frame(now, a = {}) {
     let dt = Math.min(.05, (now - last) / 1000); last = now;
-    // tweens
     for (const tw of tweens) {
       tw.t += dt; const k = Math.min(1, tw.t / tw.dur); const e = tw.fn(k);
       for (const key in tw.to) tw.obj[key] = tw.from[key] + (tw.to[key] - tw.from[key]) * e;
@@ -535,45 +588,71 @@ export function createScene(container) {
     }
     const t = now / 1000; const pulse = a.pulse || 0; const playing = !!a.playing;
     if (a.beat) { st.beats++; st.nodV += 2.6 + pulse * 1.5; }
-    // pose cycle every 16 beats
     if (playing && st.beats - st.poseBeat >= 16) { st.poseBeat = st.beats; st.pose = (st.pose + 1 + (Math.random() < .35 ? 1 : 0)) % 4; }
-    // spin
-    const spinRate = st.spinTarget > st.spin ? 1.8 : 1.1;
-    st.spin += (st.spinTarget - st.spin) * Math.min(1, dt * spinRate * 2.2);
-    if (Math.abs(st.spinTarget - st.spin) < .002) st.spin = st.spinTarget;
-    st.rot = (st.rot + dt * 200 * st.spin * (st.rate || 1)) % 360;
+    // decks: spin
+    ['A', 'B'].forEach((d) => {
+      const D = st.decks[d];
+      const spinRate = D.spinTarget > D.spin ? 1.8 : 1.1;
+      D.spin += (D.spinTarget - D.spin) * Math.min(1, dt * spinRate * 2.2);
+      if (Math.abs(D.spinTarget - D.spin) < .002) D.spin = D.spinTarget;
+      D.rot = (D.rot + dt * 200 * D.spin * (D.rate || 1)) % 360;
+    });
+    // head turns toward the active deck; body leans a little that way
+    st.turn += ((st.active === 'A' ? -1 : 1) - st.turn) * Math.min(1, dt * 3);
+    if (!st.leanHold) st.leanT = st.turn * 22;
+    st.leanV += ((st.leanT - st.lean) * 60 - st.leanV * 14) * dt; st.lean += st.leanV * dt;
     // head nod (damped spring)
     st.nodV += (-st.nod * 60 - st.nodV * 9) * dt; st.nod += st.nodV * dt * 6;
     const nod = Math.max(-3, Math.min(12, st.nod)) + (playing ? 0 : Math.sin(t * 1.3) * .8);
     st.bounce = playing ? pulse * 5 : Math.sin(t * 1.3) * 1.2;
-    // blink
     st.nextBlink -= dt; if (st.nextBlink < 0) { st.blink = .14; st.nextBlink = 2.5 + Math.random() * 3.5; }
     if (st.blink > 0) st.blink -= dt;
     el.eyes.setAttribute('transform', st.blink > 0 ? 'translate(0,2) scale(1,.15) translate(0,-2)' : '');
+    el.pupils.forEach((p) => p.setAttribute('transform', `translate(${f1(st.turn * 2.4)},0)`));
+    el.dj.setAttribute('transform', `translate(${f1(DJX + st.lean)},0)`);
     el.body.setAttribute('transform', `translate(0,${f1(st.bounce)})`);
-    el.head.setAttribute('transform', `translate(0,${f1(st.bounce + nod * .55)}) rotate(${f1(nod)} 470 262)`);
+    el.head.setAttribute('transform', `translate(${f1(st.turn * 6)},${f1(st.bounce + nod * .55)}) rotate(${f1(nod + st.turn * 3)} 470 262)`);
     // hands
-    const pose = playing && !st.busy ? IDLE[st.pose](t, pulse) : IDLE.rest(t);
+    const pose = st.busy ? poseTargets(t, pulse, false) : poseTargets(t, pulse, playing);
     ['L', 'R'].forEach((s, i) => {
       const h = st.hands[s];
       if (h.mode === 'anim' && h.follow) { const p = h.follow(); h.x = p.x; h.y = p.y; h.vx = h.vy = 0; }
       else { const T = pose[i]; const k = 70, c = 15; h.vx += ((T.x - h.x) * k - h.vx * c) * dt; h.vy += ((T.y - h.y) * k - h.vy * c) * dt; h.x += h.vx * dt; h.y += h.vy * dt; }
       drawArm(s, st.bounce);
     });
-    // platter + record
-    el.platterRec.style.display = st.platterVisible ? '' : 'none';
-    el.platterRot.setAttribute('transform', `rotate(${f1(st.rot)})`);
-    el.strobe.setAttribute('transform', `translate(545,500) scale(1,0.37) rotate(${f1(st.rot * .25)})`);
-    // tonearm
-    if (playing && !st.busy && st.lift === 0) st.arm = G.arm.play0 + st.progress * (G.arm.play1 - G.arm.play0);
-    el.tonearm.setAttribute('transform', `translate(${G.arm.x},${G.arm.y}) rotate(${f1(st.arm)})`);
-    el.armLift.setAttribute('transform', `translate(0,${f1(-st.lift * 8)})`);
-    const tip = armTip(st.arm, 0);
-    el.needleShadow.setAttribute('cx', f1(tip.x + 4)); el.needleShadow.setAttribute('cy', f1(tip.y + 6));
-    el.needleShadow.setAttribute('opacity', (0.15 + (1 - st.lift) * .3).toFixed(2));
+    // decks: render
+    const bass = a.bass || 0, lvl = a.level || 0, spec = a.spectrum;
+    ['A', 'B'].forEach((d) => {
+      const D = st.decks[d], E = el.deck[d], on = d === st.active;
+      E.platterRec.style.display = D.visible ? '' : 'none';
+      E.platterRot.setAttribute('transform', `rotate(${f1(D.rot)})`);
+      E.strobe.setAttribute('transform', `translate(545,500) scale(1,0.37) rotate(${f1(D.rot * .25)})`);
+      if (D.spinTarget && !D.held && D.lift === 0) D.arm = G.arm.play0 + D.progress * (G.arm.play1 - G.arm.play0);
+      E.tonearm.setAttribute('transform', `translate(${G.arm.x},${G.arm.y}) rotate(${f1(D.arm)})`);
+      E.armLift.setAttribute('transform', `translate(0,${f1(-D.lift * 8)})`);
+      const tip = armTipLocal(D.arm, 0);
+      E.needleShadow.setAttribute('cx', f1(tip.x + 4)); E.needleShadow.setAttribute('cy', f1(tip.y + 6));
+      E.needleShadow.setAttribute('opacity', (0.15 + (1 - D.lift) * .3).toFixed(2));
+      E.startBtn.setAttribute('opacity', D.spinTarget ? '.95' : '.25');
+      E.targetLight.setAttribute('opacity', D.spinTarget ? '.9' : '.4');
+      const spinning = D.spin > .05;
+      const ne = (on || spinning) ? 0.55 + bass * .45 + pulse * .3 : 0.22;
+      E.neonCore.forEach((n) => n.setAttribute('opacity', Math.min(1, ne).toFixed(2)));
+      E.neonGlow.forEach((n, i) => n.setAttribute('opacity', ((on ? (i % 2 ? .1 : .06) + (bass * .2 + pulse * .25) : .03)).toFixed(2)));
+      E.g.classList.toggle('active', on); E.letter.setAttribute('fill', on ? 'var(--c2)' : '#4a4d58');
+      E.ringBars.style.display = on && spinning ? '' : 'none';
+      if (on && spinning) for (let i = 0; i < BARS; i++) {
+        const b = bars[d][i]; const v = spec ? spec[(i < BARS / 2 ? i : BARS - 1 - i) % spec.length] : 0;
+        const r0 = 206, r1 = r0 + 4 + v * 46;
+        b.l.setAttribute('x1', f1(b.c * r0)); b.l.setAttribute('y1', f1(b.s * r0 * .38));
+        b.l.setAttribute('x2', f1(b.c * r1)); b.l.setAttribute('y2', f1(b.s * r1 * .38));
+        b.l.setAttribute('opacity', (0.15 + v * .85).toFixed(2));
+      }
+    });
+    const tipS = armTip(st.sparkDeck, st.decks[st.sparkDeck].arm, 0);
     if (st.spark > 0) { st.spark = Math.max(0, st.spark - dt * 1.1); }
     el.spark.setAttribute('opacity', st.spark.toFixed(2));
-    el.spark.setAttribute('transform', `translate(${f1(tip.x - 4)},${f1(tip.y)}) scale(${(0.8 + (1 - st.spark) * .5).toFixed(2)})`);
+    el.spark.setAttribute('transform', `translate(${f1(tipS.x - 4)},${f1(tipS.y)}) scale(${(0.8 + (1 - st.spark) * .5).toFixed(2)})`);
     // sleeve
     el.sleeve.style.display = st.sleeve.show ? '' : 'none';
     if (st.sleeve.show) {
@@ -581,7 +660,6 @@ export function createScene(container) {
       el.sleeveRecWrap.style.display = st.sleeve.rec ? '' : 'none';
       el.sleeveRecWrap.setAttribute('transform', `translate(${f1(st.sleeve.slide)},0) rotate(${f1(st.sleeve.slide * 1.5)})`);
     }
-    // fly record
     el.fly.style.display = st.fly.show ? '' : 'none';
     if (st.fly.show) {
       el.fly.setAttribute('transform', `translate(${f1(st.fly.x)},${f1(st.fly.y)})`);
@@ -589,49 +667,39 @@ export function createScene(container) {
       el.flyScale.setAttribute('transform', `scale(${st.fly.sx.toFixed(3)},${st.fly.sy.toFixed(3)})`);
     }
     // lights
-    const bass = a.bass || 0, lvl = a.level || 0;
     st.energy += ((playing ? lvl : 0) - st.energy) * Math.min(1, dt * 8);
     el.led.setAttribute('opacity', (0.35 + pulse * .65).toFixed(2));
     el.ledGlow.setAttribute('opacity', (0.04 + pulse * .2).toFixed(2));
-    el.startBtn.setAttribute('opacity', st.spinTarget ? '.95' : '.25');
-    el.targetLight.setAttribute('opacity', st.spinTarget ? '.9' : '.4');
-    const ne = 0.55 + bass * .45 + pulse * .3;
-    el.neonCore.forEach((n) => n.setAttribute('opacity', Math.min(1, ne).toFixed(2)));
-    el.neonGlow.forEach((n, i) => n.setAttribute('opacity', ((i % 2 ? .1 : .06) + (bass * .2 + pulse * .25)).toFixed(2)));
     el.rimL.setAttribute('opacity', (0.25 + pulse * .5).toFixed(2)); el.rimR.setAttribute('opacity', (0.25 + (a.high || 0) * .6).toFixed(2));
     el.arms.L._p && el.arms.L._p.rim.setAttribute('opacity', (0.2 + pulse * .5).toFixed(2));
     el.arms.R._p && el.arms.R._p.rim.setAttribute('opacity', (0.2 + (a.high || 0) * .6).toFixed(2));
-    // deck spectrum ring
-    const spec = a.spectrum;
-    for (let i = 0; i < BARS; i++) {
-      const b = bars[i]; const v = spec ? spec[(i < BARS / 2 ? i : BARS - 1 - i) % spec.length] : 0;
-      const r0 = 206, r1 = r0 + 4 + v * 46;
-      b.l.setAttribute('x1', f1(b.c * r0)); b.l.setAttribute('y1', f1(b.s * r0 * .38));
-      b.l.setAttribute('x2', f1(b.c * r1)); b.l.setAttribute('y2', f1(b.s * r1 * .38));
-      b.l.setAttribute('opacity', (0.15 + v * .85).toFixed(2));
-    }
-    // mixer
-    const vA = playing ? Math.min(1, lvl * 1.25 + pulse * .2) : 0, vB = playing ? Math.min(1, (a.mid || 0) * 1.1 + pulse * .15) : 0;
-    for (let ch = 0; ch < 2; ch++) { const v = ch ? vB : vA; vuCells[ch].forEach((c, i) => c.setAttribute('opacity', i / 12 < v ? '1' : '.12')); }
-    el.xf.setAttribute('x', f1(835 + st.xf * 80));
-    knobs.forEach((k, i) => k.setAttribute('transform', `rotate(${f1(-40 + i * 17 + Math.sin(t * (0.6 + i * .21) + i) * (playing ? 26 : 4))})`));
     if (el.neonStrips && el.neonStrips.style.display !== 'none') el.neonStrips.setAttribute('opacity', (0.55 + pulse * .45).toFixed(2));
+    // mixer: VU per channel follows the crossfader, faders up on spinning decks
+    const gA = Math.cos(st.xf * Math.PI / 2), gB = Math.sin(st.xf * Math.PI / 2);
+    const vA = st.decks.A.spin > .1 ? Math.min(1, (lvl * 1.25 + pulse * .2) * gA) : 0, vB = st.decks.B.spin > .1 ? Math.min(1, (lvl * 1.25 + pulse * .2) * gB) : 0;
+    for (let ch = 0; ch < 2; ch++) { const v = ch ? vB : vA; vuCells[ch].forEach((c, i) => c.setAttribute('opacity', i / 10 < v ? '1' : '.12')); }
+    el.chA.setAttribute('y', st.decks.A.spinTarget ? 556 : 574); el.chB.setAttribute('y', st.decks.B.spinTarget ? 556 : 574);
+    el.xf.setAttribute('x', f1(G.xf.x0 + st.xf * (G.xf.x1 - G.xf.x0) - 7));
+    knobs.forEach((k, i) => k.setAttribute('transform', `rotate(${f1(-40 + i * 17 + Math.sin(t * (0.6 + i * .21) + i) * (playing ? 26 : 4))})`));
     if (a.bpm !== st._bpm) { st._bpm = a.bpm; el.bpmText.textContent = a.bpm ? `${Math.round(a.bpm)} BPM` : '--- BPM'; }
   }
 
   function anchors() {
     const m = svg.getScreenCTM(); if (!m) return null;
     const P = (x, y) => ({ x: m.a * x + m.c * y + m.e, y: m.b * x + m.d * y + m.f });
-    return { ring: P(620, 175), ringR: 160 * m.a, deck: P(545, 500), crowdTop: P(0, 250).y, crowdBottom: P(0, 430).y, booth: P(0, 410).y, scale: m.a, left: P(0, 0).x, right: P(1000, 0).x, head: P(470, 175) };
+    const pl = platterS(st.active);
+    return { ring: P(760, 175), ringR: 160 * m.a, deck: P(pl.x, pl.y), crowdTop: P(0, 250).y, crowdBottom: P(0, 430).y, booth: P(0, 410).y, scale: m.a, left: P(0, 0).x, right: P(1000, 0).x, head: P(470 + DJX + st.lean, 175) };
   }
 
   return {
-    svg, st, frame, anchors, loadRecord, prepareRecord, needleRedrop, cancel, tween,
-    setLabel(url) { setHref(el.labelImg, url); },
+    svg, st, frame, anchors, loadRecord, cueRecord, dropNeedle, liftNeedle, needleRedrop, cancel, tween, flush,
     setOutfit(id) { return applyOutfit(svg, id); },
-    setXfader(v) { st.xf = v; },
-    setProgress(p) { st.progress = Math.max(0, Math.min(1, p || 0)); },
-    setPlaying(on) { st.spinTarget = on && st.platterVisible && st.lift === 0 ? 1 : 0; },
+    setXfader(v) { st.xf = Math.max(0, Math.min(1, v)); },
+    setActive(d) { st.active = d === 'B' ? 'B' : 'A'; },
+    setDeckRate(d, r) { st.decks[d].rate = r; },
+    setProgress(d, p) { st.decks[d].progress = Math.max(0, Math.min(1, p || 0)); },
+    setPlaying(d, on) { const D = st.decks[d]; D.spinTarget = on && D.visible && D.lift === 0 ? 1 : 0; },
+    setInstant(v) { st.instant = !!v; if (v) flush(); },
     get busy() { return st.busy; },
   };
 }

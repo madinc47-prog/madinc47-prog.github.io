@@ -17,7 +17,7 @@ const S = {
   vol: LS.get('vol', 0.85), muted: false, shuffle: LS.get('shuffle', false), repeat: LS.get('repeat', 'all'),
   xfade: LS.get('xfade', 6), theme: LS.get('theme', 'club'), anim: LS.get('anim', 'full'), tab: LS.get('tab', 'all'),
   saveImports: LS.get('saveImports', true), liked: new Set(LS.get('liked', [])),
-  outfit: LS.get('outfit', 'classic'), matchOutfit: LS.get('matchOutfit', false),
+  outfit: LS.get('outfit', 'classic'), matchOutfit: LS.get('matchOutfit', false), autoMix: LS.get('autoMix', true),
 };
 const ANIM_SPEED = { full: 1, quick: 2.2, off: 100 };
 
@@ -75,13 +75,21 @@ async function blobFor(it) {
 }
 
 // ---------------- audio engine ----------------
-let ctx = null, master, analyser, sfxBus, freq, tdata, prevFreq;
+// deck A / deck B → per-deck fade gain → crossfader slot gain (equal-power) → mix bus → [master EQ] → duck → volume → analyser → out
+let ctx = null, master, analyser, sfxBus, freq, tdata, prevFreq, mixBus, duck, postMix;
+const slot = { A: null, B: null };
 function ensureCtx() {
   if (!ctx) {
     ctx = new (window.AudioContext || window.webkitAudioContext)({ latencyHint: 'playback' });
     master = ctx.createGain(); master.gain.value = S.muted ? 0 : S.vol;
     analyser = ctx.createAnalyser(); analyser.fftSize = 2048; analyser.smoothingTimeConstant = 0.5;
     master.connect(analyser); analyser.connect(ctx.destination);
+    duck = ctx.createGain(); duck.connect(master);
+    mixBus = ctx.createGain(); postMix = mixBus;
+    if (typeof window.__pfInsertMaster === 'function') postMix = window.__pfInsertMaster(ctx, mixBus) || mixBus;
+    postMix.connect(duck);
+    ['A', 'B'].forEach((s) => { slot[s] = ctx.createGain(); slot[s].connect(mixBus); });
+    applyXfGains(0);
     sfxBus = ctx.createGain(); sfxBus.gain.value = 0.55; sfxBus.connect(master);
     freq = new Uint8Array(analyser.frequencyBinCount); prevFreq = new Uint8Array(analyser.frequencyBinCount); tdata = new Uint8Array(analyser.fftSize);
   }
@@ -90,13 +98,46 @@ function ensureCtx() {
 }
 function isCrossOrigin(url) { try { const u = new URL(url, location.href); return (u.protocol === 'http:' || u.protocol === 'https:') && u.origin !== location.origin; } catch (e) { return false; } }
 
+// ---------------- crossfader (0 = Deck A, 1 = Deck B; equal-power) ----------------
+const XF = { pos: 0, anim: null };
+const xfGain = (s, p = XF.pos) => (s === 'A' ? Math.cos(p * Math.PI / 2) : Math.sin(p * Math.PI / 2));
+function xfPos() {
+  const a = XF.anim; if (!a || !ctx) return XF.pos;
+  const k = Math.min(1, Math.max(0, (ctx.currentTime - a.t0) / a.secs));
+  XF.pos = a.from + (a.to - a.from) * k; if (k >= 1) XF.anim = null;
+  return XF.pos;
+}
+function applyXfGains(tc = .012) {
+  if (!ctx) return; const t = ctx.currentTime;
+  ['A', 'B'].forEach((s) => { const g = slot[s].gain; g.cancelScheduledValues(t); g.setValueAtTime(g.value, t); if (tc) g.setTargetAtTime(xfGain(s), t, tc); else g.setValueAtTime(xfGain(s), t); });
+  allDecks().forEach((d) => d.applyVol());
+}
+/** Manual crossfader move (slider / keys). */
+function setXf(p, { user = false } = {}) {
+  XF.anim = null; XF.pos = Math.max(0, Math.min(1, p)); applyXfGains(); syncXfUI();
+  if (user) XF.userTouched = performance.now();
+}
+/** Automatic equal-power sweep on the audio clock (keeps working with the screen locked). */
+function xfSweep(to, secs) {
+  ensureCtx(); const from = xfPos(); secs = Math.max(.05, secs);
+  const t = ctx.currentTime + .01, N = 64;
+  ['A', 'B'].forEach((s) => {
+    const g = slot[s].gain, curve = new Float32Array(N);
+    for (let i = 0; i < N; i++) curve[i] = xfGain(s, from + (to - from) * i / (N - 1));
+    g.cancelScheduledValues(ctx.currentTime); g.setValueAtTime(g.value, ctx.currentTime);
+    try { g.setValueCurveAtTime(curve, t, secs); } catch (e) { g.linearRampToValueAtTime(curve[N - 1], t + secs); }
+  });
+  XF.anim = { from, to, t0: t, secs };
+}
+const xfEnd = (s) => (s === 'A' ? 0 : 1);
+
 class Deck {
-  constructor(item, url) {
-    this.item = item; this.url = url; this.raw = false; this.fade = 1; this.disposed = false;
+  constructor(item, url, slotName) {
+    this.item = item; this.url = url; this.slot = slotName; this.raw = false; this.fade = 1; this.disposed = false;
     this.el = new Audio(); this.el.preload = 'auto';
     if (isCrossOrigin(url)) this.el.crossOrigin = 'anonymous';
     ensureCtx();
-    this.src = ctx.createMediaElementSource(this.el); this.gain = ctx.createGain(); this.src.connect(this.gain).connect(master);
+    this.src = ctx.createMediaElementSource(this.el); this.gain = ctx.createGain(); this.src.connect(this.gain).connect(slot[slotName]);
     this.ready = new Promise((res, rej) => {
       const ok = () => { cleanup(); res(); };
       const bad = () => {
@@ -113,24 +154,29 @@ class Deck {
     const el = new Audio(); el.preload = 'auto'; el.src = this.url; this.el = el; this.raw = true; this.applyVol(); if (this.onSwap) this.onSwap();
     toast('Playing a remote URL without CORS — visuals are simulated for this track.');
   }
-  applyVol() { if (this.raw) this.el.volume = Math.max(0, Math.min(1, (S.muted ? 0 : S.vol) * this.fade)); }
+  applyVol() { if (this.raw) this.el.volume = Math.max(0, Math.min(1, (S.muted ? 0 : S.vol) * this.fade * xfGain(this.slot, xfPos()) * (duck ? duck.gain.value : 1))); }
   setFade(v, secs = 0) {
     this.fade = v;
-    if (this.raw) { if (secs <= 0) { this.applyVol(); return; } const from = this.el.volume / Math.max(.001, S.muted ? 0.001 : S.vol), t0 = performance.now();
-      const step = () => { if (this.disposed) return; const k = Math.min(1, (performance.now() - t0) / (secs * 1000)); this.fade = from + (v - from) * k; this.applyVol(); if (k < 1) requestAnimationFrame(step); }; step(); this.fade = v; return; }
+    if (this.raw) { this.applyVol(); return; }
     const g = this.gain.gain, t = ctx.currentTime; g.cancelScheduledValues(t); g.setValueAtTime(g.value, t);
     if (secs <= 0) g.setValueAtTime(v, t); else g.linearRampToValueAtTime(v, t + secs);
   }
+  get playing() { return !this.disposed && !this.el.paused; }
   dispose() { this.disposed = true; try { this.el.pause(); } catch (e) {} try { this.src.disconnect(); this.gain.disconnect(); } catch (e) {} this.el.removeAttribute('src'); try { this.el.load(); } catch (e) {} }
 }
 
-let deck = null;          // current
-let pendingNext = null;   // { item, deck, prep, committed }
+let deck = null;          // active deck (what the transport controls)
+let cued = null;          // next track, loaded and paused on the other deck
+let outgoing = null;      // previous deck while a transition fades it out
+let transition = null;    // { old, nd, my }
 let loadGen = 0;
 let queueOrder = [];      // keys in play order
 let current = null;       // current item
 let historyStack = [];
 let userActivated = false;
+let activeSlot = 'A';
+const other = (s) => (s === 'A' ? 'B' : 'A');
+const allDecks = () => [deck, cued, outgoing].filter((d, i, a) => d && !d.disposed && a.indexOf(d) === i);
 
 function buildOrder(startKey) {
   const keys = visible().map((it) => it.key);
@@ -173,50 +219,77 @@ function sfxClick() {
 }
 const SFX = { click: sfxClick, crackle: sfxCrackle };
 
-// ---------------- playback control ----------------
-const animSpeed = () => ANIM_SPEED[S.anim] || 1;
+// ---------------- playback control (two decks) ----------------
+const animSpeed = () => (document.hidden ? 100 : ANIM_SPEED[S.anim] || 1);
+const QUICK_MIX = 1.6; // seconds — crossfade used when you pick a track while one is playing
+
+function setActiveSlot(s) { activeSlot = s; scene.setActive(s); syncDeckUI(); }
+function stopDeck(d, { animate = true } = {}) {
+  if (!d || d.disposed) return;
+  try { d.el.pause(); } catch (e) {}
+  scene.setPlaying(d.slot, false);
+  if (animate && !document.hidden) scene.liftNeedle({ deck: d.slot, speed: animSpeed(), sounds: SFX });
+  d.dispose();
+  if (outgoing === d) outgoing = null;
+  syncDeckUI();
+}
+function disposeCued() { if (cued) { cued.dispose(); cued = null; syncDeckUI(); } }
 
 async function playItem(item, { fromUser = true } = {}) {
   if (!item) return;
   ensureCtx(); hideBigPlay();
   const my = ++loadGen;
-  cancelPending();
   if (fromUser && (!queueOrder.includes(item.key))) buildOrder(item.key);
   if (current && current.key !== item.key) historyStack.push(current.key);
-  const old = deck; deck = null;
-  if (old) { old.setFade(0, .45); setTimeout(() => old.dispose(), 600); }
+  if (transition) finishTransition(true);
+  scene.cancel();
+  const old = deck && deck.playing ? deck : null;
+  if (!old && deck && deck !== cued) { stopDeck(deck, { animate: false }); deck = null; }
+  let d, reuse = false;
+  if (cued && cued.item.key === item.key && (!old || cued.slot !== old.slot)) { d = cued; cued = null; reuse = true; }
+  else {
+    const s = old ? other(old.slot) : activeSlot;
+    if (cued && cued.slot === s) disposeCued();
+    try { d = new Deck(item, await urlFor(item), s); } catch (e) { toast('Could not open "' + item.title + '": ' + e.message); setStatus(''); return; }
+  }
+  if (my !== loadGen) { if (d !== cued) d.dispose(); return; }
   current = item; updateNowPlaying(item, { loading: true }); renderList();
-  let d;
-  try { d = new Deck(item, await urlFor(item)); } catch (e) { toast('Could not open "' + item.title + '": ' + e.message); setStatus(''); return; }
-  if (my !== loadGen) { d.dispose(); return; }
-  deck = d; wireDeck(d); loadPeaks(item);
-  d.setFade(1);
-  setStatus('Loading record…');
-  await scene.loadRecord({
-    cover: coverOf(item), label: labelOf(item), speed: animSpeed(), sounds: SFX,
-    onDrop: () => {
-      if (my !== loadGen) return;
-      SFX.crackle();
-      d.ready.catch(() => {}).then(() => startDeck(d, my));
-    },
-  });
+  if (!old) { deck = d; wireDeck(d); }
+  d.setFade(1); loadPeaks(item);
+  syncDeckUI();
+  setStatus(reuse ? '' : 'Loading record…');
+  const onDrop = () => {
+    if (my !== loadGen) return;
+    SFX.crackle();
+    if (old) { outgoing = old; deck = d; wireDeck(d); }
+    setActiveSlot(d.slot);
+    const mix = old ? Math.min(QUICK_MIX, Math.max(.25, S.xfade || .25)) : 0;
+    if (old) xfSweep(xfEnd(d.slot), mix); else setXf(xfEnd(d.slot));
+    d.ready.catch(() => {}).then(() => startDeck(d, my));
+    if (old) setTimeout(() => { if (outgoing === old) stopDeck(old); }, (mix + .25) * 1000);
+    scheduleCue(old ? mix + 2.5 : 3);
+    syncPlayUI();
+  };
+  if (reuse) await scene.dropNeedle({ deck: d.slot, speed: animSpeed(), onDrop });
+  else await scene.loadRecord({ deck: d.slot, cover: coverOf(item), label: labelOf(item), speed: animSpeed(), sounds: SFX, onDrop });
 }
 async function startDeck(d, my) {
   if (my !== loadGen || d.disposed) return;
   try { await d.el.play(); setStatus(''); }
   catch (e) {
-    if (e.name === 'NotAllowedError') { showBigPlay('Tap to drop the needle'); scene.setPlaying(false); }
-    else { toast('Playback failed: ' + (e.message || e.name)); }
+    if (e.name === 'NotAllowedError') { showBigPlay('Tap to drop the needle'); scene.setPlaying(d.slot, false); }
+    else if (e.name !== 'AbortError') { toast('Playback failed: ' + (e.message || e.name)); }
   }
 }
 function wireDeck(d) {
-  d.onSwap = () => wireDeck(d);
+  if (d._wired) return; d._wired = true;
+  d.onSwap = () => { d._wired = false; wireDeck(d); };
   const el = d.el;
   const on = (ev, fn) => el.addEventListener(ev, fn);
-  on('play', () => { if (d === deck) { scene.setPlaying(true); syncPlayUI(); } });
-  on('pause', () => { if (d === deck) { scene.setPlaying(false); syncPlayUI(); } });
+  on('play', () => { scene.setPlaying(d.slot, true); if (d === deck) syncPlayUI(); });
+  on('pause', () => { if (d === deck || d === outgoing) { scene.setPlaying(d.slot, false); syncPlayUI(); } });
   on('loadedmetadata', () => { if (d === deck && Number.isFinite(el.duration)) { setDuration(d.item, el.duration); } });
-  on('ended', () => { if (d === deck) onEnded(); });
+  on('ended', () => { if (d === deck) onEnded(); else if (d === outgoing) stopDeck(d); });
   on('error', () => { if (d === deck && !d.raw && !el.crossOrigin) toast('This file could not be played.'); });
   on('waiting', () => { if (d === deck) setStatus('Buffering…'); });
   on('playing', () => { if (d === deck) setStatus(''); });
@@ -224,74 +297,90 @@ function wireDeck(d) {
 function setDuration(item, dur) {
   if (!dur || !Number.isFinite(dur)) return;
   item.duration = dur; durCache[item.key] = Math.round(dur); LS.set('durs', durCache);
-  $('#tDur').textContent = fmt(dur); renderFoot(); const row = $(`[data-key="${CSS.escape(item.key)}"] .dur`); if (row) row.textContent = fmt(dur);
+  if (current && current.key === item.key) $('#tDur').textContent = fmt(dur);
+  renderFoot(); const row = $(`[data-key="${CSS.escape(item.key)}"] .dur`); if (row) row.textContent = fmt(dur);
 }
 function togglePlay() {
   ensureCtx();
   if (!deck) { const it = current || visible()[0] || DEMO; playItem(it); return; }
-  if (deck.el.paused) { hideBigPlay(); deck.el.play().catch((e) => { if (e.name === 'NotAllowedError') showBigPlay('Tap to play'); }); }
-  else deck.el.pause();
+  if (deck.el.paused) { hideBigPlay(); deck.el.play().catch((e) => { if (e.name === 'NotAllowedError') showBigPlay('Tap to play'); }); if (outgoing) outgoing.el.play().catch(() => {}); }
+  else { deck.el.pause(); if (outgoing) outgoing.el.pause(); }
 }
+function pauseAll() { if (deck) deck.el.pause(); if (outgoing) outgoing.el.pause(); }
 function next(dir = 1) {
-  if (dir < 0 && deck && deck.el.currentTime > 3) { deck.el.currentTime = 0; return; }
+  if (dir < 0 && deck && deck.el.currentTime > 3) { seekTo(0); return; }
   if (dir < 0 && S.shuffle && historyStack.length) { const k = historyStack.pop(); const it = byKey(k); if (it) { current = null; return playItem(it, { fromUser: false }); } }
   const it = nextItem(dir, { wrap: true }); if (it) playItem(it, { fromUser: false });
 }
 function onEnded() {
   if (S.repeat === 'one' && deck) { const d = deck; scene.needleRedrop(animSpeed(), () => { d.el.currentTime = 0; d.el.play().catch(() => {}); SFX.crackle(); }, SFX); return; }
-  if (pendingNext && !pendingNext.committed) { commitPending(); return; }
-  if (pendingNext) return;
+  if (transition) return;
   const it = nextItem(1);
-  if (it) playItem(it, { fromUser: false }); else { scene.setPlaying(false); syncPlayUI(); }
+  if (it && cued && cued.item.key === it.key) { startTransition({ immediate: true }); return; }
+  if (it) playItem(it, { fromUser: false }); else { scene.setPlaying(deck.slot, false); syncPlayUI(); }
 }
-function cancelPending() { if (pendingNext) { if (pendingNext.deck && pendingNext.deck !== deck) pendingNext.deck.dispose(); pendingNext = null; scene.cancel(); } }
 
-// crossfade / auto-advance with the DJ choreography
-const PREP_SECS = 1.35;
-async function checkAutoAdvance() {
-  if (!deck || deck.el.paused || S.repeat === 'one') return;
-  const el = deck.el, dur = el.duration; if (!Number.isFinite(dur) || dur < 8) return;
-  const rem = dur - el.currentTime, xf = Math.min(S.xfade, Math.max(0, dur / 3));
-  const sp = animSpeed();
-  if (!pendingNext) {
-    if (rem > xf + PREP_SECS / Math.min(sp, 10) + .2 || rem < .4) return;
-    const it = nextItem(1); if (!it) return;
-    const my = loadGen;
-    const p = { item: it, deck: null, committed: false, my };
-    pendingNext = p;
-    p.prep = scene.prepareRecord({ cover: coverOf(it), label: labelOf(it), speed: sp >= 50 ? 20 : sp });
-    try { const u = await urlFor(it); if (pendingNext !== p) return; p.deck = new Deck(it, u); p.deck.setFade(0); } catch (e) { pendingNext = null; scene.cancel(); }
-    return;
-  }
-  if (pendingNext.committed) return;
-  if (rem > xf + 4 + PREP_SECS) { cancelPending(); return; } // user seeked back
-  if (rem <= Math.max(xf, .12)) commitPending();
+// cue the next queued track on the idle deck (record pulled from the crate, needle up)
+let cueTimer = 0;
+function scheduleCue(delay = 0) { clearTimeout(cueTimer); cueTimer = setTimeout(cueNext, Math.max(0, delay * 1000)); }
+async function cueNext() {
+  if (!deck || transition) return;
+  const it = S.repeat === 'one' ? null : nextItem(1);
+  if (!it) { disposeCued(); return; }
+  const s = other(deck.slot);
+  if (cued && cued.item.key === it.key && cued.slot === s) return;
+  disposeCued();
+  let d; try { d = new Deck(it, await urlFor(it), s); } catch (e) { return; }
+  if (!deck || transition || other(deck.slot) !== s) { d.dispose(); return; }
+  cued = d; d.setFade(1); syncDeckUI();
+  scene.cueRecord({ deck: s, cover: coverOf(it), label: labelOf(it), speed: animSpeed(), sounds: SFX });
 }
-function commitPending() {
-  const p = pendingNext; if (!p || p.committed || !p.deck) return;
-  p.committed = true; const old = deck, my = ++loadGen; const xf = Math.min(S.xfade, old && Number.isFinite(old.el.duration) ? old.el.duration / 3 : S.xfade);
-  const xfFrom = scene.st.xf > .5 ? 1 : 0;
-  p.prep.commit({
-    sounds: SFX,
-    onLift: () => {
-      if (old) { const rem = Math.max(.3, (old.el.duration - old.el.currentTime) || xf); old.setFade(0, Math.max(.3, Math.min(rem, xf || .3))); setTimeout(() => old.dispose(), (Math.max(.3, xf) + .6) * 1000); }
-      animXfader(xfFrom, 1 - xfFrom, Math.max(.6, xf));
-    },
-    onDrop: () => {
+function invalidateCue() { if (transition) return; const it = deck ? nextItem(1) : null; if (cued && (!it || it.key !== cued.item.key)) disposeCued(); scheduleCue(.4); }
+
+// auto-mix: drop the needle on the cued deck and crossfade (equal power) over the crossfade length
+const NEEDLE_SECS = .75;
+function transitionLead() { const sp = animSpeed(); return sp >= 50 ? .05 : NEEDLE_SECS / sp + .15; }
+function checkAutoAdvance() {
+  if (!deck || deck.el.paused || S.repeat === 'one' || transition) return;
+  const el = deck.el, dur = el.duration; if (!Number.isFinite(dur) || dur < 8) return;
+  const rem = (dur - el.currentTime) / (el.playbackRate || 1), xf = Math.min(S.xfade, Math.max(0, dur / 3));
+  if (window.__pfBeforeTransition && window.__pfBeforeTransition(rem, xf)) return; // e.g. the "for the ladies" intro
+  if (!cued) { if (rem < xf + 12 && !cueTimer) scheduleCue(0); return; }
+  const it = nextItem(1); if (!it || it.key !== cued.item.key) { invalidateCue(); return; }
+  if (rem <= Math.max(xf, .12) + transitionLead()) startTransition();
+}
+function startTransition({ immediate = false, mixSecs = null } = {}) {
+  if (!cued || !deck || transition) return;
+  const old = deck, nd = cued; cued = null;
+  const my = ++loadGen; transition = { old, nd, my };
+  const dur = old.el.duration, rem = Number.isFinite(dur) ? Math.max(0, (dur - old.el.currentTime) / (old.el.playbackRate || 1)) : 0;
+  const xf = mixSecs != null ? mixSecs : immediate ? 0 : Math.min(S.xfade, Number.isFinite(dur) ? dur / 3 : S.xfade, Math.max(.3, rem));
+  if (window.__pfOnTransition) window.__pfOnTransition({ from: old.item, to: nd.item, secs: xf });
+  scene.dropNeedle({
+    deck: nd.slot, speed: animSpeed(), onDrop: () => {
       if (my !== loadGen) return;
       if (current) historyStack.push(current.key);
-      deck = p.deck; current = p.item; pendingNext = null;
-      wireDeck(deck); loadPeaks(current); updateNowPlaying(current); renderList();
-      SFX.crackle();
-      const fadeIn = Math.max(.25, xf - 1.6 / animSpeed());
-      deck.setFade(xf > 0 ? 0 : 1); deck.ready.catch(() => {}).then(() => { startDeck(deck, my); if (xf > 0) deck.setFade(1, fadeIn); });
+      outgoing = old; deck = nd; current = nd.item;
+      wireDeck(nd); loadPeaks(current); updateNowPlaying(current); renderList();
+      SFX.crackle(); setActiveSlot(nd.slot);
+      nd.ready.catch(() => {}).then(() => startDeck(nd, my));
+      const target = xfEnd(nd.slot);
+      if (S.autoMix) xfSweep(target, Math.max(.05, xf));
+      else if (Math.abs(xfPos() - xfEnd(old.slot)) < .2) {
+        // manual mode with the fader parked on the old deck: hard cut when the old record runs out
+        setTimeout(() => { if (Math.abs(xfPos() - xfEnd(old.slot)) < .2) setXf(target); }, Math.max(0, Math.min(rem, xf)) * 1000);
+      }
+      transition.endT = setTimeout(() => finishTransition(), (Math.max(.05, xf) + .35) * 1000);
+      syncPlayUI();
     },
   });
 }
-function animXfader(from, to, secs) {
-  const t0 = performance.now();
-  const step = () => { const k = Math.min(1, (performance.now() - t0) / (secs * 1000)); scene.setXfader(from + (to - from) * k); if (k < 1) requestAnimationFrame(step); };
-  step();
+function finishTransition(abort = false) {
+  const tr = transition; if (!tr) return; transition = null; clearTimeout(tr.endT);
+  if (tr.old && !tr.old.disposed) stopDeck(tr.old, { animate: !abort });
+  if (abort && tr.nd && tr.nd !== deck) tr.nd.dispose();
+  if (!abort) scheduleCue(2.5);
+  syncDeckUI();
 }
 
 // ---------------- analysis (onset / beat detection) ----------------
@@ -299,11 +388,11 @@ const F = { spectrum: new Float32Array(64), pulse: 0, bass: 0, mid: 0, high: 0, 
 const fluxHist = []; let lastBeat = 0; const beatIntervals = [];
 let bandEdges = null;
 function analyse(now, dt) {
-  F.beat = false; F.playing = !!(deck && !deck.el.paused);
+  F.beat = false; F.playing = !!((deck && !deck.el.paused) || (outgoing && outgoing.playing));
   F.pulse *= Math.exp(-dt * 6.5);
   if (!F.playing || !ctx) { for (let i = 0; i < 64; i++) F.spectrum[i] *= .9; F.bass *= .9; F.mid *= .9; F.high *= .9; F.level *= .9; return; }
-  if (deck.raw) { // simulated
-    const bpm = 112, t = deck.el.currentTime, ph = (t * bpm / 60) % 1;
+  if (!deck || deck.raw) { // simulated
+    const bpm = 112, t = deck ? deck.el.currentTime : now / 1000, ph = (t * bpm / 60) % 1;
     if (ph < F._ph) { F.beat = true; F.pulse = 1; }
     F._ph = ph; F.bpm = bpm; F.bass = .5 + .4 * Math.exp(-ph * 6); F.mid = .45; F.high = .35; F.level = .5;
     for (let i = 0; i < 64; i++) F.spectrum[i] = Math.max(0, (1 - i / 70) * (.45 + .35 * Math.sin(t * 3 + i * .4)) + (i < 10 ? F.bass * .4 : 0));
@@ -442,7 +531,7 @@ wave.addEventListener('pointerdown', (e) => { if (!deck) return; wave.setPointer
 wave.addEventListener('pointermove', (e) => { if (seekPreview == null) return; seekPreview = seekFromEvent(e); $('#tCur').textContent = fmt(seekPreview); drawWave(); });
 const endSeek = (e) => { if (seekPreview == null) return; seekTo(seekPreview); seekPreview = null; };
 wave.addEventListener('pointerup', endSeek); wave.addEventListener('pointercancel', () => { seekPreview = null; });
-function seekTo(t) { if (!deck) return; const d = deck.el.duration; if (!Number.isFinite(d)) return; const delta = t - deck.el.currentTime; deck.el.currentTime = Math.max(0, Math.min(d - .05, t)); scene.st.rot += delta * 200; drawWave(); }
+function seekTo(t) { if (!deck) return; const d = deck.el.duration; if (!Number.isFinite(d)) return; const delta = t - deck.el.currentTime; deck.el.currentTime = Math.max(0, Math.min(d - .05, t)); scene.st.decks[deck.slot].rot += delta * 200; drawWave(); if (t < d - 20) invalidateCue(); }
 
 // list
 function itemSourceLabel(it) { return it.demo ? 'Demo · Beats' : it.source === 'beats' ? 'From Beats' : it.source === 'dj' ? 'From DJ Booth' : it.kind === 'url' ? 'URL' : it.kind === 'session' ? 'This session' : 'Imported'; }
@@ -500,7 +589,7 @@ itemMenu.addEventListener('click', async (e) => {
   const b = e.target.closest('button'); if (!b || !menuItem) return; const it = menuItem; closeMenus();
   const act = b.dataset.act;
   if (act === 'play') { buildOrder(it.key); playItem(it); }
-  if (act === 'next') { if (!queueOrder.length) buildOrder(current && current.key); queueOrder = queueOrder.filter((k) => k !== it.key); const i = current ? queueOrder.indexOf(current.key) : -1; queueOrder.splice(i + 1, 0, it.key); toast(`“${it.title}” plays next`); }
+  if (act === 'next') { if (!queueOrder.length) buildOrder(current && current.key); queueOrder = queueOrder.filter((k) => k !== it.key); const i = current ? queueOrder.indexOf(current.key) : -1; queueOrder.splice(i + 1, 0, it.key); invalidateCue(); toast(`“${it.title}” plays next`); }
   if (act === 'link') {
     let link; if (it.kind === 'store') link = new URL('./?track=' + encodeURIComponent(it.id), location.href).href;
     else if (it.kind === 'demo' || it.kind === 'url') link = new URL(`./?src=${encodeURIComponent(it.url)}&title=${encodeURIComponent(it.title)}&artist=${encodeURIComponent(it.artist)}`, location.href).href;
@@ -615,29 +704,50 @@ window.addEventListener('drop', async (e) => {
   if (url && /^https?:/.test(url.trim())) { const key = addUrl(url.trim().split('\n')[0]); if (key) { await refreshLibrary(); const it = byKey(key); it && playItem(it); } }
 });
 
+// ---------------- decks + crossfader UI ----------------
+const xfader = $('#xfader');
+function syncXfUI() {
+  const p = xfPos(); if (document.activeElement !== xfader || !xfader.matches(':active')) xfader.value = Math.round(p * 1000);
+  xfader.style.setProperty('--p', (p * 100) + '%'); xfader.setAttribute('aria-valuetext', p < .02 ? 'Deck A' : p > .98 ? 'Deck B' : `A ${Math.round(xfGain('A', p) * 100)}% · B ${Math.round(xfGain('B', p) * 100)}%`);
+}
+function syncDeckUI() {
+  ['A', 'B'].forEach((s) => {
+    const d = allDecks().find((x) => x.slot === s);
+    const box = $('#deck' + s + 'Info'); box.classList.toggle('on', s === activeSlot && !!d); box.classList.toggle('cued', !!(cued && cued.slot === s));
+    box.querySelector('.dt').textContent = d ? d.item.title : '—';
+    box.title = d ? `Deck ${s}: ${d.item.title}${cued === d ? ' (cued next)' : s === activeSlot ? ' (playing)' : ''}` : `Deck ${s}: empty`;
+  });
+}
+xfader.addEventListener('input', () => { ensureCtx(); setXf(xfader.value / 1000, { user: true }); });
+$('#autoMix').checked = S.autoMix;
+$('#autoMix').addEventListener('change', (e) => { S.autoMix = e.target.checked; LS.set('autoMix', S.autoMix); toast(S.autoMix ? 'Auto mix on — the crossfader moves by itself on transitions' : 'Auto mix off — you work the crossfader'); });
+// keep transitions going when the tab is hidden / screen locked (animation frames stop there)
+setInterval(() => { if (document.hidden) checkAutoAdvance(); }, 500);
+document.addEventListener('visibilitychange', () => { scene.setInstant(document.hidden); });
+
 // ---------------- transport controls ----------------
 $('#playBtn').addEventListener('click', () => { userActivated = true; togglePlay(); });
 $('#prevBtn').addEventListener('click', () => { userActivated = true; next(-1); });
 $('#nextBtn').addEventListener('click', () => { userActivated = true; next(1); });
-$('#bigPlay').addEventListener('click', () => { userActivated = true; if (deck && deck.el.paused && scene.st.platterVisible) { hideBigPlay(); deck.el.play().catch(() => {}); } else playItem(current || visible()[0] || DEMO); });
+$('#bigPlay').addEventListener('click', () => { userActivated = true; if (deck && deck.el.paused && scene.st.decks[deck.slot].visible) { hideBigPlay(); deck.el.play().catch(() => {}); } else playItem(current || visible()[0] || DEMO); });
 function showBigPlay(label) { const b = $('#bigPlay'); if (label) b.querySelector('span').textContent = label; b.hidden = false; }
 function hideBigPlay() { $('#bigPlay').hidden = true; }
 
 const volEl = $('#vol');
 function applyVolume() {
   const v = S.muted ? 0 : S.vol; if (master) master.gain.setTargetAtTime(v, ctx.currentTime, .02);
-  if (deck) deck.applyVol(); if (pendingNext && pendingNext.deck) pendingNext.deck.applyVol();
+  allDecks().forEach((d) => d.applyVol());
   volEl.value = Math.round(S.vol * 100); volEl.style.setProperty('--p', (S.muted ? 0 : S.vol * 100) + '%');
   $('#muteBtn').classList.toggle('muted', S.muted || S.vol === 0); $('#muteBtn').setAttribute('aria-label', S.muted ? 'Unmute' : 'Mute');
 }
 volEl.addEventListener('input', () => { S.vol = volEl.value / 100; S.muted = false; LS.set('vol', S.vol); applyVolume(); });
 $('#muteBtn').addEventListener('click', () => { S.muted = !S.muted; applyVolume(); });
-$('#shuffle').addEventListener('change', (e) => { S.shuffle = e.target.checked; LS.set('shuffle', S.shuffle); buildOrder(current && current.key); cancelPending(); });
+$('#shuffle').addEventListener('change', (e) => { S.shuffle = e.target.checked; LS.set('shuffle', S.shuffle); buildOrder(current && current.key); invalidateCue(); });
 const xfEl = $('#xfade');
 function applyXf() { xfEl.value = S.xfade; $('#xfOut').textContent = S.xfade + 's'; $('#xfLbl').textContent = S.xfade ? `Crossfade ${S.xfade}s` : 'Crossfade off'; xfEl.style.setProperty('--p', (S.xfade / 12 * 100) + '%'); }
 xfEl.addEventListener('input', () => { S.xfade = +xfEl.value; LS.set('xfade', S.xfade); applyXf(); });
 function applyRepeat() { const b = $('#repeatBtn'); b.dataset.mode = S.repeat; b.classList.toggle('on', S.repeat !== 'off'); b.setAttribute('aria-label', `Repeat: ${S.repeat}`); b.title = `Repeat: ${S.repeat === 'all' ? 'all' : S.repeat === 'one' ? 'one' : 'off'} (R)`; }
-$('#repeatBtn').addEventListener('click', () => { S.repeat = S.repeat === 'all' ? 'one' : S.repeat === 'one' ? 'off' : 'all'; LS.set('repeat', S.repeat); applyRepeat(); cancelPending(); toast('Repeat ' + S.repeat); });
+$('#repeatBtn').addEventListener('click', () => { S.repeat = S.repeat === 'all' ? 'one' : S.repeat === 'one' ? 'off' : 'all'; LS.set('repeat', S.repeat); applyRepeat(); invalidateCue(); toast('Repeat ' + S.repeat); });
 $('#theme').addEventListener('change', (e) => setTheme(e.target.value));
 $('#likeBtn').addEventListener('click', () => { if (!current) return; const k = current.key; S.liked.has(k) ? S.liked.delete(k) : S.liked.add(k); LS.set('liked', [...S.liked]); $('#likeBtn').classList.toggle('on', S.liked.has(k)); $('#likeBtn').setAttribute('aria-pressed', S.liked.has(k)); renderList(); });
 function toggleFullscreen() {
@@ -669,6 +779,8 @@ const KEYS = (e) => {
   else if (k === 'f' || k === 'F') toggleFullscreen();
   else if (k === 't' || k === 'T') { const ks = Object.keys(THEMES); setTheme(ks[(ks.indexOf(S.theme) + 1) % ks.length]); toast('Theme: ' + THEMES[S.theme].name); }
   else if (k === 'o' || k === 'O') { const ks = Object.keys(OUTFITS); const cur = $('#outfit').value; const nx = ks[(ks.indexOf(cur) + 1) % ks.length]; if (S.matchOutfit) { S.matchOutfit = false; LS.set('matchOutfit', false); } setOutfit(nx); toast('Outfit: ' + OUTFITS[nx].name); }
+  else if (k === '[' || k === ']') { ensureCtx(); setXf(xfPos() + (k === ']' ? .1 : -.1), { user: true }); }
+  else if (k === 'x' || k === 'X') $('#autoMix').click();
   else if (k === 'v' || k === 'V') toggleVisMode();
   else if (k === 'h' || k === 'H') $('#likeBtn').click();
   else if (k === 'a' || k === 'A') $('#fileIn').click();
@@ -684,11 +796,11 @@ $('#helpDlg button').addEventListener('click', () => $('#helpDlg').close());
 // media session
 if ('mediaSession' in navigator) {
   const ms = navigator.mediaSession; const h = (a, f) => { try { ms.setActionHandler(a, f); } catch (e) {} };
-  h('play', () => togglePlay()); h('pause', () => deck && deck.el.pause());
+  h('play', () => togglePlay()); h('pause', () => pauseAll());
   h('previoustrack', () => next(-1)); h('nexttrack', () => next(1));
   h('seekbackward', (d) => deck && seekTo(deck.el.currentTime - (d.seekOffset || 10)));
   h('seekforward', (d) => deck && seekTo(deck.el.currentTime + (d.seekOffset || 10)));
-  h('seekto', (d) => deck && seekTo(d.seekTime)); h('stop', () => { if (deck) { deck.el.pause(); deck.el.currentTime = 0; } });
+  h('seekto', (d) => deck && seekTo(d.seekTime)); h('stop', () => { pauseAll(); if (deck) deck.el.currentTime = 0; });
 }
 let lastPos = 0;
 function updatePosition() {
@@ -735,14 +847,15 @@ window.addEventListener('resize', () => { clearTimeout(onResize._t); onResize._t
 function loop(now) {
   const dt = Math.min(.05, (now - lastT) / 1000); lastT = now; frameN++;
   analyse(now, dt);
-  if (deck) { scene.st.rate = deck.el.playbackRate || 1; const d = deck.el.duration; if (Number.isFinite(d) && d > 0) scene.setProgress(deck.el.currentTime / d); }
+  allDecks().forEach((dk) => { scene.setDeckRate(dk.slot, dk.el.paused ? 1 : (dk.el.playbackRate || 1)); const d = dk.el.duration; if (Number.isFinite(d) && d > 0) scene.setProgress(dk.slot, dk.el.currentTime / d); });
+  scene.setXfader(xfPos());
   if (frameN % 30 === 0 || !anchorsCache) anchorsCache = scene.anchors();
   viz.draw(now, F, anchorsCache);
   scene.frame(now, F);
   if (now - lastUi > 120) {
     lastUi = now;
     if (deck && seekPreview == null) { $('#tCur').textContent = fmt(deck.el.currentTime); drawWave(); }
-    checkAutoAdvance();
+    checkAutoAdvance(); syncXfUI();
     if (now - lastPos > 2000) { lastPos = now; updatePosition(); }
   }
   document.documentElement.style.setProperty('--pulse', F.pulse.toFixed(3));
@@ -751,7 +864,7 @@ function loop(now) {
 
 // ---------------- boot ----------------
 async function boot() {
-  setOutfit(S.outfit, { save: false }); setTheme(S.theme); applyVolume(); applyXf(); applyRepeat(); $('#shuffle').checked = S.shuffle;
+  setOutfit(S.outfit, { save: false }); setTheme(S.theme); applyVolume(); syncXfUI(); syncDeckUI(); applyXf(); applyRepeat(); $('#shuffle').checked = S.shuffle;
   onResize();
   await refreshLibrary();
   const q = new URLSearchParams(location.search);
@@ -769,6 +882,6 @@ async function boot() {
     showBigPlay(`Play “${start.title}”`);
   } else { const first = visible()[0] || DEMO; current = first; updateNowPlaying(first); renderList(); showBigPlay('Tap to drop the needle'); }
   requestAnimationFrame(loop);
-  window.__pf = { get deck() { return deck; }, get current() { return current; }, F, scene, playItem, refreshLibrary, get library() { return library; }, next, S, setOutfit, setTheme };
+  window.__pf = { get deck() { return deck; }, get cued() { return cued; }, get outgoing() { return outgoing; }, get transition() { return transition; }, XF, xfPos, setXf, get slot() { return slot; }, get ctx() { return ctx; }, startTransition, get activeSlot() { return activeSlot; }, get current() { return current; }, F, scene, playItem, refreshLibrary, get library() { return library; }, next, S, setOutfit, setTheme };
 }
 boot();

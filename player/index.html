@@ -18,7 +18,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
-  <link rel="stylesheet" href="player.css?v=3">
+  <link rel="stylesheet" href="player.css?v=4">
 </head>
 <body data-theme="club">
   <canvas id="viz" aria-hidden="true"></canvas>
@@ -74,13 +74,19 @@
         <button id="playBtn" class="play" aria-label="Play" title="Play / pause (Space)"><svg class="i-play fill" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg><svg class="i-pause fill" viewBox="0 0 24 24"><path d="M6.5 5h4v14h-4zM13.5 5h4v14h-4z"/></svg></button>
         <button id="nextBtn" class="icon-btn lg" aria-label="Next" title="Next (N)"><svg viewBox="0 0 24 24" class="fill"><path d="M15.6 5H18v14h-2.4zM4 5v14l11-7z"/></svg></button>
       </div>
+      <div class="mixbar" aria-label="Decks and crossfader">
+        <div class="deckinfo" id="deckAInfo"><b>A</b><span class="dt">—</span></div>
+        <input id="xfader" type="range" min="0" max="1000" value="0" step="1" class="range xfader" aria-label="Crossfader: Deck A to Deck B" title="Crossfader — drag any time ([ / ])">
+        <div class="deckinfo b" id="deckBInfo"><span class="dt">—</span><b>B</b></div>
+        <label class="switch" title="Auto mix: the crossfader moves by itself on transitions (X)"><input type="checkbox" id="autoMix" checked><span class="track"><span class="knob"></span></span><span class="sw-lbl">Auto mix</span></label>
+        <div class="xfade"><span id="xfLbl" class="xf-lbl">Crossfade 6s</span><input id="xfade" type="range" min="0" max="12" step="1" value="6" aria-label="Crossfade seconds" class="range"><output id="xfOut" class="xf-out">6s</output></div>
+      </div>
       <div class="extra">
         <div class="vol">
           <button id="muteBtn" class="icon-btn" aria-label="Mute" title="Mute (M)"><svg viewBox="0 0 24 24"><path class="fill" d="M4 9h4l5-4v14l-5-4H4z"/><path class="w1" d="M16 9.5a3.5 3.5 0 0 1 0 5"/><path class="w2" d="M18.5 7a7 7 0 0 1 0 10"/><path class="x" d="M16 9l5 6M21 9l-5 6"/></svg></button>
           <input id="vol" type="range" min="0" max="100" value="85" aria-label="Volume" class="range">
         </div>
         <label class="switch" title="Shuffle (S)"><input type="checkbox" id="shuffle"><span class="track"><span class="knob"></span></span><span class="sw-lbl">Shuffle</span><svg viewBox="0 0 24 24" class="shuf" aria-hidden="true"><path d="M3 7h3.5c4 0 6 10 10 10H21M3 17h3.5c1.6 0 2.9-1.6 4-3.6M13.4 9.6C14.5 8 15.6 7 16.5 7H21M18 4l3 3-3 3M18 14l3 3-3 3"/></svg></label>
-        <div class="xfade"><span id="xfLbl" class="xf-lbl">Crossfade 6s</span><input id="xfade" type="range" min="0" max="12" step="1" value="6" aria-label="Crossfade seconds" class="range"><output id="xfOut" class="xf-out">6s</output></div>
         <button id="repeatBtn" class="icon-btn rep" aria-label="Repeat" title="Repeat (R)"><svg viewBox="0 0 24 24"><path d="M4 11V9a3 3 0 0 1 3-3h12M16 3l3 3-3 3M20 13v2a3 3 0 0 1-3 3H5M8 21l-3-3 3-3"/></svg><b class="one">1</b></button>
         <label class="theme-sel" title="Theme (T)"><span class="sr-only">Theme</span>
           <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg>
@@ -140,7 +146,7 @@
       <dt>Shift+← / P</dt><dd>Previous</dd><dt>Shift+→ / N</dt><dd>Next</dd><dt>↑ / ↓</dt><dd>Volume</dd>
       <dt>M</dt><dd>Mute</dd><dt>S</dt><dd>Shuffle</dd><dt>R</dt><dd>Repeat all / one / off</dd>
       <dt>0–9</dt><dd>Jump to 0–90 %</dd><dt>T</dt><dd>Next theme</dd><dt>F</dt><dd>Fullscreen</dd>
-      <dt>O</dt><dd>Next outfit</dd><dt>V</dt><dd>Visualizer mode</dd><dt>H</dt><dd>Like</dd><dt>A</dt><dd>Add files</dd><dt>?</dt><dd>This help</dd>
+      <dt>[ / ]</dt><dd>Crossfader A / B</dd><dt>X</dt><dd>Auto mix on/off</dd><dt>O</dt><dd>Next outfit</dd><dt>V</dt><dd>Visualizer mode</dd><dt>H</dt><dd>Like</dd><dt>A</dt><dd>Add files</dd><dt>?</dt><dd>This help</dd>
     </dl>
     <div class="dlg-actions"><button class="btn">Close</button></div>
   </dialog>
@@ -151,6 +157,6 @@
   <input type="file" id="dirIn" multiple webkitdirectory hidden>
 
   <script type="module" src="../shared/ecosystem-nav.js"></script>
-  <script type="module" src="player.js?v=3"></script>
+  <script type="module" src="player.js?v=4"></script>
 </body>
 </html>
