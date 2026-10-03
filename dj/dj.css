@@ -646,3 +646,23 @@ select.btn { appearance: auto; }
 @media (max-width: 560px) { .yt-th { width: 64px; height: 36px; } }
 .vdj-deck.yt-slot { position: relative; }
 .vdj-deck.yt-onprog::before { content: "▶ ON PROGRAM"; position: absolute; top: 80px; left: 0; right: 0; text-align: center; color: #fbbf24; font-weight: 800; font-size: 12px; letter-spacing: .12em; z-index: 1; pointer-events: none; }
+
+/* ---------- Free Hip-Hop Crate ---------- */
+.crate-head { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+.crate-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.chip { font-size: 12px; padding: 5px 11px; border-radius: 999px; border: 1px solid var(--line); background: var(--bg3); color: var(--muted); cursor: pointer; min-height: 32px; }
+.chip small { opacity: .7; margin-left: 2px; }
+.chip.on { background: var(--accent); color: #05222a; border-color: var(--accent); font-weight: 700; }
+.chip.pf { border-color: #6b3fa0; color: #c084fc; }
+.chip.pf.on { background: #c084fc; color: #1b0b2e; }
+.crate-bar { display: flex; gap: 6px; flex-wrap: wrap; }
+.crate-bar .search { flex: 1 1 220px; min-width: 0; }
+.crate-note { font-size: 11px; margin: 0; }
+.crate-meta { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; font-size: 11px; color: var(--muted); margin-top: 2px; }
+.crate-meta .cr-artist { color: var(--text); }
+.crate-meta .cr-g { color: var(--accent2); }
+.cr-lic { font-size: 10px; font-weight: 800; letter-spacing: .04em; padding: 1px 6px; border-radius: 4px; background: #0f2a1f; color: #34d399; border: 1px solid #1b5140; text-decoration: none; }
+.cr-lic.pf { background: #2a1640; color: #c084fc; border-color: #6b3fa0; }
+.cr-src { font-size: 11px; color: var(--muted); text-decoration: none; }
+.cr-src:hover { color: var(--accent); }
+.crate-row.pf { border-color: #6b3fa0; box-shadow: inset 3px 0 0 #c084fc; }
