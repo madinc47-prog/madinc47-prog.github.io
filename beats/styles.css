@@ -764,3 +764,4 @@ body.bt-on:not(.bt-layer) .seq-head::after {
 .lib-info small { font-size: .68rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .lib-sheet .kb-note a { color: var(--accent); }
 @media (max-width: 520px) { .lib-panel { max-height: 92vh; padding: .7rem; } .lib-list { grid-template-columns: 1fr; } }
+.studio-link { color: var(--accent); border-color: rgba(34,211,238,.45); }

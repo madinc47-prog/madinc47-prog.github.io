@@ -1692,15 +1692,15 @@
     return out;
   }
   function pianoSamplesLoad() { return PK.load ? PK.load(pianoInsts()) : Promise.resolve(true); }
-  function bounce(barsSel) {
+  function bounce(barsSel, then) {
     if (PK.ready && !PK.ready(pianoInsts())) {
       $("rec-status").textContent = "Loading orchestral samples…";
-      pianoSamplesLoad().then(function () { bounceNow(barsSel); });
+      pianoSamplesLoad().then(function () { bounceNow(barsSel, then); });
       return;
     }
-    bounceNow(barsSel);
+    bounceNow(barsSel, then);
   }
-  function bounceNow(barsSel) {
+  function bounceNow(barsSel, then) {
     var sd = stepDur();
     var A = arrangement();
     var songMode = barsSel === "song";
@@ -1727,13 +1727,13 @@
       var frames = Math.min(Math.round((total * sd + 0.8) * SR), buf.length - off);
       var blob = encodeWav(buf.getChannelData(0).subarray(off), buf.getChannelData(1).subarray(off), frames, SR);
       var label = songMode ? "Bounce full song" : "Bounce " + bars + " bars";
-      saveToVault(blob, frames / SR, label);
+      saveToVault(blob, frames / SR, label, then);
       $("rec-status").textContent = (songMode ? "Bounced full song" : "Bounced " + bars + " bars") + " to Vault";
     }).catch(function (e) { toast("Bounce failed: " + e.message); });
   }
 
   /* ---------------- Vault ---------------- */
-  function saveToVault(blob, dur, label) {
+  function saveToVault(blob, dur, label, then) {
     var item = {
       id: "r_" + Date.now().toString(36),
       name: btActive() && label.indexOf(bt.title) !== -1
@@ -1745,7 +1745,7 @@
       blob: blob
     };
     idb("vault", "readwrite", function (st) { return st.put(item); })
-      .catch(function () { memVault.push(item); toast("Saved for this session only — download to keep."); })
+      .then(function () { if (then) then(item.id); }, function () { memVault.push(item); toast(then ? "Storage is blocked, so the Studio can't receive the bounce. Download it from the Vault and import it in the Studio." : "Saved for this session only — download to keep."); })
       .then(renderVault);
   }
   var vaultUrls = [], vaultTok = 0;
@@ -4401,6 +4401,14 @@
     $("btn-rec").addEventListener("click", startRec);
     $("btn-rec-stop").addEventListener("click", stopRec);
     $("btn-bounce").addEventListener("click", function () { bounce($("bounce-bars").value); });
+    $("btn-to-studio").addEventListener("click", function () {
+      stop();
+      bounce($("bounce-bars").value, function (id) { toast("Opening Studio…"); location.href = "studio/?vault=" + encodeURIComponent(id); });
+    });
+    if (/[?&]studio=1/.test(location.search)) setTimeout(function () { // came from the Studio's Import menu
+      var b = $("btn-to-studio"); b.classList.add("primary"); b.scrollIntoView({ block: "center" });
+      toast("Make or load a beat, pick the length, then press Send to Studio →");
+    }, 900);
     wireSongFeatures();
     $("key-oct").addEventListener("change", buildPiano);
 
