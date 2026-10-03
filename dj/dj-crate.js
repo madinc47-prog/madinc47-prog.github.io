@@ -19,7 +19,7 @@
     var pf = t.genre === "DJ Psycho Fingers";
     return {
       name: t.title + " — " + t.artist, sub: (pf ? "His own beat" : t.genre + " · " + t.license + " · ccMixter") + " · " + Math.round(t.bpm) + " BPM" + (t.key ? " · " + t.key : "") + (t.dur ? " · " + P.fmtTime(t.dur) : ""),
-      key: "crate:" + t.id, bpm: t.bpm, grid: t.grid || 0, bpmHint: t.bpm,
+      key: t.id === "pf-gunwalk" ? "builtin:gunwalk" : "crate:" + t.id, bpm: t.bpm, grid: t.grid || 0, bpmHint: t.bpm,
       ana: t.end ? { bpm: t.bpm, grid: t.grid || 0, end: t.end, outro: t.outro || t.end, dur: t.dur } : null,
       credit: pf ? null : { artist: t.artist, license: t.license, licenseUrl: t.licenseUrl, sourceUrl: t.sourceUrl },
       get: function () { return fetch(pf ? t.url : "crate/" + encodeURIComponent(t.file)).then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.arrayBuffer(); }); }
