@@ -934,7 +934,7 @@
     });
     control($("xf"), { name: "xf", kind: "hfader", min: -1, max: 1, value: X.xf, def: 0, snap: 0, center: 0, onChange: function (v) { X.xf = v; applyXf(); savePrefs(); } });
     control(document.querySelector(".m-vol"), { name: "master", kind: "knob", min: 0, max: 1, value: X.master, def: 0.85, fmt: function (v) { return Math.round(v * 100) + "%"; },
-      onChange: function (v) { X.master = v; if (ctx) M.vol.gain.setTargetAtTime(v, ctx.currentTime, 0.01); savePrefs(); } });
+      onChange: function (v) { X.master = v; if (ctx) M.vol.gain.setTargetAtTime(v, ctx.currentTime, 0.01); savePrefs(); emit("master", v); } });
     var curveName = function () { return X.curve === "cut" ? "Cut" : X.curve === "scratch" ? "Scratch" : "Smooth"; };
     $("xf-curve").textContent = curveName();
     $("xf-curve").addEventListener("click", function () { X.curve = X.curve === "smooth" ? "cut" : X.curve === "cut" ? "scratch" : "smooth"; $("xf-curve").textContent = curveName(); applyXf(); savePrefs(); toast("Crossfader curve: " + curveName() + (X.curve === "scratch" ? " (razor-sharp cut for scratching)" : X.curve === "cut" ? " (fast cut)" : " (smooth blend)")); });
