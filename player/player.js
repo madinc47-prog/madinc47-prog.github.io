@@ -2,6 +2,7 @@
 import { saveTrack, listTracks, getTrack, deleteTrack, onMediaChange } from '../shared/media-store.js';
 import { createScene } from './scene.js';
 import { createViz, THEMES } from './viz.js';
+import { OUTFITS, OUTFIT_FOR_THEME } from './outfits.js';
 import { fmt, hash, isAudioFile, titleFromName, makeCover, makeLabel, readTags, probeDuration, computePeaks } from './util.js';
 
 const $ = (s, r = document) => r.querySelector(s);
@@ -16,6 +17,7 @@ const S = {
   vol: LS.get('vol', 0.85), muted: false, shuffle: LS.get('shuffle', false), repeat: LS.get('repeat', 'all'),
   xfade: LS.get('xfade', 6), theme: LS.get('theme', 'club'), anim: LS.get('anim', 'full'), tab: LS.get('tab', 'all'),
   saveImports: LS.get('saveImports', true), liked: new Set(LS.get('liked', [])),
+  outfit: LS.get('outfit', 'classic'), matchOutfit: LS.get('matchOutfit', false),
 };
 const ANIM_SPEED = { full: 1, quick: 2.2, off: 100 };
 
@@ -351,7 +353,16 @@ function setTheme(k) {
   th.c.forEach((c, i) => r.setProperty('--c' + (i + 1), c));
   document.body.dataset.theme = k; viz.setTheme(k); $('#theme').value = k;
   const meta = $('meta[name="theme-color"]'); if (meta) meta.content = th.bg[1];
+  if (S.matchOutfit) setOutfit(OUTFIT_FOR_THEME[k] || 'classic', { save: false });
 }
+// ---------------- outfits ----------------
+function setOutfit(id, { save = true } = {}) {
+  if (!OUTFITS[id]) id = 'classic';
+  if (save) { S.outfit = id; LS.set('outfit', id); }
+  scene.setOutfit(id); $('#outfit').value = id; document.body.dataset.outfit = id;
+}
+(() => { const sel = $('#outfit'); sel.innerHTML = Object.entries(OUTFITS).map(([k, o]) => `<option value="${k}" title="${o.desc}">${o.name}</option>`).join(''); })();
+$('#outfit').addEventListener('change', (e) => { if (S.matchOutfit) { S.matchOutfit = false; LS.set('matchOutfit', false); } setOutfit(e.target.value); });
 function syncPlayUI() {
   const playing = !!(deck && !deck.el.paused);
   $('#playBtn').classList.toggle('is-playing', playing);
@@ -510,6 +521,7 @@ $('#addBtn').addEventListener('click', (e) => placeMenu($('#addMenu'), e.current
 $('#menuBtn').addEventListener('click', (e) => { syncMenu(); placeMenu($('#mainMenu'), e.currentTarget); });
 function syncMenu() {
   $('#optSave').setAttribute('aria-checked', S.saveImports); $('#optSave .chk').textContent = S.saveImports ? '✓' : '';
+  $('#optMatch').setAttribute('aria-checked', S.matchOutfit); $('#optMatch .chk').textContent = S.matchOutfit ? '✓' : '';
   $$('#mainMenu [data-anim]').forEach((b) => { const on = b.dataset.anim === S.anim; b.setAttribute('aria-checked', on); b.querySelector('.chk').textContent = on ? '●' : ''; });
   $('#optInstall').hidden = !deferredInstall;
 }
@@ -518,6 +530,7 @@ $('#mainMenu').addEventListener('click', (e) => {
   const b = e.target.closest('button'); if (!b) return;
   if (b.dataset.anim) { S.anim = b.dataset.anim; LS.set('anim', S.anim); syncMenu(); return; }
   const a = b.dataset.act; closeMenus();
+  if (a === 'match') { S.matchOutfit = !S.matchOutfit; LS.set('matchOutfit', S.matchOutfit); if (S.matchOutfit) setOutfit(OUTFIT_FOR_THEME[S.theme] || 'classic', { save: false }); else setOutfit(S.outfit); toast(S.matchOutfit ? 'Outfit follows the scene' : 'Outfit: ' + OUTFITS[S.outfit].name); }
   if (a === 'save') { S.saveImports = !S.saveImports; LS.set('saveImports', S.saveImports); toast(S.saveImports ? 'Imports will be saved to My Tracks' : 'Imports play for this session only'); }
   if (a === 'files') $('#fileIn').click(); if (a === 'folder') $('#dirIn').click(); if (a === 'url') openUrlDialog();
   if (a === 'vis') toggleVisMode(); if (a === 'help') $('#helpDlg').showModal(); if (a === 'install') doInstall();
@@ -655,6 +668,7 @@ const KEYS = (e) => {
   else if (k === 'r' || k === 'R') $('#repeatBtn').click();
   else if (k === 'f' || k === 'F') toggleFullscreen();
   else if (k === 't' || k === 'T') { const ks = Object.keys(THEMES); setTheme(ks[(ks.indexOf(S.theme) + 1) % ks.length]); toast('Theme: ' + THEMES[S.theme].name); }
+  else if (k === 'o' || k === 'O') { const ks = Object.keys(OUTFITS); const cur = $('#outfit').value; const nx = ks[(ks.indexOf(cur) + 1) % ks.length]; if (S.matchOutfit) { S.matchOutfit = false; LS.set('matchOutfit', false); } setOutfit(nx); toast('Outfit: ' + OUTFITS[nx].name); }
   else if (k === 'v' || k === 'V') toggleVisMode();
   else if (k === 'h' || k === 'H') $('#likeBtn').click();
   else if (k === 'a' || k === 'A') $('#fileIn').click();
@@ -737,7 +751,7 @@ function loop(now) {
 
 // ---------------- boot ----------------
 async function boot() {
-  setTheme(S.theme); applyVolume(); applyXf(); applyRepeat(); $('#shuffle').checked = S.shuffle;
+  setOutfit(S.outfit, { save: false }); setTheme(S.theme); applyVolume(); applyXf(); applyRepeat(); $('#shuffle').checked = S.shuffle;
   onResize();
   await refreshLibrary();
   const q = new URLSearchParams(location.search);
@@ -755,6 +769,6 @@ async function boot() {
     showBigPlay(`Play “${start.title}”`);
   } else { const first = visible()[0] || DEMO; current = first; updateNowPlaying(first); renderList(); showBigPlay('Tap to drop the needle'); }
   requestAnimationFrame(loop);
-  window.__pf = { get deck() { return deck; }, get current() { return current; }, F, scene, playItem, refreshLibrary, get library() { return library; }, next, S };
+  window.__pf = { get deck() { return deck; }, get current() { return current; }, F, scene, playItem, refreshLibrary, get library() { return library; }, next, S, setOutfit, setTheme };
 }
 boot();
