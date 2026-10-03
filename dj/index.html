@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>DJ Psycho Fingers — Island Pin DJ Booth</title>
-  <meta name="description" content="Island Pin DJ: a free two-deck DJ mixer in the browser — the booth of DJ Psycho Fingers. Load your own beats, cue, pitch with keylock, sync, 3-band EQ with kills, filter, crossfader, hot cues, loops and record the mix to WAV.">
+  <meta name="description" content="Island Pin DJ: the free browser DJ booth of DJ Psycho Fingers — two scratchable turntables, 64-pad sampler with an original sample pack, mic with talkover, video DJ, Auto DJ, a private local music library, EQ, filter, sync, hot cues, loops, and show recording.">
   <meta name="robots" content="index,follow">
   <link rel="canonical" href="https://madinc47-prog.github.io/dj/">
   <meta property="og:title" content="DJ Psycho Fingers — Island Pin DJ Booth">
@@ -24,7 +24,9 @@
     </div>
     <div class="top-right">
       <span id="audio-state" class="audio-state">Tap ▶ or load a track to start audio</span>
-      <button type="button" id="rec" class="rec-btn" title="Record the master output to a WAV file">● REC</button>
+      <button type="button" id="vdj-toggle" class="toplink vdj-tg" title="Video DJ: mix music videos">🎬 VDJ</button>
+      <select id="rec-fmt" class="rec-fmt" aria-label="Recording format" title="WAV = lossless (~11 MB/min) · Opus = compressed (~1.2 MB/min) for long shows"><option value="wav">WAV</option><option value="webm">Opus</option></select>
+      <button type="button" id="rec" class="rec-btn" title="Record the whole show (decks, sampler, mic) from the master output">● REC</button>
       <span id="rec-time" class="mono rec-time" hidden>0:00</span>
     </div>
   </header>
@@ -56,16 +58,81 @@
     <button type="button" class="xf-play" data-deck="A" aria-label="Play / pause deck A">▶ A</button>
     <div class="xf-wrap">
       <div class="ctl hfader xf" id="xf" data-label="Crossfader"></div>
-      <div class="xf-labels"><span>A</span><button type="button" id="xf-curve" class="mini" title="Crossfader curve">Smooth</button><span>B</span></div>
+      <div class="xf-labels"><span>A</span><span class="xf-btns"><button type="button" id="xf-curve" class="mini" title="Crossfader curve: Smooth → Cut → Scratch (razor)">Smooth</button><button type="button" id="xf-ham" class="mini" title="Hamster: reverse the crossfader">HAM</button><button type="button" id="autodj-btn" class="mini autodj" title="Auto DJ: plays the queue, beat-matched, with automatic blends">AUTO DJ</button></span><span>B</span></div>
     </div>
     <button type="button" class="xf-play" data-deck="B" aria-label="Play / pause deck B">B ▶</button>
   </div>
+
+  <div class="pads-mic">
+  <section class="sampler" id="sampler" aria-label="Sampler">
+    <div class="smp-head">
+      <h2>Sampler</h2>
+      <div class="smp-banks" role="tablist"><button type="button" class="smp-bank" data-b="A" title="Bank A: voice drops">A</button><button type="button" class="smp-bank" data-b="B" title="Bank B: DJ FX">B</button><button type="button" class="smp-bank" data-b="C" title="Bank C: turntable tricks &amp; stabs">C</button><button type="button" class="smp-bank" data-b="D" title="Bank D: hip-hop &amp; dancehall hits">D</button></div>
+      <div class="smp-ctl">
+        <button type="button" class="pill small" id="smp-q" title="Quantize: pads land on the beat of the deck you're hearing">Q</button>
+        <select id="smp-qdiv" class="btn small" aria-label="Quantize grid"><option value="0.25">1/4</option><option value="0.5">1/2</option><option value="1">beat</option><option value="4">bar</option></select>
+        <label class="smp-vol" title="Sampler volume">VOL <input type="range" id="smp-vol" min="0" max="1.2" step="0.01"></label>
+        <button type="button" class="pill small" id="smp-editbtn" title="Edit pads: volume, mode, load your own sample">EDIT</button>
+        <button type="button" class="pill small" id="smp-stop" title="Stop all pads (Esc)">■ ALL</button>
+      </div>
+    </div>
+    <div class="meter meter-h smp-meter"><span class="meter-fill" id="smp-meter"></span></div>
+    <div class="smp-grid" id="smp-grid"></div>
+    <div class="smp-edit" id="smp-edit" hidden>
+      <div class="smp-ed-top"><strong id="smp-ed-title">Pad</strong><span id="smp-ed-name" class="muted"></span><button type="button" class="mini" id="smp-ed-close" aria-label="Close editor">✕</button></div>
+      <div class="smp-ed-row">
+        <label>Volume <input type="range" id="smp-ed-vol" min="0" max="1.5" step="0.01"> <span id="smp-ed-volv" class="mono"></span></label>
+        <label>Mode <select id="smp-ed-mode" class="btn small"><option value="one">One-shot</option><option value="hold">Hold (plays while held, loops)</option><option value="loop">Loop (tap on / off)</option></select></label>
+      </div>
+      <div class="smp-ed-row"><button type="button" class="btn small" id="smp-ed-play">▶ / ■ Preview</button><label class="btn small file-btn">Load your own file…<input type="file" id="smp-ed-file" accept="audio/*,.mp3,.wav,.ogg,.m4a,.flac" hidden></label><button type="button" class="btn small ghost" id="smp-ed-reset">Restore pack sample</button></div>
+    </div>
+    <p class="lib-note">Keys: <b class="mono">E R T Y · D F G H · C V B N · U I J K</b> = pads 1–16 · <b class="mono">[ ]</b> bank · <b class="mono">Esc</b> stop all. Right-click / EDIT a pad to set its volume, mode or load your own sample (kept on this device). Pack = original samples made for DJ Psycho Fingers with free TTS + synthesis — <a href="https://github.com/madinc47-prog/madinc47-prog.github.io/blob/main/dj/samples/CREDITS.md" target="_blank" rel="noopener">credits &amp; licences</a>.</p>
+  </section>
+
+  <section class="mic" id="mic" aria-label="Microphone">
+    <div class="mic-head"><h2>Mic / MC</h2><button type="button" class="btn small mic-on" id="mic-on">🎤 Mic off</button><button type="button" class="pill small" id="mic-mute">MUTE</button></div>
+    <div class="mic-meter-row"><div class="meter meter-h" id="mic-meter"><span class="meter-fill"></span></div><span class="clip" id="mic-clip">CLIP</span></div>
+    <div class="mic-knobs">
+      <div class="kn"><div class="ctl knob k-gain" data-label="Mic gain"></div><span class="k-lbl">GAIN</span></div>
+      <div class="kn"><div class="ctl knob k-high" data-label="Mic EQ high"></div><span class="k-lbl">HI</span></div>
+      <div class="kn"><div class="ctl knob k-mid" data-label="Mic EQ mid"></div><span class="k-lbl">MID</span></div>
+      <div class="kn"><div class="ctl knob k-low" data-label="Mic EQ low"></div><span class="k-lbl">LOW</span></div>
+      <div class="kn"><div class="ctl knob k-verb" data-label="Mic reverb"></div><span class="k-lbl">REVERB</span></div>
+      <div class="kn"><div class="ctl knob k-echo" data-label="Mic echo"></div><span class="k-lbl">ECHO</span></div>
+      <div class="kn"><div class="ctl knob k-depth" data-label="Talkover depth"></div><span class="k-lbl">DUCK</span></div>
+    </div>
+    <div class="d-row mic-tg">
+      <button type="button" class="pill small" id="mic-duck" title="Talkover: the music dips while you speak">TALKOVER <span class="led" id="mic-duckled"></span></button>
+      <button type="button" class="pill small" id="mic-ec" title="Echo cancellation">ECHO CANCEL</button>
+      <button type="button" class="pill small" id="mic-ns" title="Noise suppression">NOISE SUPP</button>
+      <button type="button" class="pill small" id="mic-agc" title="Automatic gain control">AUTO GAIN</button>
+    </div>
+    <p class="warn">🎧 <b>Use headphones</b> (or keep the mic well away from the speakers) — the mic goes out through the speakers and can howl with feedback. The mic is mixed into REC.</p>
+  </section>
+  </div>
+
+  <section class="vdj" id="vdj" aria-label="Video DJ" hidden>
+    <div class="vdj-head"><h2>Video DJ</h2>
+      <label class="ad-set">Transition <select id="vdj-trans" class="btn small"><option value="fade">Fade</option><option value="cut">Cut</option><option value="wipe">Wipe</option></select></label>
+      <label class="ad-set"><input type="checkbox" id="vdj-ovl"> Overlay</label><input type="text" id="vdj-text" class="search vdj-text" maxlength="60" aria-label="Overlay text">
+      <button type="button" class="btn small" id="vdj-fs">⛶ Fullscreen</button><button type="button" class="btn small" id="vdj-pop">⧉ Pop-out</button>
+      <button type="button" class="rec-btn" id="vdj-rec">● REC VIDEO</button><span class="mono rec-time" id="vdj-rect"></span>
+    </div>
+    <div class="vdj-grid">
+      <div class="vdj-deck" data-deck="A"><video id="vdj-vA" muted playsinline></video><div class="vdj-ctl"><b>A</b><span id="vdj-nA" class="muted">No video — shows a visualizer</span><label class="btn small file-btn">Video…<input type="file" id="vdj-fA" accept="video/*,.mp4,.webm,.mov,.m4v" hidden></label><button type="button" class="btn small" id="vdj-uA">URL</button></div></div>
+      <div class="vdj-prog" id="vdj-progwrap"><canvas id="vdj-prog" width="1280" height="720" aria-label="Program output"></canvas></div>
+      <div class="vdj-deck" data-deck="B"><video id="vdj-vB" muted playsinline></video><div class="vdj-ctl"><b>B</b><span id="vdj-nB" class="muted">No video — shows a visualizer</span><label class="btn small file-btn">Video…<input type="file" id="vdj-fB" accept="video/*,.mp4,.webm,.mov,.m4v" hidden></label><button type="button" class="btn small" id="vdj-uB">URL</button></div></div>
+    </div>
+    <p class="lib-note">The video's sound plays through the deck (EQ, filter, pitch, keylock, loops and scratching all work on it). The picture follows the deck: it plays at the deck's speed and is scrubbed by seeking while you scratch or reverse — expect it to be choppier than the sound. The program output follows the crossfader. Only play videos you have the rights to.</p>
+  </section>
 
   <section class="library" aria-label="Track library">
     <div class="lib-head">
       <h2>Crate</h2>
       <div class="lib-tabs" role="tablist">
         <button type="button" class="lib-tab on" data-lib="beats">His beats &amp; demos</button>
+        <button type="button" class="lib-tab" data-lib="mylib">My Library</button>
+        <button type="button" class="lib-tab" data-lib="autodj">Auto DJ</button>
         <button type="button" class="lib-tab" data-lib="vault">Beats Vault</button>
         <button type="button" class="lib-tab" data-lib="mixes">My mixes</button>
       </div>
@@ -77,9 +144,14 @@
 
   <footer class="foot">
     <p>DJ Psycho Fingers · <a href="https://www.youtube.com/@emmanuelgriffith4650" target="_blank" rel="noopener noreferrer">YouTube @emmanuelgriffith4650</a> · <a href="../beats/">Island Pin Beats</a> · <a href="../">IslePin</a></p>
-    <p class="muted">Keys: Q / P play A / B · W / O cue · A / L sync · 1–4 / 7–0 hot cues. Headphone cueing needs a second audio output, which browsers don't offer — preview with the channel faders.</p>
+    <p class="muted">Turntables: drag the record to scratch (VINYL mode) · flick it backwards fast, ↺ REWIND, or Z / X for a wheel-up. Keys: Q / P play A / B · W / O cue · A / L sync · 1–4 / 7–0 hot cues · sampler E R T Y / D F G H / C V B N / U I J K, [ ] bank. Headphone cueing needs a second audio output, which browsers don't offer — preview with the channel faders.</p>
   </footer>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
   <script src="dj.js"></script>
+  <script src="dj-sampler.js"></script>
+  <script src="dj-mic.js"></script>
+  <script src="dj-video.js"></script>
+  <script src="dj-library.js"></script>
+  <script src="dj-autodj.js"></script>
 </body>
 </html>

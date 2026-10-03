@@ -3,6 +3,10 @@
  * sync); keylock compensates the pitch of the tempo change with a two-tap delay-line pitch shifter.
  * Chain per deck:  source → [keylock | dry] → trim → EQ low / mid / high → filter (LP ↔ HP) → channel fader → crossfader
  * Master: bus → master volume → limiter (compressor) → soft clipper (ceiling −0.2 dBFS) → speakers + recorder + meter.
+ * Turntables: each deck also has an AudioWorklet scratch engine (scratch-worklet.js) that plays the same track at a signed,
+ * variable rate. Grabbing the platter, vinyl start/brake, spinbacks and rewinds hand playback to the worklet; once the
+ * motor is back at speed, playback is handed back (sample-aligned) to the normal buffer source.
+ * Sampler, mic and video modules (dj-*.js) plug into window.PFDJ.
  */
 (function () {
   "use strict";
@@ -13,6 +17,10 @@
   var PREFS_KEY = "ipb_dj_v1";
   var KL_D = 0.08;                    // keylock grain (s); audio through the keylock is KL_D/2 late on average
   var HOT_COLORS = ["#f43f5e", "#f59e0b", "#34d399", "#60a5fa"];
+  var SEC_PER_REV = 1.8;              // 33⅓ RPM: one platter revolution = 1.8 s of record
+  var EV = {};                        // tiny event bus for the add-on modules
+  function on(ev, fn) { (EV[ev] = EV[ev] || []).push(fn); }
+  function emit(ev, a, b) { (EV[ev] || []).forEach(function (fn) { try { fn(a, b); } catch (e) { console.warn(e); } }); }
   var ctx = null, M = null;           // audio context + master nodes
   var prefs = loadPrefs();
 
@@ -22,22 +30,22 @@
 
   /* ---------------- prefs ---------------- */
   function loadPrefs() {
-    var d = { xf: 0, curve: "smooth", master: 0.85, decks: { A: {}, B: {} } };
-    try { var s = JSON.parse(localStorage.getItem(PREFS_KEY) || "null"); if (s && typeof s === "object") { d.xf = clamp(+s.xf || 0, -1, 1); d.curve = s.curve === "cut" ? "cut" : "smooth"; if (isFinite(+s.master)) d.master = clamp(+s.master, 0, 1); if (s.decks) { d.decks.A = s.decks.A || {}; d.decks.B = s.decks.B || {}; } } } catch (e) { /* ignore */ }
+    var d = { xf: 0, curve: "smooth", ham: false, recFmt: "wav", master: 0.85, decks: { A: {}, B: {} } };
+    try { var s = JSON.parse(localStorage.getItem(PREFS_KEY) || "null"); if (s && typeof s === "object") { d.xf = clamp(+s.xf || 0, -1, 1); d.curve = s.curve === "cut" || s.curve === "scratch" ? s.curve : "smooth"; d.ham = s.ham === true; d.recFmt = s.recFmt === "webm" ? "webm" : "wav"; if (isFinite(+s.master)) d.master = clamp(+s.master, 0, 1); if (s.decks) { d.decks.A = s.decks.A || {}; d.decks.B = s.decks.B || {}; } } } catch (e) { /* ignore */ }
     return d;
   }
   var saveT = null;
   function savePrefs() {
     clearTimeout(saveT);
     saveT = setTimeout(function () {
-      var o = { xf: X.xf, curve: X.curve, master: X.master, decks: {} };
-      DECKS.forEach(function (d) { o.decks[d.id] = { vol: d.vol, eq: d.eq.slice(), filter: d.filter, range: d.range, keylock: d.keylock }; });
+      var o = { xf: X.xf, curve: X.curve, ham: X.ham, recFmt: X.recFmt, master: X.master, decks: {} };
+      DECKS.forEach(function (d) { o.decks[d.id] = { vol: d.vol, eq: d.eq.slice(), filter: d.filter, range: d.range, keylock: d.keylock, vinyl: d.vinyl }; });
       try { localStorage.setItem(PREFS_KEY, JSON.stringify(o)); } catch (e) { /* ignore */ }
     }, 250);
   }
 
   /* ---------------- state ---------------- */
-  var X = { xf: prefs.xf, curve: prefs.curve, master: prefs.master, rec: null };
+  var X = { xf: prefs.xf, curve: prefs.curve, ham: prefs.ham, recFmt: prefs.recFmt, master: prefs.master, rec: null };
   function newDeck(id) {
     var p = prefs.decks[id] || {};
     return {
@@ -46,7 +54,8 @@
       cue: 0, hot: [null, null, null, null], loop: { in: null, out: null, on: false },
       sync: false, trimDb: 0, autoDb: 0, vol: isFinite(+p.vol) ? clamp(+p.vol, 0, 1) : 0.8,
       eq: Array.isArray(p.eq) && p.eq.length === 3 ? p.eq.map(function (v) { return clamp(+v || 0, -26, 6); }) : [0, 0, 0], kill: [false, false, false],
-      filter: isFinite(+p.filter) ? clamp(+p.filter, -1, 1) : 0, peaks: null, detail: null, taps: [], loading: false, n: null
+      filter: isFinite(+p.filter) ? clamp(+p.filter, -1, 1) : 0, peaks: null, detail: null, taps: [], loading: false, n: null,
+      vinyl: p.vinyl !== false, wl: null, wlBuf: null, scr: null, scrRep: null, tt: { hand: null, hp: 0, bendT: null }
     };
   }
   var DECKS = [newDeck("A"), newDeck("B")];
@@ -67,13 +76,15 @@
     M.lim.threshold.value = -3; M.lim.knee.value = 0; M.lim.ratio.value = 20; M.lim.attack.value = 0.001; M.lim.release.value = 0.12;
     M.clip = ctx.createWaveShaper(); M.clip.curve = clipCurve(); M.clip.oversample = "none"; // no oversampling: its resampling filter could overshoot the ceiling
     M.an = ctx.createAnalyser(); M.an.fftSize = 1024;
+    M.music = ctx.createGain();                                      // decks → music bus (mic talkover ducks this) → master bus
+    M.music.connect(M.bus);
     M.bus.connect(M.vol); M.vol.connect(M.lim); M.lim.connect(M.clip); M.clip.connect(ctx.destination); M.clip.connect(M.an);
     // recorder tap (ScriptProcessor: supported everywhere; muted output keeps it running)
     M.tap = ctx.createScriptProcessor(4096, 2, 2);
     M.tapOut = ctx.createGain(); M.tapOut.gain.value = 0;
     M.clip.connect(M.tap); M.tap.connect(M.tapOut); M.tapOut.connect(ctx.destination);
     M.tap.onaudioprocess = function (e) {
-      if (!X.rec || !X.rec.on) return;
+      if (!X.rec || !X.rec.on || !X.rec.L) return;
       var L = e.inputBuffer.getChannelData(0), R = e.inputBuffer.numberOfChannels > 1 ? e.inputBuffer.getChannelData(1) : L;
       X.rec.L.push(new Float32Array(L)); X.rec.R.push(new Float32Array(R)); X.rec.n += L.length;
     };
@@ -81,6 +92,10 @@
     applyXf();
     ctx.onstatechange = audioState;
     audioState();
+    if (ctx.audioWorklet && window.AudioWorkletNode) {
+      M.wlP = ctx.audioWorklet.addModule("scratch-worklet.js").then(function () { M.wlOK = true; DECKS.forEach(initWl); }).catch(function (e) { console.warn("scratch worklet unavailable", e); });
+    }
+    emit("ctx", ctx, M);
     return ctx;
   }
   function audioState() { var el = $("audio-state"); if (!ctx) return; el.textContent = ctx.state === "running" ? "Audio on · " + Math.round(ctx.sampleRate / 100) / 10 + " kHz" : "Tap ▶ to start audio"; el.classList.toggle("on", ctx.state === "running"); }
@@ -109,7 +124,7 @@
     n.an = ctx.createAnalyser(); n.an.fftSize = 1024;
     n.dry.connect(n.dryDelay); n.dryDelay.connect(n.sum); n.wet.connect(n.sum);
     n.sum.connect(n.trim); n.trim.connect(n.low); n.low.connect(n.mid); n.mid.connect(n.high); n.high.connect(n.filt);
-    n.filt.connect(n.fader); n.fader.connect(n.an); n.fader.connect(n.xf); n.xf.connect(M.bus);
+    n.filt.connect(n.fader); n.fader.connect(n.an); n.fader.connect(n.xf); n.xf.connect(M.music);
     buildKeylock(d);
     applyDeckMix(d, true);
   }
@@ -157,29 +172,37 @@
     else { n.filt.type = "highpass"; n.filt.Q.setTargetAtTime(1.4, t, tc); n.filt.frequency.setTargetAtTime(25 * Math.pow(9000 / 25, f), t, tc); }
     n.fader.gain.setTargetAtTime(Math.pow(d.vol, 1.6), t, tc);   // audio taper
   }
+  /* curves: smooth = equal power; cut = full volume until the last 6 %; scratch = razor cut in the last 1.5 % (fast attack).
+     Hamster reverses the fader direction. */
   function xfGains() {
-    var x = (X.xf + 1) / 2;
-    if (X.curve === "cut") return [x > 0.94 ? Math.max(0, (1 - x) / 0.06) : 1, x < 0.06 ? Math.max(0, x / 0.06) : 1];
+    var x = ((X.ham ? -X.xf : X.xf) + 1) / 2, w = X.curve === "scratch" ? 0.015 : 0.06;
+    if (X.curve !== "smooth") return [x > 1 - w ? Math.max(0, (1 - x) / w) : 1, x < w ? Math.max(0, x / w) : 1];
     return [Math.cos(x * Math.PI / 2), Math.sin(x * Math.PI / 2)];
   }
   function applyXf() {
     if (!ctx) return;
-    var g = xfGains(), t = ctx.currentTime;
-    DECKS[0].n.xf.gain.setTargetAtTime(g[0], t, 0.006);
-    DECKS[1].n.xf.gain.setTargetAtTime(g[1], t, 0.006);
+    var g = xfGains(), t = ctx.currentTime, tc = X.curve === "scratch" ? 0.0012 : 0.006;
+    DECKS[0].n.xf.gain.setTargetAtTime(g[0], t, tc);
+    DECKS[1].n.xf.gain.setTargetAtTime(g[1], t, tc);
   }
 
   /* ---------------- transport ---------------- */
   function rawPos(d) {
+    if (d.scr && ctx) { var r = d.scrRep; if (!r) return d.scr.p0; return clamp(r.pos + Math.max(0, ctx.currentTime - r.time) * r.rate, 0, d.buf ? d.buf.duration : 1e9); }
     if (!d.playing || !d.anchor || !ctx) return d.pos;
     var p = d.anchor.pos + Math.max(0, ctx.currentTime - d.anchor.t) * d.anchor.rate;
     if (d.loop.on && d.loop.out > d.loop.in && p >= d.loop.out) p = d.loop.in + ((p - d.loop.in) % (d.loop.out - d.loop.in));
     return Math.min(p, d.buf ? d.buf.duration : p);
   }
   /* what you hear right now (the keylock / dry delay makes output KL_D/2 late) */
-  function pos(d) { var p = rawPos(d); return d.playing && d.keylock ? Math.max(0, p - (KL_D / 2) * rate(d)) : p; }
-  function reanchor(d) { if (d.playing) d.anchor = { t: ctx.currentTime, pos: rawPos(d), rate: rate(d) }; }
+  function pos(d) {
+    var p = rawPos(d);
+    if (d.scr) return d.keylock ? Math.max(0, p - (KL_D / 2) * (d.scrRep ? d.scrRep.rate : 0)) : p;
+    return d.playing && d.keylock ? Math.max(0, p - (KL_D / 2) * rate(d)) : p;
+  }
+  function reanchor(d) { if (d.playing && !d.scr) d.anchor = { t: ctx.currentTime, pos: rawPos(d), rate: rate(d) }; }
   function startSrc(d, at, when) {
+    if (d.scr) { scrSeek(d, at); scrLoop(d); return; }
     stopSrc(d);
     var s = ctx.createBufferSource(), tok = ++d.srcTok;
     s.buffer = d.buf;
@@ -192,45 +215,182 @@
     d.src = s; d.anchor = { t: when, pos: at, rate: rate(d) };
   }
   function stopSrc(d) { if (d.src) { d.srcTok++; try { d.src.stop(); } catch (e) { /* ignore */ } d.src.disconnect(); d.src = null; } }
-  function play(d) {
+  function play(d, instant) {
     if (!d.buf || !ensureCtx()) { if (!d.buf) toast("Load a track into deck " + d.id + " first."); return; }
     if (d.playing) return;
+    if (d.scr) { d.playing = true; if (!d.scr.hold) scrRate(d, rate(d), 0.07); ui(d); nowPlaying(); emit("play", d); return; }
     if (d.pos >= d.buf.duration - 0.05) d.pos = d.cue || 0;
     d.playing = true;
-    applyKeylock(d);
     var at = d.pos, o = other(d);
-    if (d.sync && o.playing) at = phaseTarget(d, at);
-    startSrc(d, at);
-    ui(d); nowPlaying();
+    if (d.sync && o.playing) { at = phaseTarget(d, at); instant = true; }
+    if (d.vinyl && !instant && scratchOK(d)) {            // turntable motor: spin up from standstill (~0.25 s)
+      d.pos = at; scrBegin(d, 0, at); scrRate(d, rate(d), 0.07);
+    } else { applyKeylock(d); startSrc(d, at); }
+    ui(d); nowPlaying(); emit("play", d);
   }
-  function pause(d) { if (!d.playing) return; d.pos = rawPos(d); d.playing = false; stopSrc(d); ui(d); nowPlaying(); }
+  function pause(d, instant) {
+    if (!d.playing) return;
+    if (d.scr) { d.playing = false; if (instant) scrKill(d); else if (!d.scr.hold) scrRate(d, 0, 0.2); ui(d); nowPlaying(); emit("pause", d); return; }
+    if (d.vinyl && !instant && scratchOK(d)) { var bp = rawPos(d); d.playing = false; scrBegin(d, rate(d), bp); scrRate(d, 0, 0.2); ui(d); nowPlaying(); emit("pause", d); return; } // brake
+    d.pos = rawPos(d); d.playing = false; stopSrc(d); ui(d); nowPlaying(); emit("pause", d);
+  }
   function toggle(d) { d.playing ? pause(d) : play(d); }
   function seek(d, t) {
     if (!d.buf) return;
     t = clamp(t, 0, d.buf.duration - 0.01);
     if (d.loop.on && (t < d.loop.in || t >= d.loop.out)) setLoopOn(d, false);
-    if (d.playing) startSrc(d, t); else d.pos = t;
+    if (d.scr) scrSeek(d, t); else if (d.playing) startSrc(d, t); else d.pos = t;
     ui(d);
+  }
+
+  /* ---------------- turntable scratch engine (AudioWorklet) ---------------- */
+  function initWl(d) {
+    if (d.wl || !M.wlOK) return;
+    try { d.wl = new AudioWorkletNode(ctx, "pf-scratch", { numberOfInputs: 0, numberOfOutputs: 1, outputChannelCount: [2] }); }
+    catch (e) { console.warn(e); return; }
+    d.wl.connect(d.n.dry);
+    d.wl.port.onmessage = function (e) {
+      var m = e.data;
+      if (m.t === "pos" || m.t === "settled") { if (d.scr) d.scrRep = { pos: m.pos, rate: m.rate, time: m.time }; if (d.tt.hand) { d.tt.rmax = Math.max(d.tt.rmax || 0, m.rate); d.tt.rmin = Math.min(d.tt.rmin || 0, m.rate); } }
+      if (m.t === "settled") onSettled(d, m);
+    };
+    if (d.buf) sendBuf(d);
+  }
+  /* the worklet keeps a 16-bit copy of the track (half the memory of a float copy) */
+  function sendBuf(d) {
+    if (!d.wl || !d.buf || d.wlBuf === d.buf) return;
+    var b = d.buf, n = b.length, c0 = b.getChannelData(0), c1 = b.numberOfChannels > 1 ? b.getChannelData(1) : null;
+    var L = new Int16Array(n), R = c1 ? new Int16Array(n) : null;
+    for (var i = 0; i < n; i++) { var x = c0[i]; L[i] = x >= 1 ? 32767 : x <= -1 ? -32768 : x * 32767; if (R) { var y = c1[i]; R[i] = y >= 1 ? 32767 : y <= -1 ? -32768 : y * 32767; } }
+    var msg = { t: "buf", L: L, sr: b.sampleRate }, tr = [L.buffer];
+    if (R) { msg.R = R; tr.push(R.buffer); }
+    d.wl.port.postMessage(msg, tr);
+    d.wlBuf = b;
+  }
+  function scratchOK(d) { return !!(ctx && M && M.wlOK && d.wl && d.buf && d.wlBuf === d.buf); }
+  /* take playback over from the buffer source at the current position, starting at rate r0 */
+  function scrBegin(d, r0, p) {
+    if (d.scr) { d.scr.gen++; return d.scr; }
+    if (p == null) p = rawPos(d);
+    if (r0 == null) r0 = d.playing ? rate(d) : 0;
+    stopSrc(d);
+    d.scr = { gen: 1, p0: p, hold: false };
+    d.scrRep = { pos: p, rate: r0, time: ctx.currentTime };
+    d.wl.port.postMessage({ t: "start", pos: p, sr: d.buf.sampleRate, rate: r0, target: r0, mode: "rate", tau: 0.05 });
+    scrLoop(d);
+    var t = ctx.currentTime;
+    d.n.dry.gain.cancelScheduledValues(t); d.n.dry.gain.setTargetAtTime(1, t, 0.004);
+    d.n.wet.gain.cancelScheduledValues(t); d.n.wet.gain.setTargetAtTime(0, t, 0.004);
+    return d.scr;
+  }
+  function scrLoop(d) { if (d.wl) d.wl.port.postMessage({ t: "loop", on: d.loop.on && d.loop.out > d.loop.in, lin: d.loop.in, lout: d.loop.out }); }
+  function scrSeek(d, t) { d.wl.port.postMessage({ t: "seek", pos: t }); d.scrRep = { pos: t, rate: d.scrRep ? d.scrRep.rate : 0, time: ctx.currentTime }; }
+  function scrRate(d, r, tau) { if (d.scr) { d.scr.want = r; d.wl.port.postMessage({ t: "rate", rate: r, tau: tau }); } }
+  function scrKill(d) { if (!d.scr) return; d.pos = rawPos(d); d.wl.port.postMessage({ t: "stop" }); d.scr = null; d.scrRep = null; }
+  function onSettled(d, m) {
+    if (!d.scr || d.scr.hold || d.tt.hand) return;
+    if (d.playing && m.rate > 0) {                     // motor at speed → hand back to the buffer source, sample-aligned
+      var T = ctx.currentTime + 0.03, P = m.pos + (T - m.time) * m.rate;
+      if (d.loop.on && d.loop.out > d.loop.in && P >= d.loop.out) P = d.loop.in + ((P - d.loop.in) % (d.loop.out - d.loop.in));
+      d.wl.port.postMessage({ t: "stop", at: T });
+      d.scr = null; d.scrRep = null;
+      if (P >= d.buf.duration - 0.02) { d.playing = false; d.pos = d.buf.duration; ui(d); return; }
+      applyKeylock(d, T); startSrc(d, P, T);
+      ui(d);
+    } else if (!d.playing && m.rate === 0) { d.pos = m.pos; d.wl.port.postMessage({ t: "stop" }); d.scr = null; d.scrRep = null; ui(d); }
+    else scrRate(d, d.playing ? rate(d) : 0, 0.08);
+  }
+  /* classic wheel-up: the record is spun back hard, slows down (pitch drops), then drops in again from the cue point */
+  function rewind(d) {
+    if (!d.buf || !ensureCtx()) return;
+    emit("manual", d);
+    if (!scratchOK(d)) { var was = d.playing; seek(d, d.cue || 0); if (!was) play(d, true); toast("Rewind — back to the cue"); return; }
+    var sc = scrBegin(d), g = ++sc.gen;
+    sc.hold = true;
+    scrRate(d, -6, 0.045);
+    setTimeout(function () { if (d.scr && d.scr.gen === g) scrRate(d, 0, 0.26); }, 260);
+    setTimeout(function () {
+      if (!d.scr || d.scr.gen !== g) return;
+      scrSeek(d, d.cue || 0); d.playing = true; d.scr.hold = false; scrRate(d, rate(d), 0.03); ui(d); nowPlaying();
+    }, 1150);
+    toast("Rewind! Deck " + d.id + " wheels up to the cue");
+  }
+
+  /* ---------------- platter: grab, scratch, spin back ---------------- */
+  function ttAngle(el, e) { var r = el.getBoundingClientRect(); return Math.atan2(e.clientY - (r.top + r.height / 2), e.clientX - (r.left + r.width / 2)) * 180 / Math.PI; }
+  function handVel(d) { // record seconds per second over the last ~50 ms of hand movement
+    var h = d.tt.hand, s = h && h.hist, now = performance.now();
+    if (!s || s.length < 2 || now - s[s.length - 1].t > 45) return 0;
+    var a = s[s.length - 1], b = a;
+    for (var i = s.length - 2; i >= 0; i--) { b = s[i]; if (a.t - b.t > 50) break; }
+    return a.t > b.t ? (a.p - b.p) / ((a.t - b.t) / 1000) : 0;
+  }
+  function ttDown(d, el, e) {
+    if (e.button > 0 || d.tt.hand) return;
+    e.preventDefault();
+    if (!d.buf) { toast("Load a track into deck " + d.id + " to scratch."); return; }
+    if (!ensureCtx()) return;
+    emit("manual", d);
+    try { el.setPointerCapture(e.pointerId); } catch (er) { /* ignore */ }
+    var bendMode = !d.vinyl && d.playing && !d.scr;
+    if (!bendMode && !scratchOK(d)) { toast(M.wlOK === undefined && M.wlP ? "Turntable engine starting…" : "Scratching needs AudioWorklet (Chrome / Edge / Firefox / Safari 14.1+)."); if (M.wlP && !M.wlOK) M.wlP.then(function () { DECKS.forEach(sendBuf); }); return; }
+    var p = rawPos(d);
+    d.tt.hand = { id: e.pointerId, a: ttAngle(el, e), cum: 0, p0: p, bend: bendMode, hist: [{ t: performance.now(), p: p }] };
+    d.tt.hp = p; d.tt.rmax = 0; d.tt.rmin = 0;
+    if (!bendMode) {
+      var sc = scrBegin(d); sc.gen++; sc.hold = false;
+      d.wl.port.postMessage({ t: "pos", pos: p, tau: 0.012 });
+    }
+    el.classList.add("grab"); d.el.root.classList.add("scratching");
+  }
+  function ttMove(d, el, e) {
+    var h = d.tt.hand;
+    if (!h || h.id !== e.pointerId) return;
+    var a = ttAngle(el, e), da = a - h.a;
+    if (da > 180) da -= 360; else if (da < -180) da += 360;
+    h.a = a; h.cum += da;
+    var target = Math.max(0, h.p0 + h.cum / 360 * SEC_PER_REV), now = performance.now();
+    h.hist.push({ t: now, p: target }); if (h.hist.length > 24) h.hist.shift();
+    d.tt.hp = target;
+    if (h.bend) {                                             // CDJ jog: nudge the tempo while turning
+      setBend(d, clamp(handVel(d) * 0.06, -0.25, 0.25));
+      clearTimeout(d.tt.bendT); d.tt.bendT = setTimeout(function () { if (d.bend) setBend(d, 0); }, 70);
+    } else d.wl.port.postMessage({ t: "pos", pos: target, tau: 0.012 });
+  }
+  function ttUp(d, el, e) {
+    var h = d.tt.hand;
+    if (!h || h.id !== e.pointerId) return;
+    var v = handVel(d);
+    d.tt.hand = null; el.classList.remove("grab"); d.el.root.classList.remove("scratching");
+    if (h.bend) { clearTimeout(d.tt.bendT); setBend(d, 0); return; }
+    if (!d.scr) return;
+    d.lastFlick = v;
+    if (v < -2.2) { rewind(d); return; }                       // fast backward flick → rewind / wheel-up
+    // let go: the motor brings the record back to speed (or the deck stays stopped if it was paused)
+    d.wl.port.postMessage({ t: "rate", rate: d.playing ? rate(d) : 0, tau: d.playing ? 0.085 : 0.05 });
+    d.scr.want = d.playing ? rate(d) : 0;
   }
   /* CDJ cue: paused → set the cue here; playing → jump back to the cue and stop */
   function cue(d) {
     if (!d.buf) return;
     ensureCtx();
-    if (d.playing) { pause(d); d.pos = d.cue; }
+    if (d.scr && !d.playing) scrKill(d);
+    if (d.playing) { pause(d, true); d.pos = d.cue; }
     else if (Math.abs(d.pos - d.cue) < 0.01) { /* already at the cue */ }
     else { d.cue = snapBeat(d, d.pos, true); d.pos = d.cue; toast("Deck " + d.id + " cue set at " + fmtTime(d.cue)); }
     ui(d);
   }
   function setPitch(d, pct) {
     d.pitch = clamp(pct, -d.range, d.range);
-    if (d.playing) { reanchor(d); d.src.playbackRate.setValueAtTime(rate(d), ctx.currentTime); }
+    if (d.scr && !d.scr.hold && !d.tt.hand && d.playing) scrRate(d, rate(d), 0.05);
+    if (d.playing && d.src) { reanchor(d); d.src.playbackRate.setValueAtTime(rate(d), ctx.currentTime); }
     if (ctx) applyKeylock(d);
     DECKS.forEach(function (x) { if (x !== d && x.sync && isMaster(d)) followTempo(x); });
     ui(d);
   }
   function setBend(d, b) {
     d.bend = b;
-    if (d.playing) { reanchor(d); d.src.playbackRate.setValueAtTime(rate(d), ctx.currentTime); applyKeylock(d); }
+    if (d.playing && d.src) { reanchor(d); d.src.playbackRate.setValueAtTime(rate(d), ctx.currentTime); applyKeylock(d); }
   }
 
   /* ---------------- tempo, grid, sync ---------------- */
@@ -255,7 +415,7 @@
     if (Math.abs(pct) > 16) { toast("Tempos too far apart to sync (" + Math.round(effBpm(o)) + " vs " + Math.round(d.bpm) + " BPM)."); return false; }
     if (Math.abs(pct) > d.range) { d.range = 16; }
     d.pitch = pct;
-    if (d.playing) { reanchor(d); d.src.playbackRate.setValueAtTime(rate(d), ctx.currentTime); }
+    if (d.playing && d.src) { reanchor(d); d.src.playbackRate.setValueAtTime(rate(d), ctx.currentTime); }
     if (ctx) applyKeylock(d);
     ui(d);
     return true;
@@ -334,7 +494,7 @@
     ensureCtx();
     if (clear) { d.hot[i] = null; toast("Hot cue " + (i + 1) + " cleared"); ui(d); return; }
     if (d.hot[i] == null) { d.hot[i] = snapBeat(d, pos(d), true); toast("Deck " + d.id + " hot cue " + (i + 1) + " set"); }
-    else { if (d.playing) startSrc(d, d.hot[i]); else d.pos = d.hot[i]; }
+    else { if (d.playing || d.scr) startSrc(d, d.hot[i]); else d.pos = d.hot[i]; }
     ui(d);
   }
   function setLoopOn(d, on) {
@@ -395,15 +555,15 @@
     return 10 * Math.log10(s / Math.max(1, k) + 1e-12);
   }
   /* item: { name, get: () => Promise<ArrayBuffer|AudioBuffer>, bpm?, grid?, sub? } */
-  function loadInto(d, item) {
-    if (d.playing && !confirm("Deck " + d.id + " is playing. Load “" + item.name + "” anyway?")) return Promise.resolve(false);
+  function loadInto(d, item, force) {
+    if (d.playing && !force && !confirm("Deck " + d.id + " is playing. Load “" + item.name + "” anyway?")) return Promise.resolve(false);
     if (!ensureCtx()) return Promise.resolve(false);
     var tok = (d.loadTok = (d.loadTok || 0) + 1);
     d.loading = true; ui(d);
     toast("Loading “" + item.name + "” into deck " + d.id + "…");
     return item.get().then(function (x) { return x instanceof AudioBuffer ? x : decode(x); }).then(function (buf) {
       if (tok !== d.loadTok) return false;
-      pause(d);
+      pause(d, true); scrKill(d);
       d.buf = buf; d.name = item.name; d.sub = item.sub || ""; d.pos = 0; d.cue = item.grid || 0; d.hot = [null, null, null, null];
       d.loop = { in: null, out: null, on: false }; d.sync = false; d.pitch = 0; d.bend = 0;
       d.peaks = computePeaks(buf); d.ovDirty = true;
@@ -419,7 +579,9 @@
       }
       d.loading = false;
       applyDeckMix(d); applyKeylock(d);
-      ui(d); nowPlaying();
+      setTimeout(function () { if (d.buf === buf) sendBuf(d); }, 60);
+      d.item = item;
+      ui(d); nowPlaying(); emit("loaded", d, item);
       toast("Deck " + d.id + ": " + item.name + (d.bpm ? " · " + d.bpm + " BPM" : ""));
       return true;
     }).catch(function (e) {
@@ -508,22 +670,54 @@
   }
 
   /* ---------------- mix recorder ---------------- */
+  function audioStream() {           // master output as a MediaStream (for compressed / video recording)
+    if (!ensureCtx()) return null;
+    if (!M.dest) { M.dest = ctx.createMediaStreamDestination(); M.clip.connect(M.dest); }
+    return M.dest.stream;
+  }
+  function pickMime(list) { if (!window.MediaRecorder) return null; for (var i = 0; i < list.length; i++) if (MediaRecorder.isTypeSupported(list[i])) return list[i]; return null; }
+  function addMix(blob, dur, ext, label) {
+    var item = { id: "mix_" + Date.now().toString(36), name: (label || "DJ Psycho Fingers mix") + " · " + new Date().toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }), dur: dur, blob: blob, url: URL.createObjectURL(blob), ext: ext };
+    MIXES.unshift(item); showLib("mixes"); return item;
+  }
+  function fmtSize(b) { return b > 1073741824 ? (b / 1073741824).toFixed(2) + " GB" : b < 1048576 ? Math.max(1, Math.round(b / 1024)) + " KB" : (b / 1048576).toFixed(1) + " MB"; }
   function toggleRec() {
     if (!ensureCtx()) return;
+    if (X.rec && X.rec.on && X.rec.mr) { X.rec.on = false; try { X.rec.mr.stop(); } catch (e) { /* ignore */ } return; }
+    if (!(X.rec && X.rec.on) && X.recFmt === "webm") {
+      var mime = pickMime(["audio/webm;codecs=opus", "audio/ogg;codecs=opus", "audio/mp4", "audio/webm"]);
+      if (!mime) { toast("This browser can't record compressed audio — using WAV."); X.recFmt = "wav"; $("rec-fmt").value = "wav"; }
+      else {
+        var mr = new MediaRecorder(audioStream(), { mimeType: mime, audioBitsPerSecond: 160000 }), chunks = [], r = { on: true, mr: mr, bytes: 0, t0: performance.now(), mime: mime };
+        mr.ondataavailable = function (e) { if (e.data && e.data.size) { chunks.push(e.data); r.bytes += e.data.size; } };
+        mr.onstop = function () {
+          var blob = new Blob(chunks, { type: mime.split(";")[0] }), dur = (performance.now() - r.t0) / 1000;
+          X.rec = null; recUI(false);
+          addMix(blob, dur, /ogg/.test(mime) ? "ogg" : /mp4/.test(mime) ? "m4a" : "webm");
+          toast("Show recorded · " + fmtTime(dur) + " · " + fmtSize(blob.size) + " · download it in the crate below");
+        };
+        mr.start(1000); X.rec = r; recUI(true);
+        toast("Recording the whole show (decks, sampler, mic) — compressed Opus ~1.2 MB/min");
+        return;
+      }
+    }
     if (X.rec && X.rec.on) {
       X.rec.on = false;
       var r = X.rec, sr = ctx.sampleRate, blob = encodeWav(r.L, r.R, r.n, sr), dur = r.n / sr;
-      var item = { id: "mix_" + Date.now().toString(36), name: "DJ Psycho Fingers mix · " + new Date().toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }), dur: dur, blob: blob, url: URL.createObjectURL(blob), peak: r.peak };
-      MIXES.unshift(item);
-      X.rec = null;
-      $("rec").classList.remove("on"); $("rec").textContent = "● REC"; $("rec-time").hidden = true;
-      showLib("mixes");
-      toast("Mix recorded · " + fmtTime(dur) + " · download it in the crate below");
+      X.rec = null; recUI(false);
+      var item = addMix(blob, dur, "wav"); item.peak = r.peak;
+      toast("Show recorded · " + fmtTime(dur) + " · " + fmtSize(blob.size) + " WAV · download it in the crate below");
       return;
     }
     X.rec = { on: true, L: [], R: [], n: 0, t0: ctx.currentTime };
-    $("rec").classList.add("on"); $("rec").textContent = "■ STOP"; $("rec-time").hidden = false;
-    toast("Recording the master output…");
+    recUI(true);
+    toast("Recording the whole show (decks, sampler, mic) to WAV — ~10 MB/min");
+  }
+  function recUI(on) { $("rec").classList.toggle("on", on); $("rec").textContent = on ? "■ STOP" : "● REC"; $("rec-time").hidden = !on; $("rec-fmt").disabled = on; }
+  function recStatus() {
+    var r = X.rec; if (!r || !r.on) return "";
+    if (r.mr) { var el = (performance.now() - r.t0) / 1000; return fmtTime(el) + " · " + fmtSize(Math.max(r.bytes, el * 20000)); }
+    return fmtTime(r.n / ctx.sampleRate) + " · " + fmtSize(44 + r.n * 4);
   }
   var MIXES = [];
   function encodeWav(Ls, Rs, n, sr) {
@@ -617,6 +811,16 @@
       '<label class="btn small file-btn d-loadbtn" title="Load an audio file from this device into deck ' + id + '">Load<input type="file" class="d-file" accept="audio/*,.mp3,.wav,.m4a,.aac,.ogg,.flac" hidden></label></div>' +
       '<canvas class="overview" height="46"></canvas>' +
       '<div class="d-info"><span class="d-time mono">0:00.0</span><span class="d-remain mono">-0:00</span><span class="d-bpm"><b class="mono d-bpmv">---.-</b><small>BPM</small></span><span class="d-pitchv mono">0.0%</span></div>' +
+      '<div class="d-tt">' +
+        '<div class="tt" title="Drag the record to scratch · flick it backwards fast to rewind">' +
+          '<div class="platter"><div class="disc">' + discSVG(id) + '</div><div class="sheen"></div><div class="spindle"></div></div>' +
+          '<svg class="arm" viewBox="0 0 60 160" aria-hidden="true"><circle cx="40" cy="20" r="15" fill="#2a3244" stroke="#5b6680" stroke-width="2"/><circle cx="40" cy="20" r="6" fill="#8a93a8"/>' +
+            '<path d="M40 20 L44 112 L30 140" fill="none" stroke="#c9d1e0" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><rect x="20" y="134" width="20" height="22" rx="3" fill="#1a1f2b" stroke="#c9d1e0" stroke-width="2" transform="rotate(25 30 145)"/></svg>' +
+          '<span class="tt-rpm mono">33⅓</span>' +
+        '</div>' +
+        '<div class="d-pitch"><span class="d-label">PITCH</span><div class="ctl vfader pitch" data-label="Deck ' + id + ' pitch"></div></div>' +
+      '</div>' +
+      '<div class="d-row d-ttrow"><button type="button" class="pill small d-vinyl" title="Vinyl: touching the record stops it and scratches; motor start / brake. CDJ: the platter nudges tempo while playing">VINYL</button><button type="button" class="pill small d-rw" title="Rewind / wheel-up: spin back and drop in again from the cue (or flick the record backwards)">↺ REWIND</button></div>' +
       '<div class="d-body">' +
         '<div class="d-main">' +
           '<div class="d-transport"><button type="button" class="big cue d-cue" title="Cue: paused = set cue, playing = back to cue">CUE</button><button type="button" class="big play d-play" aria-label="Play / pause deck ' + id + '">▶</button></div>' +
@@ -627,8 +831,21 @@
           '<div class="d-label">LOOP</div>' +
           '<div class="d-loop"><button type="button" class="pill small d-lin">IN</button><button type="button" class="pill small d-lout">OUT</button><button type="button" class="pill small d-l4" title="4-beat loop">4 BT</button><button type="button" class="pill small d-lhalf">½</button><button type="button" class="pill small d-ldbl">×2</button><button type="button" class="pill small d-lexit">EXIT</button></div>' +
         '</div>' +
-        '<div class="d-pitch"><span class="d-label">PITCH</span><div class="ctl vfader pitch" data-label="Deck ' + id + ' pitch"></div></div>' +
       '</div>';
+  }
+  /* record + label art: DJ Psycho Fingers label in the deck colour, grooves, curved text */
+  function discSVG(id) {
+    var c = id === "A" ? ["#22d3ee", "#0e7490"] : ["#c084fc", "#7e22ce"], g = "";
+    for (var r = 50; r <= 96; r += 2.3) g += '<circle cx="100" cy="100" r="' + r.toFixed(1) + '" fill="none" stroke="rgba(255,255,255,' + (r % 9 < 2.3 ? 0.09 : 0.035) + ')" stroke-width="0.6"/>';
+    return '<svg viewBox="0 0 200 200" aria-hidden="true"><defs><radialGradient id="lbl' + id + '" cx="40%" cy="35%"><stop offset="0" stop-color="' + c[0] + '"/><stop offset="1" stop-color="' + c[1] + '"/></radialGradient>' +
+      '<path id="arc' + id + '" d="M100,100 m-33,0 a33,33 0 1,1 66,0 a33,33 0 1,1 -66,0"/></defs>' +
+      '<circle cx="100" cy="100" r="99" fill="#0a0b0e"/><circle cx="100" cy="100" r="98" fill="none" stroke="#1d212b" stroke-width="2"/>' + g +
+      '<path d="M100 4 A96 96 0 0 1 168 32" stroke="rgba(255,255,255,.10)" stroke-width="10" fill="none"/>' +
+      '<circle cx="100" cy="100" r="44" fill="url(#lbl' + id + ')"/><circle cx="100" cy="100" r="44" fill="none" stroke="rgba(0,0,0,.35)" stroke-width="1.5"/>' +
+      '<text font-size="6.6" font-weight="800" fill="#0b0d12" font-family="system-ui,sans-serif"><textPath href="#arc' + id + '" textLength="203" lengthAdjust="spacingAndGlyphs">DJ PSYCHO FINGERS • NATURE ISLE • DOMINICA •</textPath></text>' +
+      '<text x="100" y="104" text-anchor="middle" font-size="19" font-weight="900" fill="#0b0d12" font-family="system-ui,sans-serif">PF</text>' +
+      '<text x="100" y="117" text-anchor="middle" font-size="5.6" font-weight="700" fill="#0b0d12" font-family="system-ui,sans-serif">SIDE ' + id + ' · 33⅓</text>' +
+      '<rect x="98.6" y="57" width="2.8" height="13" rx="1" fill="#fff" opacity=".9"/></svg>';
   }
   function stripHTML(id) {
     return '<div class="strip" data-deck="' + id + '"><span class="strip-letter">' + id + '</span>' +
@@ -645,10 +862,19 @@
       '<div class="master"><div class="ctl knob m-vol" data-label="Master volume"></div><span class="k-lbl">MASTER</span><div class="meter meter-h" id="master-meter"><span class="meter-fill"></span></div><span class="clip" id="clip" title="Clip">CLIP</span></div>';
     DECKS.forEach(function (d) {
       var root = $("deck-" + d.id), strip = document.querySelector('.strip[data-deck="' + d.id + '"]'), q = function (s) { return root.querySelector(s); };
-      d.el = { root: root, strip: strip, name: q(".d-name"), sub: q(".d-sub"), ov: q(".overview"), time: q(".d-time"), remain: q(".d-remain"), bpm: q(".d-bpmv"), pitchv: q(".d-pitchv"),
+      var tt = q(".tt"), plat = q(".platter");
+      d.el = { tt: tt, plat: plat, disc: q(".disc"), arm: q(".arm"), vinyl: q(".d-vinyl"), root: root, strip: strip, name: q(".d-name"), sub: q(".d-sub"), ov: q(".overview"), time: q(".d-time"), remain: q(".d-remain"), bpm: q(".d-bpmv"), pitchv: q(".d-pitchv"),
         play: q(".d-play"), cue: q(".d-cue"), sync: q(".d-sync"), key: q(".d-key"), range: q(".d-range"), hot: root.querySelectorAll(".hot"), lexit: q(".d-lexit"),
         lin: q(".d-lin"), lout: q(".d-lout"), meter: strip.querySelector(".meter-fill"), kills: strip.querySelectorAll(".kill"), zoom: $("zoom-" + d.id), xfPlay: document.querySelector('.xf-play[data-deck="' + d.id + '"]') };
       q(".d-play").addEventListener("click", function () { toggle(d); });
+      plat.addEventListener("pointerdown", function (e) { ttDown(d, plat, e); });
+      plat.addEventListener("pointermove", function (e) { ttMove(d, plat, e); });
+      plat.addEventListener("pointerup", function (e) { ttUp(d, plat, e); });
+      plat.addEventListener("pointercancel", function (e) { ttUp(d, plat, e); });
+      plat.addEventListener("lostpointercapture", function (e) { ttUp(d, plat, e); });
+      plat.addEventListener("contextmenu", function (e) { e.preventDefault(); });
+      q(".d-vinyl").addEventListener("click", function () { d.vinyl = !d.vinyl; ui(d); savePrefs(); toast("Deck " + d.id + (d.vinyl ? ": VINYL mode — touch the record to stop & scratch, motor start/brake" : ": CDJ mode — platter nudges tempo while playing, scratches when paused, instant start/stop")); });
+      q(".d-rw").addEventListener("click", function () { rewind(d); });
       q(".d-cue").addEventListener("click", function () { cue(d); });
       q(".d-sync").addEventListener("click", function () { doSync(d); });
       q(".d-key").addEventListener("click", function () { d.keylock = !d.keylock; reanchor(d); if (ctx) applyKeylock(d); ui(d); savePrefs(); toast("Deck " + d.id + " keylock " + (d.keylock ? "on" : "off")); });
@@ -702,8 +928,13 @@
     control($("xf"), { name: "xf", kind: "hfader", min: -1, max: 1, value: X.xf, def: 0, snap: 0, center: 0, onChange: function (v) { X.xf = v; applyXf(); savePrefs(); } });
     control(document.querySelector(".m-vol"), { name: "master", kind: "knob", min: 0, max: 1, value: X.master, def: 0.85, fmt: function (v) { return Math.round(v * 100) + "%"; },
       onChange: function (v) { X.master = v; if (ctx) M.vol.gain.setTargetAtTime(v, ctx.currentTime, 0.01); savePrefs(); } });
-    $("xf-curve").textContent = X.curve === "cut" ? "Cut" : "Smooth";
-    $("xf-curve").addEventListener("click", function () { X.curve = X.curve === "cut" ? "smooth" : "cut"; $("xf-curve").textContent = X.curve === "cut" ? "Cut" : "Smooth"; applyXf(); savePrefs(); });
+    var curveName = function () { return X.curve === "cut" ? "Cut" : X.curve === "scratch" ? "Scratch" : "Smooth"; };
+    $("xf-curve").textContent = curveName();
+    $("xf-curve").addEventListener("click", function () { X.curve = X.curve === "smooth" ? "cut" : X.curve === "cut" ? "scratch" : "smooth"; $("xf-curve").textContent = curveName(); applyXf(); savePrefs(); toast("Crossfader curve: " + curveName() + (X.curve === "scratch" ? " (razor-sharp cut for scratching)" : X.curve === "cut" ? " (fast cut)" : " (smooth blend)")); });
+    $("xf-ham").classList.toggle("on", X.ham);
+    $("xf-ham").addEventListener("click", function () { X.ham = !X.ham; $("xf-ham").classList.toggle("on", X.ham); applyXf(); savePrefs(); toast(X.ham ? "Hamster on: crossfader reversed" : "Hamster off"); });
+    $("rec-fmt").value = X.recFmt;
+    $("rec-fmt").addEventListener("change", function () { X.recFmt = $("rec-fmt").value === "webm" ? "webm" : "wav"; savePrefs(); });
     $("rec").addEventListener("click", toggleRec);
     document.querySelectorAll(".lib-tab").forEach(function (b) { b.addEventListener("click", function () { showLib(b.dataset.lib); }); });
     $("lib-file").addEventListener("change", function (e) {
@@ -720,13 +951,15 @@
   function onKey(e) {
     if (e.target && /INPUT|SELECT|TEXTAREA/.test(e.target.tagName) || e.metaKey || e.ctrlKey || e.altKey) return;
     var k = e.key.toLowerCase(), A = DECKS[0], B = DECKS[1], map = { q: [toggle, A], p: [toggle, B], w: [cue, A], o: [cue, B], a: [doSync, A], l: [doSync, B] };
-    if (map[k]) { map[k][0](map[k][1]); e.preventDefault(); return; }
+    if (map[k]) { emit("manual"); map[k][0](map[k][1]); e.preventDefault(); return; }
+    if (k === "z") { rewind(A); e.preventDefault(); return; }
+    if (k === "x") { rewind(B); e.preventDefault(); return; }
     var hi = "1234".indexOf(k), hj = "7890".indexOf(k);
     if (hi >= 0) { hotCue(A, hi); e.preventDefault(); } else if (hj >= 0) { hotCue(B, hj); e.preventDefault(); }
   }
 
   /* ---------------- crate list ---------------- */
-  var libTab = "beats";
+  var libTab = "beats", LIBTABS = {};
   function row(item) {
     var r = document.createElement("div");
     r.className = "lib-row";
@@ -734,7 +967,8 @@
     r.querySelector("strong").textContent = item.name; r.querySelector(".mono").textContent = item.sub || "";
     r.querySelector(".to-a").addEventListener("click", function () { loadInto(DECKS[0], item); });
     r.querySelector(".to-b").addEventListener("click", function () { loadInto(DECKS[1], item); });
-    if (item.url) { var a = document.createElement("a"); a.className = "btn small ghost"; a.textContent = "Download WAV"; a.href = item.url; a.download = item.name.replace(/[^\w\- ]+/g, "").replace(/\s+/g, "_") + ".wav"; r.querySelector(".lib-acts").appendChild(a); }
+    if (item.url) { var ext = item.ext || "wav", a = document.createElement("a"); a.className = "btn small ghost"; a.textContent = "Download " + ext.toUpperCase(); a.href = item.url; a.download = item.name.replace(/[^\w\- ]+/g, "").replace(/\s+/g, "_") + "." + ext; r.querySelector(".lib-acts").appendChild(a); }
+    if (item.noDeck) { r.querySelector(".to-a").remove(); r.querySelector(".to-b").remove(); }
     return r;
   }
   function showLib(tab) {
@@ -744,7 +978,8 @@
     if (tab === "beats") BUILTIN.forEach(function (it) { list.appendChild(row(it)); });
     else if (tab === "mixes") {
       if (!MIXES.length) list.innerHTML = '<p class="empty">Press ● REC in the top bar to record your mix (master output, after the limiter). Recordings stay in this tab until you leave the page — download them to keep.</p>';
-      MIXES.forEach(function (m) { list.appendChild(row({ name: m.name, sub: fmtTime(m.dur) + " · WAV · " + (m.blob.size / 1048576).toFixed(1) + " MB", url: m.url, get: function () { return m.blob.arrayBuffer(); } })); });
+      MIXES.forEach(function (m) { list.appendChild(row({ name: m.name, sub: fmtTime(m.dur) + " · " + (m.ext || "wav").toUpperCase() + " · " + fmtSize(m.blob.size), url: m.url, ext: m.ext, noDeck: m.video, get: function () { return m.blob.arrayBuffer(); } })); });
+    } else if (LIBTABS[tab]) { LIBTABS[tab](list);
     } else {
       list.innerHTML = '<p class="empty">Reading the Island Pin Beats Vault…</p>';
       vaultList().then(function (rows) {
@@ -821,6 +1056,10 @@
   function frame() {
     DECKS.forEach(function (d) {
       drawOverview(d); drawZoom(d);
+      var ang = ((d.tt.hand && !d.tt.hand.bend ? d.tt.hp : pos(d)) * 360 / SEC_PER_REV) % 360;
+      if (d.el.disc._a !== ang) { d.el.disc.style.transform = "rotate(" + ang.toFixed(2) + "deg)"; d.el.disc._a = ang; }
+      var arm = d.buf ? 14 + 20 * clamp(pos(d) / d.buf.duration, 0, 1) : -14;
+      if (d.el.arm._a !== arm) { d.el.arm.style.transform = "rotate(" + arm.toFixed(2) + "deg)"; d.el.arm._a = arm; }
       if (d.buf) {
         var p = pos(d); d.el.time.textContent = fmtTime(p) + "." + Math.floor((p % 1) * 10); d.el.remain.textContent = "-" + fmtTime(d.buf.duration - p);
       }
@@ -832,7 +1071,7 @@
       if (mp >= 0.985) clipHold = performance.now() + 1500;
       $("clip").classList.toggle("on", performance.now() < clipHold);
       $("lim").classList.toggle("on", M.lim.reduction < -0.8);
-      if (X.rec && X.rec.on) $("rec-time").textContent = fmtTime(X.rec.n / ctx.sampleRate);
+      if (X.rec && X.rec.on) $("rec-time").textContent = recStatus();
     }
     requestAnimationFrame(frame);
   }
@@ -853,6 +1092,7 @@
     e.lin.classList.toggle("on", d.loop.in != null); e.lout.classList.toggle("on", d.loop.out != null);
     e.lexit.textContent = d.loop.on ? "EXIT" : "RELOOP"; e.lexit.classList.toggle("on", d.loop.on);
     e.root.classList.toggle("playing", d.playing); e.root.classList.toggle("loaded", !!d.buf);
+    e.vinyl.textContent = d.vinyl ? "VINYL" : "CDJ"; e.vinyl.classList.toggle("on", d.vinyl);
     var pc = CTL[d.id + ".pitch"]; if (pc && Math.abs(pc.get() * d.range - d.pitch) > 0.01) pc.set(d.pitch / d.range);
   }
   function nowPlaying() {
@@ -879,12 +1119,24 @@
     resetPeak: function () { masterPeakMax = 0; },
     set: function (name, v) { var c = CTL[name]; if (c) c.set(v, true); return !!c; },
     load: function (deck, id) { var it = BUILTIN.filter(function (b) { return b.id === id; })[0]; return it ? loadInto(BY[deck], it) : Promise.resolve(false); },
+    scratch: function (deck) { var d = BY[deck]; return { engine: scratchOK(d), scr: !!d.scr, hand: !!d.tt.hand, rate: d.scr && d.scrRep ? d.scrRep.rate : (d.playing ? rate(d) : 0), handVel: d.tt.hand ? handVel(d) : 0, lastFlick: d.lastFlick || 0, rateMax: d.tt.rmax || 0, rateMin: d.tt.rmin || 0, pos: pos(d), hp: d.tt.hp, vinyl: d.vinyl, playing: d.playing, src: !!d.src }; },
+    rewind: function (deck) { rewind(BY[deck]); },
     phase: function () { // beat-phase difference between the decks (in beats, heard positions)
       var A = DECKS[0], B = DECKS[1]; if (!A.bpm || !B.bpm) return null;
       var pa = ((pos(A) - A.grid) / beatLen(A)) % 1, pb = ((pos(B) - B.grid) / beatLen(B)) % 1, d = pa - pb; d -= Math.round(d); return d;
     }
   };
 
+  /* ---------------- API for the add-on modules (sampler, mic, video, library, auto DJ) ---------------- */
+  window.PFDJ = {
+    get ctx() { return ctx; }, get M() { return M; }, X: X, DECKS: DECKS, BY: BY, BUILTIN: BUILTIN, MIXES: MIXES, CTL: CTL,
+    on: on, emit: emit, ensureCtx: ensureCtx, toast: toast, fmtTime: fmtTime, fmtSize: fmtSize, clamp: clamp, db2g: db2g, decode: decode,
+    loadInto: loadInto, play: play, pause: pause, toggle: toggle, seek: seek, cue: cue, doSync: doSync, setPitch: setPitch, rewind: rewind,
+    pos: pos, rawPos: rawPos, rate: rate, effBpm: effBpm, beatLen: beatLen, estimateBpm: estimateBpm, applyDeckMix: applyDeckMix, applyXf: applyXf, xfGains: xfGains,
+    ui: ui, other: other, showLib: showLib, LIBTABS: LIBTABS, addMix: addMix, audioStream: audioStream, pickMime: pickMime, bpmFromName: bpmFromName, isMaster: isMaster,
+    control: control, savePrefs: savePrefs,
+    get libTab() { return libTab; }, get recording() { return !!(X.rec && X.rec.on); }
+  };
   buildUI();
   requestAnimationFrame(frame);
   document.addEventListener("pointerdown", function once() { ensureCtx(); document.removeEventListener("pointerdown", once, true); }, true);
