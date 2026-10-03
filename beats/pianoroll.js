@@ -127,7 +127,7 @@
       p.notes.forEach(function (n) {
         var x = n.s * tp, w = Math.max(3, n.l * tp), y = yOf(n.p), sel = n === st.sel;
         var a = 0.5 + 0.5 * n.v;
-        g.fillStyle = sel ? "rgba(255,255,255,.95)" : "rgba(167,139,250," + a.toFixed(3) + ")";
+        g.fillStyle = sel ? "rgba(255,255,255,.95)" : (n.i ? "rgba(45,212,191," : "rgba(167,139,250,") + a.toFixed(3) + ")"; // teal = layered instrument
         roundRect(g, x + 0.5, y + 1, w - 1, rh - 2, 3); g.fill();
         g.fillStyle = sel ? "#6d5bd0" : "rgba(11,13,18,.35)";
         g.fillRect(x + 0.5, y + rh - 3, Math.max(2, (w - 1) * n.v), 2);          // velocity bar
@@ -165,7 +165,7 @@
       var bw = clamp(st.colW * 0.3, 3, 8);
       p.notes.forEach(function (n) {
         var x = n.s * tp + 1, h = Math.max(2, n.v * (H - 10));
-        g.fillStyle = n === st.sel ? "#ffffff" : "rgba(167,139,250," + (0.45 + 0.55 * n.v).toFixed(3) + ")";
+        g.fillStyle = n === st.sel ? "#ffffff" : (n.i ? "rgba(45,212,191," : "rgba(167,139,250,") + (0.45 + 0.55 * n.v).toFixed(3) + ")";
         g.fillRect(x, H - 3 - h, bw, h);
         g.fillRect(x - 1, H - 4 - h, bw + 2, 2);
       });

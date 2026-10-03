@@ -2,7 +2,9 @@
  * A pattern is plain JSON, so it can be saved in slots, the library, songs, exported/imported as a file, and later
  * produced by loop banks:
  *   { v: 1, name, inst, bars: 1|2|4, grid: "1/8"|"1/16"|"1/16t"|"1/32", key: 0–11, scale: "off"|"major"|"minor"|…,
- *     snapScale: bool, notes: [{ p: midi, s: startTick, l: lengthTicks, v: velocity 0.05–1 }] }
+ *     snapScale: bool, notes: [{ p: midi, s: startTick, l: lengthTicks, v: velocity 0.05–1, i?: instrument id }] }
+ * A note's optional `i` plays that note on another instrument (layered loops, e.g. steel pan over strings); notes
+ * without it use the pattern's `inst`. Older data has no `i`, so it loads unchanged.
  * Time is in ticks: 24 per beat, 96 per 4/4 bar (1/16 = 6, 1/16 triplet = 4, 1/8 = 12).
  */
 (function () {
@@ -49,13 +51,22 @@
       if (!isFinite(pitch) || !isFinite(s) || pitch < LOW || pitch > HIGH || s < 0 || s >= L) return;
       if (!isFinite(l) || l < 1) l = STEP;
       l = Math.min(l, L - s);
-      var key = pitch + ":" + s;
+      var ni = typeof n.i === "string" && n.i !== p.inst && (!instOk || instOk(n.i)) ? n.i.slice(0, 24) : null;
+      var key = pitch + ":" + s + ":" + (ni || "");
       if (seen[key]) return; // no stacked duplicates
       seen[key] = 1;
-      p.notes.push({ p: pitch, s: s, l: l, v: isFinite(v) ? clamp(Math.round(v * 100) / 100, 0.05, 1) : 0.8 });
+      var nn = { p: pitch, s: s, l: l, v: isFinite(v) ? clamp(Math.round(v * 100) / 100, 0.05, 1) : 0.8 };
+      if (ni) nn.i = ni;
+      p.notes.push(nn);
     });
     sortNotes(p.notes);
     return p;
+  }
+  /* every instrument a pattern uses: its own plus any per-note layers */
+  function instsOf(p) {
+    var out = [p && p.inst || DEFAULT_INST];
+    ((p && p.notes) || []).forEach(function (n) { if (n.i && out.indexOf(n.i) === -1) out.push(n.i); });
+    return out;
   }
   function gainLin(p) { return p && p.gain ? Math.pow(10, p.gain / 20) : 1; }
   function clone(p) { return JSON.parse(JSON.stringify(p)); }
@@ -73,7 +84,12 @@
     var oldL = lenTicks(p), newL = bars * TPBAR;
     if (newL > oldL && repeat && p.notes.length) {
       var src = p.notes.slice();
-      for (var off = oldL; off < newL; off += oldL) src.forEach(function (n) { if (n.s + off < newL) p.notes.push({ p: n.p, s: n.s + off, l: Math.min(n.l, newL - n.s - off), v: n.v }); });
+      for (var off = oldL; off < newL; off += oldL) src.forEach(function (n) {
+        if (n.s + off >= newL) return;
+        var c = { p: n.p, s: n.s + off, l: Math.min(n.l, newL - n.s - off), v: n.v };
+        if (n.i) c.i = n.i;
+        p.notes.push(c);
+      });
     }
     p.bars = bars;
     p.notes = p.notes.filter(function (n) { return n.s < newL; });
@@ -183,7 +199,7 @@
 
   window.IPBPianoData = {
     TPB: TPB, TPBAR: TPBAR, STEP: STEP, LOW: LOW, HIGH: HIGH, GRIDS: GRIDS, BARS: BARS, SCALES: SCALES, SCALE_NAMES: SCALE_NAMES, NOTE_NAMES: NOTE_NAMES,
-    empty: empty, gainLin: gainLin, normalize: normalize, clone: clone, hasNotes: hasNotes, lenTicks: lenTicks, transpose: transpose, inRange: inRange, setBars: setBars,
+    empty: empty, gainLin: gainLin, instsOf: instsOf, normalize: normalize, clone: clone, hasNotes: hasNotes, lenTicks: lenTicks, transpose: transpose, inRange: inRange, setBars: setBars,
     scalePcs: scalePcs, inScale: inScale, snapPitch: snapPitch, notesStarting: notesStarting, fromChords: fromChords,
     toJSON: toJSON, fromJSON: fromJSON, noteName: noteName, sortNotes: sortNotes, Library: Library
   };

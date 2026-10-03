@@ -767,6 +767,7 @@
   }
   function play(startAt) {
     if (!ensureCtx() || playing) return;
+    pianoSamplesLoad();
     var A = arrangement();
     if (A && S.cueBar >= totalBars(A)) S.cueBar = 0;
     playing = true;
@@ -1573,7 +1574,22 @@
   function loopInfo(k) { var L = plen(); return { k: k, patStep: k % L, fire: true, feel: "full", mb: k / STEPS, m16: k }; }
   /* Offline bounce of the pattern + chord loop (clean render, no live keys) through the same graph as live playback.
      With a song structure selected, "Full song" renders the whole arrangement. */
+  /* sampled instruments (Orchestra, Marimba) used by any piano slot: fetch + decode once, before offline renders */
+  function pianoInsts() {
+    var out = [];
+    SLOT_IDS.forEach(function (id) { var p = S.piano.slots[id]; if (p) PD.instsOf(p).forEach(function (i) { if (out.indexOf(i) === -1) out.push(i); }); });
+    return out;
+  }
+  function pianoSamplesLoad() { return PK.load ? PK.load(pianoInsts()) : Promise.resolve(true); }
   function bounce(barsSel) {
+    if (PK.ready && !PK.ready(pianoInsts())) {
+      $("rec-status").textContent = "Loading orchestral samples…";
+      pianoSamplesLoad().then(function () { bounceNow(barsSel); });
+      return;
+    }
+    bounceNow(barsSel);
+  }
+  function bounceNow(barsSel) {
     var sd = stepDur();
     var A = arrangement();
     var songMode = barsSel === "song";
@@ -3119,7 +3135,8 @@
   function refToggleAB() { refSetAB(ref.ab === "B" ? "A" : "B"); }
 
   /* ---- level match: offline render of the loop (same engine as Bounce, nothing saved) ---- */
-  function refRenderMix(bars) {
+  function refRenderMix(bars) { return pianoSamplesLoad().then(function () { return refRenderMixNow(bars); }); }
+  function refRenderMixNow(bars) {
     var sd = stepDur(), total = bars * STEPS, dur = total * sd + 0.5;
     var c = new OfflineAudioContext(2, Math.ceil(SR * dur), SR);
     var G = makeGraph(c, false);
@@ -3711,7 +3728,7 @@
     var ns = PD.notesStarting(p, t0, t0 + PD.STEP), gl = PD.gainLin(p);
     for (var i = 0; i < ns.length; i++) {
       var n = ns[i];
-      G.preg.push(PK.play(c, G.groups.piano, n.p, t + (n.s - t0) * tickSec + (n.s === t0 ? sw : 0), n.l * tickSec, n.v, p.inst, gl));
+      G.preg.push(PK.play(c, G.groups.piano, n.p, t + (n.s - t0) * tickSec + (n.s === t0 ? sw : 0), n.l * tickSec, n.v, n.i || p.inst, gl));
     }
     if (G.preg.length > 96) G.preg = G.preg.filter(function (v) { return v.end > c.currentTime; });
   }
@@ -3730,12 +3747,13 @@
   function pianoSummary() {
     var p = pianoPat(), inst = PK.BY_ID[p.inst];
     return "Pattern " + S.piano.slot + (p.name ? " · " + p.name : "") + " · " + p.bars + " bar" + (p.bars > 1 ? "s" : "") + " · " + p.notes.length + " note" + (p.notes.length === 1 ? "" : "s") +
-      " · " + (inst ? inst.name : p.inst) + (p.scale !== "off" ? " · " + PD.NOTE_NAMES[p.key] + " " + PD.SCALE_NAMES[p.scale].toLowerCase() : "") +
+      " · " + patInstLabel(p) + (p.scale !== "off" ? " · " + PD.NOTE_NAMES[p.key] + " " + PD.SCALE_NAMES[p.scale].toLowerCase() : "") +
       (p.gain ? " · level " + (p.gain > 0 ? "+" : "") + p.gain + " dB" : "");
   }
   function pianoUI(refreshEditor, scroll) {
     if (!pianoEd) return;
     var p = pianoPat();
+    pianoSamplesLoad(); // no-op unless a slot uses a sampled instrument (cached after the first load)
     if (refreshEditor) pianoEd.refresh(scroll);
     document.querySelectorAll("#pn-slots button[data-slot]").forEach(function (b) {
       var id = b.dataset.slot;
@@ -3807,7 +3825,7 @@
         '<button type="button" class="btn small ghost" data-act="dup">Duplicate</button>' +
         '<button type="button" class="btn small ghost" data-act="del">Delete</button></div>';
       row.querySelector("strong").textContent = it.name;
-      row.querySelector(".mono").textContent = p.bars + " bar" + (p.bars > 1 ? "s" : "") + " · " + p.notes.length + " notes · " + (inst ? inst.name : p.inst) +
+      row.querySelector(".mono").textContent = p.bars + " bar" + (p.bars > 1 ? "s" : "") + " · " + p.notes.length + " notes · " + patInstLabel(p) +
         (p.scale !== "off" ? " · " + PD.NOTE_NAMES[p.key] + " " + PD.SCALE_NAMES[p.scale].toLowerCase() : "") + " · " + fmtDate(it.updated);
       row.dataset.id = it.id;
       list.appendChild(row);
@@ -3916,7 +3934,11 @@
     document.querySelectorAll("#pn-tool button").forEach(function (b) { b.addEventListener("click", function () { pianoEd.setTool(b.dataset.tool); pianoUI(false); }); });
     $("pn-zin").addEventListener("click", function () { pianoEd.zoom(1.25); });
     $("pn-zout").addEventListener("click", function () { pianoEd.zoom(0.8); });
-    isel.addEventListener("change", function () { pianoPat().inst = isel.value; saveSession(); pianoUI(false); pianoPreview(60, 0.8); setTimeout(function () { pianoPreview(64, 0.7); pianoPreview(67, 0.7); }, 90); });
+    isel.addEventListener("change", function () {
+      pianoPat().inst = isel.value; saveSession(); pianoUI(false);
+      var go = function () { pianoPreview(60, 0.8); setTimeout(function () { pianoPreview(64, 0.7); pianoPreview(67, 0.7); }, 90); };
+      if (PK.ready && !PK.ready(isel.value)) { toast("Loading " + klInstName(isel.value) + " samples…"); PK.load(isel.value).then(go); } else go();
+    });
     $("pn-key").addEventListener("change", function (e) { pianoPat().key = +e.target.value; pianoEd.paintKeys(); pianoUI(false); saveSession(); });
     $("pn-scale").addEventListener("change", function (e) { pianoPat().scale = e.target.value; pianoEd.paintKeys(); pianoUI(false); saveSession(); });
     $("pn-snapscale").addEventListener("change", function (e) { pianoPat().snapScale = e.target.checked; saveSession(); });
@@ -3978,6 +4000,8 @@
    */
   var KL = window.IPBKeysLoops, klPrev = null, klReady = false, klCat = "boombap", klWhere = "beats";
   function klInstName(id) { var i = PK.BY_ID[id]; return i ? i.name : id; }
+  function patInstLabel(p) { return PD.instsOf(p).map(klInstName).join(" + "); } // "Steel Pan + Ensemble Strings (legato) + …"
+  function loopInstLabel(L) { return (L.insts || [L.inst]).map(klInstName).join(" + "); }
   function klTarget() { var v = $("kl-slot").value; return SLOT_IDS.indexOf(v) !== -1 ? v : S.piano.slot; }
   function klBuild(id) { return KL.build(id, { key: S.songKey }); }
   function klKeyUI() {
@@ -3989,7 +4013,7 @@
     $("kl-cat").textContent = cat ? cat.name : "Keys loops";
     $("kl-name").textContent = L ? L.name : "Pick a keys loop";
     $("kl-meta").textContent = L
-      ? "Piano pattern " + S.piano.slot + " · " + PD.NOTE_NAMES[p.key] + " " + (KL.MODE_NAMES[p.scale] || p.scale) + " · " + klInstName(p.inst) + " · at " + S.bpm + " BPM"
+      ? "Piano pattern " + S.piano.slot + " · " + PD.NOTE_NAMES[p.key] + " " + (KL.MODE_NAMES[p.scale] || p.scale) + " · " + patInstLabel(p) + " · at " + S.bpm + " BPM"
       : KL.LOOPS.length + " hip-hop piano, Rhodes & synth loops · follow song key + BPM";
     $("kl-open").style.setProperty("--kit", cat ? cat.color : "#a78bfa");
     var sel = $("kl-slot"); sel.options[0].textContent = "Current pattern (" + S.piano.slot + ")";
@@ -3998,7 +4022,7 @@
     var tgt = klTarget(), cur = klSlotLoop(S.piano.slot);
     document.querySelectorAll(".kl-card").forEach(function (card) {
       var L = KL.BY_ID[card.dataset.loop];
-      card.querySelector(".kc-meta").textContent = KL.keyLabel(L, S.songKey) + " · " + L.bpm + " BPM · " + klInstName(L.inst) + " · " + L.bars + " bar" + (L.bars > 1 ? "s" : "");
+      card.querySelector(".kc-meta").textContent = KL.keyLabel(L, S.songKey) + " · " + L.bpm + " BPM · " + loopInstLabel(L) + " · " + L.bars + " bar" + (L.bars > 1 ? "s" : "");
       card.querySelector(".kl-load").textContent = "Load → " + tgt;
       card.classList.toggle("active", !!cur && cur.id === L.id);
       var on = !!klPrev && klPrev.id === L.id;
@@ -4056,10 +4080,20 @@
     klRefreshCards();
   }
   /* one pass of the loop (repeated up to 4 bars), in the song key at the song BPM + swing */
+  var klLoading = null;
   function klPreview(id) {
     if (klPrev && klPrev.id === id) { klStopPreview(); return; }
     klStopPreview();
     if (!ensureCtx()) return;
+    var Li = KL.BY_ID[id], need = Li && (Li.insts || [Li.inst]);
+    if (need && PK.ready && !PK.ready(need)) { // orchestral loops: fetch their sample sets first (once), then preview
+      if (klLoading === id) return;
+      klLoading = id;
+      toast("Loading orchestral samples for “" + Li.name + "”…");
+      PK.load(need).then(function () { if (klLoading === id) { klLoading = null; klPreview(id); } });
+      return;
+    }
+    klLoading = null;
     var p = klBuild(id), sd = stepDur(), tick = sd / PD.STEP, L = p.bars * PD.TPBAR, passes = Math.max(1, Math.round(4 / p.bars));
     var t0 = ctx.currentTime + 0.08, synced = false;
     if (playing && drumsOn()) { var barK = Math.ceil(curK / STEPS) * STEPS; t0 = nextTime + (barK - curK) * sd; synced = true; }
@@ -4067,7 +4101,7 @@
     for (var r = 0; r < passes; r++) {
       p.notes.forEach(function (n) {
         var s16 = Math.floor(n.s / PD.STEP), sw = (n.s % PD.STEP === 0 && s16 % 2 === 1) ? sd * (S.swing / 100) : 0;
-        voices.push(PK.play(ctx, dest, n.p, t0 + (r * L + n.s) * tick + sw, n.l * tick, n.v, p.inst, PD.gainLin(p)));
+        voices.push(PK.play(ctx, dest, n.p, t0 + (r * L + n.s) * tick + sw, n.l * tick, n.v, n.i || p.inst, PD.gainLin(p)));
       });
     }
     var end = t0 + passes * L * tick;
@@ -4428,7 +4462,7 @@
     },
     keysLoops: function () {
       return { count: KL.LOOPS.length, cats: KL.CATS.map(function (c) { return c.id; }), songKey: S.songKey, target: klTarget(), where: klWhere,
-        open: !$("kl-browser").hidden, cat: klCat, visible: document.querySelectorAll(".kl-card:not([hidden])").length,
+        open: !$("kl-browser").hidden, cat: klCat, loading: klLoading, visible: document.querySelectorAll(".kl-card:not([hidden])").length,
         preview: klPrev ? { id: klPrev.id, t0: klPrev.t0, end: klPrev.end, synced: klPrev.synced, notes: klPrev.notes, now: ctx.currentTime, kAt: klPrev.synced ? curK + (klPrev.t0 - nextTime) / stepDur() : null } : null,
         peakNow: ctx && masterAnalyser ? peak(masterAnalyser) : 0 };
     },

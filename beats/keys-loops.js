@@ -1,6 +1,7 @@
-/* Island Pin Beats — hip-hop keys / piano loop bank (window.IPBKeysLoops).
- * Every loop is ORIGINAL: chord progressions, voicings, rhythms and melodies written for this app, synthesized in the
- * browser by keys-instruments.js — no samples, no recreated records. Each loop builds into a plain Piano Roll pattern
+/* Island Pin Beats — keys / piano / orchestra loop bank (window.IPBKeysLoops).
+ * Every loop is ORIGINAL: chord progressions, voicings, rhythms and melodies written for this app and played in the
+ * browser by keys-instruments.js (synth voices, plus CC0 VSCO-2 CE multisamples for the Orchestra sounds) — no
+ * recreated records. Each loop builds into a plain Piano Roll pattern
  * (pianoroll-data.js format), transposed to the song key; time is in ticks, so loops always follow the song BPM + swing.
  *
  * Loop definition (all in the loop's own reference key):
@@ -10,6 +11,10 @@
  *   lh    "X-------X-------"|null   left-hand rhythm (default: one hit per chord); lhv "r"|"r5"|"r8"|"r7"|"r10"
  *   arp   { rate, seq, len, acc }   arpeggiate the right-hand voicing instead of comping (rate/len in ticks)
  *   mel   "E5@0+3 D5@3+1!"          melody notes: pitch@start+length in 16ths (…t = ticks), ! accent, ~ soft
+ *   swing8 true                     jazz swing: off-beat 8ths move to the triplet position (grid "1/16t")
+ *   layers [{ inst, rh, lh, arp, mel, style, rhr, … vel }]   extra instruments over the same chords (Orchestra / Island
+ *                                   loops); their notes carry a per-note `i` so one Piano Roll pattern plays the ensemble.
+ *                                   A layer has no left hand unless it sets `lh`.
  */
 (function () {
   "use strict";
@@ -146,7 +151,12 @@
     { id: "drill", name: "Drill", color: "#e11d48" },
     { id: "westcoast", name: "West Coast / G-Funk", color: "#22d3ee" },
     { id: "dark", name: "Dark / Cinematic", color: "#94a3b8" },
-    { id: "rnb", name: "R&B-Rap", color: "#f472b6" }
+    { id: "rnb", name: "R&B-Rap", color: "#f472b6" },
+    { id: "orchestra", name: "Orchestra", color: "#818cf8" },
+    { id: "islandorch", name: "Island Orchestra", color: "#2dd4bf" },
+    { id: "jazz", name: "Jazz", color: "#38bdf8" },
+    { id: "rap", name: "Rap", color: "#d946ef" },
+    { id: "hiphop", name: "Hip-Hop", color: "#84cc16" }
   ];
   var LOOPS = [
     /* Boom-Bap */
@@ -291,12 +301,136 @@
     { id: "after-hours", name: "After Hours", cat: "rnb", inst: "lofi", bpm: 96, key: "E", mode: "major", bars: 4, vel: 0.74,
       desc: "Dusty electric piano with a hook-ready top melody.",
       prog: "Emaj9:1 C#m9:1 Amaj9:1 B13sus:1", style: "rootless", rh: "X--x--x---x-x---", lh: "X-------X-------", lhv: "r", rhr: [50, 67],
-      mel: "G#5@2+2 B5@4+4 F#5@10+4 E5@18+2 G#5@20+4 D#5@26+4 C#6@34+2 B5@36+4 G#5@42+4 A5@50+2 G#5@52+2 F#5@54+2 E5@56+8" }
+      mel: "G#5@2+2 B5@4+4 F#5@10+4 E5@18+2 G#5@20+4 D#5@26+4 C#6@34+2 B5@36+4 G#5@42+4 A5@50+2 G#5@52+2 F#5@54+2 E5@56+8" },
+    /* Orchestra (sampled VSCO-2 CE strings / brass / winds; layered parts play from one pattern) */
+    { id: "siege-ostinato", name: "Siege Ostinato", cat: "orchestra", inst: "ostrings", bpm: 84, key: "C", mode: "minor", bars: 4,
+      desc: "Driving 16th string ostinato over a low pedal, brass stabs and an orchestral hit on the one. Battle-rap intro.",
+      prog: "Cm:1 Ab/C:1 Fm/C:1 G/B:1", style: "triad", rhr: [55, 72], lh: "X---------------", lhv: "r8", lhLo: 36,
+      arp: { rate: 6, seq: [0, 1, 2, 1], acc: [1, 0.66, 0.8, 0.66], len: 5 },
+      layers: [{ inst: "brass", style: "close", rhr: [55, 70], rh: "X.....X.........", vel: 0.82 },
+               { inst: "orchhit", mel: "C4@0+4!", vel: 0.85 }] },
+    { id: "cathedral-march", name: "Cathedral March", cat: "orchestra", inst: "ostrings", bpm: 78, key: "D", mode: "minor", bars: 4, vel: 0.72,
+      desc: "Slow processional: legato strings, choir-like pad, brass on the march rhythm, hits to close the phrase.",
+      prog: "Dm:1 Bb:1 F/A:1 Gm:0.5 A:0.5", style: "open", rhr: [50, 72], rh: "X---------------", lh: "X-------X-------", lhv: "r8", lhLo: 38,
+      layers: [{ inst: "pad", style: "close", rhr: [57, 76], rh: "X---------------", vel: 0.55 },
+               { inst: "brass", style: "close", rhr: [58, 74], rh: "X.....x.....x...", vel: 0.78 },
+               { inst: "orchhit", mel: "D4@0+4! A3@56+2 A3@60+2!", vel: 0.8 }] },
+    { id: "pizzicato-heist", name: "Pizzicato Heist", cat: "orchestra", inst: "pizz", bpm: 92, key: "E", mode: "minor", bars: 4,
+      desc: "Sneaky pizzicato on the 8ths, clarinet melody and low strings. Storytelling, caper energy.",
+      prog: "Em:1 C:1 Am6:1 B7:1", style: "triad", rhr: [55, 71], rh: "X.x.X.x.X.x.X.x.", lh: "X...x...X...x...", lhv: "r", lhLo: 36,
+      layers: [{ inst: "clarinet", vel: 0.74, mel: "B4@0+2 E5@2+2 G5@4+2 F#5@6+1 E5@7+1 D#5@8+4 E5@12+4 G5@16+2 E5@18+2 C5@20+4 B4@24+2 C5@26+2 E5@28+4 " +
+                 "F#5@32+2 A5@34+2 C6@36+4 B5@40+2 A5@42+2 F#5@44+4 D#5@48+2 F#5@50+2 A5@52+2 G5@54+2 F#5@56+8" },
+               { inst: "ostrings", style: "open", rhr: [47, 64], rh: "X---------------", vel: 0.5 }] },
+    { id: "harbour-overture", name: "Harbour Overture", cat: "orchestra", inst: "steelpan", bpm: 98, key: "F", mode: "major", bars: 4,
+      desc: "Island orchestra: steel-pan melody and offbeat pan chords over strings, a pizzicato tresillo bass and a flute answer.",
+      prog: "F:1 Dm7:1 Bbmaj7:1 C9sus:0.5 C7:0.5", style: "triad", rhr: [53, 67], rh: "..x...x...x...x.", lh: null,
+      mel: "C5@0+3 F5@3+3 A5@6+2 G5@8+2 A5@10+2 C6@12+4 D6@16+3 C6@19+3 A5@22+2 F5@24+2 A5@26+2 G5@28+4 " +
+           "F5@32+3 D5@35+3 Bb4@38+2 D5@40+2 F5@42+2 A5@44+4 G5@48+3 F5@51+3 D5@54+2 E5@56+2 G5@58+2 Bb5@60+4",
+      layers: [{ inst: "ostrings", style: "open", rhr: [53, 74], rh: "X-------X-------", vel: 0.5 },
+               { inst: "pizz", lh: "X..x..x.X.......", lhv: "r", lhLo: 36, vel: 0.85 },
+               { inst: "flute", mel: "C6@44+2 D6@46+2 C6@52+2 Bb5@54+2 G5@56+8~", vel: 0.62 }] },
+    { id: "cane-field-strings", name: "Cane Field Strings", cat: "orchestra", inst: "marimba", bpm: 96, key: "A", mode: "minor", bars: 4,
+      desc: "Island orchestra: 3-3-2 marimba ostinato, warm strings, brass skanks on 2 and 4, pizzicato bass.",
+      prog: "Am7:1 Fmaj7:1 Dm7:1 E7sus:0.5 E7:0.5", style: "close", rhr: [57, 76], lh: null,
+      arp: { rate: 6, seq: [0, 1, 2, 1, 3, 2, 1, 2], acc: [1, 0.55, 0.62, 0.95, 0.55, 0.62, 0.9, 0.55], len: 5 },
+      layers: [{ inst: "ostrings", style: "open", rhr: [50, 69], rh: "X-------X-------", vel: 0.5 },
+               { inst: "brass", style: "close", rhr: [57, 72], rh: "....X.......X..x", vel: 0.7 },
+               { inst: "pizz", lh: "X.....x.X.....x.", lhv: "r", lhLo: 33, vel: 0.85 }] },
+
+    /* Island Orchestra */
+    { id: "sunrise-pan-suite", name: "Sunrise Pan Suite", cat: "islandorch", inst: "steelpan", bpm: 104, key: "D", mode: "major", bars: 4,
+      desc: "Bright steel-pan melody, flute descant, marimba offbeats and legato strings. Feel-good island hook.",
+      prog: "Dmaj7:1 Bm7:1 Em9:1 A7sus:0.5 A7:0.5", style: "close", lh: null,
+      mel: "A5@0+2 F#5@2+2 A5@4+1 B5@5+1 C#6@6+4 A5@10+2 F#5@12+4 D6@16+2 C#6@18+1 B5@19+3 F#5@22+2 D5@24+2 F#5@26+2 B5@28+4 " +
+           "G5@32+2 F#5@34+2 E5@36+2 B5@38+4 A5@42+2 G5@44+2 F#5@46+2 E5@48+3 D5@51+3 E5@54+2 G5@56+3 C#6@59+3 E6@62+2",
+      layers: [{ inst: "ostrings", style: "close", rhr: [55, 72], rh: "X-------x-------", vel: 0.48 },
+               { inst: "marimba", style: "triad", rhr: [50, 64], rh: "..x...x...x...xx", vel: 0.6 },
+               { inst: "flute", mel: "C#6@0+8~ D6@16+8~ B5@32+8~ C#6@56+8~", vel: 0.55 },
+               { inst: "pizz", lh: "X...x...X...x...", lhv: "r", lhLo: 38, vel: 0.8 }] },
+    { id: "calypso-concerto", name: "Calypso Concerto", cat: "islandorch", inst: "brass", bpm: 112, key: "G", mode: "major", bars: 4,
+      desc: "Soca-paced brass stabs answering a steel-pan line, pizzicato bass bounce and string bed.",
+      prog: "G:1 Em7:1 C6:1 D7:1", style: "close", rhr: [55, 72], rh: "X..X..X...X..X..", lh: null, vel: 0.82,
+      layers: [{ inst: "steelpan", vel: 0.8, mel: "B5@0+2 D6@2+2 B5@4+2 G5@6+2 A5@8+2 B5@10+2 D6@12+4 E6@16+3 D6@19+3 B5@22+2 G5@24+2 B5@26+2 E5@28+4 " +
+                 "A5@32+2 G5@34+2 E5@36+2 C6@38+4 A5@42+2 G5@44+4 F#5@48+2 A5@50+2 C6@52+2 A5@54+2 F#5@56+2 E5@58+2 D5@60+4" },
+               { inst: "ostrings", style: "open", rhr: [50, 67], rh: "X-------X-------", vel: 0.45 },
+               { inst: "pizz", lh: "X..x..x.X..x..x.", lhv: "r", lhLo: 36, vel: 0.85 },
+               { inst: "orchhit", mel: "G3@0+4!", vel: 0.75 }] },
+    { id: "lagoon-kalimba", name: "Lagoon Kalimba", cat: "islandorch", inst: "kalimba", bpm: 88, key: "E", mode: "major", bars: 4,
+      desc: "Rippling kalimba arpeggio, a low clarinet tune and a soft string pad. Chill beach-at-dusk vibe.",
+      prog: "Emaj9:1 C#m7:1 Amaj7:1 B7sus:1", style: "close", rhr: [59, 78], lh: null,
+      arp: { rate: 6, seq: [0, 2, 1, 3, 2, 1, 3, 2], acc: [1, 0.6, 0.8, 0.6, 0.9, 0.6, 0.8, 0.6], len: 6 },
+      layers: [{ inst: "clarinet", vel: 0.7, mel: "B4@0+6 G#4@6+2 F#4@8+8 E4@16+4 G#4@20+4 B4@24+8 C#5@32+6 B4@38+2 A4@40+8 F#4@48+4 A4@52+4 B4@56+8" },
+               { inst: "ostrings", style: "open", rhr: [47, 64], rh: "X---------------", vel: 0.42 },
+               { inst: "marimba", lh: "X.......x.......", lhv: "r", lhLo: 40, vel: 0.75 }] },
+    { id: "carnival-fanfare", name: "Carnival Fanfare", cat: "islandorch", inst: "brass", bpm: 118, key: "Bb", mode: "major", bars: 4, vel: 0.82,
+      desc: "Road-march energy: brass fanfare, orchestral hits, marimba runs, strings and a bouncing pizzicato bass.",
+      prog: "Bb:1 F/A:1 Gm7:1 Eb:0.5 F7:0.5", style: "close", rhr: [58, 74], rh: "X.xX..x.X.xX..x.", lh: null,
+      layers: [{ inst: "orchhit", mel: "Bb3@0+3! F3@32+3!", vel: 0.8 },
+               { inst: "marimba", style: "triad", rhr: [62, 79], arp: { rate: 6, seq: [0, 1, 2, 1], acc: [1, 0.6, 0.8, 0.6], len: 5 }, vel: 0.66 },
+               { inst: "ostrings", style: "open", rhr: [50, 70], rh: "X-------X-------", vel: 0.45 },
+               { inst: "pizz", lh: "X..X..X.X..X..X.", lhv: "r", lhLo: 34, vel: 0.85 }] },
+
+    /* Jazz (straight-ahead: ii–V–I, turnarounds, swing, walking bass) */
+    { id: "blue-room-changes", name: "Blue Room Changes", cat: "jazz", inst: "grand", bpm: 112, key: "F", mode: "major", bars: 4, swing8: true, grid: "1/16t",
+      desc: "Swinging ii–V–I–VI in F: rootless Charleston comping over a walking bass line.",
+      prog: "Gm9:1 C13:1 Fmaj9:1 D7b9:1", style: "rootless", rhr: [55, 72], rh: "X-----x---------", lh: null,
+      mel: "G2@0+4~ A2@4+4~ Bb2@8+4~ B2@12+4~ C3@16+4~ E3@20+4~ G2@24+4~ Bb2@28+4~ A2@32+4~ C3@36+4~ F2@40+4~ A2@44+4~ D3@48+4~ F#2@52+4~ A2@56+4~ F#2@60+4~" },
+    { id: "nine-oclock-turnaround", name: "Nine O'Clock Turnaround", cat: "jazz", inst: "rhodes", bpm: 104, key: "Eb", mode: "major", bars: 4, swing8: true, grid: "1/16t",
+      desc: "Two chords a bar: I–VI–ii–V then iii–VI–ii–V in E-flat, swung Rhodes stabs and a walking bass.",
+      prog: "Ebmaj9:0.5 C7b9:0.5 Fm9:0.5 Bb13:0.5 Gm7:0.5 C7alt:0.5 Fm9:0.5 Bb7b9:0.5", style: "rootless", rhr: [55, 72], rh: "X.....x.", lh: null,
+      mel: "Eb2@0+4~ G2@4+4~ C3@8+4~ Bb2@12+4~ Ab2@16+4~ F2@20+4~ Bb2@24+4~ Ab2@28+4~ G2@32+4~ Bb2@36+4~ C3@40+4~ E2@44+4~ F2@48+4~ Ab2@52+4~ Bb2@56+4~ D3@60+4~" },
+    { id: "lantern-ballad", name: "Lantern Ballad", cat: "jazz", inst: "grand", bpm: 70, key: "Ab", mode: "major", bars: 4, vel: 0.74,
+      desc: "Jazz ballad: rolled drop-2 chords and a singing top line over ii–V–I–VI in A-flat.",
+      prog: "Bbm9:1 Eb13:1 Abmaj9:1 F7b9:1", style: "rootless", drop2: true, rhr: [53, 70], rh: "X-------..x-----", lh: "X-------X-------", lhv: "r", strum: 1,
+      mel: "F5@0+6 Eb5@6+2 Db5@8+8 G5@16+6 F5@22+2 Db5@24+8 C5@32+4 Eb5@36+4 G5@40+8 A5@48+6 Gb5@54+2 Eb5@56+8" },
+    { id: "organ-trio-strut", name: "Organ Trio Strut", cat: "jazz", inst: "organ", bpm: 116, key: "Bb", mode: "major", bars: 4, swing8: true, grid: "1/16t",
+      desc: "Organ-trio swing: ii–V–I–VI and ii–V–I in B-flat, left-hand walking bass and crisp comping.",
+      prog: "Cm7:0.5 F7:0.5 Bbmaj7:0.5 G7b9:0.5 Cm9:0.5 F13:0.5 Bb6:1", style: "rootless", rhr: [62, 78], rh: "X.....x.......x.", lh: null,
+      mel: "C4@0+4~ Eb4@4+4~ F3@8+4~ A3@12+4~ Bb3@16+4~ D4@20+4~ G3@24+4~ B3@28+4~ C4@32+4~ G3@36+4~ F3@40+4~ Eb3@44+4~ D3@48+4~ F3@52+4~ G3@56+4~ B3@60+4~" },
+
+    /* Rap (sparse, hard, lots of space) */
+    { id: "two-note-threat", name: "Two-Note Threat", cat: "rap", inst: "grand", bpm: 90, key: "F#", mode: "minor", bars: 2, vel: 0.86,
+      desc: "Two piano notes and a low octave hit. All the space in the world for the bars.",
+      prog: "F#m:2", style: "close", rh: null, lh: "X---------------", lhv: "r8", lhLo: 30,
+      mel: "C#5@0+3! D5@4+2 C#5@16+3! A4@22+6~" },
+    { id: "cold-bell-toll", name: "Cold Bell Toll", cat: "rap", inst: "bell", bpm: 82, key: "D", mode: "minor", bars: 4, vel: 0.8,
+      desc: "A tolling bell motif over deep piano octaves. Hard, slow, serious.",
+      prog: "Dm:1 Bb:1 Dm:1 Gm:1", style: "triad", rh: null, lh: null,
+      mel: "A5@0+4! A5@6+2 Bb5@16+6! A5@32+4! A5@38+2 G5@48+6!",
+      layers: [{ inst: "grand", mel: "D2@0+12 D3@0+12 Bb1@16+12 Bb2@16+12 D2@32+12 D3@32+12 G1@48+12 G2@48+12", vel: 0.76 }] },
+    { id: "hallway-sirens", name: "Hallway Sirens", cat: "rap", inst: "grand", bpm: 92, key: "G", mode: "harmonic", bars: 4,
+      desc: "One dark piano stab and a late answer per bar, a high warning note on top. Menacing, minimal.",
+      prog: "Gm:2 Eb:1 D:1", style: "close", drop2: true, rhr: [55, 70], rh: "X.........x.....", lh: "X...............", lhv: "r8", lhLo: 31,
+      mel: "D6@6+2~ D6@38+2~ Eb6@54+2~ D6@58+2~" },
+    { id: "basement-phrygian", name: "Basement Phrygian", cat: "rap", inst: "grand", bpm: 88, key: "E", mode: "phrygian", bars: 2,
+      desc: "E-to-F half-step motif and sub-low piano roots. Raw underground energy.",
+      prog: "Em:1 F:1", style: "close", rh: null, lh: "X---------......", lhv: "r8", lhLo: 28,
+      mel: "E5@0+2! F5@2+4 E5@10+2 F5@16+2! E5@18+6" },
+
+    /* Hip-Hop (modern soulful, bouncy) */
+    { id: "golden-hour-bounce", name: "Golden Hour Bounce", cat: "hiphop", inst: "rhodes", bpm: 94, key: "Eb", mode: "major", bars: 4,
+      desc: "Bouncy Rhodes on major and minor ninths with a falling top note. Warm, modern, sunny.",
+      prog: "Abmaj9:1 Gm7:1 Fm9:1 Bb13sus:1", style: "rootless", rhr: [55, 72], rh: "X..x..x...x..x..", lh: "X.....x...X.....", lhv: "r",
+      mel: "Eb6@14+2~ D6@30+2~ C6@46+2~ Bb5@60+4~" },
+    { id: "sunday-drive-keys", name: "Sunday Drive Keys", cat: "hiphop", inst: "grand", bpm: 96, key: "C", mode: "major", bars: 4,
+      desc: "Syncopated soulful piano: IV–iii–ii–V with ninths. Feel-good, head-nodding bounce.",
+      prog: "Fmaj9:1 Em9:1 Dm9:1 G13sus:0.5 G13:0.5", style: "rootless", drop2: true, rhr: [55, 72], rh: "X..x.X..x..X.x..", lh: "X.......X.x.....", lhv: "r8" },
+    { id: "corner-store-soul", name: "Corner Store Soul", cat: "hiphop", inst: "rhodes", bpm: 88, key: "Bb", mode: "minor", bars: 4, vel: 0.76,
+      desc: "Rolled Rhodes on minor ninths to a sharp-nine turnaround. Soulful, a little gritty.",
+      prog: "Bbm9:1 Ebm9:1 Ab13:1 Dbmaj9:0.5 F7#9:0.5", style: "rootless", rhr: [53, 70], rh: "X-.x-.x-..X-.x..", lh: "X-------..x-----", lhv: "r", strum: 1 },
+    { id: "penthouse-steps", name: "Penthouse Steps", cat: "hiphop", inst: "grand", bpm: 92, key: "A", mode: "major", bars: 4,
+      desc: "Lush piano with a stepping bounce and a hook-ready top line. Polished modern hip-hop.",
+      prog: "Dmaj9:1 C#m7:1 Bm9:1 E13:1", style: "rootless", drop2: true, rhr: [55, 72], rh: "X.x..x..X.x..x..", lh: "X.....x.X.......", lhv: "r8",
+      mel: "C#6@6+2 B5@8+4 E6@22+2 C#6@24+4 D6@38+2 C#6@40+4 B5@54+2 G#5@56+8" }
+
   ];
   /* level trims (dB), RMS-matched offline so every loop sits ~4–5 dB under the drum kits at the default Piano Roll fader */
-  var GAIN = {"dusty-ninths": -3.5, "project-window": -3, "crate-digger": -2, "brick-mortar": -2, "upright-smoke": -1.5, "late-set": -3, "cypher-changes": -2, "bookstore-vamp": 3, "rainy-tape": -3, "notebook-3am": -0.5, "window-seat": -3.5, "cassette-sunday": -0.5, "sunday-testimony": -3.5, "uplift": 1.5, "mamas-kitchen": -4, "knowledge-keys": -4, "midnight-bell": 3.5, "glacier-keys": -1, "cold-plug": 3.5, "ice-cathedral": -1, "block-ghost": -0.5, "tower-strings": 3, "night-shift-bells": 3.5, "grey-estate": -3.5, "lowrider-sunset": -2, "palm-whistle": 5, "cruise-control": 2.5, "six-four-bounce": 3, "throne-room": 2.5, "chess-moves": -2, "villain-arc": 0, "omen-box": 6, "velvet-rope": 0, "late-text": -3.5, "slow-wine": -1, "after-hours": -5.5};
+  var GAIN = {"dusty-ninths": -3.5, "project-window": -3, "crate-digger": -2, "brick-mortar": -2, "upright-smoke": -1.5, "late-set": -3, "cypher-changes": -2, "bookstore-vamp": 3, "rainy-tape": -3, "notebook-3am": -0.5, "window-seat": -3.5, "cassette-sunday": -0.5, "sunday-testimony": -3.5, "uplift": 1.5, "mamas-kitchen": -4, "knowledge-keys": -4, "midnight-bell": 3.5, "glacier-keys": -1, "cold-plug": 3.5, "ice-cathedral": -1, "block-ghost": -0.5, "tower-strings": 3, "night-shift-bells": 3.5, "grey-estate": -3.5, "lowrider-sunset": -2, "palm-whistle": 5, "cruise-control": 2.5, "six-four-bounce": 3, "throne-room": 2.5, "chess-moves": -2, "villain-arc": 0, "omen-box": 6, "velvet-rope": 0, "late-text": -3.5, "slow-wine": -1, "after-hours": -5.5, "siege-ostinato": 3.5, "cathedral-march": -2, "pizzicato-heist": -1, "harbour-overture": -0.5, "calypso-concerto": 0.5, "lagoon-kalimba": -2, "carnival-fanfare": -0.5, "blue-room-changes": -2.5, "lantern-ballad": -1.5, "organ-trio-strut": 6, "two-note-threat": 0.5, "cold-bell-toll": 2, "hallway-sirens": 1, "basement-phrygian": 1.5, "golden-hour-bounce": -0.5, "sunday-drive-keys": -3, "corner-store-soul": 0.5, "penthouse-steps": -3};
   var BY_ID = {};
-  LOOPS.forEach(function (L) { L.keyPc = pcOf(L.key); L.gain = GAIN[L.id] || 0; BY_ID[L.id] = L; });
+  LOOPS.forEach(function (L) {
+    L.keyPc = pcOf(L.key); L.gain = GAIN[L.id] || 0; BY_ID[L.id] = L;
+    L.insts = [L.inst]; (L.layers || []).forEach(function (Y) { if (L.insts.indexOf(Y.inst) === -1) L.insts.push(Y.inst); }); // every instrument it plays
+  });
 
   /* nearest transposition (−5…+6 semitones) from the loop's key to the song key */
   function shiftFor(L, toKey) {
@@ -309,10 +443,22 @@
     var L = BY_ID[id];
     if (!L) return null;
     opts = opts || {};
-    var n16 = L.bars * 16, prog = parseProg(L.prog), base = L.vel || 0.8, notes = [];
+    var n16 = L.bars * 16, prog = parseProg(L.prog), notes = [];
     var bounds = {}; prog.forEach(function (c) { bounds[c.s16] = true; });
     function chordAt(s16) { for (var i = prog.length - 1; i >= 0; i--) if (s16 >= prog[i].s16) return prog[i]; return prog[0]; }
-    function push(p, s, l, v) { notes.push({ p: p, s: s, l: Math.max(1, l), v: Math.max(0.05, Math.min(1, v + (hash(notes.length + p) - 0.5) * 0.07)) }); }
+    gen(L, null);
+    (L.layers || []).forEach(function (Y) {
+      var spec = { style: Y.style || L.style, drop2: Y.drop2, rhr: Y.rhr, rh: Y.rh, lh: Y.lh || null, lhv: Y.lhv, lhLo: Y.lhLo,
+        arp: Y.arp, mel: Y.mel, strum: Y.strum, vel: Y.vel || L.vel };
+      gen(spec, Y.inst !== L.inst ? Y.inst : null);
+    });
+    function gen(L, inst) {
+    var base = L.vel || 0.8;
+    function push(p, s, l, v) {
+      var n = { p: p, s: s, l: Math.max(1, l), v: Math.max(0.05, Math.min(1, v + (hash(notes.length + p) - 0.5) * 0.07)) };
+      if (inst) n.i = inst;
+      notes.push(n);
+    }
     var rng = L.rhr || [52, 74], center = (rng[0] + rng[1]) / 2, prev = null;
     prog.forEach(function (c) { c.rhv = voice(rhTones(c, L.style).map(function (iv) { return c.root + iv; }), rng[0], rng[1], prev, L.drop2, center); prev = c.rhv; });
     if (L.rh) hits(L.rh, n16, bounds).forEach(function (h) {
@@ -339,6 +485,9 @@
       });
     }
     parseMel(L.mel).forEach(function (m) { push(m.p, m.s, m.l, Math.min(1, base * 1.05 * m.acc)); });
+    }
+    L = BY_ID[id];
+    if (L.swing8) notes.forEach(function (n) { if (n.s % 24 === 12) { n.s += 4; n.l = Math.max(2, n.l - 4); } });
 
     var sh = shiftFor(L, opts.key);
     notes.forEach(function (n) { n.p += sh; });
