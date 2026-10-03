@@ -160,8 +160,8 @@ const svgMarkup = `
     <g class="o-chain2" style="display:none"><path d="M438,272 C438,340 458,382 470,384 C482,382 502,340 502,272" fill="none" stroke="url(#gold)" stroke-width="5" stroke-linecap="round"/><path d="M438,272 C438,340 458,382 470,384 C482,382 502,340 502,272" fill="none" stroke="#7a5408" stroke-width="5" stroke-dasharray="2 3" opacity=".7"/><circle cx="470" cy="392" r="10" fill="url(#gold)" stroke="#7a5408"/><text x="470" y="396" text-anchor="middle" font-family="Georgia,serif" font-style="italic" font-weight="900" font-size="10" fill="#5a3d05">PF</text></g>
     <!-- headphones around neck -->
     <g id="phones">
-      <g transform="translate(424,292) rotate(-24)"><ellipse class="o-ph-cup" rx="25" ry="29" fill="#111215" stroke="#3b3d44" stroke-width="3"/><ellipse class="o-ph-in" rx="15" ry="18" fill="#1d1f24"/><ellipse class="o-ph-hub" rx="6" ry="7" fill="#2c2e35"/><path d="M-20,-10 A24 28 0 0 1 4,-27" stroke="#6d717c" stroke-width="2" fill="none" opacity=".6"/></g>
-      <g transform="translate(516,292) rotate(24)"><ellipse class="o-ph-cup" rx="25" ry="29" fill="#111215" stroke="#3b3d44" stroke-width="3"/><ellipse class="o-ph-in" rx="15" ry="18" fill="#1d1f24"/><ellipse class="o-ph-hub" rx="6" ry="7" fill="#2c2e35"/><path d="M20,-10 A24 28 0 0 0 -4,-27" stroke="#6d717c" stroke-width="2" fill="none" opacity=".6"/></g>
+      <g id="cupL" transform="translate(424,292) rotate(-24)"><ellipse class="o-ph-cup" rx="25" ry="29" fill="#111215" stroke="#3b3d44" stroke-width="3"/><ellipse class="o-ph-in" rx="15" ry="18" fill="#1d1f24"/><ellipse class="o-ph-hub" rx="6" ry="7" fill="#2c2e35"/><path d="M-20,-10 A24 28 0 0 1 4,-27" stroke="#6d717c" stroke-width="2" fill="none" opacity=".6"/></g>
+      <g id="cupR" transform="translate(516,292) rotate(24)"><ellipse class="o-ph-cup" rx="25" ry="29" fill="#111215" stroke="#3b3d44" stroke-width="3"/><ellipse class="o-ph-in" rx="15" ry="18" fill="#1d1f24"/><ellipse class="o-ph-hub" rx="6" ry="7" fill="#2c2e35"/><path d="M20,-10 A24 28 0 0 0 -4,-27" stroke="#6d717c" stroke-width="2" fill="none" opacity=".6"/></g>
     </g>
   </g>
   <g id="head">
@@ -305,6 +305,7 @@ export function createScene(container) {
     fly: $('fly'), flyScale: $('flyScale'), flyRot: $('flyRot'), flyLabel: $('flyLabel'),
     led: $('ledStrip'), ledGlow: $('ledGlow'), bpmText: $('bpmText'), xf: $('xf'), chA: $('chA'), chB: $('chB'),
     mixKnobs: $('mixKnobs'), vu: $('vu'), crateRecs: $('crateRecs'), pupils: svg.querySelectorAll('.pupil'),
+    cupL: $('cupL'), cupR: $('cupR'),
     arms: { L: $('armL'), R: $('armR') }, neonStrips: svg.querySelector('.neon-strips'),
     deck: { A: deckEls('A'), B: deckEls('B') },
   };
@@ -531,7 +532,10 @@ export function createScene(container) {
     return { E, W };
   }
   const f1 = (n) => n.toFixed(1);
-  const shoulder = (side, dy) => ({ x: G.sh[side].x + DJX + st.lean + (st.shX ? st.shX[side] : 0), y: G.sh[side].y + dy + (st.shY ? st.shY[side] : 0) });
+  const rotP = (x, y, deg) => { const r = deg * D2R, c = Math.cos(r), s = Math.sin(r); return { x: 470 + (x - 470) * c - (y - 470) * s, y: 470 + (x - 470) * s + (y - 470) * c }; };
+  const lerp = (a, b, k) => a + (b - a) * k;
+  const cupT = (x0, y0, r0, x1, y1, r1, k) => `translate(${f1(lerp(x0, x1, k))},${f1(lerp(y0, y1, k))}) rotate(${f1(lerp(r0, r1, k))})`;
+  const shoulder = (side, dy) => { const P = rotP(G.sh[side].x, G.sh[side].y, st.bodyRot || 0); return { x: P.x + DJX + st.lean + (st.bodyX || 0), y: P.y + dy + (st.shY ? st.shY[side] : 0) }; };
   function drawArm(side, bodyDy) {
     const h = st.hands[side]; const S = shoulder(side, bodyDy);
     const { E, W } = ik(S, h, side);
@@ -559,23 +563,94 @@ export function createScene(container) {
     platB: () => { const P = platterS('B'); return { x: P.x - 34, y: P.y - 6 }; },
     mix: { x: 600, y: 534 }, xfader: () => ({ x: G.xf.x0 + st.xf * (G.xf.x1 - G.xf.x0) + 8, y: G.xf.y - 2 }),
   };
+  // ---------------- dance moves (beat-locked) ----------------
+  // A phase-locked beat clock follows the detected beats/BPM; a move is picked by energy every 4–8 bars.
+  const MOVES = {
+    nod: { name: 'Head nod', tier: 0 }, sway: { name: 'Two-step sway', tier: 0 },
+    bounce: { name: 'Shoulder bounce', tier: 1 }, rock: { name: 'Lean-back rock', tier: 1 }, cue: { name: 'Headphone cue', tier: 1 }, pump: { name: 'Chest pump', tier: 1 },
+    handup: { name: 'Hand in the air', tier: 2 }, scratch: { name: 'Scratch flourish', tier: 2 },
+  };
+  const POOL = [['nod', 'sway'], ['bounce', 'sway', 'rock', 'cue', 'pump'], ['handup', 'pump', 'scratch', 'bounce', 'rock']];
+  const rmq = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
+  const dn = { phase: 0, bpm: 0, lastBeat: 0, move: 'nod', moveUntil: 16, eFast: 0, eSlow: 0, tier: 0, dropAt: -99, amp: 0, reduced: !!(rmq && rmq.matches), body: { bx: 0, by: 0, rot: 0, shL: 0, shR: 0, nod: 0, tilt: 0, cupL: 0, cupR: 0 } };
+  if (rmq && rmq.addEventListener) rmq.addEventListener('change', (e) => { dn.reduced = e.matches; if (dn.reduced && MOVES[dn.move].tier > 0) pickMove(); });
+  function pickMove(force) {
+    const pool = dn.reduced ? POOL[0] : POOL[force != null ? force : dn.tier];
+    let m; do { m = pool[(Math.random() * pool.length) | 0]; } while (pool.length > 1 && m === dn.move);
+    dn.move = m; const bars = 4 + ((Math.random() * 5) | 0); // 4–8 bars
+    dn.moveUntil = Math.ceil((dn.phase + .01) / 4) * 4 + bars * 4;
+  }
+  function danceClock(dt, now, a, playing) {
+    const tsec = now / 1000;
+    if (a.bpm > 40) dn.bpm = a.bpm;
+    const bpm = dn.bpm || 100;
+    if (playing) dn.phase += dt * bpm / 60;
+    if (a.beat && playing) { // pull the clock onto the detected onset (tempo changes stay in sync)
+      const err = Math.round(dn.phase) - dn.phase; dn.phase += err * (dn.bpm ? .35 : .8);
+      if (!dn.bpm && dn.lastBeat) { const iv = tsec - dn.lastBeat; if (iv > .33 && iv < 1.2) dn.bpm = 60 / iv; }
+      dn.lastBeat = tsec;
+    }
+    // energy: fast vs slow average → tiers and "drop" detection
+    const lvl = playing ? (a.level || 0) * .6 + (a.bass || 0) * .4 : 0;
+    dn.eFast += (lvl - dn.eFast) * Math.min(1, dt * 4); dn.eSlow += (lvl - dn.eSlow) * Math.min(1, dt * .35);
+    const tier = dn.eSlow > .42 ? 2 : dn.eSlow > .2 ? 1 : 0;
+    if (tier !== dn.tier) dn.tier = tier;
+    const isDrop = dn.eFast > dn.eSlow * 1.45 + .08 && dn.eFast > .35 && dn.phase - dn.dropAt > 32;
+    if (isDrop) { dn.dropAt = dn.phase; if (!dn.reduced) { dn.move = Math.random() < .6 ? 'handup' : 'scratch'; dn.moveUntil = Math.ceil(dn.phase / 4) * 4 + 16; } }
+    if (playing && dn.phase >= dn.moveUntil) pickMove();
+    // a move outside the current tier is swapped at the next bar line
+    if (dn.reduced && MOVES[dn.move].tier > 0) pickMove();
+    if (playing && !dn.reduced && MOVES[dn.move].tier > dn.tier + 1 && dn.phase % 4 < .1) pickMove();
+    dn.amp += ((playing ? (dn.reduced ? .35 : 1) : 0) - dn.amp) * Math.min(1, dt * 3);
+  }
+  function danceBody(t) {
+    const b = dn.phase, f = b - Math.floor(b), hit = Math.exp(-f * 7), bar = b % 4, down = bar < 1 ? Math.exp(-(bar) * 5) : 0;
+    const sw = Math.sin(Math.PI * b), A = dn.amp * (st.busy ? .4 : 1), m = dn.move;
+    const o = { bx: 0, by: 0, rot: 0, shL: 0, shR: 0, nod: 0, tilt: 0, cupL: 0, cupR: 0 };
+    o.nod = 5 * hit; o.by = 1.5 * hit; // every move keeps a small nod on the beat
+    if (m === 'nod') { o.nod = 9 * hit; o.by = 2 * hit; }
+    else if (m === 'sway') { o.bx = 14 * sw; o.rot = 2.2 * sw; o.tilt = -3 * sw; o.by = 3 * Math.abs(Math.cos(Math.PI * b)); o.nod = 4 * hit; }
+    else if (m === 'bounce') { const u = Math.abs(Math.sin(Math.PI * b * 2)); o.shL = o.shR = -9 * u; o.by = 6 * hit; o.nod = 6 * hit; }
+    else if (m === 'rock') { o.rot = -(3 + 4 * hit) * (st.active === 'A' ? -1 : 1) * .6; o.by = -2 - 3 * hit; o.nod = -3 + 8 * hit; o.tilt = 4 * hit; }
+    else if (m === 'pump') { o.by = -9 * down + 3 * hit; o.shL = o.shR = -6 * down; o.nod = 10 * down + 4 * hit; }
+    else if (m === 'cue') { const free = st.active === 'A' ? 'R' : 'L'; if (free === 'L') o.cupL = 1; else o.cupR = 1; o.tilt = free === 'L' ? -7 : 7; o.nod = 6 * hit; o.by = 2 * hit; }
+    else if (m === 'handup') { o.by = 5 * hit; o.bx = 6 * sw; o.nod = 8 * hit; o.shL = st.active === 'A' ? 0 : -8; o.shR = st.active === 'A' ? -8 : 0; }
+    else if (m === 'scratch') { o.nod = 7 * hit; o.by = 3 * hit; o.rot = 1.5 * Math.sin(Math.PI * b * 2); }
+    for (const k in o) o[k] *= (k === 'cupL' || k === 'cupR') ? (dn.amp > .2 ? 1 : 0) : A;
+    // smooth everything so move changes blend
+    const B = dn.body; for (const k in o) B[k] += (o[k] - B[k]) * .25;
+    return B;
+  }
   /** Hand targets while performing (no choreography running). Returns [L, R]. */
   function poseTargets(t, p, playing) {
     const A = st.active === 'A';
     if (!playing) return [{ x: 452, y: 548 + Math.sin(t * 1.2) * 3 }, { x: 748, y: 548 + Math.cos(t * 1.1) * 3 }];
+    const b = dn.phase, f = b - Math.floor(b), hit = Math.exp(-f * 7), sw = Math.sin(Math.PI * b), amp = dn.reduced ? .35 : 1;
     const plat = A ? SPOT.platA() : SPOT.platB();
-    const deckHand = { x: plat.x + Math.sin(t * 2) * 6, y: plat.y + p * 6 };
-    const mixHand = { x: SPOT.mix.x + Math.cos(t * 3) * 5 + (A ? 12 : -12), y: SPOT.mix.y + p * 6 };
+    const deckHand = { x: plat.x + Math.sin(Math.PI * b / 2) * 6 * amp, y: plat.y + hit * 5 * amp };
+    const mixHand = { x: SPOT.mix.x + (A ? 12 : -12) + Math.sin(Math.PI * b / 4) * 6 * amp, y: SPOT.mix.y + hit * 5 * amp };
     const xfH = SPOT.xfader();
-    const up = (side) => ({ x: side === 'L' ? G.sh.L.x + DJX + st.lean - 60 : G.sh.R.x + DJX + st.lean + 60, y: 150 + (1 - p) * 26 });
-    let L, R;
-    switch (st.pose) {
-      case 1: [L, R] = A ? [deckHand, up('R')] : [up('L'), deckHand]; break;
-      case 2: [L, R] = A ? [deckHand, xfH] : [xfH, deckHand]; break;
-      case 3: [L, R] = A ? [{ x: deckHand.x + Math.sin(t * 6) * 10 * p, y: deckHand.y }, mixHand] : [mixHand, { x: deckHand.x + Math.sin(t * 6) * 10 * p, y: deckHand.y }]; break;
-      default: [L, R] = A ? [deckHand, mixHand] : [mixHand, deckHand];
+    const sx = (side) => G.sh[side].x + DJX + st.lean + dn.body.bx;
+    const pair = (deck, free) => (A ? [deck, free] : [free, deck]);
+    if (st.mixing) return pair(deckHand, { x: xfH.x, y: xfH.y + hit * 3 }); // transitions: hands on the platter + crossfader
+    if (st.talkPose) return talkTargets(t, deckHand);
+    switch (dn.move) {
+      case 'handup': { const side = A ? 'R' : 'L'; return pair(deckHand, { x: sx(side) + (side === 'L' ? -112 : 112) + sw * 18 * amp, y: 92 + hit * 16 }); }
+      case 'cue': { const side = A ? 'R' : 'L'; return pair(deckHand, { x: 470 + DJX + st.lean + dn.body.bx + (side === 'L' ? -74 : 74), y: 196 + dn.body.by }); }
+      case 'scratch': { const s16 = Math.sin(Math.PI * 2 * b * 2); return pair({ x: plat.x + s16 * 18 * amp, y: plat.y + Math.cos(Math.PI * 2 * b * 2) * 4 }, { x: xfH.x + (Math.floor(b * 4) % 2 ? 10 : -10) * amp, y: xfH.y }); }
+      case 'pump': { const bar = b % 4, down = bar < 1 ? Math.exp(-bar * 5) : 0; return pair(deckHand, { x: SPOT.mix.x + (A ? 30 : -30), y: 440 - 70 * down * amp }); }
+      case 'bounce': return pair(deckHand, { x: mixHand.x, y: mixHand.y + Math.abs(Math.sin(Math.PI * b * 2)) * -8 * amp });
+      default: return pair(deckHand, mixHand);
     }
-    return [L, R];
+  }
+  function talkTargets(t, deckHand) {
+    const A = st.active === 'A', side = A ? 'R' : 'L', tp = st.talkPose;
+    const sx = G.sh[side].x + DJX + st.lean + dn.body.bx;
+    let free;
+    if (tp === 'heart') free = { x: 470 + DJX + st.lean + (side === 'L' ? -26 : 26), y: 352 + dn.body.by };
+    else if (tp === 'up') free = { x: sx + (side === 'L' ? -108 : 108) + Math.sin(t * 6) * 10, y: 92 };
+    else free = { x: sx + (side === 'L' ? -170 : 170), y: 236 + Math.sin(t * 5) * 6 }; // point at the crowd
+    return A ? [deckHand, free] : [free, deckHand];
   }
 
   let last = performance.now();
@@ -587,8 +662,8 @@ export function createScene(container) {
       if (k >= 1) { tweens.delete(tw); tw.resolve(); }
     }
     const t = now / 1000; const pulse = a.pulse || 0; const playing = !!a.playing;
-    if (a.beat) { st.beats++; st.nodV += 2.6 + pulse * 1.5; }
-    if (playing && st.beats - st.poseBeat >= 16) { st.poseBeat = st.beats; st.pose = (st.pose + 1 + (Math.random() < .35 ? 1 : 0)) % 4; }
+    if (a.beat) { st.beats++; st.nodV += (2.6 + pulse * 1.5) * (dn.reduced ? .4 : 1); }
+    danceClock(dt, now, a, playing); st.mixing = !!a.mixing;
     // decks: spin
     ['A', 'B'].forEach((d) => {
       const D = st.decks[d];
@@ -596,6 +671,7 @@ export function createScene(container) {
       D.spin += (D.spinTarget - D.spin) * Math.min(1, dt * spinRate * 2.2);
       if (Math.abs(D.spinTarget - D.spin) < .002) D.spin = D.spinTarget;
       D.rot = (D.rot + dt * 200 * D.spin * (D.rate || 1)) % 360;
+      D.scr = d === st.active && dn.move === 'scratch' && playing && !st.busy && !st.mixing ? Math.sin(Math.PI * 2 * dn.phase * 2) * 22 * dn.amp : (D.scr || 0) * .8;
     });
     // head turns toward the active deck; body leans a little that way
     st.turn += ((st.active === 'A' ? -1 : 1) - st.turn) * Math.min(1, dt * 3);
@@ -603,15 +679,20 @@ export function createScene(container) {
     st.leanV += ((st.leanT - st.lean) * 60 - st.leanV * 14) * dt; st.lean += st.leanV * dt;
     // head nod (damped spring)
     st.nodV += (-st.nod * 60 - st.nodV * 9) * dt; st.nod += st.nodV * dt * 6;
-    const nod = Math.max(-3, Math.min(12, st.nod)) + (playing ? 0 : Math.sin(t * 1.3) * .8);
-    st.bounce = playing ? pulse * 5 : Math.sin(t * 1.3) * 1.2;
+    const nod = Math.max(-3, Math.min(12, st.nod)) * .5 + (playing ? 0 : Math.sin(t * 1.3) * .8);
     st.nextBlink -= dt; if (st.nextBlink < 0) { st.blink = .14; st.nextBlink = 2.5 + Math.random() * 3.5; }
     if (st.blink > 0) st.blink -= dt;
     el.eyes.setAttribute('transform', st.blink > 0 ? 'translate(0,2) scale(1,.15) translate(0,-2)' : '');
     el.pupils.forEach((p) => p.setAttribute('transform', `translate(${f1(st.turn * 2.4)},0)`));
-    el.dj.setAttribute('transform', `translate(${f1(DJX + st.lean)},0)`);
-    el.body.setAttribute('transform', `translate(0,${f1(st.bounce)})`);
-    el.head.setAttribute('transform', `translate(${f1(st.turn * 6)},${f1(st.bounce + nod * .55)}) rotate(${f1(nod + st.turn * 3)} 470 262)`);
+    const B = danceBody(t);
+    st.bounce = (playing ? pulse * 2 : Math.sin(t * 1.3) * 1.2) + B.by;
+    st.bodyRot = B.rot; st.bodyX = B.bx; st.shY = { L: B.shL, R: B.shR };
+    el.dj.setAttribute('transform', `translate(${f1(DJX + st.lean + B.bx)},0)`);
+    el.body.setAttribute('transform', `translate(0,${f1(st.bounce)}) rotate(${f1(B.rot)} 470 470)`);
+    const neck = rotP(470, 262, B.rot);
+    const hn = nod + B.nod;
+    el.head.setAttribute('transform', `translate(${f1(st.turn * 6 + neck.x - 470)},${f1(st.bounce + neck.y - 262 + hn * .55)}) rotate(${f1(hn + st.turn * 3 + B.tilt + B.rot)} 470 262)`);
+    el.cupL.setAttribute('transform', cupT(424, 292, -24, 410, 196, -8, B.cupL)); el.cupR.setAttribute('transform', cupT(516, 292, 24, 530, 196, 8, B.cupR));
     // hands
     const pose = st.busy ? poseTargets(t, pulse, false) : poseTargets(t, pulse, playing);
     ['L', 'R'].forEach((s, i) => {
@@ -625,7 +706,7 @@ export function createScene(container) {
     ['A', 'B'].forEach((d) => {
       const D = st.decks[d], E = el.deck[d], on = d === st.active;
       E.platterRec.style.display = D.visible ? '' : 'none';
-      E.platterRot.setAttribute('transform', `rotate(${f1(D.rot)})`);
+      E.platterRot.setAttribute('transform', `rotate(${f1(D.rot + (D.scr || 0))})`);
       E.strobe.setAttribute('transform', `translate(545,500) scale(1,0.37) rotate(${f1(D.rot * .25)})`);
       if (D.spinTarget && !D.held && D.lift === 0) D.arm = G.arm.play0 + D.progress * (G.arm.play1 - G.arm.play0);
       E.tonearm.setAttribute('transform', `translate(${G.arm.x},${G.arm.y}) rotate(${f1(D.arm)})`);
@@ -700,6 +781,9 @@ export function createScene(container) {
     setProgress(d, p) { st.decks[d].progress = Math.max(0, Math.min(1, p || 0)); },
     setPlaying(d, on) { const D = st.decks[d]; D.spinTarget = on && D.visible && D.lift === 0 ? 1 : 0; },
     setInstant(v) { st.instant = !!v; if (v) flush(); },
+    get dance() { return { move: dn.move, name: MOVES[dn.move].name, phase: dn.phase, bpm: dn.bpm, tier: dn.tier, energy: dn.eSlow, reduced: dn.reduced, amp: dn.amp }; },
+    setDance(m) { if (MOVES[m]) { dn.move = m; dn.moveUntil = dn.phase + 32; } },
+    setReducedMotion(v) { dn.reduced = !!v; if (dn.reduced && MOVES[dn.move].tier > 0) pickMove(); },
     get busy() { return st.busy; },
   };
 }

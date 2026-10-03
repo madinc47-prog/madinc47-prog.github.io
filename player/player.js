@@ -855,6 +855,7 @@ function loop(now) {
   scene.setXfader(xfPos());
   if (frameN % 30 === 0 || !anchorsCache) anchorsCache = scene.anchors();
   viz.draw(now, F, anchorsCache);
+  F.mixing = !!(transition || (outgoing && outgoing.playing));
   scene.frame(now, F);
   if (now - lastUi > 120) {
     lastUi = now;
