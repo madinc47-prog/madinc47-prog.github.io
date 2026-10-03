@@ -1,7 +1,7 @@
 // Psycho Fingers Player — service worker (app shell cache; audio is never cached here)
-const VERSION = 'pf-player-v6';
+const VERSION = 'pf-player-v7';
 const SHELL = [
-  './', './index.html', './player.css?v=6', './player.js?v=6', './scene.js', './outfits.js', './eq.js', './viz.js', './util.js',
+  './', './index.html', './player.css?v=7', './player.js?v=7', './scene.js', './outfits.js', './eq.js', './hype.js', './viz.js', './util.js',
   './manifest.webmanifest', './icons/icon.svg', './icons/icon-192.png', './icons/icon-512.png',
   '../shared/media-store.js', '../shared/ecosystem-nav.js',
 ];
@@ -9,13 +9,17 @@ self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(VERSION).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
 });
 self.addEventListener('activate', (e) => {
-  e.waitUntil(caches.keys().then((keys) => Promise.all(keys.filter((k) => k.startsWith('pf-player-') && k !== VERSION).map((k) => caches.delete(k)))).then(() => self.clients.claim()));
+  e.waitUntil(caches.keys().then((keys) => Promise.all(keys.filter((k) => k.startsWith('pf-player-') && k !== VERSION && k !== VERSION + '-voice').map((k) => caches.delete(k)))).then(() => self.clients.claim()));
 });
 self.addEventListener('fetch', (e) => {
   const req = e.request;
   if (req.method !== 'GET' || req.headers.has('range')) return;
   const url = new URL(req.url);
   if (url.origin !== location.origin) return;
+  if (url.pathname.includes('/player/voice/') && url.pathname.endsWith('.mp3')) { // hype-talk clips: small, cache on first use
+    e.respondWith(caches.open(VERSION + '-voice').then(async (c) => (await c.match(req)) || fetch(req).then((r) => { if (r.ok) c.put(req, r.clone()); return r; })));
+    return;
+  }
   if (/\.(mp3|wav|ogg|m4a|aac|flac|opus|webm|mp4)$/i.test(url.pathname)) return; // stream audio from network
   const inShell = url.pathname.includes('/player/') || url.pathname.includes('/shared/');
   if (!inShell) return;

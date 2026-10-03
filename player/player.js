@@ -4,6 +4,7 @@ import { createScene } from './scene.js';
 import { createViz, THEMES } from './viz.js';
 import { OUTFITS, OUTFIT_FOR_THEME } from './outfits.js';
 import { createEQ } from './eq.js';
+import { createHype } from './hype.js';
 import { fmt, hash, isAudioFile, titleFromName, makeCover, makeLabel, readTags, probeDuration, computePeaks } from './util.js';
 
 const $ = (s, r = document) => r.querySelector(s);
@@ -269,6 +270,7 @@ async function playItem(item, { fromUser = true } = {}) {
     d.ready.catch(() => {}).then(() => startDeck(d, my));
     if (old) setTimeout(() => { if (outgoing === old) stopDeck(old); }, (mix + .25) * 1000);
     scheduleCue(old ? mix + 2.5 : 3);
+    hype.onTrackStart(item);
     syncPlayUI();
   };
   if (reuse) await scene.dropNeedle({ deck: d.slot, speed: animSpeed(), onDrop });
@@ -435,6 +437,13 @@ function analyse(now, dt) {
 const stage = $('#stage');
 const scene = createScene($('#sceneWrap'));
 const viz = createViz($('#viz'));
+// hype talk: voice bus after the EQ (not ducked), music ducked via the duck gain
+const hype = createHype({
+  getCtx: ensureCtx, getTap: () => postMix, getOut: () => master, getDuck: () => duck, scene, toast, LS, F,
+  isPlaying: () => !!(deck && !deck.el.paused), onDuck: () => allDecks().forEach((d) => d.applyVol()),
+});
+window.__pfOnTransition = (info) => hype.onTransition(info);
+window.__pfDuckGain = () => (duck ? +duck.gain.value.toFixed(3) : null);
 const wave = $('#wave'), wg = wave.getContext('2d');
 
 function setTheme(k) {
@@ -727,6 +736,7 @@ setInterval(() => { if (document.hidden) checkAutoAdvance(); }, 500);
 document.addEventListener('visibilitychange', () => { scene.setInstant(document.hidden); });
 
 $('#eqBtn').addEventListener('click', () => { ensureCtx(); eq.open(); });
+$('#hypeBtn').addEventListener('click', () => { ensureCtx(); hype.open(); });
 
 // ---------------- transport controls ----------------
 $('#playBtn').addEventListener('click', () => { userActivated = true; togglePlay(); });
@@ -785,11 +795,12 @@ const KEYS = (e) => {
   else if (k === '[' || k === ']') { ensureCtx(); setXf(xfPos() + (k === ']' ? .1 : -.1), { user: true }); }
   else if (k === 'x' || k === 'X') $('#autoMix').click();
   else if (k === 'e' || k === 'E') { ensureCtx(); eq.open(); }
+  else if (k === 'y' || k === 'Y') { ensureCtx(); hype.open(); }
   else if (k === 'v' || k === 'V') toggleVisMode();
   else if (k === 'h' || k === 'H') $('#likeBtn').click();
   else if (k === 'a' || k === 'A') $('#fileIn').click();
   else if (k === '?') $('#helpDlg').showModal();
-  else if (k === 'Escape') { closeMenus(); if (eq.isOpen) eq.open(false); if (document.body.classList.contains('vis-only')) toggleVisMode(); }
+  else if (k === 'Escape') { closeMenus(); if (eq.isOpen) eq.open(false); if (hype.isOpen) hype.open(false); if (document.body.classList.contains('vis-only')) toggleVisMode(); }
   else if (/^[0-9]$/.test(k) && deck && Number.isFinite(deck.el.duration)) seekTo(deck.el.duration * (+k / 10));
   else handled = false;
   if (handled) { e.preventDefault(); userActivated = true; }
@@ -857,6 +868,7 @@ function loop(now) {
   viz.draw(now, F, anchorsCache);
   F.mixing = !!(transition || (outgoing && outgoing.playing));
   scene.frame(now, F);
+  hype.tick(now);
   if (now - lastUi > 120) {
     lastUi = now;
     if (deck && seekPreview == null) { $('#tCur').textContent = fmt(deck.el.currentTime); drawWave(); }
@@ -887,6 +899,6 @@ async function boot() {
     showBigPlay(`Play “${start.title}”`);
   } else { const first = visible()[0] || DEMO; current = first; updateNowPlaying(first); renderList(); showBigPlay('Tap to drop the needle'); }
   requestAnimationFrame(loop);
-  window.__pf = { get deck() { return deck; }, get cued() { return cued; }, get outgoing() { return outgoing; }, get transition() { return transition; }, XF, xfPos, setXf, get slot() { return slot; }, get ctx() { return ctx; }, startTransition, get activeSlot() { return activeSlot; }, eq, get current() { return current; }, F, scene, playItem, refreshLibrary, get library() { return library; }, next, S, setOutfit, setTheme };
+  window.__pf = { get deck() { return deck; }, get cued() { return cued; }, get outgoing() { return outgoing; }, get transition() { return transition; }, XF, xfPos, setXf, get slot() { return slot; }, get ctx() { return ctx; }, startTransition, get activeSlot() { return activeSlot; }, eq, hype, get current() { return current; }, F, scene, playItem, refreshLibrary, get library() { return library; }, next, S, setOutfit, setTheme };
 }
 boot();

@@ -174,7 +174,8 @@ const svgMarkup = `
       <path d="M-58,-2 C-52,10 -46,22 -34,27 C-28,29 -24,30 -20,30" fill="none" stroke="#2a1d17" stroke-width="2" opacity=".6"/>
       <path d="M-24,36 C-14,29 -5,30 0,32 C5,30 14,29 24,36 C16,35 8,36 0,37 C-8,36 -16,35 -24,36Z" fill="#0d0a0a"/>
       <path d="M-13,43 C-6,40 6,40 13,43 C7,45 -7,45 -13,43Z" fill="#2c1713"/>
-      <path d="M-11,44 C-5,50 5,50 11,44 C6,46 -6,46 -11,44Z" fill="#5a3127"/>
+      <ellipse id="mouthOpen" cx="0" cy="44.5" rx="9" ry="0" fill="#1a0705"/><path id="mouthTeeth" d="M-7,42.6 C-3,41.4 3,41.4 7,42.6 L6,44 C2,43.4 -2,43.4 -6,44Z" fill="#efe6da" opacity="0"/>
+      <path id="lipLow" d="M-11,44 C-5,50 5,50 11,44 C6,46 -6,46 -11,44Z" fill="#5a3127"/>
       <path d="M-6,4 C-8,12 -12,18 -12,22 C-10,26 -4,26 0,26 C4,26 10,26 12,22 C12,18 8,12 6,4" fill="#4c2d1a" opacity=".55"/>
       <ellipse cx="-8" cy="23" rx="4.2" ry="2.4" fill="#1d0f08"/><ellipse cx="8" cy="23" rx="4.2" ry="2.4" fill="#1d0f08"/>
       <ellipse cx="0" cy="16" rx="5" ry="3" fill="#8a5a3d" opacity=".35"/>
@@ -286,6 +287,13 @@ const svgMarkup = `
       <g class="o-watch"><rect x="1" y="-17" width="9" height="34" rx="3" fill="#0d0d10"/><circle cx="5.5" cy="0" r="8.5" fill="url(#gold)" stroke="#5c430b" stroke-width="1.2"/><circle cx="5.5" cy="0" r="5.6" fill="#101216"/><path d="M5.5,0 L5.5,-4 M5.5,0 L8.5,1" stroke="#e2b23a" stroke-width="1"/></g>
       <use href="#hand"/></g></g>
 </g>
+<g id="bubble" opacity="0" style="pointer-events:none">
+  <g id="bubbleIn">
+    <path id="bubbleTail" d="M0,0 L30,0 L-10,40Z" fill="#fff"/>
+    <rect id="bubbleBox" x="0" y="0" width="200" height="60" rx="22" fill="#fff" stroke="var(--c1)" stroke-width="3"/>
+    <text id="bubbleText" x="0" y="0" fill="#14101f" font-family="system-ui,-apple-system,Segoe UI,Roboto,sans-serif" font-weight="800" font-size="23"></text>
+  </g>
+</g>
 </svg>`;
 
 export function createScene(container) {
@@ -305,7 +313,8 @@ export function createScene(container) {
     fly: $('fly'), flyScale: $('flyScale'), flyRot: $('flyRot'), flyLabel: $('flyLabel'),
     led: $('ledStrip'), ledGlow: $('ledGlow'), bpmText: $('bpmText'), xf: $('xf'), chA: $('chA'), chB: $('chB'),
     mixKnobs: $('mixKnobs'), vu: $('vu'), crateRecs: $('crateRecs'), pupils: svg.querySelectorAll('.pupil'),
-    cupL: $('cupL'), cupR: $('cupR'),
+    cupL: $('cupL'), cupR: $('cupR'), mouthOpen: $('mouthOpen'), mouthTeeth: $('mouthTeeth'), lipLow: $('lipLow'),
+    bubble: $('bubble'), bubbleIn: $('bubbleIn'), bubbleBox: $('bubbleBox'), bubbleTail: $('bubbleTail'), bubbleText: $('bubbleText'),
     arms: { L: $('armL'), R: $('armR') }, neonStrips: svg.querySelector('.neon-strips'),
     deck: { A: deckEls('A'), B: deckEls('B') },
   };
@@ -648,10 +657,54 @@ export function createScene(container) {
     const A = st.active === 'A', side = A ? 'R' : 'L', tp = st.talkPose;
     const sx = G.sh[side].x + DJX + st.lean + dn.body.bx;
     let free;
-    if (tp === 'heart') free = { x: 470 + DJX + st.lean + (side === 'L' ? -26 : 26), y: 352 + dn.body.by };
+    if (tp === 'heart') free = { x: 470 + DJX + st.lean + dn.body.bx + 40, y: 336 + dn.body.by + Math.sin(t * 2.2) * 2 }; // hand on the heart (his left side)
     else if (tp === 'up') free = { x: sx + (side === 'L' ? -108 : 108) + Math.sin(t * 6) * 10, y: 92 };
     else free = { x: sx + (side === 'L' ? -170 : 170), y: 236 + Math.sin(t * 5) * 6 }; // point at the crowd
     return A ? [deckHand, free] : [free, deckHand];
+  }
+
+  // ---------------- speech bubble + lip flap (hype talk) ----------------
+  const sp = { text: '', until: 0, shown: 0, mouth: 0, mouthT: 0, side: 1, w: 0, h: 0 };
+  function layoutBubble(text) {
+    const small = (svg.getBoundingClientRect().width || 1000) < 640, FS = small ? 36 : 23, MAXC = small ? 17 : 22; // bigger text when the stage is small (phones)
+    el.bubbleText.setAttribute('font-size', FS);
+    const words = String(text).split(/\s+/).filter(Boolean), lines = []; let cur = '';
+    for (const w of words) { if ((cur + ' ' + w).trim().length > MAXC && cur) { lines.push(cur); cur = w; } else cur = (cur + ' ' + w).trim(); }
+    if (cur) lines.push(cur);
+    const T = el.bubbleText; T.textContent = '';
+    const LH = Math.round(FS * 1.17); let maxW = 0; sp.fs = FS;
+    lines.slice(0, 4).forEach((ln, i) => {
+      const ts = document.createElementNS('http://www.w3.org/2000/svg', 'tspan'); ts.textContent = ln; ts.setAttribute('x', '0'); ts.setAttribute('dy', i ? LH : 0); T.appendChild(ts);
+      let w = 0; try { w = ts.getComputedTextLength(); } catch (e) {} if (!w) w = ln.length * FS * .54; maxW = Math.max(maxW, w);
+    });
+    const n = Math.min(4, lines.length), padX = Math.round(FS * .87), padY = Math.round(FS * .65);
+    sp.w = Math.ceil(maxW + padX * 2); sp.h = n * LH + padY * 2 - 6;
+    el.bubbleBox.setAttribute('width', sp.w); el.bubbleBox.setAttribute('height', sp.h);
+    sp.padX = padX; sp.base = padY + Math.round(FS * .82);
+  }
+  function say(text, { pose = 'point', dur = 2.5 } = {}) {
+    sp.text = text; sp.until = performance.now() + Math.max(.8, dur) * 1000; layoutBubble(text);
+    st.talkPose = pose || null; el.bubble.setAttribute('aria-hidden', 'false');
+  }
+  function sayEnd() { sp.until = 0; st.talkPose = null; sp.mouthT = 0; }
+  function drawSpeech(now, dt, headX, headY) {
+    const on = now < sp.until; if (!on && st.talkPose && sp.text) { st.talkPose = null; sp.text = ''; }
+    sp.shown += ((on ? 1 : 0) - sp.shown) * Math.min(1, dt * (on ? 14 : 8));
+    sp.mouth += ((on ? sp.mouthT : 0) - sp.mouth) * Math.min(1, dt * 28);
+    const m = Math.max(0, Math.min(1, sp.mouth));
+    el.mouthOpen.setAttribute('ry', (m * 6.5).toFixed(2)); el.lipLow.setAttribute('transform', `translate(0,${(m * 5.5).toFixed(2)})`);
+    el.mouthTeeth.setAttribute('opacity', m > .18 ? '.85' : '0');
+    if (sp.shown < .01) { if (el.bubble.getAttribute('opacity') !== '0') el.bubble.setAttribute('opacity', '0'); return; }
+    // to the right of the head, flip to the left if it would leave the stage
+    let side = headX + 74 + sp.w < 990 ? 1 : -1;
+    const bx = side > 0 ? headX + 74 : headX - 74 - sp.w, by = Math.max(6, headY - 70 - sp.h);
+    const tx0 = side > 0 ? bx + 18 : bx + sp.w - 48, ty0 = by + sp.h - 3;
+    el.bubbleTail.setAttribute('d', `M${f1(tx0)},${f1(ty0)} L${f1(tx0 + 30)},${f1(ty0)} L${f1(headX + side * 46)},${f1(headY + 18)}Z`);
+    el.bubbleBox.setAttribute('x', f1(bx)); el.bubbleBox.setAttribute('y', f1(by));
+    const T = el.bubbleText; T.setAttribute('transform', `translate(${f1(bx + sp.padX)},${f1(by + sp.base)})`);
+    const k = .7 + .3 * sp.shown, ox = side > 0 ? bx : bx + sp.w, oy = by + sp.h;
+    el.bubbleIn.setAttribute('transform', `translate(${f1(ox)},${f1(oy)}) scale(${k.toFixed(3)}) translate(${f1(-ox)},${f1(-oy)})`);
+    el.bubble.setAttribute('opacity', Math.min(1, sp.shown * 1.15).toFixed(3));
   }
 
   let last = performance.now();
@@ -694,6 +747,7 @@ export function createScene(container) {
     const hn = nod + B.nod;
     el.head.setAttribute('transform', `translate(${f1(st.turn * 6 + neck.x - 470)},${f1(st.bounce + neck.y - 262 + hn * .55)}) rotate(${f1(hn + st.turn * 3 + B.tilt + B.rot)} 470 262)`);
     el.cupL.setAttribute('transform', cupT(424, 292, -24, 410, 196, -8, B.cupL)); el.cupR.setAttribute('transform', cupT(516, 292, 24, 530, 196, 8, B.cupR));
+    drawSpeech(now, dt, 470 + DJX + st.lean + B.bx + st.turn * 6, 175 + st.bounce + (neck.y - 262) + hn * .55);
     // hands
     const pose = st.busy ? poseTargets(t, pulse, false) : poseTargets(t, pulse, playing);
     ['L', 'R'].forEach((s, i) => {
@@ -786,5 +840,6 @@ export function createScene(container) {
     setDance(m) { if (MOVES[m]) { dn.move = m; dn.moveUntil = dn.phase + 32; } },
     setReducedMotion(v) { dn.reduced = !!v; if (dn.reduced && MOVES[dn.move].tier > 0) pickMove(); },
     get busy() { return st.busy; },
+    say, sayEnd, setMouth(v) { sp.mouthT = Math.max(0, Math.min(1, v || 0)); }, get talking() { return performance.now() < sp.until; },
   };
 }
