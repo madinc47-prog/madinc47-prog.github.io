@@ -21,6 +21,12 @@
       <a href="../" class="back" aria-label="Back to IslePin">←</a>
       <span class="logo">ISLAND PIN <b>DJ</b></span>
       <a class="toplink" href="../beats/">Beats →</a>
+      <a id="back-to-beats" href="../beats/" style="display:none;align-items:center;gap:.3rem;padding:.45rem .8rem;border-radius:999px;background:#f5b301;color:#0b0d12;font-weight:800;text-decoration:none;white-space:nowrap" title="Back to Island Pin Beats (your beat was saved)">← Back to Beats</a>
+      <script>/* opened from the Beats tab bar: show a big way back (Beats saves its state on its own) */
+        (function () { var q = new URLSearchParams(location.search); if (q.get("from") !== "beats") return;
+          var b = document.getElementById("back-to-beats"), t = (q.get("back") || "").replace(/[^a-z-]/g, "");
+          b.href = "../beats/" + (t ? "?tab=" + t : ""); b.style.display = "inline-flex"; b.previousElementSibling.style.display = "none"; })();
+      </script>
     </div>
     <div class="top-right">
       <span id="audio-state" class="audio-state">Tap ▶ or load a track to start audio</span>

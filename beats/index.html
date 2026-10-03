@@ -13,13 +13,14 @@
   <meta property="og:type" content="website">
   <meta name="theme-color" content="#0b0d12">
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="styles.css?v=20261003r">
+  <link rel="stylesheet" href="styles.css?v=20261003s">
 </head>
 <body>
   <header class="topbar">
     <div class="brand">
       <a href="../" class="back" aria-label="Back to IslePin">←</a>
       <span class="logo">ISLAND PIN <b>BEATS</b></span>
+      <a href="studio/" class="dj-link studio-link" title="Island Pin Studio: multitrack recorder and editor (record vocals over your beat, edit, mix, export WAV/MP3)">Studio →</a>
       <a href="../dj/" class="dj-link" title="DJ Psycho Fingers — two-deck DJ booth">DJ →</a>
     </div>
     <div class="transport">
@@ -34,9 +35,11 @@
   <nav class="tabs" role="tablist">
     <button class="tab active" role="tab" data-tab="beats" aria-selected="true">Beats</button>
     <button class="tab" role="tab" data-tab="piano" aria-selected="false">Piano Roll</button>
+    <button class="tab" role="tab" data-tab="studio" aria-selected="false" title="Multitrack recorder: beat on Track 1, record vocals, ad-libs and doubles, edit, mix, export WAV/MP3">Studio</button>
+    <a class="tab tab-dj" id="tab-dj-link" href="../dj/?from=beats" title="Switch to the DJ booth (your beat is saved; press ← Back to Beats there to return)">DJ</a>
     <button class="tab" role="tab" data-tab="lyrics" aria-selected="false">Lyrics</button>
     <button class="tab" role="tab" data-tab="mixer" aria-selected="false">Mixer</button>
-    <button class="tab" role="tab" data-tab="studio" aria-selected="false">Studio</button>
+    <button class="tab" role="tab" data-tab="video" aria-selected="false" title="Visualizer frames for YouTube and Shorts / Reels / TikTok">Video</button>
     <button class="tab" role="tab" data-tab="vault" aria-selected="false">Vault</button>
   </nav>
 
@@ -153,6 +156,7 @@
             <option value="16">16 bars</option>
             <option value="song">Full song</option>
           </select>
+          <button id="btn-to-studio" class="btn ghost" type="button" title="Bounce the current beat (length from the menu) and open it in Island Pin Studio, where you can record vocals over it, edit and mix">Send to Studio →</button>
           <span class="sep"></span>
           <button type="button" class="btn rec vox js-vox">🎙 Record Vocals</button>
         </div>
@@ -507,9 +511,18 @@
       </div>
     </section>
 
-    <!-- STUDIO -->
-    <section id="tab-studio" class="panel" role="tabpanel">
-      <h2>Studio</h2>
+    <!-- STUDIO (multitrack recorder, studio/ embedded) -->
+    <section id="tab-studio" class="panel panel-studio" role="tabpanel">
+      <div class="studio-bar">
+        <span class="sub">Cool Edit-style multitrack: beat on Track 1 → arm Vocals → record (1-bar count-in, headphones on) → stack ad-libs &amp; doubles → mix → export WAV/MP3.</span>
+        <a href="studio/" target="_blank" rel="noopener" class="btn small ghost" title="Open the Studio on its own page (same project, saved in this browser)">Full screen ↗</a>
+      </div>
+      <div id="studio-host" class="studio-host"></div>
+    </section>
+
+    <!-- VIDEO (visualizer + capture; this tab was called "Studio" before) -->
+    <section id="tab-video" class="panel" role="tabpanel">
+      <h2>Video</h2>
       <p class="sub">Preview frames for YouTube (16:9) and Shorts / Reels / TikTok (9:16). The visualizer reacts to your beat.</p>
       <div class="studio-opts">
         <label>Title <input id="studio-title" maxlength="60" value="Untitled beat"></label>
@@ -589,13 +602,13 @@
     </div>
   </div>
 
-  <footer class="foot">Free · runs in your browser · synthesized drums + CC0 one-shots (<a href="samples/CREDITS.md">credits</a>), no paid APIs · instrumental “Gunwalk” © Emmanuel Griffith / DJ Psycho Fingers (<a href="tracks/CREDITS.md">credits</a>) · <a href="../dj/">DJ booth</a> · <a href="../">IslePin</a></footer>
+  <footer class="foot">Free · runs in your browser · synthesized drums + CC0 one-shots (<a href="samples/CREDITS.md">credits</a>), no paid APIs · instrumental “Gunwalk” © Emmanuel Griffith / DJ Psycho Fingers (<a href="tracks/CREDITS.md">credits</a>) · <a href="studio/">Studio</a> · <a href="../dj/">DJ booth</a> · <a href="../">IslePin</a></footer>
 
-  <script src="drums.js?v=20261003r"></script>
-  <script src="keys-instruments.js?v=20261003r"></script>
-  <script src="pianoroll-data.js?v=20261003r"></script>
-  <script src="keys-loops.js?v=20261003r"></script>
-  <script src="pianoroll.js?v=20261003r"></script>
-  <script src="app.js?v=20261003r"></script>
+  <script src="drums.js?v=20261003s"></script>
+  <script src="keys-instruments.js?v=20261003s"></script>
+  <script src="pianoroll-data.js?v=20261003s"></script>
+  <script src="keys-loops.js?v=20261003s"></script>
+  <script src="pianoroll.js?v=20261003s"></script>
+  <script src="app.js?v=20261003s"></script>
 </body>
 </html>

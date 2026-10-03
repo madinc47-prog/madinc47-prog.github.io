@@ -1692,22 +1692,23 @@
     return out;
   }
   function pianoSamplesLoad() { return PK.load ? PK.load(pianoInsts()) : Promise.resolve(true); }
-  function bounce(barsSel) {
+  function bounce(barsSel, then, fail) {
     if (PK.ready && !PK.ready(pianoInsts())) {
       $("rec-status").textContent = "Loading instrument samples…";
-      pianoSamplesLoad().then(function () { bounceNow(barsSel); });
+      pianoSamplesLoad().then(function () { bounceNow(barsSel, then, fail); });
       return;
     }
-    bounceNow(barsSel);
+    bounceNow(barsSel, then, fail);
   }
-  function bounceNow(barsSel) {
+  function bounceNow(barsSel, then, fail) {
+    var say = function (m) { toast(m); if (fail) fail(new Error(m)); };
     var sd = stepDur();
     var A = arrangement();
     var songMode = barsSel === "song";
-    if (songMode && !A) { toast("Pick a song structure first (Song bar above)."); return; }
+    if (songMode && !A) { say("Pick a song structure first (Song bar above)."); return; }
     var bars = songMode ? totalBars(A) : +barsSel;
     var total = bars * STEPS;
-    if (!btActive() && !S.chordTrack.on && !patternHasNotes() && !PD.hasNotes(pianoPat())) { toast("Pattern is empty — add steps first."); return; }
+    if (!btActive() && !S.chordTrack.on && !patternHasNotes() && !PD.hasNotes(pianoPat())) { say("Pattern is empty — add steps first."); return; }
     var dur = total * sd + 2.5 + GRAPH_LAT;
     var c = new OfflineAudioContext(2, Math.ceil(SR * dur), SR);
     var G = makeGraph(c, false);
@@ -1727,13 +1728,13 @@
       var frames = Math.min(Math.round((total * sd + 0.8) * SR), buf.length - off);
       var blob = encodeWav(buf.getChannelData(0).subarray(off), buf.getChannelData(1).subarray(off), frames, SR);
       var label = songMode ? "Bounce full song" : "Bounce " + bars + " bars";
-      saveToVault(blob, frames / SR, label);
+      saveToVault(blob, frames / SR, label, then, fail);
       $("rec-status").textContent = (songMode ? "Bounced full song" : "Bounced " + bars + " bars") + " to Vault";
-    }).catch(function (e) { toast("Bounce failed: " + e.message); });
+    }).catch(function (e) { say("Bounce failed: " + e.message); });
   }
 
   /* ---------------- Vault ---------------- */
-  function saveToVault(blob, dur, label) {
+  function saveToVault(blob, dur, label, then, fail) {
     var item = {
       id: "r_" + Date.now().toString(36),
       name: btActive() && label.indexOf(bt.title) !== -1
@@ -1745,7 +1746,7 @@
       blob: blob
     };
     idb("vault", "readwrite", function (st) { return st.put(item); })
-      .catch(function () { memVault.push(item); toast("Saved for this session only — download to keep."); })
+      .then(function () { if (then) then(item.id); }, function () { memVault.push(item); toast(then ? "Storage is blocked, so the Studio can't receive the bounce. Download it from the Vault and import it in the Studio." : "Saved for this session only — download to keep."); if (fail) fail(new Error("storage blocked")); })
       .then(renderVault);
   }
   var vaultUrls = [], vaultTok = 0;
@@ -2095,7 +2096,7 @@
     } else if (activeTab === "lyrics") {
       ly.preview.update(bar, playing);
     }
-    if (activeTab === "studio") {
+    if (activeTab === "video") {
       drawFrame($("cv-169"));
       drawFrame($("cv-916"));
     }
@@ -4342,24 +4343,59 @@
     var t = e.target;
     return t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT") && t.type !== "range" && t.type !== "checkbox";
   }
+  // tab names for ?tab= / #hash deep links. "video" is the visualizer/capture panel (it was labelled "Studio" before Oct 2026);
+  // "studio" is the multitrack recorder (studio/ embedded). "visualizer" and "capture" are extra aliases for the video panel.
+  var TAB_ALIAS = { beats: "beats", piano: "piano", "piano-roll": "piano", pianoroll: "piano", studio: "studio", multitrack: "studio", lyrics: "lyrics", mixer: "mixer", video: "video", visualizer: "video", capture: "video", vault: "vault" };
+  function studioWin() { var f = $("studio-frame"); try { return f && f.contentWindow && f.contentWindow.IPBStudio ? f.contentWindow : null; } catch (e) { return null; } }
+  function studioEnsure() {
+    var f = $("studio-frame");
+    if (!f) {
+      f = document.createElement("iframe");
+      f.id = "studio-frame"; f.className = "studio-frame"; f.title = "Island Pin Studio multitrack";
+      f.setAttribute("allow", "microphone; autoplay; fullscreen");
+      f.src = "studio/?embed=1";
+      $("studio-host").appendChild(f);
+    }
+    return new Promise(function (res) {
+      (function wait(n) { var w = studioWin(); if (w && w.IPBStudio.ready) res(w); else if (n > 300) res(null); else setTimeout(function () { wait(n + 1); }, 50); })(0);
+    });
+  }
+  function showTab(name) {
+    if (!document.querySelector('.tab[data-tab="' + name + '"]')) return;
+    var prev = activeTab;
+    activeTab = name;
+    document.querySelectorAll(".tab[data-tab]").forEach(function (x) {
+      var on = x.dataset.tab === name;
+      x.classList.toggle("active", on);
+      x.setAttribute("aria-selected", on ? "true" : "false");
+    });
+    document.querySelectorAll(".panel").forEach(function (p) {
+      p.classList.toggle("active", p.id === "tab-" + activeTab);
+    });
+    if (prev === "studio" && name !== "studio") { var w = studioWin(); if (w) w.IPBStudio.pause(); }
+    if (name === "studio") { if (playing) stop(); studioEnsure(); }
+    if (activeTab === "vault") renderVault();
+    if (activeTab === "lyrics") { ly.preview.tops = null; }
+    if (activeTab === "mixer") updateLatencyLabel();
+    if (activeTab === "piano") pianoShown();
+  }
+  function bounceForStudio(bars) { // called by the embedded Studio: bounce the current beat → Vault id
+    if (playing) stop();
+    return new Promise(function (res, rej) { bounce(bars || $("bounce-bars").value, res, rej); });
+  }
   var KEYMAP = { a: 0, w: 1, s: 2, e: 3, d: 4, f: 5, t: 6, g: 7, y: 8, h: 9, u: 10, j: 11, k: 12 };
   function wire() {
-    document.querySelectorAll(".tab").forEach(function (t) {
-      t.addEventListener("click", function () {
-        activeTab = t.dataset.tab;
-        document.querySelectorAll(".tab").forEach(function (x) {
-          x.classList.toggle("active", x === t);
-          x.setAttribute("aria-selected", x === t ? "true" : "false");
-        });
-        document.querySelectorAll(".panel").forEach(function (p) {
-          p.classList.toggle("active", p.id === "tab-" + activeTab);
-        });
-        if (activeTab === "vault") renderVault();
-        if (activeTab === "lyrics") { ly.preview.tops = null; }
-        if (activeTab === "mixer") updateLatencyLabel();
-        if (activeTab === "piano") pianoShown();
-      });
+    document.querySelectorAll(".tab[data-tab]").forEach(function (t) {
+      t.addEventListener("click", function () { showTab(t.dataset.tab); });
     });
+    // DJ tab: a real page switch (/dj/?from=beats has a "← Back to Beats" button). Beats state is saved first.
+    var djTab = $("tab-dj-link");
+    if (djTab) djTab.addEventListener("click", function () { if (playing) stop(); saveSession(); djTab.href = "../dj/?from=beats&back=" + encodeURIComponent(activeTab); });
+    var stLink = document.querySelector(".studio-link");
+    if (stLink) stLink.addEventListener("click", function (e) { if (e.ctrlKey || e.metaKey || e.shiftKey) return; e.preventDefault(); showTab("studio"); });
+    var tabQ = null;
+    try { tabQ = (new URLSearchParams(location.search).get("tab") || location.hash.replace(/^#/, "") || "").toLowerCase(); } catch (e) { tabQ = null; }
+    if (tabQ && TAB_ALIAS[tabQ]) showTab(TAB_ALIAS[tabQ]);
     $("btn-play").addEventListener("click", togglePlay);
     $("btn-stop").addEventListener("click", function () {
       if (vox.state !== "idle") { stopVocalTake(); return; }
@@ -4443,6 +4479,20 @@
     $("btn-rec").addEventListener("click", startRec);
     $("btn-rec-stop").addEventListener("click", stopRec);
     $("btn-bounce").addEventListener("click", function () { bounce($("bounce-bars").value); });
+    $("btn-to-studio").addEventListener("click", function () {
+      stop();
+      bounce($("bounce-bars").value, function (id) {
+        showTab("studio");
+        studioEnsure().then(function (w) {
+          if (!w) { location.href = "studio/?vault=" + encodeURIComponent(id); return; }
+          w.IPBStudio.importVaultId(id);
+        });
+      });
+    });
+    if (/[?&]studio=1/.test(location.search)) setTimeout(function () { // came from the Studio's Import menu
+      var b = $("btn-to-studio"); b.classList.add("primary"); b.scrollIntoView({ block: "center" });
+      toast("Make or load a beat, pick the length, then press Send to Studio →");
+    }, 900);
     wireSongFeatures();
     $("key-oct").addEventListener("change", buildPiano);
 
@@ -4583,6 +4633,7 @@
 
   /* read-only status for automated tests / debugging */
   window.IPBBeats = {
+    bounceForStudio: bounceForStudio, showTab: showTab, activeTab: function () { return activeTab; },
     info: function () {
       return {
         kit: S.kit, kitName: kitName(S.kit), bpm: S.bpm, swing: S.swing, mpcSwing: mpcSwing(S.swing), len: plen(), slot: S.slot,

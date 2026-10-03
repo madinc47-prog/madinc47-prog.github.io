@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Island Pin Studio: Free Multitrack Recorder &amp; Editor</title>
+  <meta name="description" content="Island Pin Studio: free multitrack audio studio in your browser. Record vocals over a beat, edit clips (move, trim, split, fade, copy and paste), Cool Edit-style waveform editing, per-track EQ, compressor, reverb, delay and noise gate, mixer with meters, master limiter, export WAV and MP3.">
+  <link rel="canonical" href="https://madinc47-prog.github.io/beats/studio/">
+  <meta name="theme-color" content="#0b0d12">
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="../styles.css?v=20261003s">
+  <link rel="stylesheet" href="studio.css?v=20261003s">
+</head>
+<body class="studio">
+  <header class="topbar st-top">
+    <div class="brand">
+      <a href="../" class="back" aria-label="Back to Island Pin Beats" title="Back to the beat maker">←</a>
+      <span class="logo">ISLAND PIN <b>STUDIO</b></span>
+      <a href="../" class="dj-link" title="Island Pin Beats: drum machine, piano roll, keys loops">Beats</a>
+      <a href="../../dj/" class="dj-link" title="DJ Psycho Fingers: two-deck DJ booth">DJ →</a>
+    </div>
+    <div class="st-proj">
+      <input id="proj-name" class="st-name" value="My Song" aria-label="Project name" title="Project name (used for saved projects and exported files)">
+      <span id="save-state" class="st-save" title="Projects save automatically in this browser">Not saved yet</span>
+      <button id="btn-new" class="btn small ghost" type="button" title="Start a new empty project (your current one stays saved)">New</button>
+      <button id="btn-open" class="btn small ghost" type="button" title="Open a saved project or a project file">Open…</button>
+      <button id="btn-save-file" class="btn small ghost" type="button" title="Download the whole project (audio included) as a .ipbstudio file you can open later or on another device">Save file</button>
+      <button id="btn-export" class="btn small primary" type="button" title="Mix everything down to a WAV or MP3 file">Export</button>
+      <button id="btn-howto" class="btn small" type="button" aria-expanded="false" title="Show the quick How-to guide">? How to</button>
+    </div>
+  </header>
+
+  <div class="st-transport" role="toolbar" aria-label="Transport">
+    <button id="t-home" class="tbtn" type="button" title="Go to the start (Home)">⇤</button>
+    <button id="t-play" class="tbtn play" type="button" title="Play / pause (Space)">▶</button>
+    <button id="t-stop" class="tbtn" type="button" title="Stop">■</button>
+    <button id="t-rec" class="tbtn rec" type="button" title="Record onto armed tracks while the others play (R). Arm a track with its R button first.">●</button>
+    <span class="sep"></span>
+    <button id="t-loop" class="btn small tog" type="button" title="Loop the region marked in the ruler (L). Drag in the ruler to set it.">⟲ Loop</button>
+    <button id="t-metro" class="btn small tog" type="button" title="Metronome click on every beat (M)">♩ Click</button>
+    <button id="t-snap" class="btn small tog on" type="button" title="Snap clips, splits and the loop to the beat grid (hold Alt while dragging to move freely)">⌗ Snap</button>
+    <label class="bpm" title="Song tempo: sets the bar grid, snap, metronome and synced delays">BPM <input id="t-bpm" type="number" min="40" max="220" step="1" value="96"></label>
+    <span class="st-time" id="t-time" title="Playhead position: bar.beat and minutes:seconds">1.1 · 0:00.00</span>
+    <span class="st-meter" title="Master output level"><i id="t-meter"></i></span>
+    <span class="st-in" id="t-in" hidden title="Microphone input level while recording"><b>MIC</b><i></i></span>
+    <button id="btn-recset" class="btn small" type="button" title="Recording setup: count-in, latency compensation, headphones">🎧 Rec setup</button>
+    <span class="sep"></span>
+    <button id="t-zout" class="tbtn sm" type="button" title="Zoom out">−</button>
+    <button id="t-zin" class="tbtn sm" type="button" title="Zoom in">+</button>
+    <button id="t-zfit" class="btn small ghost" type="button" title="Fit the whole song in view">Fit</button>
+  </div>
+
+  <nav class="tabs st-tabs" role="tablist">
+    <button class="tab active" data-view="multi" role="tab" title="Tracks and clips on a timeline">Multitrack</button>
+    <button class="tab" data-view="wave" role="tab" title="Detailed editing of one clip (double-click a clip)">Waveform Edit</button>
+    <button class="tab" data-view="mixer" role="tab" title="Channel strips with faders, pan, meters and FX">Mixer</button>
+  </nav>
+
+  <div class="st-body">
+    <main class="st-main">
+      <!-- MULTITRACK -->
+      <section id="view-multi" class="st-view active" aria-label="Multitrack">
+        <div class="st-tools">
+          <div class="st-drop">
+            <button id="btn-import" class="btn small primary" type="button" aria-haspopup="true" aria-expanded="false" title="Bring audio into the project">＋ Import ▾</button>
+            <div id="import-menu" class="st-menu" hidden>
+              <div class="st-menu-row"><button type="button" data-imp="bounce" title="Renders the beat that's loaded in the beat maker right now (drums, piano roll, keys loops, backing track) and puts it on Track 1">Bounce current beat to track</button>
+                <select id="bounce-len" aria-label="Bounce length" title="How much of the beat to bounce"><option value="4">4 bars</option><option value="8">8 bars</option><option value="16" selected>16 bars</option><option value="32">32 bars</option><option value="song">Full song</option></select></div>
+              <button type="button" data-imp="file" title="WAV, MP3, M4A, OGG or FLAC from your device (or drag files onto a track)">Audio file… (vocals, beats)</button>
+              <button type="button" data-imp="gunwalk" title="The Gunwalk instrumental by DJ Psycho Fingers (96 BPM)">Gunwalk beat (instrumental)</button>
+              <button type="button" data-imp="vault" title="Beats you bounced and vocals you recorded in Island Pin Beats">From Beats Vault (bounces &amp; takes)…</button>
+              <a href="../?studio=1" class="st-standalone" title="Opens the beat maker. Press 'Send to Studio' there to bounce the current beat or pattern straight into this project">Make a beat in the beat maker →</a>
+            </div>
+            <input id="file-in" type="file" accept="audio/*,.wav,.mp3,.m4a,.ogg,.flac,.aac" multiple hidden>
+          </div>
+          <button id="btn-addtrack" class="btn small" type="button" title="Add an empty track">＋ Track</button>
+          <span class="sep"></span>
+          <button id="btn-split" class="btn small" type="button" title="Split the selected clip at the playhead (S)">✂ Split</button>
+          <button id="btn-copy" class="btn small" type="button" title="Copy the selected clip (Ctrl+C)">Copy</button>
+          <button id="btn-paste" class="btn small" type="button" title="Paste at the playhead on the selected track (Ctrl+V)">Paste</button>
+          <button id="btn-dup" class="btn small" type="button" title="Duplicate the selected clip right after itself (Ctrl+D)">Duplicate</button>
+          <button id="btn-del" class="btn small" type="button" title="Delete the selected clip (Delete)">Delete</button>
+          <label class="st-cgain" title="Clip gain: volume of the selected clip only, in dB (the audio itself is not changed)">Clip <input id="clip-gain" type="number" step="0.5" min="-40" max="24" value="0" disabled aria-label="Clip gain dB"> dB</label>
+          <span class="sep"></span>
+          <button id="btn-undo" class="btn small ghost" type="button" title="Undo (Ctrl+Z)">↶ Undo</button>
+          <button id="btn-redo" class="btn small ghost" type="button" title="Redo (Ctrl+Y / Ctrl+Shift+Z)">↷ Redo</button>
+        </div>
+        <div class="mt" id="mt">
+          <div class="mt-corner"><span class="label">Tracks</span></div>
+          <div class="mt-ruler-wrap" id="ruler-wrap"><canvas id="ruler" class="mt-ruler" title="Click to move the playhead · drag to set the loop region"></canvas></div>
+          <div class="mt-heads" id="heads"></div>
+          <div class="mt-lanes-wrap" id="lanes-wrap">
+            <div class="mt-lanes" id="lanes"><div class="mt-loop" id="loop-shade"></div><div class="mt-playhead" id="playhead"></div></div>
+          </div>
+          <div class="st-countin" id="countin" hidden aria-live="assertive"></div>
+        </div>
+        <p class="st-hint" id="hint">Tip: hover any button to see what it does. Double-click a clip to open it in Waveform Edit.</p>
+      </section>
+
+      <!-- WAVEFORM EDIT -->
+      <section id="view-wave" class="st-view" aria-label="Waveform Edit">
+        <div class="st-tools">
+          <span class="wv-name" id="wv-name">No clip open</span>
+          <button id="wv-play" class="btn small" type="button" title="Play the selection (or from the cursor)">▶ Play</button>
+          <button id="wv-stop" class="btn small ghost" type="button" title="Stop preview">■</button>
+          <span class="sep"></span>
+          <button class="btn small" data-op="cut" type="button" title="Cut the selection to the clipboard (Ctrl+X)">Cut</button>
+          <button class="btn small" data-op="copy" type="button" title="Copy the selection (Ctrl+C)">Copy</button>
+          <button class="btn small" data-op="paste" type="button" title="Paste at the cursor, or replace the selection (Ctrl+V)">Paste</button>
+          <button class="btn small" data-op="delete" type="button" title="Delete the selection (Delete)">Delete</button>
+          <button class="btn small" data-op="silence" type="button" title="Turn the selection into silence">Silence</button>
+          <button class="btn small" data-op="trim" type="button" title="Keep only the selection (Trim)">Trim</button>
+          <span class="sep"></span>
+          <button class="btn small" data-op="normalize" type="button" title="Make the loudest peak hit −1 dB (selection, or the whole clip)">Normalize</button>
+          <span class="wv-amp"><button class="btn small" data-op="amplify" type="button" title="Change volume by the dB amount (selection or whole clip)">Amplify</button><input id="wv-db" type="number" step="0.5" value="3" aria-label="Amplify dB" title="Amplify amount in dB (negative = quieter)"><small>dB</small></span>
+          <button class="btn small" data-op="fadeIn" type="button" title="Fade the selection in from silence">Fade in</button>
+          <button class="btn small" data-op="fadeOut" type="button" title="Fade the selection out to silence">Fade out</button>
+          <button class="btn small" data-op="reverse" type="button" title="Play the selection backwards (selection or whole clip)">Reverse</button>
+          <span class="sep"></span>
+          <button id="wv-zin" class="tbtn sm" type="button" title="Zoom in (mouse wheel)">+</button>
+          <button id="wv-zout" class="tbtn sm" type="button" title="Zoom out">−</button>
+          <button id="wv-zsel" class="btn small ghost" type="button" title="Zoom to the selection">Zoom sel</button>
+          <button id="wv-zfit" class="btn small ghost" type="button" title="Show the whole clip">Fit</button>
+          <button id="wv-all" class="btn small ghost" type="button" title="Select everything (Ctrl+A)">Select all</button>
+          <button class="btn small ghost" data-op="undo" type="button" title="Undo (Ctrl+Z)">↶</button>
+          <button class="btn small ghost" data-op="redo" type="button" title="Redo (Ctrl+Y)">↷</button>
+          <button class="btn small ghost" data-op="revert" type="button" title="Throw away every waveform edit on this clip and go back to the original recording (edits are never written over the original)">⟲ Original</button>
+        </div>
+        <canvas id="wave" class="wv-canvas" aria-label="Waveform: drag to select, shift-click to extend, wheel to zoom"></canvas>
+        <div class="wv-info"><span id="wv-sel">Selection: none</span><span id="wv-len"></span><button id="wv-back" class="btn small ghost" type="button" title="Back to Multitrack">← Back to Multitrack</button></div>
+      </section>
+
+      <!-- MIXER -->
+      <section id="view-mixer" class="st-view" aria-label="Mixer">
+        <div class="mx" id="mixer"></div>
+        <p class="st-hint">Faders set each track's level (dB), the knob row sets pan. FX opens EQ, compressor, gate, delay and reverb. The master limiter stops the mix from clipping when you export.</p>
+      </section>
+    </main>
+
+    <aside id="howto" class="st-howto" hidden aria-label="How to">
+      <div class="kb-head"><span class="label">How to · quick start</span><button id="howto-close" class="btn small ghost" type="button">Close</button></div>
+      <ol>
+        <li><b>Bring in a beat.</b> Press <i>＋ Import</i> and choose the <i>Gunwalk beat</i>, an audio file, or something from your Beats Vault. In the beat maker, <i>Send to Studio</i> bounces the current beat or pattern straight into a track.</li>
+        <li><b>Record your voice.</b> Press <b class="r">R</b> on a track to arm it (it turns red), put the playhead where you want to start, then press <b class="r">●</b>. The other tracks play while you record. Press <b>■</b> to stop. You get a 1-bar count-in (change it in <i>🎧 Rec setup</i>). Wear headphones so the beat doesn't leak into the mic. Arm another track for doubles and ad-libs; every take stacks on its own track.</li>
+        <li><b>Edit clips.</b> Drag a clip to move it (it snaps to beats when ⌗ Snap is on). Drag its left or right edge to trim, and the small squares at the top corners to fade in or out. <i>✂ Split</i> cuts at the playhead; Copy, Paste and Duplicate work like a word processor.</li>
+        <li><b>Fine-tune.</b> Double-click a clip to open <i>Waveform Edit</i>. Drag to select, then Cut, Delete, Silence, Normalize, Amplify, Fade, Reverse or Trim. Edits never overwrite your recording: Undo steps back, and <i>⟲ Original</i> restores the untouched take.</li>
+        <li><b>Mix.</b> Use each track's volume and pan, or the <i>Mixer</i> tab. <i>FX</i> adds EQ, compressor, noise gate, delay and reverb (try a preset). M mutes a track; S solos it.</li>
+        <li><b>Loop and practise.</b> Drag across the ruler to mark a loop and turn on <i>⟲ Loop</i>. <i>♩ Click</i> adds a metronome.</li>
+        <li><b>Export.</b> <i>Export</i> mixes everything to WAV or MP3. Projects save automatically in this browser; <i>Save file</i> downloads a copy you can open anywhere.</li>
+      </ol>
+      <p class="kb-note">Keys: Space play/pause · R record · S split · Ctrl+C / Ctrl+V copy/paste · Ctrl+D duplicate · Delete · Ctrl+Z undo · L loop · M click · Home to start.</p>
+    </aside>
+  </div>
+
+  <!-- sheets -->
+  <div id="fx-sheet" class="st-sheet" hidden role="dialog" aria-modal="true" aria-label="Track effects">
+    <div class="st-panel">
+      <div class="kb-head"><span class="label">Effects · <span id="fx-track">Track</span></span>
+        <span><select id="fx-preset" title="Quick starting points"><option value="">Preset…</option><option value="vocal">Vocal: clean &amp; present</option><option value="rap">Vocal: rap upfront</option><option value="adlib">Ad-lib: wide &amp; echoey</option><option value="beat">Beat: glue &amp; punch</option><option value="off">All off</option></select>
+        <button id="fx-close" class="btn small ghost" type="button">Close</button></span></div>
+      <div id="fx-body" class="fx-body"></div>
+      <p class="kb-note">Signal flow: Gate → EQ → Compressor → Delay + Reverb → Pan → Fader. Changes are live while playing and are included in the export.</p>
+    </div>
+  </div>
+  <div id="recset-sheet" class="st-sheet" hidden role="dialog" aria-modal="true" aria-label="Recording setup">
+    <div class="st-panel narrow">
+      <div class="kb-head"><span class="label">Recording setup</span><button id="recset-close" class="btn small ghost" type="button">Close</button></div>
+      <p class="st-warn">🎧 <b>Use headphones</b> (wired is best). Speakers leak the beat into the mic, and Bluetooth adds a lot of delay.</p>
+      <div class="ex-grid">
+        <label>Count-in before the take <select id="rs-count"><option value="0">Off</option><option value="1">1 bar</option><option value="2">2 bars</option></select></label>
+        <label>Latency compensation <select id="rs-latmode"><option value="auto">Auto</option><option value="manual">Manual</option></select></label>
+        <label>Milliseconds <input id="rs-lat" type="number" step="1" min="-200" max="1000"></label>
+      </div>
+      <p class="kb-note">Auto: <span id="rs-auto"></span>. Each take is moved earlier by this much, so it lines up with what you heard. <span id="rs-last"></span></p>
+      <p class="kb-note">Take sounds late or early? Select it and nudge it by ear: <button id="rs-nudge-m" class="btn small" type="button">◀ 5 ms earlier</button> <button id="rs-nudge-p" class="btn small" type="button">5 ms later ▶</button> (the next takes use the new setting).</p>
+    </div>
+  </div>
+  <div id="vault-sheet" class="st-sheet" hidden role="dialog" aria-modal="true" aria-label="Import from Beats Vault">
+    <div class="st-panel">
+      <div class="kb-head"><span class="label">Import from Beats Vault</span><button id="vault-close" class="btn small ghost" type="button">Close</button></div>
+      <div id="vault-list" class="st-list"></div>
+      <p class="kb-note">Bounces and vocal takes you saved in Island Pin Beats on this device. To add the current beat, open the beat maker and press <i>Send to Studio</i>.</p>
+    </div>
+  </div>
+  <div id="open-sheet" class="st-sheet" hidden role="dialog" aria-modal="true" aria-label="Open project">
+    <div class="st-panel">
+      <div class="kb-head"><span class="label">Open project</span><button id="open-close" class="btn small ghost" type="button">Close</button></div>
+      <div id="open-list" class="st-list"></div>
+      <label class="btn small file-btn">Open a .ipbstudio file…<input id="proj-file" type="file" accept=".ipbstudio,application/octet-stream" hidden></label>
+    </div>
+  </div>
+  <div id="export-sheet" class="st-sheet" hidden role="dialog" aria-modal="true" aria-label="Export mixdown">
+    <div class="st-panel narrow">
+      <div class="kb-head"><span class="label">Export mixdown</span><button id="export-close" class="btn small ghost" type="button">Close</button></div>
+      <div class="ex-grid">
+        <label>Range <select id="ex-range"><option value="all">Whole song</option><option value="loop">Loop region only</option></select></label>
+        <label>Format <select id="ex-fmt"><option value="wav16">WAV 16-bit (CD quality)</option><option value="wav24">WAV 24-bit (studio)</option><option value="mp3-320">MP3 320 kbps</option><option value="mp3-192">MP3 192 kbps (smaller)</option></select></label>
+        <label class="chk"><input type="checkbox" id="ex-vault" checked> Also save to my Beats Vault</label>
+      </div>
+      <p class="kb-note" id="ex-note">Renders every unmuted track with its FX and the master limiter (ceiling −1 dBFS), at 44.1 kHz stereo.</p>
+      <div class="ex-actions"><button id="ex-go" class="btn primary" type="button">Export</button><span id="ex-status" class="st-save"></span></div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script src="core.js?v=20261003s"></script>
+  <script src="audio.js?v=20261003s"></script>
+  <script src="wave.js?v=20261003s"></script>
+  <script src="ui.js?v=20261003s"></script>
+</body>
+</html>

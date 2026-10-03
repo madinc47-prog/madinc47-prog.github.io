@@ -770,3 +770,16 @@ body.bt-on:not(.bt-layer) .seq-head::after {
 .lib-info small { font-size: .68rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .lib-sheet .kb-note a { color: var(--accent); }
 @media (max-width: 520px) { .lib-panel { max-height: 92vh; padding: .7rem; } .lib-list { grid-template-columns: 1fr; } }
+.studio-link { color: var(--accent); border-color: rgba(34,211,238,.45); }
+
+/* Studio tab (embedded multitrack) + DJ tab link */
+.tab-dj { text-decoration: none; display: inline-flex; align-items: center; color: var(--muted); }
+.tab-dj::after { content: " ↗"; font-size: .75em; margin-left: .2em; opacity: .7; }
+.tab-dj:hover { color: var(--text); }
+main:has(> #tab-studio.active) { max-width: none; }
+.panel-studio.active { display: block; }
+.studio-bar { display: flex; align-items: center; justify-content: space-between; gap: .75rem; margin-bottom: .5rem; }
+.studio-bar .sub { margin: 0; }
+.studio-host { border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: var(--bg); }
+.studio-frame { display: block; width: 100%; height: calc(100vh - 170px); height: calc(100dvh - 170px); min-height: 560px; border: 0; }
+@media (max-width: 700px) { .studio-bar .sub { display: none; } .studio-frame { height: calc(100dvh - 150px); min-height: 520px; } }
