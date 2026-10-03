@@ -329,9 +329,9 @@ function analyse(now, dt) {
   const sd = Math.sqrt(fluxHist.reduce((a, b) => a + (b - mean) * (b - mean), 0) / fluxHist.length);
   const tsec = now / 1000;
   if (flux > mean + sd * 1.35 + 2 && tsec - lastBeat > .27 && F.bass > .28) {
-    const iv = tsec - lastBeat; if (iv < 2) { beatIntervals.push(iv); if (beatIntervals.length > 24) beatIntervals.shift(); }
+    const iv = tsec - lastBeat; if (iv < 1.6 && iv > .3) { beatIntervals.push(iv); if (beatIntervals.length > 24) beatIntervals.shift(); }
     lastBeat = tsec; F.beat = true; F.pulse = 1;
-    if (beatIntervals.length >= 6) {
+    if (beatIntervals.length >= 4) {
       const s = [...beatIntervals].sort((a, b) => a - b); let ivm = s[s.length >> 1]; let bpm = 60 / ivm;
       while (bpm < 75) bpm *= 2; while (bpm > 165) bpm /= 2;
       F.bpm = F.bpm ? F.bpm * .85 + bpm * .15 : bpm;
