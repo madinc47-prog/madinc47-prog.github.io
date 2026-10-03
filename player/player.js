@@ -3,6 +3,7 @@ import { saveTrack, listTracks, getTrack, deleteTrack, onMediaChange } from '../
 import { createScene } from './scene.js';
 import { createViz, THEMES } from './viz.js';
 import { OUTFITS, OUTFIT_FOR_THEME } from './outfits.js';
+import { createEQ } from './eq.js';
 import { fmt, hash, isAudioFile, titleFromName, makeCover, makeLabel, readTags, probeDuration, computePeaks } from './util.js';
 
 const $ = (s, r = document) => r.querySelector(s);
@@ -20,6 +21,7 @@ const S = {
   outfit: LS.get('outfit', 'classic'), matchOutfit: LS.get('matchOutfit', false), autoMix: LS.get('autoMix', true),
 };
 const ANIM_SPEED = { full: 1, quick: 2.2, off: 100 };
+const eq = createEQ({ toast: (m) => toast(m) });
 
 // ---------------- library ----------------
 const DEMO = { key: 'demo:gunwalk', kind: 'demo', title: 'Gunwalk', artist: 'DJ Psycho Fingers', source: 'beats', url: new URL('../beats/tracks/gunwalk-instrumental.mp3', import.meta.url).href, duration: 198, demo: true, createdAt: 0 };
@@ -75,7 +77,7 @@ async function blobFor(it) {
 }
 
 // ---------------- audio engine ----------------
-// deck A / deck B → per-deck fade gain → crossfader slot gain (equal-power) → mix bus → [master EQ] → duck → volume → analyser → out
+// deck A / deck B → per-deck fade gain → crossfader slot gain (equal-power) → mix bus → master EQ → duck → volume → analyser → out
 let ctx = null, master, analyser, sfxBus, freq, tdata, prevFreq, mixBus, duck, postMix;
 const slot = { A: null, B: null };
 function ensureCtx() {
@@ -85,8 +87,7 @@ function ensureCtx() {
     analyser = ctx.createAnalyser(); analyser.fftSize = 2048; analyser.smoothingTimeConstant = 0.5;
     master.connect(analyser); analyser.connect(ctx.destination);
     duck = ctx.createGain(); duck.connect(master);
-    mixBus = ctx.createGain(); postMix = mixBus;
-    if (typeof window.__pfInsertMaster === 'function') postMix = window.__pfInsertMaster(ctx, mixBus) || mixBus;
+    mixBus = ctx.createGain(); postMix = eq.attach(ctx, mixBus); // master EQ sits after the crossfader
     postMix.connect(duck);
     ['A', 'B'].forEach((s) => { slot[s] = ctx.createGain(); slot[s].connect(mixBus); });
     applyXfGains(0);
@@ -725,6 +726,8 @@ $('#autoMix').addEventListener('change', (e) => { S.autoMix = e.target.checked; 
 setInterval(() => { if (document.hidden) checkAutoAdvance(); }, 500);
 document.addEventListener('visibilitychange', () => { scene.setInstant(document.hidden); });
 
+$('#eqBtn').addEventListener('click', () => { ensureCtx(); eq.open(); });
+
 // ---------------- transport controls ----------------
 $('#playBtn').addEventListener('click', () => { userActivated = true; togglePlay(); });
 $('#prevBtn').addEventListener('click', () => { userActivated = true; next(-1); });
@@ -781,11 +784,12 @@ const KEYS = (e) => {
   else if (k === 'o' || k === 'O') { const ks = Object.keys(OUTFITS); const cur = $('#outfit').value; const nx = ks[(ks.indexOf(cur) + 1) % ks.length]; if (S.matchOutfit) { S.matchOutfit = false; LS.set('matchOutfit', false); } setOutfit(nx); toast('Outfit: ' + OUTFITS[nx].name); }
   else if (k === '[' || k === ']') { ensureCtx(); setXf(xfPos() + (k === ']' ? .1 : -.1), { user: true }); }
   else if (k === 'x' || k === 'X') $('#autoMix').click();
+  else if (k === 'e' || k === 'E') { ensureCtx(); eq.open(); }
   else if (k === 'v' || k === 'V') toggleVisMode();
   else if (k === 'h' || k === 'H') $('#likeBtn').click();
   else if (k === 'a' || k === 'A') $('#fileIn').click();
   else if (k === '?') $('#helpDlg').showModal();
-  else if (k === 'Escape') { closeMenus(); if (document.body.classList.contains('vis-only')) toggleVisMode(); }
+  else if (k === 'Escape') { closeMenus(); if (eq.isOpen) eq.open(false); if (document.body.classList.contains('vis-only')) toggleVisMode(); }
   else if (/^[0-9]$/.test(k) && deck && Number.isFinite(deck.el.duration)) seekTo(deck.el.duration * (+k / 10));
   else handled = false;
   if (handled) { e.preventDefault(); userActivated = true; }
@@ -882,6 +886,6 @@ async function boot() {
     showBigPlay(`Play “${start.title}”`);
   } else { const first = visible()[0] || DEMO; current = first; updateNowPlaying(first); renderList(); showBigPlay('Tap to drop the needle'); }
   requestAnimationFrame(loop);
-  window.__pf = { get deck() { return deck; }, get cued() { return cued; }, get outgoing() { return outgoing; }, get transition() { return transition; }, XF, xfPos, setXf, get slot() { return slot; }, get ctx() { return ctx; }, startTransition, get activeSlot() { return activeSlot; }, get current() { return current; }, F, scene, playItem, refreshLibrary, get library() { return library; }, next, S, setOutfit, setTheme };
+  window.__pf = { get deck() { return deck; }, get cued() { return cued; }, get outgoing() { return outgoing; }, get transition() { return transition; }, XF, xfPos, setXf, get slot() { return slot; }, get ctx() { return ctx; }, startTransition, get activeSlot() { return activeSlot; }, eq, get current() { return current; }, F, scene, playItem, refreshLibrary, get library() { return library; }, next, S, setOutfit, setTheme };
 }
 boot();

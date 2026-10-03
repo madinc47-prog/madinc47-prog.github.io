@@ -18,7 +18,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
-  <link rel="stylesheet" href="player.css?v=4">
+  <link rel="stylesheet" href="player.css?v=5">
 </head>
 <body data-theme="club">
   <canvas id="viz" aria-hidden="true"></canvas>
@@ -96,6 +96,7 @@
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3l4 2 4-2 5 4-3 4-2-1v11H8V10l-2 1-3-4z"/></svg>
           <select id="outfit" aria-label="DJ outfit"></select>
         </label>
+        <button id="eqBtn" class="icon-btn box eq-open" aria-expanded="false" aria-controls="eqPanel" title="Equalizer (E)">EQ</button>
         <button id="fsBtn" class="icon-btn box" aria-label="Fullscreen" title="Fullscreen (F)"><svg viewBox="0 0 24 24"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/></svg></button>
       </div>
     </footer>
@@ -146,7 +147,7 @@
       <dt>Shift+← / P</dt><dd>Previous</dd><dt>Shift+→ / N</dt><dd>Next</dd><dt>↑ / ↓</dt><dd>Volume</dd>
       <dt>M</dt><dd>Mute</dd><dt>S</dt><dd>Shuffle</dd><dt>R</dt><dd>Repeat all / one / off</dd>
       <dt>0–9</dt><dd>Jump to 0–90 %</dd><dt>T</dt><dd>Next theme</dd><dt>F</dt><dd>Fullscreen</dd>
-      <dt>[ / ]</dt><dd>Crossfader A / B</dd><dt>X</dt><dd>Auto mix on/off</dd><dt>O</dt><dd>Next outfit</dd><dt>V</dt><dd>Visualizer mode</dd><dt>H</dt><dd>Like</dd><dt>A</dt><dd>Add files</dd><dt>?</dt><dd>This help</dd>
+      <dt>[ / ]</dt><dd>Crossfader A / B</dd><dt>X</dt><dd>Auto mix on/off</dd><dt>E</dt><dd>Equalizer</dd><dt>O</dt><dd>Next outfit</dd><dt>V</dt><dd>Visualizer mode</dd><dt>H</dt><dd>Like</dd><dt>A</dt><dd>Add files</dd><dt>?</dt><dd>This help</dd>
     </dl>
     <div class="dlg-actions"><button class="btn">Close</button></div>
   </dialog>
@@ -157,6 +158,6 @@
   <input type="file" id="dirIn" multiple webkitdirectory hidden>
 
   <script type="module" src="../shared/ecosystem-nav.js"></script>
-  <script type="module" src="player.js?v=4"></script>
+  <script type="module" src="player.js?v=5"></script>
 </body>
 </html>
