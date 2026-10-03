@@ -162,3 +162,6 @@ body.studio { overflow-x: hidden; }
 body.embed .st-top .brand { display: none; }
 body.embed .st-top { padding-top: .35rem; padding-bottom: .35rem; }
 body.embed .st-standalone { display: none; }
+.ex-actions { flex-wrap: wrap; }
+.ex-status { margin: .6rem 0 0; line-height: 1.9; }
+.ex-status a.btn { text-decoration: none; }

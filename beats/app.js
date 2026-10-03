@@ -1775,6 +1775,8 @@
             '<audio controls preload="none"></audio>' +
             '<div class="vitem-actions">' +
               '<a class="btn small" download>Download WAV</a>' +
+              '<button type="button" class="btn small ghost" data-act="player" title="Add to the Psycho Fingers Player library">→ Player</button>' +
+              '<button type="button" class="btn small ghost" data-act="dj" title="Add to the DJ booth library">→ DJ Booth</button>' +
               '<button type="button" class="btn small ghost" data-act="rename">Rename</button>' +
               '<button type="button" class="btn small ghost" data-act="del">Delete</button>' +
             "</div>";
@@ -1785,6 +1787,9 @@
           var a = el.querySelector("a");
           a.href = url;
           a.download = it.name.replace(/[^\w\- ]+/g, "").replace(/\s+/g, "_") + ".wav";
+          ["player", "dj"].forEach(function (d) {
+            el.querySelector('[data-act="' + d + '"]').addEventListener("click", function () { sendOut(d, it.blob, it.duration, it.name.replace(/\s*\d+bpm$/, "").trim()); });
+          });
           el.querySelector('[data-act="rename"]').addEventListener("click", function () {
             var n = prompt("Rename recording", it.name);
             if (!n) return;
@@ -2284,9 +2289,8 @@
     for (var i = 0; i < V.length; i += 4) { var a = Math.abs(V[i]); if (a > p) p = a; }
     return p;
   }
-  function exportVocalMix(first) {
+  function vocalMix(first) { // beat + vocal (latency-shifted, vocal fader) of the last take → { L, R, n, sr, dry }
     var t = vox.last;
-    if (!t) { toast("No vocal take yet."); return; }
     var sh = Math.round((autoLatency() + S.vox.nudge / 1000) * t.sr); // mic arrives late → pull it earlier
     var vg = mixGain("vocal");
     var n = t.frames, outL = new Float32Array(n), outR = new Float32Array(n), dry = S.vox.dry && first ? new Float32Array(n) : null;
@@ -2297,12 +2301,85 @@
       outL[i] = t.L[i] + v * vg;
       outR[i] = t.R[i] + v * vg;
     }
+    return { L: outL, R: outR, n: n, sr: t.sr, dry: dry };
+  }
+  function exportVocalMix(first) {
+    var t = vox.last;
+    if (!t) { toast("No vocal take yet."); return; }
+    var mx = vocalMix(first), n = mx.n, outL = mx.L, outR = mx.R, dry = mx.dry;
     var name = "Vocal take" + (t.title ? " · " + t.title : "");
     saveToVault(encodeWav(outL, outR, n, t.sr), n / t.sr, first ? name : name + " (re-mix)");
     if (dry) saveToVault(encodeWav(dry, dry, n, t.sr), n / t.sr, "Dry vocal" + (t.title ? " · " + t.title : ""));
     var quiet = vocalPeak(t.V) < 0.003;
     setVoxStatus("Saved " + fmtTime(n / t.sr) + " vocal + " + (btActive() ? "instrumental" : "beat") + " mix to Vault" + (quiet ? " — warning: the mic signal was almost silent" : ""), quiet);
-    if (first) toast("Vocal take saved to Vault (beat + vocal WAV)");
+    if (first) sendOffer("Vocal take saved to Vault (beat + vocal WAV).", function (dest) { sendVocal(dest); });
+  }
+  function sendVocal(dest) {
+    var t = vox.last;
+    if (!t) { toast("Record a vocal take first (🎙 Record Vocals)."); return; }
+    var mx = vocalMix(false);
+    sendOut(dest, encodeWav(mx.L, mx.R, mx.n, mx.sr), mx.n / mx.sr, (t.title || songTitle()) + " (vocal take)");
+  }
+
+  /* ---------------- IslePin ecosystem: send audio to the Player / DJ booth ----------------
+   * Uses the shared library in ../shared/media-store.js (IndexedDB "islepin-media", store "tracks";
+   * BroadcastChannel "islepin-media" tells an open Player / DJ tab right away). Source is always "beats". */
+  var mediaStoreP = null, lastSent = null;
+  function mediaStore() {
+    if (!mediaStoreP) mediaStoreP = import("../shared/media-store.js").catch(function (e) { mediaStoreP = null; throw e; });
+    return mediaStoreP;
+  }
+  function artistName() { var a = $("studio-artist"); return (a && a.value.trim()) || "Island Pin Beats"; }
+  function songTitle() { var t = $("studio-title"); return (t && t.value.trim()) || "Untitled beat"; }
+  function djHref(id) { return "../dj/?from=beats&back=" + encodeURIComponent(activeTab) + (id ? "&track=" + encodeURIComponent(id) : ""); }
+  function sendOut(dest, blob, dur, title) {
+    return mediaStore().then(function (m) {
+      return m.saveTrack({ title: title, artist: artistName(), source: "beats", blob: blob, mime: blob.type || "audio/wav", duration: dur })
+        .then(function (id) { lastSent = { id: id, dest: dest, title: title }; sendToast(dest, id, title, m.playerUrl(id)); return id; });
+    }).catch(function (e) { toast("Could not send to the " + (dest === "dj" ? "DJ booth" : "Player") + " (" + (e && e.message || e) + ")"); return null; });
+  }
+  function sendBox() {
+    var el = $("ipb-send");
+    if (!el) {
+      el = document.createElement("div"); el.id = "ipb-send"; el.className = "send-toast"; el.setAttribute("role", "status"); el.hidden = true;
+      el.innerHTML = '<span class="send-msg"></span><span class="send-acts"></span><button type="button" class="send-x" aria-label="Close">×</button>';
+      el.querySelector(".send-x").addEventListener("click", function () { el.hidden = true; });
+      document.body.appendChild(el);
+    }
+    clearTimeout(el._t);
+    return el;
+  }
+  function sendToast(dest, id, title, purl) {
+    var el = sendBox(), acts = el.querySelector(".send-acts");
+    el.querySelector(".send-msg").textContent = "✓ “" + title + "” is in your IslePin library" + (dest === "dj" ? " (DJ booth library)." : " (Player).");
+    acts.innerHTML = '<a class="btn small" target="psycho-fingers-player" rel="opener">Open Player ↗</a><a class="btn small">Open DJ</a>';
+    var a = acts.querySelectorAll("a");
+    a[0].href = purl; a[1].href = djHref(id);
+    a[dest === "dj" ? 1 : 0].classList.add("primary");
+    a[1].addEventListener("click", function () { if (playing) stop(); saveSession(); });
+    el.hidden = false; el._t = setTimeout(function () { el.hidden = true; }, 12000);
+  }
+  function sendOffer(msg, fn) { // "saved — send it on?" with → Player / → DJ Booth buttons
+    var el = sendBox(), acts = el.querySelector(".send-acts");
+    el.querySelector(".send-msg").textContent = msg;
+    acts.innerHTML = '<button type="button" class="btn small" data-d="player">Send to Player</button><button type="button" class="btn small" data-d="dj">Send to DJ Booth</button>';
+    acts.querySelectorAll("button").forEach(function (b) { b.addEventListener("click", function () { fn(b.dataset.d); }); });
+    el.hidden = false; el._t = setTimeout(function () { el.hidden = true; }, 12000);
+  }
+  function vaultGet(id) {
+    var mem = memVault.filter(function (x) { return x.id === id; })[0];
+    if (mem) return Promise.resolve(mem);
+    return idb("vault", "readonly", function (st) { return st.get(id); });
+  }
+  function bounceAndSend(dest) {
+    stop();
+    var bars = $("bounce-bars").value;
+    bounce(bars, function (vid) {
+      vaultGet(vid).then(function (it) {
+        if (!it) { toast("Bounce not found."); return; }
+        sendOut(dest, it.blob, it.duration, songTitle() + (bars === "song" ? "" : " (" + bars + "-bar loop)"));
+      });
+    });
   }
   function renderLastTake() {
     var el = $("vox-last");
@@ -4489,6 +4566,10 @@
         });
       });
     });
+    $("btn-send-player").addEventListener("click", function () { bounceAndSend("player"); });
+    $("btn-send-dj").addEventListener("click", function () { bounceAndSend("dj"); });
+    $("vox-send-player").addEventListener("click", function () { sendVocal("player"); });
+    $("vox-send-dj").addEventListener("click", function () { sendVocal("dj"); });
     if (/[?&]studio=1/.test(location.search)) setTimeout(function () { // came from the Studio's Import menu
       var b = $("btn-to-studio"); b.classList.add("primary"); b.scrollIntoView({ block: "center" });
       toast("Make or load a beat, pick the length, then press Send to Studio →");
@@ -4634,6 +4715,7 @@
   /* read-only status for automated tests / debugging */
   window.IPBBeats = {
     bounceForStudio: bounceForStudio, showTab: showTab, activeTab: function () { return activeTab; },
+    lastSent: function () { return lastSent; }, sendOut: sendOut, djHref: djHref,
     info: function () {
       return {
         kit: S.kit, kitName: kitName(S.kit), bpm: S.bpm, swing: S.swing, mpcSwing: mpcSwing(S.swing), len: plen(), slot: S.slot,

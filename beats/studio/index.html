@@ -8,8 +8,8 @@
   <link rel="canonical" href="https://madinc47-prog.github.io/beats/studio/">
   <meta name="theme-color" content="#0b0d12">
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="../styles.css?v=20261003s">
-  <link rel="stylesheet" href="studio.css?v=20261003s">
+  <link rel="stylesheet" href="../styles.css?v=20261003t">
+  <link rel="stylesheet" href="studio.css?v=20261003t">
 </head>
 <body class="studio">
   <header class="topbar st-top">
@@ -198,14 +198,20 @@
         <label class="chk"><input type="checkbox" id="ex-vault" checked> Also save to my Beats Vault</label>
       </div>
       <p class="kb-note" id="ex-note">Renders every unmuted track with its FX and the master limiter (ceiling −1 dBFS), at 44.1 kHz stereo.</p>
-      <div class="ex-actions"><button id="ex-go" class="btn primary" type="button">Export</button><span id="ex-status" class="st-save"></span></div>
+      <div class="ex-actions"><button id="ex-go" class="btn primary" type="button" title="Mix down and download the file">Export</button>
+        <button id="ex-player" class="btn" type="button" title="Mix down (format above) and add it to the Psycho Fingers Player library">Send to Player</button>
+        <button id="ex-dj" class="btn" type="button" title="Mix down (format above) and add it to the DJ booth library">Send to DJ Booth</button></div>
+      <p id="ex-status" class="st-save ex-status"></p>
     </div>
   </div>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
-  <script src="core.js?v=20261003s"></script>
-  <script src="audio.js?v=20261003s"></script>
-  <script src="wave.js?v=20261003s"></script>
-  <script src="ui.js?v=20261003s"></script>
+  <script src="core.js?v=20261003t"></script>
+  <script src="audio.js?v=20261003t"></script>
+  <script src="wave.js?v=20261003t"></script>
+  <script src="ui.js?v=20261003t"></script>
+  <script>/* Beats | DJ Booth | Player switcher on the stand-alone Studio page (inside the Beats tab, Beats shows it) */
+    if (!/[?&]embed=1/.test(location.search)) { var nav = document.createElement("script"); nav.type = "module"; nav.src = "../../shared/ecosystem-nav.js?mode=pill&pos=bl"; document.body.appendChild(nav); }
+  </script>
 </body>
 </html>

@@ -783,3 +783,12 @@ main:has(> #tab-studio.active) { max-width: none; }
 .studio-host { border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: var(--bg); }
 .studio-frame { display: block; width: 100%; height: calc(100vh - 170px); height: calc(100dvh - 170px); min-height: 560px; border: 0; }
 @media (max-width: 700px) { .studio-bar .sub { display: none; } .studio-frame { height: calc(100dvh - 150px); min-height: 520px; } }
+
+/* Send to Player / DJ toast (IslePin ecosystem) */
+.send-toast { position: fixed; left: 50%; bottom: 1.25rem; transform: translateX(-50%); z-index: 120; display: flex; flex-wrap: wrap; align-items: center; gap: .5rem;
+  background: #1a1f2b; border: 1px solid #f5b301; color: var(--text); padding: .55rem .6rem .55rem .9rem; border-radius: 12px; font-size: .85rem; max-width: calc(100% - 1.5rem); box-shadow: 0 10px 30px rgba(0,0,0,.45); }
+.send-toast[hidden] { display: none; }
+.send-toast .send-acts { display: flex; gap: .35rem; }
+.send-toast a.btn { text-decoration: none; }
+.send-toast { padding-right: 2rem; }
+.send-toast .send-x { position: absolute; top: .3rem; right: .35rem; background: transparent; border: 0; color: var(--muted); font-size: 1.2rem; cursor: pointer; padding: 0 .3rem; }

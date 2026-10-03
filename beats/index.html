@@ -13,7 +13,7 @@
   <meta property="og:type" content="website">
   <meta name="theme-color" content="#0b0d12">
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="styles.css?v=20261003s">
+  <link rel="stylesheet" href="styles.css?v=20261003t">
 </head>
 <body>
   <header class="topbar">
@@ -157,6 +157,8 @@
             <option value="song">Full song</option>
           </select>
           <button id="btn-to-studio" class="btn ghost" type="button" title="Bounce the current beat (length from the menu) and open it in Island Pin Studio, where you can record vocals over it, edit and mix">Send to Studio →</button>
+          <button id="btn-send-player" class="btn ghost" type="button" title="Bounce the current beat (length from the menu) and add it to the Psycho Fingers Player library">Send to Player</button>
+          <button id="btn-send-dj" class="btn ghost" type="button" title="Bounce the current beat (length from the menu) and add it to the DJ booth library">Send to DJ Booth</button>
           <span class="sep"></span>
           <button type="button" class="btn rec vox js-vox">🎙 Record Vocals</button>
         </div>
@@ -505,6 +507,8 @@
         <div class="vox-opts">
           <span id="vox-last" class="mono">No take yet this session.</span>
           <button type="button" id="vox-remix" class="btn small" disabled>Export last take again (current vocal level)</button>
+          <button type="button" id="vox-send-player" class="btn small" title="Beat + vocal of the last take, added to the Psycho Fingers Player library">Send take to Player</button>
+          <button type="button" id="vox-send-dj" class="btn small" title="Beat + vocal of the last take, added to the DJ booth library">Send take to DJ Booth</button>
           <button type="button" class="btn small rec vox js-vox">🎙 Record Vocals</button>
         </div>
         <div class="vox-status js-vox-status" role="status"></div>
@@ -604,12 +608,13 @@
 
   <footer class="foot">Free · runs in your browser · synthesized drums + CC0 one-shots (<a href="samples/CREDITS.md">credits</a>), no paid APIs · instrumental “Gunwalk” © Emmanuel Griffith / DJ Psycho Fingers (<a href="tracks/CREDITS.md">credits</a>) · <a href="studio/">Studio</a> · <a href="../dj/">DJ booth</a> · <a href="../">IslePin</a></footer>
 
-  <script src="drums.js?v=20261003s"></script>
-  <script src="keys-instruments.js?v=20261003s"></script>
-  <script src="pianoroll-data.js?v=20261003s"></script>
-  <script src="keys-loops.js?v=20261003s"></script>
-  <script src="pianoroll.js?v=20261003s"></script>
-  <script src="app.js?v=20261003s"></script>
+  <script src="drums.js?v=20261003t"></script>
+  <script src="keys-instruments.js?v=20261003t"></script>
+  <script src="pianoroll-data.js?v=20261003t"></script>
+  <script src="keys-loops.js?v=20261003t"></script>
+  <script src="pianoroll.js?v=20261003t"></script>
+  <script src="app.js?v=20261003t"></script>
   <script type="module" src="user-samples.js?v=1"></script>
+  <script type="module" src="../shared/ecosystem-nav.js"></script><!-- Beats | DJ Booth | Player switcher (shared/README.md) -->
 </body>
 </html>

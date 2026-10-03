@@ -4,7 +4,7 @@
   var S = window.IPBS, E = S.E, OPS = S.OPS;
   var $ = function (id) { return document.getElementById(id); };
   var P = null, selTrack = null, selClip = null, pps = 40, playhead = 0, playFrom = 0, clipBoard = null, view = "multi";
-  var waveClip = null, waveBuf = null, waveBoard = null, waveEd = null, saveTimer = null, takeN = 1, lastExport = null, recClips = [];
+  var waveClip = null, waveBuf = null, waveBoard = null, waveEd = null, saveTimer = null, takeN = 1, lastExport = null, recClips = [], lastSent = null;
   var hpWarned = false, lastTake = null, EMBED = /[?&]embed=1/.test(location.search);
   var TH = function () { return parseFloat(getComputedStyle($("mt")).getPropertyValue("--th")) || 84; };
 
@@ -711,13 +711,12 @@
       });
     });
   }
-  function exportMix() {
+  function renderMix() { // mix → { blob, ext, dur, peak, name } in the format picked in the Export sheet
     var range = $("ex-range").value, fmt = $("ex-fmt").value, end = E.projectEnd(P);
-    if (!P.clips.length) { toast("Nothing to export yet. Import or record something first."); return Promise.resolve(); }
+    if (!P.clips.length) return Promise.reject(new Error("Nothing to export yet. Import or record something first."));
     var from = range === "loop" ? P.loop.start : 0, to = range === "loop" ? P.loop.end : end;
-    if (to - from < 0.1) { toast("The loop region is empty."); return Promise.resolve(); }
-    var st = $("ex-status"); st.textContent = "Rendering…"; $("ex-go").disabled = true;
-    var t0 = performance.now();
+    if (to - from < 0.1) return Promise.reject(new Error("The loop region is empty."));
+    var st = $("ex-status"), t0 = performance.now(); st.textContent = "Rendering…";
     return E.render(P, from, to).then(function (ch) {
       st.textContent = "Encoding…";
       if (fmt.indexOf("mp3") === 0) return (window.lamejs ? Promise.resolve() : S.loadScript("vendor/lame.min.js")).then(function () { return { blob: S.encodeMp3(ch, S.SR, +fmt.split("-")[1]), ext: "mp3", ch: ch }; });
@@ -726,11 +725,39 @@
       var dur = r.ch[0].length / S.SR, name = (P.name || "mix").replace(/[^\w\- ]+/g, "").trim() || "mix";
       var pk = 0; r.ch.forEach(function (a) { for (var i = 0; i < a.length; i++) { var v = Math.abs(a[i]); if (v > pk) pk = v; } });
       lastExport = { blob: r.blob, ext: r.ext, dur: dur, peak: pk, size: r.blob.size, ms: Math.round(performance.now() - t0), from: from, to: to };
-      S.download(r.blob, name + "." + r.ext);
-      st.textContent = "Done: " + name + "." + r.ext + " · " + fmtDur(dur) + " · " + (r.blob.size / 1048576).toFixed(1) + " MB · peak " + (20 * Math.log10(pk || 1e-9)).toFixed(1) + " dBFS";
-      if ($("ex-vault").checked) return saveToVault(r.blob, dur, P.name + " (Studio mix)").then(function (ok) { if (ok) st.textContent += " · saved to Vault"; });
-    }).catch(function (e) { st.textContent = "Export failed: " + e.message; console.error(e); })
-      .then(function () { $("ex-go").disabled = false; });
+      return { blob: r.blob, ext: r.ext, dur: dur, peak: pk, name: name };
+    });
+  }
+  function busy(on) { ["ex-go", "ex-player", "ex-dj"].forEach(function (id) { $(id).disabled = on; }); }
+  function exportMix() {
+    var st = $("ex-status"); busy(true);
+    return renderMix().then(function (r) {
+      S.download(r.blob, r.name + "." + r.ext);
+      st.textContent = "Done: " + r.name + "." + r.ext + " · " + fmtDur(r.dur) + " · " + (r.blob.size / 1048576).toFixed(1) + " MB · peak " + (20 * Math.log10(r.peak || 1e-9)).toFixed(1) + " dBFS";
+      if ($("ex-vault").checked) return saveToVault(r.blob, r.dur, P.name + " (Studio mix)").then(function (ok) { if (ok) st.textContent += " · saved to Vault"; });
+    }).catch(function (e) { st.textContent = "Export failed: " + e.message; if (!/Nothing|empty/.test(e.message)) console.error(e); })
+      .then(function () { busy(false); });
+  }
+  /* IslePin ecosystem: mixdown → shared library (../../shared/media-store.js, source "beats") → Player / DJ booth */
+  var mediaStoreP = null;
+  function mediaStore() { if (!mediaStoreP) mediaStoreP = import("../../shared/media-store.js").catch(function (e) { mediaStoreP = null; throw e; }); return mediaStoreP; }
+  function sendMix(dest) {
+    var st = $("ex-status"); busy(true);
+    return Promise.all([renderMix(), mediaStore()]).then(function (a) {
+      var r = a[0], m = a[1];
+      return m.saveTrack({ title: P.name || "Studio mix", artist: (function () { try { var a = window.parent !== window && window.parent.document.getElementById("studio-artist"); return (a && a.value.trim()) || "Island Pin Beats"; } catch (e) { return "Island Pin Beats"; } })(), source: "beats", blob: r.blob, mime: r.ext === "mp3" ? "audio/mpeg" : "audio/wav", duration: r.dur }).then(function (id) {
+        lastSent = { id: id, dest: dest, title: P.name, ext: r.ext };
+        st.innerHTML = "";
+        st.appendChild(document.createTextNode("✓ “" + (P.name || "Studio mix") + "” (" + r.ext.toUpperCase() + ", " + fmtDur(r.dur) + ") is in your IslePin library. "));
+        var pl = document.createElement("a"); pl.className = "btn small" + (dest === "player" ? " primary" : ""); pl.textContent = "Open Player ↗"; pl.href = m.playerUrl(id); pl.target = "psycho-fingers-player";
+        var dj = document.createElement("a"); dj.className = "btn small" + (dest === "dj" ? " primary" : ""); dj.textContent = "Open DJ"; dj.href = "../../dj/?from=beats&back=studio&track=" + encodeURIComponent(id); dj.target = "_top";
+        dj.addEventListener("click", function () { if (saveTimer) saveNow(); });
+        st.appendChild(pl); st.appendChild(document.createTextNode(" ")); st.appendChild(dj);
+        toast("Sent to the " + (dest === "dj" ? "DJ booth" : "Player") + " library.");
+        return id;
+      });
+    }).catch(function (e) { st.textContent = "Send failed: " + e.message; })
+      .then(function (id) { busy(false); return id; });
   }
   function saveToVault(blob, dur, label) {
     return S.beatsDb().then(function (d) {
@@ -843,6 +870,8 @@
     document.querySelectorAll(".st-sheet").forEach(function (s) { s.addEventListener("click", function (e) { if (e.target === s) s.hidden = true; }); });
     $("btn-export").addEventListener("click", function () { $("export-sheet").hidden = false; $("ex-status").textContent = ""; $("ex-range").value = P.loop.on ? "loop" : "all"; });
     $("ex-go").addEventListener("click", exportMix);
+    $("ex-player").addEventListener("click", function () { sendMix("player"); });
+    $("ex-dj").addEventListener("click", function () { sendMix("dj"); });
     $("btn-open").addEventListener("click", openList);
     $("btn-new").addEventListener("click", function () { saveNow().then(function () { setProject(S.newProject()); saveNow(); toast("New project. Your previous one is saved under Open…"); }); });
     $("btn-save-file").addEventListener("click", function () {
@@ -918,7 +947,7 @@
         selClip: selClip, selTrack: P.tracks.indexOf(trackById(selTrack)), playhead: playhead, playing: E.playing, recording: E.recording, view: view, pps: pps, bpm: P.bpm, loop: P.loop, undo: S.H.undo.length, redo: S.H.redo.length,
         wave: waveBuf ? { len: waveBuf.length, sr: waveBuf.sampleRate, sel: [waveEd.sel.a, waveEd.sel.b] } : null, sources: Object.keys(S.sources).length, name: P.name, id: P.id };
     },
-    lastExport: function () { return lastExport; },
+    lastExport: function () { return lastExport; }, lastSent: function () { return lastSent; }, sendMix: sendMix,
     selectClip: function (id) { selectClip(id); }, setPlayhead: setPlayhead, openWave: openWave, waveSel: function (a, b) { waveEd.setSel(a, b); },
     peak: function (id) { var c = clipById(id), s = c && S.sources[c.src]; if (!s) return 0; var sr = s.buf.sampleRate; return OPS.peakOf(s.buf, Math.round(c.offset * sr), Math.round((c.offset + c.dur) * sr)); },
     rms: function (id, a, b) { var c = clipById(id), s = c && S.sources[c.src]; if (!s) return 0; var sr = s.buf.sampleRate, d = s.buf.getChannelData(0), i0 = Math.round((c.offset + (a || 0)) * sr), i1 = Math.round((c.offset + (b == null ? c.dur : b)) * sr), ss = 0; for (var i = i0; i < i1; i++) ss += d[i] * d[i]; return Math.sqrt(ss / Math.max(1, i1 - i0)); },
