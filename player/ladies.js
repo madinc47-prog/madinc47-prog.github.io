@@ -1,7 +1,7 @@
 // "For the ladies" intro: before the next record comes in, the DJ brakes the current one (vinyl-brake slowdown +
 // low-pass + dip), shouts out the ladies (with your location), then drops the ladies' tune cleanly.
 // Detection: your per-track "♀ For the ladies" tag always wins; otherwise an on-device guess from title/artist (+BPM).
-const LEAD = 6.5;         // seconds of the current record left when the brake starts
+const LEAD = 6.5;         // seconds of the current record left when the brake starts (at least; see leadFor())
 const BRAKE = 2.6;        // vinyl-brake length (s)
 const BRAKE_RATE = .5;    // playback rate the brake winds down to
 const THRESHOLD = 3;      // guess score needed
@@ -128,13 +128,24 @@ export function createLadies(api) {
     if (d.lp) { d.lp.frequency.cancelScheduledValues(t); d.lp.frequency.setValueAtTime(ctx.sampleRate / 2, t); }
     if (d.gain) { d.gain.gain.cancelScheduledValues(t); d.gain.gain.setValueAtTime(d.fade, t); }
   }
-  function abort(why) { if (!run) return; const r = run; run = null; clearInterval(r.iv); clearInterval(r.watch); r.timers.forEach(clearTimeout); hype.busy = false; restore(r.deck); r.why = why; api.onAbort && api.onAbort(why); }
+  // the normal auto-mix starts at (crossfade + needle lead) seconds before the end — with the default 6 s crossfade
+  // that is ~6.9 s, i.e. BEFORE the old fixed 6.5 s window, so the intro never got a chance to fire
+  const leadFor = (xf) => Math.max(LEAD, (xf || 0) + (api.transitionLead ? api.transitionLead() : .9) + .5);
+  const within = (p, ms, fallback) => Promise.race([p, new Promise((r) => setTimeout(() => r(fallback), ms))]);
+  function finish(r, why) { // end a run and let playback carry on, whatever state it was in
+    if (run !== r) return; run = null; clearInterval(r.iv); clearInterval(r.watch); r.timers.forEach(clearTimeout); hype.busy = false; r.why = why;
+    if (r.holding) {
+      r.holding = false;
+      if (!P.isTransition() && P.deck() === r.deck && !api.startTransition({ mixSecs: .35 })) { restore(r.deck); if (r.ended || r.deck.el.ended) api.onEnded && api.onEnded(); }
+    }
+  }
+  function abort(why) { if (!run) return; const r = run; run = null; clearInterval(r.iv); clearInterval(r.watch); r.timers.forEach(clearTimeout); if (r.ac) r.ac.abort(); hype.busy = false; restore(r.deck); r.why = why; api.onAbort && api.onAbort(why); }
   /** Hooked into the auto-mix check. Return true to hold the normal transition. */
-  function before(rem) {
+  function before(rem, xf) {
     if (run) { if (P.deck() !== run.deck || run.deck.el.paused && !run.ended) { abort('interrupted'); return false; } return run.holding; }
     const d = P.deck(), nx = P.cued();
     if (!d || !nx || !hype.S.on || fired.has(d) || P.isTransition()) return false;
-    if (rem > LEAD || rem < 1.2) return false;
+    if (rem > leadFor(xf) || rem < 1.2) return false;
     const it = nx.item; if (!status(it).on) return false;
     if (P.current() && P.current().key === it.key) return false; // the ladies' track is already playing
     const next = P.nextItem(); if (!next || next.key !== it.key) return false;
@@ -157,10 +168,23 @@ export function createLadies(api) {
       try { d.el.playbackRate = 1 - (1 - BRAKE_RATE) * Math.pow(k, 1.7); } catch (e) {}
       if (k >= 1) clearInterval(r.iv);
     }, 30);
-    d.el.addEventListener('ended', () => { r.ended = true; }, { once: true });
-    // the DJ talks as the record winds down
-    const parts = await lines();
-    const bufs = await Promise.all(parts.map((p) => (p.buf ? p.buf : hype.loadBuf(p.file).catch(() => null))));
+    const ac = new AbortController(); r.ac = ac;
+    d.el.addEventListener('ended', () => { r.ended = true; r.endedAt = performance.now(); }, { once: true, signal: ac.signal });
+    // run watchdog: whatever happens (slow clip download, a voice that never ends, the record running out while the
+    // intro still holds the mix), the next tune always comes in — the old code could wait here forever = silence
+    const maxMs = (BRAKE + 12) * 1000;
+    r.watch = setInterval(() => {
+      if (run !== r) { clearInterval(r.watch); ac.abort(); return; }
+      if (P.deck() !== d && r.holding) { abort('track changed'); return; }
+      if (d.el.paused && !r.ended && r.holding) { abort('paused'); return; }
+      if (r.holding && r.ended && performance.now() - r.endedAt > 1500) { finish(r, 'record ended while holding'); return; }
+      if (performance.now() - r.t0 > maxMs) finish(r, 'took too long');
+    }, 200);
+    // the DJ talks as the record winds down (clips that don't arrive within 2.5 s are skipped: bubble only)
+    const parts = await within(lines().catch(() => null), 2500, null) || [{ text: "What's up, ladies?", pose: 'point' }];
+    if (run !== r) return;
+    const bufs = await within(Promise.all(parts.map((p) => (p.buf ? p.buf : p.file ? hype.loadBuf(p.file).catch(() => null) : null))), 2500, parts.map((p) => p.buf || null));
+    if (run !== r) return;
     parts.forEach((p, i) => { if (bufs[i]) p.buf = bufs[i]; });
     r.parts = parts.map((p) => p.text);
     const lead = api.transitionLead ? api.transitionLead() : .9;
@@ -171,13 +195,18 @@ export function createLadies(api) {
       // keep sinking the old record under the voice
       if (d.gain && !d.raw) { const tt = ctx.currentTime, g = d.gain.gain; g.cancelScheduledValues(tt); g.setValueAtTime(g.value, tt); g.linearRampToValueAtTime(d.fade * .3, tt + totalDur); }
       // drop the ladies' record so it lands right as the last line ends
-      r.timers.push(setTimeout(() => { if (run !== r) return; r.stage = 'drop'; r.holding = false; hype.busy = false; api.startTransition({ mixSecs: .35 }); }, Math.max(0, totalDur - lead) * 1000));
-      const ok = await hype.speak(parts, { gap: .12 });
-      if (!ok && run === r && r.holding) { r.holding = false; hype.busy = false; api.startTransition({ mixSecs: .35 }); }
-      r.timers.push(setTimeout(() => { if (run === r) { run = null; hype.busy = false; } }, 1500));
+      r.timers.push(setTimeout(() => { if (run !== r) return; r.stage = 'drop'; drop(r); }, Math.max(0, totalDur - lead) * 1000));
+      let ok = false; try { ok = await hype.speak(parts.map((p) => (p.buf ? p : { ...p, file: null })), { gap: .12 }); } catch (e) { console.warn('[ladies] speak', e); }
+      if (!ok && run === r && r.holding) drop(r);
+      r.timers.push(setTimeout(() => { if (run === r) { run = null; clearInterval(r.watch); ac.abort(); hype.busy = false; } }, 1500));
     }, talkAt));
-    r.watch = setInterval(() => { if (run !== r) { clearInterval(r.watch); return; } if (P.deck() !== d && r.holding) abort('track changed'); else if (d.el.paused && !r.ended && r.holding) abort('paused'); }, 200);
     api.onStart && api.onStart(r);
+  }
+  function drop(r) {
+    if (run !== r || !r.holding) return;
+    r.holding = false; hype.busy = false;
+    // if the mix can't start (nothing cued any more, a transition already running) put the record back to normal
+    if (!api.startTransition({ mixSecs: .35 })) { restore(r.deck); if (r.ended || r.deck.el.ended) api.onEnded && api.onEnded(); }
   }
   /** Learn BPM per track (weak signal for the guess). */
   let lastLearn = 0;
@@ -187,5 +216,5 @@ export function createLadies(api) {
   }
   /** Hold the auto-advance on "ended" while the intro is running. */
   const holdEnd = () => !!(run && run.holding);
-  return { status, setTag, toggle, decorateRow, syncItemMenu, before, holdEnd, learn, guessScore, get run() { return run; }, loc, lines, abort };
+  return { status, setTag, toggle, decorateRow, syncItemMenu, before, holdEnd, learn, guessScore, get run() { return run; }, loc, lines, abort, restore, leadFor };
 }

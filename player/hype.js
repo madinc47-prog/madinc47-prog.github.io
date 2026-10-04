@@ -6,7 +6,6 @@ const DUCK_DB = 3.5, UNDER_DB = 3.5, MIN_GAP = 30;           // seconds between 
 const PERIOD = { low: 150, med: 90, high: 60 };              // occasional lines (s, ±25 %)
 const CHANCE = { low: .45, med: .7, high: .95 };             // chance an event (track start / mix / energy) gets a line
 const DEFAULT_NAMES = 'DJ Eli';
-const KOKORO_URL = 'https://cdn.jsdelivr.net/npm/kokoro-js@1.2.1/+esm';
 const KOKORO_MODEL = 'onnx-community/Kokoro-82M-v1.0-ONNX';
 const VOICE = 'am_fenrir';
 const CLIP_LUFS = -20.4;                                      // integrated loudness of the shipped clips (ffmpeg ebur128)
@@ -70,7 +69,12 @@ export function createHype(api) {
   const buffers = new Map();
   async function loadBuf(file) {
     const ctx = getCtx(); if (buffers.has(file)) return buffers.get(file);
-    const p = fetch(new URL(file, base)).then((r) => { if (!r.ok) throw new Error(r.status); return r.arrayBuffer(); }).then((ab) => ctx.decodeAudioData(ab));
+    // never wait forever on a clip (slow / flaky mobile data): give up after 8 s and the line shows as a bubble only
+    const ac = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    const to = setTimeout(() => ac && ac.abort(), 8000);
+    const p = fetch(new URL(file, base), ac ? { signal: ac.signal } : {}).then((r) => { if (!r.ok) throw new Error(r.status); return r.arrayBuffer(); })
+      .then((ab) => new Promise((res, rej) => { const q = ctx.decodeAudioData(ab, res, rej); if (q && q.then) q.then(res, rej); }))
+      .finally(() => clearTimeout(to));
     buffers.set(file, p); p.catch(() => buffers.delete(file)); return p;
   }
 
@@ -127,11 +131,11 @@ export function createHype(api) {
     if (!S.on && !force) return false;
     if (talk.active) return false;
     talk.active = true; talk.lastAt = performance.now();
-    const A_ = audio();
+    const A_ = audio(); let ducked = false;
     try {
       const bufs = await Promise.all(parts.map((p) => (p.buf ? p.buf : p.file ? loadBuf(p.file).catch(() => null) : null)));
       const voiced = !S.muteVoice && sliderDb() > -Infinity;
-      if (voiced) duck(true, A_);
+      if (voiced) { duck(true, A_); ducked = true; }
       M.voiceSum = 0; M.voiceN = 0; const musicAt = M.lufs;
       for (let i = 0; i < parts.length; i++) {
         const p = parts[i], b = bufs[i];
@@ -148,14 +152,17 @@ export function createHype(api) {
         } else await new Promise((r) => setTimeout(r, dur * 1000));
         if (i < parts.length - 1) await new Promise((r) => setTimeout(r, gap * 1000));
       }
-      if (voiced) duck(false, A_);
+      if (ducked) { ducked = false; duck(false, A_); }
       if (M.voiceN) {
         const v = -0.691 + 10 * Math.log10(M.voiceSum / M.voiceN), mus = musicAt != null ? musicAt - DUCK_DB : null;
         M.last = { voiceLufs: +v.toFixed(1), musicLufs: musicAt != null ? +musicAt.toFixed(1) : null, musicDuckedLufs: mus != null ? +mus.toFixed(1) : null, voiceUnderMusicDb: mus != null ? +(mus - v).toFixed(1) : null, duckDb: DUCK_DB, sliderDb: +sliderDb().toFixed(1), gainDb: +voiceGainDb().toFixed(1) };
         M.lines.push(M.last); if (M.lines.length > 20) M.lines.shift();
       }
       return true;
-    } finally { talk.active = false; talk.lastAt = performance.now(); setTimeout(() => scene.setMouth(0), 50); }
+    } finally {
+      if (ducked) { try { duck(false, A_); } catch (e) {} } // an error mid-line must never leave the music ducked
+      talk.active = false; talk.lastAt = performance.now(); setTimeout(() => scene.setMouth(0), 50);
+    }
   }
 
   // ---------------- choosing lines ----------------
@@ -239,17 +246,36 @@ export function createHype(api) {
   const spokenName = (n) => n.replace(/\bDJ\b/gi, 'D.J.').replace(/\bMC\b/gi, 'M.C.');
   const spokenFor = (ti, n) => (SPOKEN[CALLOUT_TEMPLATES[ti]] || CALLOUT_TEMPLATES[ti].replace(/\{n\}/g, '{s}')).split('{s}').join(spokenName(n));
   function setStatus(t) { K.status = t; const el = root && root.querySelector('#hyKStatus'); if (el) { el.textContent = t; el.hidden = !t; } }
+  // kokoro runs in a lazily-started Web Worker (player/kokoro-worker.js): loading the ~90 MB model and generating
+  // speech used to run on the page itself and froze the player / stuttered the music. No main-thread fallback.
+  const W = { worker: null, seq: 0, calls: new Map(), files: {} };
+  function kWorker() {
+    if (W.worker) return W.worker;
+    W.worker = new Worker(new URL('./kokoro-worker.js?v=9', import.meta.url), { type: 'module' });
+    W.worker.onmessage = (e) => {
+      const m = e.data || {};
+      if (m.type === 'progress') { W.files[m.file] = [m.loaded, m.total]; const a = Object.values(W.files).reduce((s, x) => [s[0] + x[0], s[1] + x[1]], [0, 0]); if (!K.tts) setStatus(`Downloading the on-device voice… ${Math.round(a[0] / a[1] * 100)}%`); return; }
+      const c = W.calls.get(m.id); if (!c) return; W.calls.delete(m.id); clearTimeout(c.to);
+      if (m.ok) c.res(m); else c.rej(new Error(m.error || 'kokoro failed'));
+    };
+    W.worker.onerror = (e) => { console.warn('[hype] kokoro worker', e.message || e); W.calls.forEach((c) => { clearTimeout(c.to); c.rej(new Error('worker error')); }); W.calls.clear(); try { W.worker.terminate(); } catch (_) {} W.worker = null; K.tts = null; K.loading = null; };
+    return W.worker;
+  }
+  function kCall(msg, ms) {
+    return new Promise((res, rej) => {
+      let w; try { w = kWorker(); } catch (e) { rej(e); return; }
+      const id = ++W.seq; const to = setTimeout(() => { W.calls.delete(id); rej(new Error('kokoro timeout')); }, ms);
+      W.calls.set(id, { res, rej, to }); w.postMessage({ id, model: KOKORO_MODEL, ...msg });
+    });
+  }
   async function loadKokoro() {
     if (K.tts) return K.tts; if (K.loading) return K.loading;
+    if (typeof Worker === 'undefined') { setStatus('On-device voice unavailable here — custom names show in the bubble with a stock line.'); return null; }
     K.loading = (async () => {
       setStatus('Loading the on-device voice (Kokoro-82M, ~90 MB, first time only)…');
-      const { KokoroTTS } = await import(/* @vite-ignore */ KOKORO_URL);
-      const files = {};
-      const tts = await KokoroTTS.from_pretrained(KOKORO_MODEL, {
-        dtype: 'q8', device: 'wasm',
-        progress_callback: (e) => { if (e && e.file && e.total) { files[e.file] = [e.loaded || 0, e.total]; const a = Object.values(files).reduce((s, x) => [s[0] + x[0], s[1] + x[1]], [0, 0]); setStatus(`Downloading the on-device voice… ${Math.round(a[0] / a[1] * 100)}%`); } },
-      });
-      K.tts = tts; return tts;
+      await kCall({ type: 'load' }, 10 * 60e3); setStatus('');
+      K.tts = { generate: (text, o) => kCall({ type: 'gen', text, voice: o.voice, speed: o.speed }, 90e3).then((m) => ({ audio: m.audio, sampling_rate: m.sr })) };
+      return K.tts;
     })();
     K.loading.catch((e) => { console.warn('[hype] kokoro-js failed', e); K.loading = null; setStatus('On-device voice unavailable here — custom names show in the bubble with a stock line.'); });
     return K.loading;
@@ -257,7 +283,7 @@ export function createHype(api) {
   /** Light processing like the shipped clips: high-pass, gentle compression, short slap echo; normalised to ≈ −20 LUFS, peaks < −6 dBFS. */
   async function polish(samples, sr) {
     const len = samples.length + Math.round(sr * .25);
-    const oc = new OfflineAudioContext(1, len, sr);
+    const oc = new (window.OfflineAudioContext || window.webkitOfflineAudioContext)(1, len, sr);
     const b = oc.createBuffer(1, samples.length, sr); b.copyToChannel(samples, 0);
     const src = oc.createBufferSource(); src.buffer = b;
     const hp = oc.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 85;
@@ -270,7 +296,7 @@ export function createHype(api) {
     src.start();
     const out = (await oc.startRendering()).getChannelData(0);
     // loudness (K-weighted, gated) → gain to −20 LUFS, then keep sample peaks under −6 dBFS
-    const kc = new OfflineAudioContext(1, out.length, sr); const kb = kc.createBuffer(1, out.length, sr); kb.copyToChannel(out, 0);
+    const kc = new (window.OfflineAudioContext || window.webkitOfflineAudioContext)(1, out.length, sr); const kb = kc.createBuffer(1, out.length, sr); kb.copyToChannel(out, 0);
     const ks = kc.createBufferSource(); ks.buffer = kb; const sh = kc.createBiquadFilter(); sh.type = 'highshelf'; sh.frequency.value = 1681; sh.gain.value = 4;
     const khp = kc.createBiquadFilter(); khp.type = 'highpass'; khp.frequency.value = 38; khp.Q.value = .5; ks.connect(sh).connect(khp).connect(kc.destination); ks.start();
     const kw = (await kc.startRendering()).getChannelData(0);

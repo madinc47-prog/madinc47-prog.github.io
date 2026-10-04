@@ -1,6 +1,6 @@
 // Psycho Fingers Player — DJ booth scene (original layered SVG art, IK arms, choreography)
 // Two turntables (Deck A / Deck B) with a mixer + crossfader in the middle; the DJ stands behind the mixer.
-import { applyOutfit } from './outfits.js';
+import { applyOutfit } from './outfits.js?v=9';
 const NS = 'http://www.w3.org/2000/svg';
 const D2R = Math.PI / 180;
 const ease = {
@@ -523,6 +523,8 @@ export function createScene(container) {
       release(hs);
     });
   }
+  /** Stop any choreography and put the record on the deck right away, needle up (used when audio must not wait). */
+  function snapRecord(d, label) { cancel(); placeInstant(d, label, false); }
   function cancel() { gen++; flush(); chain = Promise.resolve(); release('L'); release('R'); st.sleeve.show = false; st.fly.show = false; ['A', 'B'].forEach((d) => { st.decks[d].held = false; }); }
   ['A', 'B'].forEach((d) => { st.decks[d].labelEl = el.deck[d].labelImg; });
 
@@ -709,9 +711,12 @@ export function createScene(container) {
 
   let last = performance.now();
   function frame(now, a = {}) {
-    let dt = Math.min(.05, (now - last) / 1000); last = now;
+    // choreography (tweens) runs on real elapsed time so a slow phone does not stretch the needle drop and delay the
+    // music; the springy physics keep a small step for stability
+    const real = Math.min(.25, Math.max(0, (now - last) / 1000)); last = now;
+    let dt = Math.min(.05, real);
     for (const tw of tweens) {
-      tw.t += dt; const k = Math.min(1, tw.t / tw.dur); const e = tw.fn(k);
+      tw.t += real; const k = Math.min(1, tw.t / tw.dur); const e = tw.fn(k);
       for (const key in tw.to) tw.obj[key] = tw.from[key] + (tw.to[key] - tw.from[key]) * e;
       if (k >= 1) { tweens.delete(tw); tw.resolve(); }
     }
@@ -828,7 +833,8 @@ export function createScene(container) {
   }
 
   return {
-    svg, st, frame, anchors, loadRecord, cueRecord, dropNeedle, liftNeedle, needleRedrop, cancel, tween, flush,
+    svg, st, frame, anchors, loadRecord, cueRecord, dropNeedle, liftNeedle, needleRedrop, cancel, tween, flush, snapRecord,
+    setQuality(level) { st.quality = level; },
     setOutfit(id) { return applyOutfit(svg, id); },
     setXfader(v) { st.xf = Math.max(0, Math.min(1, v)); },
     setActive(d) { st.active = d === 'B' ? 'B' : 'A'; },

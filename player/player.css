@@ -315,3 +315,9 @@ body[data-theme=minimal] .switch input:checked+.track .knob{background:#111}
   .theme-sel{padding:0 8px}
 }
 @media (prefers-reduced-motion:reduce){.eqicon i,.mini-eq i,.eqmini i,.art-eq i,.bigplay{animation:none}}
+
+/* lite mode (set automatically on slow devices or with "Battery saver"): no live blur over the animated stage —
+   blurring an animating full-screen canvas every frame is one of the most expensive things a phone can do */
+body.lite .panel,body.lite .transport,body.lite .chip,body.lite .menu,body.lite .sheet,body.lite .drop{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+body.lite .panel,body.lite .transport{background:rgba(14,10,30,.9)}
+body.lite .chip{background:rgba(14,10,30,.85)}

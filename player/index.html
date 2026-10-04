@@ -18,7 +18,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
-  <link rel="stylesheet" href="player.css?v=8">
+  <link rel="stylesheet" href="player.css?v=9">
 </head>
 <body data-theme="club">
   <canvas id="viz" aria-hidden="true"></canvas>
@@ -119,6 +119,10 @@
     <button role="menuitemradio" data-anim="full"><span class="chk"></span>Full performance</button>
     <button role="menuitemradio" data-anim="quick"><span class="chk"></span>Quick</button>
     <button role="menuitemradio" data-anim="off"><span class="chk"></span>Off (instant start)</button>
+    <div class="menu-lbl">Visuals</div>
+    <button role="menuitemradio" data-quality="auto"><span class="chk"></span>Auto (adapts to this device)</button>
+    <button role="menuitemradio" data-quality="high"><span class="chk"></span>Always full</button>
+    <button role="menuitemradio" data-quality="low"><span class="chk"></span>Battery saver (lighter, fewer frames)</button>
     <hr>
     <button role="menuitem" data-act="vis">Visualizer mode (V)</button>
     <button role="menuitem" data-act="help">Keyboard shortcuts (?)</button>
@@ -160,6 +164,6 @@
   <input type="file" id="dirIn" multiple webkitdirectory hidden>
 
   <script type="module" src="../shared/ecosystem-nav.js"></script>
-  <script type="module" src="player.js?v=8"></script>
+  <script type="module" src="player.js?v=9"></script>
 </body>
 </html>

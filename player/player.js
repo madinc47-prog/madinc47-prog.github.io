@@ -1,12 +1,14 @@
 // Psycho Fingers Player — main app (vanilla ES module, no deps)
+// Every module URL carries the same ?v= tag as player.js in index.html (and sw.js SHELL), so a deploy can never mix
+// old and new modules from the HTTP cache. Bump all of them together.
 import { saveTrack, listTracks, getTrack, deleteTrack, onMediaChange } from '../shared/media-store.js';
-import { createScene } from './scene.js';
-import { createViz, THEMES } from './viz.js';
-import { OUTFITS, OUTFIT_FOR_THEME } from './outfits.js';
-import { createEQ } from './eq.js';
-import { createHype } from './hype.js';
-import { createLadies } from './ladies.js';
-import { fmt, hash, isAudioFile, titleFromName, makeCover, makeLabel, readTags, probeDuration, computePeaks } from './util.js';
+import { createScene } from './scene.js?v=9';
+import { createViz, THEMES } from './viz.js?v=9';
+import { OUTFITS, OUTFIT_FOR_THEME } from './outfits.js?v=9';
+import { createEQ } from './eq.js?v=9';
+import { createHype } from './hype.js?v=9';
+import { createLadies } from './ladies.js?v=9';
+import { fmt, hash, isAudioFile, titleFromName, makeCover, makeLabel, readTags, probeDuration, computePeaks } from './util.js?v=9';
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -84,7 +86,10 @@ let ctx = null, master, analyser, sfxBus, freq, tdata, prevFreq, mixBus, duck, p
 const slot = { A: null, B: null };
 function ensureCtx() {
   if (!ctx) {
+    // iPhone: let Web Audio play with the ring/silent switch on (Safari 16.4+); harmless elsewhere
+    try { if (navigator.audioSession && navigator.audioSession.type !== 'playback') navigator.audioSession.type = 'playback'; } catch (e) {}
     ctx = new (window.AudioContext || window.webkitAudioContext)({ latencyHint: 'playback' });
+    ctx.onstatechange = () => { if (ctx.state === 'running') ctxStuckSince = 0; };
     master = ctx.createGain(); master.gain.value = S.muted ? 0 : S.vol;
     analyser = ctx.createAnalyser(); analyser.fftSize = 2048; analyser.smoothingTimeConstant = 0.5;
     master.connect(analyser); analyser.connect(ctx.destination);
@@ -96,9 +101,40 @@ function ensureCtx() {
     sfxBus = ctx.createGain(); sfxBus.gain.value = 0.55; sfxBus.connect(master);
     freq = new Uint8Array(analyser.frequencyBinCount); prevFreq = new Uint8Array(analyser.frequencyBinCount); tdata = new Uint8Array(analyser.fftSize);
   }
-  if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+  if (ctx.state !== 'running' && ctx.state !== 'closed') ctx.resume().catch(() => {}); // 'suspended' or iOS 'interrupted'
   return ctx;
 }
+let ctxStuckSince = 0;
+
+// ---------------- media element pool (iOS) ----------------
+// iOS only lets an <audio> element start without a tap if that element was created/primed during a tap. A fresh
+// new Audio() per track therefore failed on every automatic transition on iPhone (NotAllowedError → silence).
+// Decks borrow elements from a small pool that is primed on every user gesture; each element keeps its single
+// MediaElementSource for life (createMediaElementSource may only be called once per element).
+const pool = []; // { el, node, busy, primed }
+function newPoolEntry() { const el = new Audio(); el.preload = 'auto'; const e = { el, node: null, busy: false, primed: false }; pool.push(e); return e; }
+function primePool() {
+  let free = pool.filter((e) => !e.busy).length;
+  while (free < 3 && pool.length < 8) { newPoolEntry(); free++; }
+  pool.forEach((e) => { if (!e.busy && !e.primed) { e.primed = true; try { e.el.load(); } catch (err) {} } });
+}
+function acquireEl() {
+  const e = pool.find((x) => !x.busy && x.primed) || pool.find((x) => !x.busy) || newPoolEntry();
+  e.busy = true; const el = e.el;
+  try { el.playbackRate = 1; el.defaultPlaybackRate = 1; el.preservesPitch = true; el.loop = false; el.muted = false; el.volume = 1; } catch (err) {}
+  return e;
+}
+function releaseEl(e) {
+  if (!e) return; const el = e.el;
+  try { el.pause(); } catch (err) {}
+  try { el.removeAttribute('src'); el.load(); } catch (err) {}
+  if (e.node) { try { e.node.disconnect(); } catch (err) {} }
+  setTimeout(() => { e.busy = false; }, 60);
+}
+// unlock audio on gestures that count as user activation on phones (pointerdown with a finger does NOT count)
+function onGesture() { userActivated = true; ensureCtx(); primePool(); }
+['pointerup', 'touchend', 'click', 'keydown'].forEach((ev) => document.addEventListener(ev, onGesture, { capture: true, passive: true }));
+document.addEventListener('visibilitychange', () => { if (!document.hidden && ctx && ctx.state !== 'running') ctx.resume().catch(() => {}); });
 function isCrossOrigin(url) { try { const u = new URL(url, location.href); return (u.protocol === 'http:' || u.protocol === 'https:') && u.origin !== location.origin; } catch (e) { return false; } }
 
 // ---------------- crossfader (0 = Deck A, 1 = Deck B; equal-power) ----------------
@@ -134,28 +170,37 @@ function xfSweep(to, secs) {
 }
 const xfEnd = (s) => (s === 'A' ? 0 : 1);
 
+const liveDecks = new Set();
 class Deck {
   constructor(item, url, slotName) {
     this.item = item; this.url = url; this.slot = slotName; this.raw = false; this.fade = 1; this.disposed = false;
-    this.el = new Audio(); this.el.preload = 'auto';
-    if (isCrossOrigin(url)) this.el.crossOrigin = 'anonymous';
+    this.born = performance.now(); this.ac = new AbortController();
     ensureCtx();
-    this.src = ctx.createMediaElementSource(this.el); this.gain = ctx.createGain();
+    this.pe = acquireEl(); this.el = this.pe.el;
+    if (isCrossOrigin(url)) this.el.crossOrigin = 'anonymous'; else this.el.removeAttribute('crossorigin');
+    if (!this.pe.node) this.pe.node = ctx.createMediaElementSource(this.el);
+    this.src = this.pe.node; this.gain = ctx.createGain();
     this.lp = ctx.createBiquadFilter(); this.lp.type = 'lowpass'; this.lp.frequency.value = ctx.sampleRate / 2; this.lp.Q.value = .5; // used by the ladies-intro brake
     this.src.connect(this.gain).connect(this.lp).connect(slot[slotName]);
+    // resolves once the browser has enough data, rejects on a load error. Playback never waits on it: iOS Safari does not
+    // preload media, so 'canplay' only fires after play() is called (waiting on it froze every transition on iPhone).
     this.ready = new Promise((res, rej) => {
-      const ok = () => { cleanup(); res(); };
-      const bad = () => {
-        cleanup();
-        if (this.el.crossOrigin && !this.disposed) { this.toRaw(); res(); } else rej(new Error(this.el.error ? 'Cannot play this file (' + (this.el.error.message || this.el.error.code) + ')' : 'Cannot load audio'));
-      };
-      const cleanup = () => { this.el.removeEventListener('canplay', ok); this.el.removeEventListener('error', bad); };
-      this.el.addEventListener('canplay', ok); this.el.addEventListener('error', bad);
+      const sig = { signal: this.ac.signal };
+      this.el.addEventListener('canplay', () => res(), { ...sig, once: true });
+      this.el.addEventListener('error', () => {
+        if (this.disposed) return;
+        if (this.el.crossOrigin && !this.raw) { this.toRaw(); res(); } else rej(new Error(this.el.error ? 'Cannot play this file (' + (this.el.error.message || this.el.error.code) + ')' : 'Cannot load audio'));
+      }, sig);
     });
+    this.ready.catch(() => {});
+    liveDecks.add(this);
     this.el.src = url; this.el.load();
   }
+  on(ev, fn) { this.el.addEventListener(ev, fn, { signal: this.ac.signal }); }
   toRaw() { // CORS-less remote URL: play directly (no analyser → simulated visuals)
-    try { this.src.disconnect(); } catch (e) {}
+    this.ac.abort(); this.ac = new AbortController();
+    try { this.gain.disconnect(); } catch (e) {}
+    releaseEl(this.pe); this.pe = null;
     const el = new Audio(); el.preload = 'auto'; el.src = this.url; this.el = el; this.raw = true; this.applyVol(); if (this.onSwap) this.onSwap();
     toast('Playing a remote URL without CORS — visuals are simulated for this track.');
   }
@@ -167,7 +212,14 @@ class Deck {
     if (secs <= 0) g.setValueAtTime(v, t); else g.linearRampToValueAtTime(v, t + secs);
   }
   get playing() { return !this.disposed && !this.el.paused; }
-  dispose() { this.disposed = true; try { this.el.pause(); } catch (e) {} try { this.src.disconnect(); this.gain.disconnect(); this.lp.disconnect(); } catch (e) {} this.el.removeAttribute('src'); try { this.el.load(); } catch (e) {} }
+  dispose() {
+    if (this.disposed) return; this.disposed = true; liveDecks.delete(this);
+    this.ac.abort();
+    try { this.el.pause(); } catch (e) {}
+    try { this.gain.disconnect(); this.lp.disconnect(); } catch (e) {}
+    if (this.pe) { releaseEl(this.pe); this.pe = null; } // the pool disconnects the element's source node
+    else { try { this.el.removeAttribute('src'); this.el.load(); } catch (e) {} }
+  }
 }
 
 let deck = null;          // active deck (what the transport controls)
@@ -227,18 +279,43 @@ const SFX = { click: sfxClick, crackle: sfxCrackle };
 // ---------------- playback control (two decks) ----------------
 const animSpeed = () => (document.hidden ? 100 : ANIM_SPEED[S.anim] || 1);
 const QUICK_MIX = 1.6; // seconds — crossfade used when you pick a track while one is playing
+let pendingDeck = null;   // deck loading in playItem while the previous one still plays (until its needle drops)
+let dropGuard = null;     // { due, fire } — forces the needle drop if the choreography never delivers it
+let failCount = 0, skipT = 0, cueFailKey = null;
 
 function setActiveSlot(s) { activeSlot = s; scene.setActive(s); syncDeckUI(); }
 function stopDeck(d, { animate = true } = {}) {
   if (!d || d.disposed) return;
   try { d.el.pause(); } catch (e) {}
-  scene.setPlaying(d.slot, false);
-  if (animate && !document.hidden) scene.liftNeedle({ deck: d.slot, speed: animSpeed(), sounds: SFX });
+  if (!allDecks().some((x) => x !== d && x.slot === d.slot)) { // another deck on this slot keeps its visuals
+    scene.setPlaying(d.slot, false);
+    if (animate && !document.hidden) scene.liftNeedle({ deck: d.slot, speed: animSpeed(), sounds: SFX });
+  }
   d.dispose();
   if (outgoing === d) outgoing = null;
+  if (pendingDeck === d) pendingDeck = null;
   syncDeckUI();
 }
 function disposeCued() { if (cued) { cued.dispose(); cued = null; syncDeckUI(); } }
+/** Wrap a needle-drop callback: it runs once, and the watchdog forces it if the animation stalls past `secs`. */
+function guardDrop(fn, secs) {
+  let done = false;
+  const fire = () => { if (done) return; done = true; if (dropGuard && dropGuard.fire === fire) dropGuard = null; fn(); };
+  dropGuard = { due: performance.now() + secs * 1000, fire };
+  return fire;
+}
+/** A track that will not load / play: tell the user and move on (instead of sitting in silence). */
+function deckFailed(d, msg) {
+  if (!d || d.failed || d.disposed) return; d.failed = true;
+  if (d === cued) { cueFailKey = d.item.key; disposeCued(); return; }
+  if (d !== deck && d !== pendingDeck) return;
+  failCount++; setStatus('');
+  console.warn('[player] track failed:', d.item.title, msg);
+  if (failCount >= Math.max(3, visible().length)) { toast('These tracks would not play — check your connection or the files.'); return; }
+  toast(`Couldn't play “${d.item.title}” (${msg}) — skipping to the next track.`);
+  clearTimeout(skipT);
+  skipT = setTimeout(() => { if (deck === d || pendingDeck === d) { if (pendingDeck === d) { pendingDeck = null; d.dispose(); } next(1); } }, 1200);
+}
 
 async function playItem(item, { fromUser = true } = {}) {
   if (!item) return;
@@ -247,56 +324,68 @@ async function playItem(item, { fromUser = true } = {}) {
   if (fromUser && (!queueOrder.includes(item.key))) buildOrder(item.key);
   if (current && current.key !== item.key) historyStack.push(current.key);
   if (transition) finishTransition(true);
-  scene.cancel();
+  if (ladies.run) ladies.abort('track changed');
+  scene.cancel(); dropGuard = null; clearTimeout(skipT);
+  if (pendingDeck) { if (pendingDeck !== cued) pendingDeck.dispose(); pendingDeck = null; }
   const old = deck && deck.playing ? deck : null;
+  // anything else still sounding from an earlier quick mix stops now — never leave a ghost deck playing underneath
+  if (outgoing && outgoing !== old) stopDeck(outgoing, { animate: false });
   if (!old && deck && deck !== cued) { stopDeck(deck, { animate: false }); deck = null; }
   let d, reuse = false;
-  if (cued && cued.item.key === item.key && (!old || cued.slot !== old.slot)) { d = cued; cued = null; reuse = true; }
+  if (cued && cued.item.key === item.key && !cued.failed && (!old || cued.slot !== old.slot)) { d = cued; cued = null; reuse = true; }
   else {
     const s = old ? other(old.slot) : activeSlot;
     if (cued && cued.slot === s) disposeCued();
-    try { d = new Deck(item, await urlFor(item), s); } catch (e) { toast('Could not open "' + item.title + '": ' + e.message); setStatus(''); return; }
+    let url; try { url = await urlFor(item); } catch (e) { if (my === loadGen) { toast('Could not open "' + item.title + '": ' + e.message); setStatus(''); } return; }
+    if (my !== loadGen) return;
+    d = new Deck(item, url, s);
   }
   if (my !== loadGen) { if (d !== cued) d.dispose(); return; }
+  d.ready.catch((e) => deckFailed(d, e.message));
   current = item; updateNowPlaying(item, { loading: true }); renderList();
-  if (!old) { deck = d; wireDeck(d); }
+  if (!old) { deck = d; wireDeck(d); } else pendingDeck = d;
   d.setFade(1); loadPeaks(item);
   syncDeckUI();
   setStatus(reuse ? '' : 'Loading record…');
-  const onDrop = () => {
-    if (my !== loadGen) return;
+  const sp = Math.max(1, animSpeed());
+  const onDrop = guardDrop(() => {
+    if (my !== loadGen || d.disposed) return;
+    if (pendingDeck === d) pendingDeck = null;
     SFX.crackle();
-    if (old) { outgoing = old; deck = d; wireDeck(d); }
+    if (old) { if (!old.disposed) outgoing = old; deck = d; wireDeck(d); }
     setActiveSlot(d.slot);
-    const mix = old ? Math.min(QUICK_MIX, Math.max(.25, S.xfade || .25)) : 0;
-    if (old) xfSweep(xfEnd(d.slot), mix); else setXf(xfEnd(d.slot));
-    d.ready.catch(() => {}).then(() => startDeck(d, my));
-    if (old) setTimeout(() => { if (outgoing === old) stopDeck(old); }, (mix + .25) * 1000);
+    const mix = old && !old.disposed ? Math.min(QUICK_MIX, Math.max(.25, S.xfade || .25)) : 0;
+    if (mix) xfSweep(xfEnd(d.slot), mix); else setXf(xfEnd(d.slot));
+    startDeck(d, my);
+    if (old) setTimeout(() => { if (!old.disposed && old !== deck) stopDeck(old); }, (mix + .25) * 1000);
     scheduleCue(old ? mix + 2.5 : 3);
     hype.onTrackStart(item);
     syncPlayUI();
-  };
+  }, (reuse ? .8 : 3.4) / sp + 1.2);
   if (reuse) await scene.dropNeedle({ deck: d.slot, speed: animSpeed(), onDrop });
   else await scene.loadRecord({ deck: d.slot, cover: coverOf(item), label: labelOf(item), speed: animSpeed(), sounds: SFX, onDrop });
 }
 async function startDeck(d, my) {
   if (my !== loadGen || d.disposed) return;
-  try { await d.el.play(); setStatus(''); }
+  d.wantPlay = true; ensureCtx();
+  // play() straight away: it waits for data itself (do not wait for 'canplay' — iOS never preloads, so it never comes)
+  try { await d.el.play(); if (d === deck) setStatus(''); }
   catch (e) {
-    if (e.name === 'NotAllowedError') { showBigPlay('Tap to drop the needle'); scene.setPlaying(d.slot, false); }
-    else if (e.name !== 'AbortError') { toast('Playback failed: ' + (e.message || e.name)); }
+    if (d.disposed || my !== loadGen) return;
+    if (e.name === 'NotAllowedError') { d.wantPlay = false; showBigPlay('Tap to drop the needle'); scene.setPlaying(d.slot, false); }
+    else if (e.name !== 'AbortError') deckFailed(d, e.message || e.name);
   }
 }
 function wireDeck(d) {
   if (d._wired) return; d._wired = true;
   d.onSwap = () => { d._wired = false; wireDeck(d); };
   const el = d.el;
-  const on = (ev, fn) => el.addEventListener(ev, fn);
-  on('play', () => { scene.setPlaying(d.slot, true); if (d === deck) syncPlayUI(); });
+  const on = (ev, fn) => d.on(ev, fn);
+  on('play', () => { if (d === deck || d === outgoing) scene.setPlaying(d.slot, true); if (d === deck) syncPlayUI(); });
   on('pause', () => { if (d === deck || d === outgoing) { scene.setPlaying(d.slot, false); syncPlayUI(); } });
   on('loadedmetadata', () => { if (d === deck && Number.isFinite(el.duration)) { setDuration(d.item, el.duration); } });
   on('ended', () => { if (d === deck) onEnded(); else if (d === outgoing) stopDeck(d); });
-  on('error', () => { if (d === deck && !d.raw && !el.crossOrigin) toast('This file could not be played.'); });
+  on('error', () => { if (d.raw || !el.crossOrigin) deckFailed(d, el.error ? (el.error.message || 'error ' + el.error.code) : 'load error'); });
   on('waiting', () => { if (d === deck) setStatus('Buffering…'); });
   on('playing', () => { if (d === deck) setStatus(''); });
 }
@@ -309,10 +398,11 @@ function setDuration(item, dur) {
 function togglePlay() {
   ensureCtx();
   if (!deck) { const it = current || visible()[0] || DEMO; playItem(it); return; }
-  if (deck.el.paused) { hideBigPlay(); deck.el.play().catch((e) => { if (e.name === 'NotAllowedError') showBigPlay('Tap to play'); }); if (outgoing) outgoing.el.play().catch(() => {}); }
-  else { deck.el.pause(); if (outgoing) outgoing.el.pause(); }
+  if (deck.el.paused) { hideBigPlay(); deck.wantPlay = true; deck.el.play().catch((e) => { if (e.name === 'NotAllowedError') { deck.wantPlay = false; showBigPlay('Tap to play'); } }); if (outgoing) outgoing.el.play().catch(() => {}); }
+  else pauseAll();
 }
-function pauseAll() { if (deck) deck.el.pause(); if (outgoing) outgoing.el.pause(); }
+function pauseAll() { if (deck) { deck.wantPlay = false; deck.el.pause(); } if (outgoing) outgoing.el.pause(); }
+function playAll() { if (!deck || deck.el.paused) togglePlay(); }
 function next(dir = 1) {
   if (dir < 0 && deck && deck.el.currentTime > 3) { seekTo(0); return; }
   if (dir < 0 && S.shuffle && historyStack.length) { const k = historyStack.pop(); const it = byKey(k); if (it) { current = null; return playItem(it, { fromUser: false }); } }
@@ -320,9 +410,9 @@ function next(dir = 1) {
 }
 function onEnded() {
   if (S.repeat === 'one' && deck) { const d = deck; scene.needleRedrop(animSpeed(), () => { d.el.currentTime = 0; d.el.play().catch(() => {}); SFX.crackle(); }, SFX); return; }
-  if (transition || ladies.holdEnd()) return;
+  if (transition || pendingDeck || ladies.holdEnd()) return; // the watchdog takes over if any of these stalls
   const it = nextItem(1);
-  if (it && cued && cued.item.key === it.key) { startTransition({ immediate: true }); return; }
+  if (it && cued && cued.item.key === it.key && !cued.failed) { startTransition({ immediate: true }); return; }
   if (it) playItem(it, { fromUser: false }); else { scene.setPlaying(deck.slot, false); syncPlayUI(); }
 }
 
@@ -330,24 +420,27 @@ function onEnded() {
 let cueTimer = 0;
 function scheduleCue(delay = 0) { clearTimeout(cueTimer); cueTimer = setTimeout(cueNext, Math.max(0, delay * 1000)); }
 async function cueNext() {
-  if (!deck || transition) return;
+  cueTimer = 0;
+  if (!deck || transition || pendingDeck) return;
   const it = S.repeat === 'one' ? null : nextItem(1);
-  if (!it) { disposeCued(); return; }
+  if (!it || it.key === cueFailKey) { disposeCued(); return; }
   const s = other(deck.slot);
   if (cued && cued.item.key === it.key && cued.slot === s) return;
   disposeCued();
-  let d; try { d = new Deck(it, await urlFor(it), s); } catch (e) { return; }
-  if (!deck || transition || other(deck.slot) !== s) { d.dispose(); return; }
+  let d, url; try { url = await urlFor(it); } catch (e) { cueFailKey = it.key; return; }
+  if (!deck || transition || pendingDeck || other(deck.slot) !== s || cued) return;
+  d = new Deck(it, url, s);
   cued = d; d.setFade(1); syncDeckUI();
+  d.ready.catch((e) => deckFailed(d, e.message));
   scene.cueRecord({ deck: s, cover: coverOf(it), label: labelOf(it), speed: animSpeed(), sounds: SFX });
 }
-function invalidateCue() { if (transition) return; const it = deck ? nextItem(1) : null; if (cued && (!it || it.key !== cued.item.key)) disposeCued(); scheduleCue(.4); }
+function invalidateCue() { if (transition) return; cueFailKey = null; const it = deck ? nextItem(1) : null; if (cued && (!it || it.key !== cued.item.key)) disposeCued(); scheduleCue(.4); }
 
 // auto-mix: drop the needle on the cued deck and crossfade (equal power) over the crossfade length
 const NEEDLE_SECS = .75;
 function transitionLead() { const sp = animSpeed(); return sp >= 50 ? .05 : NEEDLE_SECS / sp + .15; }
 function checkAutoAdvance() {
-  if (!deck || deck.el.paused || S.repeat === 'one' || transition) return;
+  if (!deck || deck.el.paused || S.repeat === 'one' || transition || pendingDeck) return;
   const el = deck.el, dur = el.duration; if (!Number.isFinite(dur) || dur < 8) return;
   const rem = (dur - el.currentTime) / (el.playbackRate || 1), xf = Math.min(S.xfade, Math.max(0, dur / 3));
   if (window.__pfBeforeTransition && window.__pfBeforeTransition(rem, xf)) return; // e.g. the "for the ladies" intro
@@ -356,37 +449,93 @@ function checkAutoAdvance() {
   if (rem <= Math.max(xf, .12) + transitionLead()) startTransition();
 }
 function startTransition({ immediate = false, mixSecs = null } = {}) {
-  if (!cued || !deck || transition) return;
+  if (!cued || !deck || transition || cued.failed) return false;
   const old = deck, nd = cued; cued = null;
-  const my = ++loadGen; transition = { old, nd, my };
+  const my = ++loadGen; transition = { old, nd, my, t0: performance.now(), xf: 0, dropAt: 0 };
   const dur = old.el.duration, rem = Number.isFinite(dur) ? Math.max(0, (dur - old.el.currentTime) / (old.el.playbackRate || 1)) : 0;
   const xf = mixSecs != null ? mixSecs : immediate ? 0 : Math.min(S.xfade, Number.isFinite(dur) ? dur / 3 : S.xfade, Math.max(.3, rem));
+  transition.xf = xf;
   if (window.__pfOnTransition) window.__pfOnTransition({ from: old.item, to: nd.item, secs: xf });
-  scene.dropNeedle({
-    deck: nd.slot, speed: animSpeed(), onDrop: () => {
-      if (my !== loadGen) return;
-      if (current) historyStack.push(current.key);
-      outgoing = old; deck = nd; current = nd.item;
-      wireDeck(nd); loadPeaks(current); updateNowPlaying(current); renderList();
-      SFX.crackle(); setActiveSlot(nd.slot);
-      nd.ready.catch(() => {}).then(() => startDeck(nd, my));
-      const target = xfEnd(nd.slot);
-      if (S.autoMix) xfSweep(target, Math.max(.05, xf));
-      else if (Math.abs(xfPos() - xfEnd(old.slot)) < .2) {
-        // manual mode with the fader parked on the old deck: hard cut when the old record runs out
-        setTimeout(() => { if (Math.abs(xfPos() - xfEnd(old.slot)) < .2) setXf(target); }, Math.max(0, Math.min(rem, xf)) * 1000);
-      }
-      transition.endT = setTimeout(() => finishTransition(), (Math.max(.05, xf) + .35) * 1000);
-      syncPlayUI();
-    },
-  });
+  // cosmetic choreography still running (e.g. the record being cued) must not delay the audio: snap it
+  if (scene.busy) scene.snapRecord(nd.slot, labelOf(nd.item));
+  const onDrop = guardDrop(() => {
+    if (my !== loadGen || !transition || transition.my !== my || nd.disposed) return;
+    if (current) historyStack.push(current.key);
+    outgoing = old.disposed ? null : old; deck = nd; current = nd.item;
+    wireDeck(nd); loadPeaks(current); updateNowPlaying(current); renderList();
+    SFX.crackle(); setActiveSlot(nd.slot);
+    startDeck(nd, my);
+    const target = xfEnd(nd.slot);
+    if (S.autoMix) xfSweep(target, Math.max(.05, xf));
+    else if (Math.abs(xfPos() - xfEnd(old.slot)) < .2) {
+      // manual mode with the fader parked on the old deck: hard cut when the old record runs out
+      setTimeout(() => { if (my === loadGen && deck === nd && Math.abs(xfPos() - xfEnd(old.slot)) < .2) setXf(target); }, Math.max(0, Math.min(rem, xf)) * 1000);
+    }
+    transition.dropAt = performance.now();
+    transition.endT = setTimeout(() => { if (transition && transition.my === my) finishTransition(); }, (Math.max(.05, xf) + .35) * 1000);
+    syncPlayUI();
+  }, transitionLead() + .6);
+  scene.dropNeedle({ deck: nd.slot, speed: animSpeed(), onDrop });
+  return true;
 }
 function finishTransition(abort = false) {
   const tr = transition; if (!tr) return; transition = null; clearTimeout(tr.endT);
-  if (tr.old && !tr.old.disposed) stopDeck(tr.old, { animate: !abort });
+  if (dropGuard && abort) dropGuard = null;
+  if (tr.old && !tr.old.disposed && tr.old !== deck) stopDeck(tr.old, { animate: !abort });
   if (abort && tr.nd && tr.nd !== deck) tr.nd.dispose();
   if (!abort) scheduleCue(2.5);
   syncDeckUI();
+}
+
+// ---------------- watchdogs (every 250 ms, also with the screen locked) ----------------
+// Nothing in the two-deck machine may wait forever: a stalled drop, transition, deck, duck, brake or end is recovered.
+const WD = { deck: null, ct: -1, at: 0, stage: 0, duckLow: 0, endedAt: 0, log: [] };
+const wdNote = (m) => { WD.log.push([Math.round(performance.now()), m]); if (WD.log.length > 40) WD.log.shift(); console.warn('[player] watchdog:', m); };
+function watchdog() {
+  const now = performance.now();
+  // 1. a needle drop the choreography never delivered (slow device, tab switch, a stuck tween)
+  if (dropGuard && now > dropGuard.due) { const f = dropGuard.fire; dropGuard = null; wdNote('forced needle drop'); scene.flush(); f(); }
+  // 2. a transition that overran its crossfade by more than 2 s
+  if (transition && transition.dropAt && now - transition.dropAt > (Math.max(.05, transition.xf) + 2) * 1000) { wdNote('forced transition end'); finishTransition(); }
+  if (transition && !transition.dropAt && !dropGuard) { wdNote('transition lost its drop'); finishTransition(true); }
+  const d = deck;
+  // 3. a deck that should be playing but whose clock stopped
+  if (d && !d.disposed && d.wantPlay && !d.el.paused && !d.el.ended) {
+    const ct = d.el.currentTime;
+    if (WD.deck !== d || ct !== WD.ct) { if (WD.deck === d && ct > 3) failCount = 0; WD.deck = d; WD.ct = ct; WD.at = now; WD.stage = 0; }
+    else if (now - WD.at > 3000) {
+      WD.at = now; WD.stage++;
+      wdNote(`deck ${d.slot} stalled at ${ct.toFixed(1)}s (stage ${WD.stage}, readyState ${d.el.readyState}, ctx ${ctx && ctx.state})`);
+      if (WD.stage === 1) { ensureCtx(); d.el.play().catch(() => {}); }
+      else if (WD.stage === 2) { const t = d.el.currentTime; try { d.el.load(); d.el.currentTime = t; } catch (e) {} d.el.play().catch(() => {}); setStatus('Reconnecting…'); }
+      else { WD.stage = 0; deckFailed(d, 'it stopped loading'); }
+    }
+  } else { WD.deck = d; WD.ct = -1; WD.at = now; WD.stage = 0; }
+  // 4. the audio engine got suspended / interrupted (phone call, Siri, lock screen) while music should play
+  if (ctx && d && !d.el.paused && ctx.state !== 'running') {
+    if (!ctxStuckSince) { ctxStuckSince = now; ctx.resume().catch(() => {}); }
+    else if (now - ctxStuckSince > 1500 && !document.hidden && $('#bigPlay').hidden) { wdNote('audio context ' + ctx.state); showBigPlay('Tap to bring the sound back'); }
+  }
+  // 5. the hype-talk duck never came back up
+  if (duck && !hype.talking && duck.gain.value < .97) {
+    if (!WD.duckLow) WD.duckLow = now;
+    else if (now - WD.duckLow > 1500) { const t = ctx.currentTime; duck.gain.cancelScheduledValues(t); duck.gain.setValueAtTime(duck.gain.value, t); duck.gain.setTargetAtTime(1, t, .1); WD.duckLow = 0; wdNote('restored duck'); setTimeout(() => allDecks().forEach((x) => x.applyVol()), 400); }
+  } else WD.duckLow = 0;
+  // 6. a deck left slowed / filtered by the ladies brake after the intro ended or was interrupted
+  if (ctx) liveDecks.forEach((x) => {
+    if (ladies.run && ladies.run.deck === x) return;
+    if (Math.abs((x.el.playbackRate || 1) - 1) > .001 || x.lp.frequency.value < ctx.sampleRate / 2 - 1) { wdNote('restored brake on deck ' + x.slot); ladies.restore(x); }
+  });
+  // 7. a record that ran out with nothing taking over (e.g. an intro that never dropped the next tune)
+  if (d && d.el.ended && !transition && !pendingDeck && S.repeat !== 'one' && nextItem(1)) {
+    if (!WD.endedAt) WD.endedAt = now;
+    else if (now - WD.endedAt > 2500) { WD.endedAt = 0; if (ladies.run) ladies.abort('stalled'); wdNote('track ended with nothing next — advancing'); onEnded(); }
+  } else WD.endedAt = 0;
+  // 8. orphaned decks (superseded loads, rapid next/prev) never keep playing or holding memory
+  liveDecks.forEach((x) => {
+    if (x === deck || x === cued || x === outgoing || x === pendingDeck || (transition && (x === transition.old || x === transition.nd))) return;
+    if (now - x.born > 2000) { wdNote('disposed orphan deck ' + x.slot + ' (' + x.item.title + ')'); x.dispose(); }
+  });
 }
 
 // ---------------- analysis (onset / beat detection) ----------------
@@ -449,7 +598,7 @@ window.__pfOnTransition = (info) => hype.onTransition(info);
 window.__pfDuckGain = () => (duck ? +duck.gain.value.toFixed(3) : null);
 // "for the ladies" intro (vinyl brake + shout-out before a ladies' tune)
 const ladies = createLadies({
-  hype, LS, toast, getCtx: ensureCtx, placeMenu, closeMenus, startTransition, transitionLead, onChange: () => renderList(),
+  hype, LS, toast, getCtx: ensureCtx, placeMenu, closeMenus, startTransition, transitionLead, onChange: () => renderList(), onEnded: () => onEnded(),
   P: { deck: () => deck, cued: () => cued, current: () => current, nextItem: () => nextItem(1), isTransition: () => !!transition },
 });
 window.__pfBeforeTransition = (rem, xf) => ladies.before(rem, xf);
@@ -529,7 +678,7 @@ function drawWave() {
   const dur = deck && Number.isFinite(deck.el.duration) ? deck.el.duration : (it ? it.duration : 0);
   const pos = seekPreview != null ? seekPreview : (deck ? deck.el.currentTime : 0);
   const prog = dur ? Math.min(1, pos / dur) : 0;
-  const cs = getComputedStyle(document.documentElement); const c1 = cs.getPropertyValue('--c1').trim() || '#ff2bd6', c2 = cs.getPropertyValue('--c2').trim() || '#22e3ff', c4 = cs.getPropertyValue('--c4').trim() || '#7a5cff';
+  const th = (THEMES[S.theme] || THEMES.club).c, c1 = th[0], c2 = th[1], c4 = th[3];
   const wh = h - 12, mid = wh / 2; const bw = 3, gap = 2, n = Math.floor(w / (bw + gap));
   const played = wg.createLinearGradient(0, 0, w, 0); played.addColorStop(0, c1); played.addColorStop(1, c4);
   for (let i = 0; i < n; i++) {
@@ -634,12 +783,14 @@ function syncMenu() {
   $('#optSave').setAttribute('aria-checked', S.saveImports); $('#optSave .chk').textContent = S.saveImports ? '✓' : '';
   $('#optMatch').setAttribute('aria-checked', S.matchOutfit); $('#optMatch .chk').textContent = S.matchOutfit ? '✓' : '';
   $$('#mainMenu [data-anim]').forEach((b) => { const on = b.dataset.anim === S.anim; b.setAttribute('aria-checked', on); b.querySelector('.chk').textContent = on ? '●' : ''; });
+  $$('#mainMenu [data-quality]').forEach((b) => { const on = b.dataset.quality === Q.mode; b.setAttribute('aria-checked', on); b.querySelector('.chk').textContent = on ? '●' : ''; });
   $('#optInstall').hidden = !deferredInstall;
 }
 $('#addMenu').addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; closeMenus(); const a = b.dataset.act; if (a === 'files') $('#fileIn').click(); if (a === 'folder') $('#dirIn').click(); if (a === 'url') openUrlDialog(); });
 $('#mainMenu').addEventListener('click', (e) => {
   const b = e.target.closest('button'); if (!b) return;
   if (b.dataset.anim) { S.anim = b.dataset.anim; LS.set('anim', S.anim); syncMenu(); return; }
+  if (b.dataset.quality) { Q.mode = b.dataset.quality; LS.set('quality', Q.mode); Q.lockUntil = 0; if (Q.mode === 'auto') setQuality(Q.floor || 0, 'auto'); applyQualityMode(); syncMenu(); return; }
   const a = b.dataset.act; closeMenus();
   if (a === 'match') { S.matchOutfit = !S.matchOutfit; LS.set('matchOutfit', S.matchOutfit); if (S.matchOutfit) setOutfit(OUTFIT_FOR_THEME[S.theme] || 'classic', { save: false }); else setOutfit(S.outfit); toast(S.matchOutfit ? 'Outfit follows the scene' : 'Outfit: ' + OUTFITS[S.outfit].name); }
   if (a === 'save') { S.saveImports = !S.saveImports; LS.set('saveImports', S.saveImports); toast(S.saveImports ? 'Imports will be saved to My Tracks' : 'Imports play for this session only'); }
@@ -743,8 +894,14 @@ function syncDeckUI() {
 xfader.addEventListener('input', () => { ensureCtx(); setXf(xfader.value / 1000, { user: true }); });
 $('#autoMix').checked = S.autoMix;
 $('#autoMix').addEventListener('change', (e) => { S.autoMix = e.target.checked; LS.set('autoMix', S.autoMix); toast(S.autoMix ? 'Auto mix on — the crossfader moves by itself on transitions' : 'Auto mix off — you work the crossfader'); });
-// keep transitions going when the tab is hidden / screen locked (animation frames stop there)
-setInterval(() => { if (document.hidden) checkAutoAdvance(); }, 500);
+// logic tick: auto-mix + watchdogs run on a timer, not on animation frames, so they keep working with the screen
+// locked and never slow down when a phone renders at a few frames per second
+let lastPosT = 0;
+setInterval(() => {
+  try { checkAutoAdvance(); } catch (e) { console.warn('[player] auto-mix', e); }
+  try { watchdog(); } catch (e) { console.warn('[player] watchdog', e); }
+  const now = performance.now(); if (now - lastPosT > 2000) { lastPosT = now; updatePosition(); }
+}, 250);
 document.addEventListener('visibilitychange', () => { scene.setInstant(document.hidden); });
 
 $('#eqBtn').addEventListener('click', () => { ensureCtx(); eq.open(); });
@@ -754,7 +911,11 @@ $('#hypeBtn').addEventListener('click', () => { ensureCtx(); hype.open(); });
 $('#playBtn').addEventListener('click', () => { userActivated = true; togglePlay(); });
 $('#prevBtn').addEventListener('click', () => { userActivated = true; next(-1); });
 $('#nextBtn').addEventListener('click', () => { userActivated = true; next(1); });
-$('#bigPlay').addEventListener('click', () => { userActivated = true; if (deck && deck.el.paused && scene.st.decks[deck.slot].visible) { hideBigPlay(); deck.el.play().catch(() => {}); } else playItem(current || visible()[0] || DEMO); });
+$('#bigPlay').addEventListener('click', () => {
+  userActivated = true; ensureCtx(); primePool();
+  if (deck && !deck.disposed) { hideBigPlay(); ctxStuckSince = 0; if (deck.el.paused) { deck.wantPlay = true; deck.el.play().catch((e) => { if (e.name === 'NotAllowedError') showBigPlay('Tap to play'); }); } return; }
+  playItem(current || visible()[0] || DEMO);
+});
 function showBigPlay(label) { const b = $('#bigPlay'); if (label) b.querySelector('span').textContent = label; b.hidden = false; }
 function hideBigPlay() { $('#bigPlay').hidden = true; }
 
@@ -823,7 +984,7 @@ $('#helpDlg button').addEventListener('click', () => $('#helpDlg').close());
 // media session
 if ('mediaSession' in navigator) {
   const ms = navigator.mediaSession; const h = (a, f) => { try { ms.setActionHandler(a, f); } catch (e) {} };
-  h('play', () => togglePlay()); h('pause', () => pauseAll());
+  h('play', () => playAll()); h('pause', () => pauseAll()); // 'play' must never toggle into a pause
   h('previoustrack', () => next(-1)); h('nexttrack', () => next(1));
   h('seekbackward', (d) => deck && seekTo(deck.el.currentTime - (d.seekOffset || 10)));
   h('seekforward', (d) => deck && seekTo(deck.el.currentTime + (d.seekOffset || 10)));
@@ -849,7 +1010,23 @@ let deferredInstall = null;
 window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredInstall = e; $('#installBtn').hidden = false; });
 async function doInstall() { if (!deferredInstall) { toast('Use your browser menu → “Install app” / “Add to Home screen”'); return; } deferredInstall.prompt(); await deferredInstall.userChoice.catch(() => {}); deferredInstall = null; $('#installBtn').hidden = true; }
 $('#installBtn').addEventListener('click', doInstall);
-if ('serviceWorker' in navigator && location.protocol !== 'file:') navigator.serviceWorker.register('./sw.js').catch((e) => console.warn('[player] SW', e));
+// service worker: when a new version takes over this page, reload onto it right away if nothing is playing,
+// otherwise as soon as playback stops (never mid-song)
+let swUpdatePending = false;
+function applyUpdateIfIdle() { if (swUpdatePending && (!deck || deck.disposed || deck.el.ended) && !transition && !pendingDeck && !(outgoing && outgoing.playing)) { swUpdatePending = false; location.reload(); } }
+if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+  const hadController = !!navigator.serviceWorker.controller;
+  navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' }).then((reg) => {
+    let lastCheck = Date.now();
+    document.addEventListener('visibilitychange', () => { if (!document.hidden && Date.now() - lastCheck > 30 * 60e3) { lastCheck = Date.now(); reg.update().catch(() => {}); } });
+  }).catch((e) => console.warn('[player] SW', e));
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!hadController) return; // first install: this page already runs the current code
+    swUpdatePending = true;
+    if (deck && deck.playing) toast('Player updated: the new version loads when the music stops'); else applyUpdateIfIdle();
+  });
+  setInterval(applyUpdateIfIdle, 3000);
+}
 
 // ---------------- live updates from Beats / DJ ----------------
 let refreshT;
@@ -867,28 +1044,91 @@ onMediaChange((m) => {
 });
 window.addEventListener('storage', (e) => { if (e.key === 'pf-urls') { urlItems = LS.get('urls', []); refreshLibrary(); } });
 
+// ---------------- adaptive visual quality ----------------
+// The scene + full-screen visualizer could saturate a phone's main thread (measured: ~100 % at 4–6× CPU throttle,
+// 3–10 fps), which made taps, the record animation and transitions crawl. The governor watches real frame times and
+// steps down: 0 = full · 1 = visualizer 30 fps, ¾ resolution, lighter effects · 2 = visualizer 20 fps ½ res, DJ 30 fps,
+// no glass blur · 3 = battery saver (visualizer 12 fps, DJ 20 fps). It steps back up when frames are fast again.
+const QL = [{ viz: 0, scene: 0, res: 1 }, { viz: 1000 / 31, scene: 0, res: .75 }, { viz: 1000 / 21, scene: 1000 / 31, res: .5 }, { viz: 1000 / 12.5, scene: 1000 / 20.5, res: .4 }];
+const Q = { level: 0, mode: LS.get('quality', 'auto'), d: [], work: [], evalAt: 0, goodSince: 0, upAt: -1e9, lockUntil: 0, pulseSet: true, lastViz: 0, lastScene: 0, changes: [] };
+function setQuality(level, why) {
+  level = Math.max(0, Math.min(3, level)); if (level === Q.level) return;
+  const nowT = performance.now(); Q.changes.push([Math.round(nowT), Q.level, level, why]); if (Q.changes.length > 20) Q.changes.shift();
+  if (level > Q.level && nowT - Q.upAt < 15000) Q.lockUntil = nowT + 120000; // it just went up and could not hold it: stay down a while
+  if (level < Q.level) Q.upAt = nowT;
+  Q.level = level; viz.setQuality(level, QL[level].res); scene.setQuality(level);
+  document.body.dataset.quality = level; document.body.classList.toggle('lite', level >= 2);
+}
+// devices that draw without a GPU (software rendering) or with little memory start lighter: their drawing cost does
+// not show up in frame timings, so the governor alone can't see it
+function deviceStartLevel() {
+  let lvl = 0;
+  try {
+    const gl = document.createElement('canvas').getContext('webgl');
+    if (!gl) lvl = 2;
+    else {
+      const ext = gl.getExtension('WEBGL_debug_renderer_info');
+      const r = String(ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER));
+      if (/swiftshader|llvmpipe|softpipe|software|basic render/i.test(r)) lvl = 2;
+      const lose = gl.getExtension('WEBGL_lose_context'); if (lose) lose.loseContext();
+    }
+  } catch (e) {}
+  if ((navigator.deviceMemory && navigator.deviceMemory <= 2) || (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 2)) lvl = Math.max(lvl, 1);
+  return lvl;
+}
+function applyQualityMode() {
+  if (Q.mode === 'high') setQuality(0, 'user'); else if (Q.mode === 'low') setQuality(3, 'user');
+  else {
+    const start = deviceStartLevel(); Q.floor = start; if (start) setQuality(Math.max(Q.level, start), 'device');
+    if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) setQuality(Math.max(Q.level, 1), 'reduced motion');
+  }
+}
+function governQuality(now, delta, work) {
+  if (Q.mode !== 'auto' || document.hidden) { Q.d.length = 0; Q.work.length = 0; return; }
+  if (delta > 0 && delta < 1000) { Q.d.push(delta); Q.work.push(work); }
+  if (now < Q.evalAt || Q.d.length < 20) return;
+  Q.evalAt = now + 1500;
+  const ds = Q.d.slice().sort((a, b) => a - b), med = ds[ds.length >> 1], p90 = ds[Math.floor(ds.length * .9)];
+  const wAvg = Q.work.reduce((a, b) => a + b, 0) / Q.work.length;
+  const steadyCap = p90 - ds[Math.floor(ds.length * .1)] < 3 && wAvg < 5; // a 30 Hz display / low-power mode, not overload
+  Q.d.length = 0; Q.work.length = 0; Q.last = { med: +med.toFixed(1), p90: +p90.toFixed(1), work: +wAvg.toFixed(1), steadyCap };
+  if ((med > 24 || p90 > 50) && !steadyCap) { Q.goodSince = 0; setQuality(Q.level + 1, `slow frames (median ${med.toFixed(0)} ms, p90 ${p90.toFixed(0)} ms)`); return; }
+  if (med < 18.5 && p90 < 26 && Q.level > (Q.floor || 0)) {
+    if (!Q.goodSince) Q.goodSince = now;
+    else if (now - Q.goodSince > 8000 && now > Q.lockUntil) { Q.goodSince = 0; setQuality(Q.level - 1, 'fast frames'); }
+  } else Q.goodSince = 0;
+}
+
 // ---------------- main loop ----------------
-let lastT = performance.now(), anchorsCache = null, frameN = 0, lastUi = 0;
+let lastT = performance.now(), anchorsCache = null, frameN = 0, lastUi = 0, lastFrameT = performance.now();
+function frameLoop(now) {
+  requestAnimationFrame(frameLoop);
+  const delta = now - lastFrameT; lastFrameT = now;
+  const L = QL[Q.level], t0 = performance.now();
+  let did = false;
+  if (now - Q.lastScene >= L.scene - 1) { Q.lastScene = now; loop(now, L, now - Q.lastViz >= L.viz - 1); did = true; }
+  governQuality(now, delta, did ? performance.now() - t0 : 0);
+}
 function onResize() { viz.resize(); anchorsCache = scene.anchors(); drawWave(); }
 window.addEventListener('resize', () => { clearTimeout(onResize._t); onResize._t = setTimeout(onResize, 80); });
-function loop(now) {
+function loop(now, L, drawViz) {
   const dt = Math.min(.05, (now - lastT) / 1000); lastT = now; frameN++;
   analyse(now, dt);
   allDecks().forEach((dk) => { scene.setDeckRate(dk.slot, dk.el.paused ? 1 : (dk.el.playbackRate || 1)); const d = dk.el.duration; if (Number.isFinite(d) && d > 0) scene.setProgress(dk.slot, dk.el.currentTime / d); });
   scene.setXfader(xfPos());
   if (frameN % 30 === 0 || !anchorsCache) anchorsCache = scene.anchors();
-  viz.draw(now, F, anchorsCache);
+  if (drawViz) { Q.lastViz = now; viz.draw(now, F, anchorsCache); }
   F.mixing = !!(transition || (outgoing && outgoing.playing));
   scene.frame(now, F);
   hype.tick(now); ladies.learn(now, current, F, deck);
-  if (now - lastUi > 120) {
+  if (now - lastUi > (Q.level >= 2 ? 250 : 120)) {
     lastUi = now;
     if (deck && seekPreview == null) { $('#tCur').textContent = fmt(deck.el.currentTime); drawWave(); }
-    checkAutoAdvance(); syncXfUI();
-    if (now - lastPos > 2000) { lastPos = now; updatePosition(); }
+    syncXfUI();
   }
-  document.documentElement.style.setProperty('--pulse', F.pulse.toFixed(3));
-  requestAnimationFrame(loop);
+  if (Q.level === 0) document.documentElement.style.setProperty('--pulse', F.pulse.toFixed(3)); // restyles the page: high quality only
+  else if (Q.pulseSet) { Q.pulseSet = false; document.documentElement.style.setProperty('--pulse', '0'); }
+  if (Q.level === 0) Q.pulseSet = true;
 }
 
 // ---------------- boot ----------------
@@ -910,7 +1150,7 @@ async function boot() {
     current = start; updateNowPlaying(start); renderList(); buildOrder(start.key);
     showBigPlay(`Play “${start.title}”`);
   } else { const first = visible()[0] || DEMO; current = first; updateNowPlaying(first); renderList(); showBigPlay('Tap to drop the needle'); }
-  requestAnimationFrame(loop);
-  window.__pf = { get deck() { return deck; }, get cued() { return cued; }, get outgoing() { return outgoing; }, get transition() { return transition; }, XF, xfPos, setXf, get slot() { return slot; }, get ctx() { return ctx; }, startTransition, get activeSlot() { return activeSlot; }, eq, hype, ladies, get current() { return current; }, F, scene, playItem, refreshLibrary, get library() { return library; }, next, S, setOutfit, setTheme };
+  applyQualityMode(); requestAnimationFrame(frameLoop);
+  window.__pf = { get deck() { return deck; }, get cued() { return cued; }, get outgoing() { return outgoing; }, get transition() { return transition; }, XF, xfPos, setXf, get slot() { return slot; }, get ctx() { return ctx; }, startTransition, get activeSlot() { return activeSlot; }, eq, hype, ladies, get current() { return current; }, F, scene, playItem, refreshLibrary, get library() { return library; }, next, S, setOutfit, setTheme, Q, setQuality, WD, watchdog, get pendingDeck() { return pendingDeck; }, get liveDecks() { return [...liveDecks]; }, pool, finishTransition };
 }
 boot();
