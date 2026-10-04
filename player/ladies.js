@@ -72,7 +72,7 @@ export function createLadies(api) {
   const places = () => (hype.manifest ? hype.manifest.ladies.places : []);
   const sec = document.createElement('div'); sec.className = 'hy-sec';
   sec.innerHTML = `
-    <label class="hy-l" for="hyPlace">Location <small>— for “What's up, … ladies?” (the DJ also calls a second big place)</small></label>
+    <label class="hy-l" for="hyPlace">Your town / village <small>— used for shout-outs and “What's up, … ladies?”</small></label>
     <div class="hy-locrow"><select id="hyPlace" aria-label="Location"></select><button type="button" class="eq-btn" id="hyDetect" title="Use this device's location to pick the nearest town">📍 Detect</button></div>
     <input type="text" id="hyPlaceCustom" maxlength="40" placeholder="Type a place, e.g. Grand Fond" hidden>
     <p class="hy-note" id="hyPlaceNote" hidden></p>`;
@@ -81,7 +81,7 @@ export function createLadies(api) {
   const say = (t) => { note.textContent = t; note.hidden = !t; };
   function fillPlaces() {
     const pl = places(); const opt = (p) => `<option value="${p.pid}">${p.place}</option>`;
-    sel.innerHTML = `<option value="">None — “What's up, ladies?”</option><optgroup label="Towns & villages">${pl.filter((p) => p.kind === 'town').map(opt).join('')}</optgroup><optgroup label="Parishes">${pl.filter((p) => p.kind === 'parish').map(opt).join('')}</optgroup><option value="custom">Custom place…</option>`;
+    sel.innerHTML = `<option value="">Automatic (detected / Dominica)</option><optgroup label="Towns & villages">${pl.filter((p) => p.kind === 'town').map(opt).join('')}</optgroup><optgroup label="Parishes">${pl.filter((p) => p.kind === 'parish').map(opt).join('')}</optgroup><option value="custom">Custom place…</option>`;
     sel.value = loc.id || ''; custom.hidden = loc.id !== 'custom'; custom.value = loc.custom || '';
   }
   const saveLoc = () => LS.set('place', loc);
@@ -114,6 +114,14 @@ export function createLadies(api) {
       let buf = null; try { buf = await Promise.race([hype.renderText(customSpoken()), new Promise((r) => setTimeout(() => r(null), 1500))]); } catch (e) {}
       first = buf ? { buf, text: customLine(), lufs: -20, pose: 'point' } : { file: L.generic.file, text: customLine(), lufs: L.generic.lufs, pose: 'point' };
     } else if (loc.id && byId(loc.id)) { const p = byId(loc.id); firstId = p.pid; first = { file: p.file, text: p.text, lufs: p.lufs, pose: 'point' }; }
+    else if (!loc.id && api.place) { // no manual pick → use the detected town (shout.js)
+      const r = api.place();
+      if (r && r.src === 'detected' && r.pid && byId(r.pid)) { const p = byId(r.pid); firstId = p.pid; first = { file: p.file, text: p.text, lufs: p.lufs, pose: 'point' }; }
+      else if (r && r.src === 'detected' && r.name) {
+        let buf = null; try { buf = await Promise.race([hype.renderText(`What's up... ${r.name} ladies?!`), new Promise((res) => setTimeout(() => res(null), 1500))]); } catch (e) {}
+        first = buf ? { buf, text: `What's up, ${r.name} ladies?`, lufs: -20, pose: 'point' } : null;
+      }
+    }
     if (!first) { parts.push({ file: L.generic.file, text: L.generic.text, lufs: L.generic.lufs, pose: 'point' }); return parts; }
     parts.push(first);
     const second = byId(firstId === 'roseau' ? 'portsmouth' : 'roseau');

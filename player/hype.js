@@ -200,18 +200,27 @@ export function createHype(api) {
     renderNames(); // make sure the renders are on their way
     return [{ file: stock.file, text, pose: 'point', lufs: stock.lufs, kind: 'callout-fallback', name: c.name }];
   }
+  // place shout-outs ("Big up, Portsmouth!") — parts come from shout.js; first one ~35 s into playback, then in rotation
+  let placeFn = null; const PL = { playMs: 0, lastT: 0, said: false, lastAt: -1e9, since: 0, count: 0 };
+  const PLACE_FIRST_MS = 35000, PLACE_EVERY = 3, PLACE_MIN_GAP_MS = 120000;
+  async function placeParts() { try { return placeFn ? await placeFn() : null; } catch (e) { return null; } }
+  function placeChanged() { PL.said = false; PL.playMs = Math.min(PL.playMs, PLACE_FIRST_MS - 8000); }
   async function fire(type = 'periodic', { force = false } = {}) {
     await mp; if (!manifest) return false;
     if (!force && (!S.on || talk.active || talk.busy)) return false;
     let parts = null; const names = crowd();
+    const now0 = performance.now();
+    const placeDue = type === 'place' || (type !== 'start' && type !== 'callout' && PL.said && PL.since >= PLACE_EVERY && now0 - PL.lastAt > PLACE_MIN_GAP_MS);
+    if (placeDue) { parts = await placeParts(); if (parts) { PL.said = true; PL.lastAt = now0; PL.since = 0; PL.count++; } else if (type === 'place') return false; }
+    else PL.since++;
     const wantCallout = names.length && (Math.random() < .25 || talk.sinceCallout >= 5) && type !== 'start';
-    if (wantCallout || type === 'callout') { parts = await calloutParts(); if (parts) talk.sinceCallout = 0; }
+    if (!parts && (wantCallout || type === 'callout')) { parts = await calloutParts(); if (parts) talk.sinceCallout = 0; }
     if (!parts) {
       const id = hypeBag.pick(PREFER[type] || []); const e = manifest.hype.find((h) => h.id === id);
       parts = [{ file: e.file, text: e.text, lufs: e.lufs, pose: UP_POSE.test(id) ? 'up' : (talk.count % 2 ? 'up' : 'point'), kind: 'hype', id }];
       talk.sinceCallout++;
     }
-    talk.count++; talk.lastType = type; talk.lastParts = parts.map((p) => ({ text: p.text, kind: p.kind, id: p.id, name: p.name }));
+    talk.count++; talk.lastType = type; talk.lastParts = parts.map((p) => ({ text: p.text, kind: p.kind, id: p.id, name: p.name, place: p.place, src: p.src }));
     return speak(parts, { force });
   }
 
@@ -226,13 +235,15 @@ export function createHype(api) {
   function tick(now) {
     if (!A && isPlaying()) { try { audio(); } catch (e) {} }
     meter(now);
-    if (!S.on || !isPlaying()) { E.fast = E.slow = 0; return; }
+    if (!S.on || !isPlaying()) { E.fast = E.slow = 0; PL.lastT = 0; return; }
     if (!talk.nextPeriodic) talk.nextPeriodic = now + period() * 1000 * (.75 + Math.random() * .5);
     // energy rises (drops) — fast vs slow average of the music level
     const lvl = (F.level || 0) * .6 + (F.bass || 0) * .4;
     E.fast += (lvl - E.fast) * .08; E.slow += (lvl - E.slow) * .006;
     if (E.fast > E.slow * 1.4 + .07 && E.fast > .33 && now - E.lastRise > 20000) { E.lastRise = now; queue('energy', .4); }
+    if (PL.lastT && now - PL.lastT < 1000) PL.playMs += now - PL.lastT; PL.lastT = now;
     if (talk.active || talk.busy) return;
+    if (!PL.said && placeFn && PL.playMs >= PLACE_FIRST_MS && gapOk(now)) { PL.said = true; fire('place'); return; }
     const p = talk.pending;
     if (p && now >= p.at) { if (gapOk(now)) { talk.pending = null; fire(p.type); return; } if (now > p.exp) talk.pending = null; }
     if (now >= talk.nextPeriodic) { if (gapOk(now)) fire('periodic'); talk.nextPeriodic = now + period() * 1000 * (.75 + Math.random() * .5); }
@@ -410,6 +421,7 @@ export function createHype(api) {
   return {
     S, tick, fire, speak, onTrackStart, onTransition, open, get isOpen() { return !root.hidden; }, root, extra: q('#hyExtra'), paint,
     get manifest() { return manifest; }, ready: mp, loadBuf, renderText, renderNames, crowd, customReady,
+    setPlace(fn) { placeFn = fn; }, placeChanged, cachedText: (spoken) => cachedBuffer(customKey(spoken)), get placeState() { return Object.assign({}, PL); },
     get talking() { return talk.active; }, set busy(v) { talk.busy = !!v; }, get busy() { return talk.busy; },
     get stats() { return { musicLufs: M.lufs != null ? +M.lufs.toFixed(1) : null, last: M.last, lines: M.lines.slice(), gainDb: +voiceGainDb().toFixed(1), sliderDb: sliderDb(), duckDb: DUCK_DB, underDb: UNDER_DB, lastAt: talk.lastAt, count: talk.count, lastParts: talk.lastParts, used: hypeBag.used, kokoro: K.status }; },
     _resetGap() { talk.lastAt = -1e9; },

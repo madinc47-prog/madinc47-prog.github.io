@@ -8,6 +8,7 @@ import { OUTFITS, OUTFIT_FOR_THEME } from './outfits.js?v=9';
 import { createEQ } from './eq.js?v=9';
 import { createHype } from './hype.js?v=9';
 import { createLadies } from './ladies.js?v=9';
+import { createShout } from './shout.js?v=9';
 import { fmt, hash, isAudioFile, titleFromName, makeCover, makeLabel, readTags, probeDuration, computePeaks } from './util.js?v=9';
 
 const $ = (s, r = document) => r.querySelector(s);
@@ -359,7 +360,7 @@ async function playItem(item, { fromUser = true } = {}) {
     startDeck(d, my);
     if (old) setTimeout(() => { if (!old.disposed && old !== deck) stopDeck(old); }, (mix + .25) * 1000);
     scheduleCue(old ? mix + 2.5 : 3);
-    hype.onTrackStart(item);
+    hype.onTrackStart(item); if (shout) shout.detect();
     syncPlayUI();
   }, (reuse ? .8 : 3.4) / sp + 1.2);
   if (reuse) await scene.dropNeedle({ deck: d.slot, speed: animSpeed(), onDrop });
@@ -597,11 +598,15 @@ const hype = createHype({
 window.__pfOnTransition = (info) => hype.onTransition(info);
 window.__pfDuckGain = () => (duck ? +duck.gain.value.toFixed(3) : null);
 // "for the ladies" intro (vinyl brake + shout-out before a ladies' tune)
+let shout = null;
 const ladies = createLadies({
-  hype, LS, toast, getCtx: ensureCtx, placeMenu, closeMenus, startTransition, transitionLead, onChange: () => renderList(), onEnded: () => onEnded(),
+  hype, LS, toast, getCtx: ensureCtx, place: () => (shout ? shout.resolve() : null), placeMenu, closeMenus, startTransition, transitionLead, onChange: () => renderList(), onEnded: () => onEnded(),
   P: { deck: () => deck, cued: () => cued, current: () => current, nextItem: () => nextItem(1), isTransition: () => !!transition },
 });
 window.__pfBeforeTransition = (rem, xf) => ladies.before(rem, xf);
+// place shout-outs during normal playback + per-visitor town detection
+shout = createShout({ hype, ladies, LS, toast });
+window.__pfShout = shout;
 const wave = $('#wave'), wg = wave.getContext('2d');
 
 function setTheme(k) {
