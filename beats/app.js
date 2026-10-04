@@ -551,14 +551,19 @@
     G.kitOut.gain.value = dbGain(b.out || 0);
   }
 
+  function resumeCtx() {
+    // iPhone/iPad use "interrupted" (calls, Siri, another app) as well as "suspended": wake up from both
+    if (!ctx || ctx.state === "running" || ctx.state === "closed") return;
+    try { var pr = ctx.resume(); if (pr && pr.then) pr.then(flushHits, function () {}); } catch (e) { /* not allowed yet */ }
+  }
   function ensureCtx() {
-    if (ctx) {
-      if (ctx.state === "suspended") ctx.resume();
-      return ctx;
-    }
+    if (ctx) { resumeCtx(); return ctx; }
     var AC = window.AudioContext || window.webkitAudioContext;
     if (!AC) { toast("Web Audio is not supported in this browser."); return null; }
-    ctx = new AC({ latencyHint: "interactive" });
+    // iPhone: play through the ring/silent switch like a music app (otherwise the pads are silent in silent mode)
+    try { if (navigator.audioSession && navigator.audioSession.type !== "playback") navigator.audioSession.type = "playback"; } catch (e) { /* older browsers */ }
+    try { ctx = new AC({ latencyHint: "interactive" }); } catch (e) { ctx = new AC(); }
+    ctx.addEventListener ? ctx.addEventListener("statechange", onCtxState) : (ctx.onstatechange = onCtxState);
     LG = makeGraph(ctx, true);
     master = LG.out;
     masterAnalyser = ctx.createAnalyser();
@@ -653,10 +658,41 @@
       if (idx !== -1) reg.splice(idx, 1);
     };
   }
+  /* Pads fire on pointerdown for low latency, but on phones a finger's pointerdown does not count as a user gesture,
+   * so the very first tap could not start the audio engine (silent pads on iPhone, first hit lost on Android). Taps that
+   * arrive while the engine is still waking up, or before the kit's sounds have loaded, are queued and played as soon
+   * as possible (within 1.5 s); the engine is unlocked on the following pointerup / touchend / click / key. */
+  var pendingHits = [], audioUnlocked = false, loadingToastAt = 0;
   function triggerPad(i, when, vel) {
     if (!ensureCtx()) return;
-    playPadInto(ctx, LG, i, when || ctx.currentTime, liveVoices, { vel: vel == null ? TOOL_VEL[S.tool] : vel });
+    var v = vel == null ? TOOL_VEL[S.tool] : vel;
+    if (!when && (ctx.state !== "running" || !hasPad(i))) {
+      pendingHits.push({ i: i, vel: v, t: performance.now() });
+      if (pendingHits.length > 24) pendingHits.shift();
+      if (!hasPad(i) && performance.now() - loadingToastAt > 4000) { loadingToastAt = performance.now(); toast("Loading the kit sounds…"); }
+      resumeCtx();
+      return;
+    }
+    playPadInto(ctx, LG, i, when || ctx.currentTime, liveVoices, { vel: v });
   }
+  function flushHits() {
+    if (!ctx || ctx.state !== "running" || !pendingHits.length) return;
+    var now = performance.now(), hits = pendingHits.filter(function (h) { return now - h.t < 1500 && hasPad(h.i); });
+    pendingHits = pendingHits.filter(function (h) { return now - h.t < 1500 && !hasPad(h.i); });
+    if (!hits.length) return;
+    var t0 = hits[0].t, base = ctx.currentTime + 0.01;
+    hits.forEach(function (h) { playPadInto(ctx, LG, h.i, base + (h.t - t0) / 1000, liveVoices, { vel: h.vel }); });
+  }
+  function onCtxState() { if (ctx && ctx.state === "running") flushHits(); }
+  function unlockAudio() {
+    var c = ensureCtx(); if (!c) return;
+    resumeCtx();
+    if (!audioUnlocked) { // older iOS also wants a sound started inside the gesture
+      try { var b = c.createBuffer(1, 1, c.sampleRate), s0 = c.createBufferSource(); s0.buffer = b; s0.connect(c.destination); s0.start(0); audioUnlocked = true; } catch (e) { /* ignore */ }
+    }
+  }
+  ["pointerup", "touchend", "click", "keydown"].forEach(function (ev) { document.addEventListener(ev, unlockAudio, { capture: true, passive: true }); });
+  document.addEventListener("visibilitychange", function () { if (!document.hidden) resumeCtx(); });
 
   /* ---------------- Sequencer ---------------- */
   /*
@@ -1268,14 +1304,22 @@
   }
 
   /* kit sounds: CC0 one-shots (fetched once) + synthesis, pre-rendered per kit with the kit's grit baked in */
-  var sampleCache = {}, kitCache = {}, kitSeq = 0;
+  var sampleCache = {}, kitCache = {}, kitSeq = 0, failToastAt = 0;
+  function fetchBytes(url) { // one retry that skips the browser cache (flaky mobile data, a stale cached error)
+    function get(opt) { return fetch(url, opt).then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.arrayBuffer(); }); }
+    return get(undefined).catch(function () { return new Promise(function (r) { setTimeout(r, 400); }).then(function () { return get({ cache: "reload" }); }); });
+  }
   function fetchSample(name) {
     if (!sampleCache[name]) {
       var isLib = /\.(mp3|ogg|wav|flac)$/i.test(name); // library files carry their extension ("lib/kick/x.mp3")
-      sampleCache[name] = fetch("samples/" + (isLib ? name : name + ".flac")).then(function (r) {
-        if (!r.ok) throw new Error("HTTP " + r.status);
-        return r.arrayBuffer();
-      }).then(decode).then(function (b) { return isLib ? trimLead(b) : b; }).catch(function (e) {
+      var url = "samples/" + (isLib ? name : name + ".flac");
+      sampleCache[name] = fetchBytes(url).then(decode).then(function (b) { return isLib ? trimLead(b) : b; }, function (e) {
+        // the stock kit sounds are FLAC; browsers that can't decode FLAC get the MP3 copy (samples/mp3/<name>.mp3)
+        var alt = !isLib ? "samples/mp3/" + name + ".mp3" : /\.(ogg|flac|wav)$/i.test(name) ? "samples/" + name.replace(/\.(ogg|flac|wav)$/i, ".mp3") : null;
+        if (!alt) throw e;
+        console.warn("Sample " + name + " failed (" + (e && e.message || e) + ") — trying " + alt);
+        return fetchBytes(alt).then(decode).then(trimLead);
+      }).catch(function (e) {
         console.warn("Sample " + name + " unavailable — pad falls back to synthesis", e);
         delete sampleCache[name];
         return null;
@@ -1286,12 +1330,18 @@
   function kitBuffers(id) {
     if (!kitCache[id]) {
       var k = kitDef(id), names = D.samplesFor(k);
-      kitCache[id] = Promise.all(names.map(fetchSample)).then(function (bufs) {
-        var map = {};
-        names.forEach(function (n, i) { if (bufs[i]) map[n] = bufs[i]; });
+      var p = Promise.all(names.map(fetchSample)).then(function (bufs) {
+        var map = {}, missing = [];
+        names.forEach(function (n, i) { if (bufs[i]) map[n] = bufs[i]; else missing.push(n); });
+        if (missing.length) {
+          // don't keep a kit with holes: it is rebuilt (and the sounds retried) the next time it is loaded
+          if (kitCache[id] === p) delete kitCache[id];
+          if (Date.now() - failToastAt > 8000) { failToastAt = Date.now(); toast(missing.length + " sound" + (missing.length > 1 ? "s" : "") + " couldn't load (connection?) — using backup sounds. Reload the kit to retry."); }
+        }
         return D.renderKit(k, map);
       });
-      kitCache[id].catch(function () { delete kitCache[id]; });
+      kitCache[id] = p;
+      p.catch(function () { if (kitCache[id] === p) delete kitCache[id]; });
     }
     return kitCache[id];
   }
@@ -1317,6 +1367,7 @@
       refreshPads();
       buildSeq();
       saveSession();
+      flushHits(); // taps made while the kit was loading
     }).catch(function (e) {
       console.error(e);
       toast("Could not render kit: " + e.message);
@@ -1324,11 +1375,23 @@
   }
 
   /* ---------------- Sample swap ---------------- */
+  var OAC = window.OfflineAudioContext || window.webkitOfflineAudioContext, decodeCtx = null;
+  function decodeContext() {
+    if (decodeCtx) return decodeCtx;
+    try { decodeCtx = new OAC(1, 1, SR); } catch (e) { decodeCtx = null; }
+    return decodeCtx || ensureCtx();
+  }
   function decode(ab) {
     return new Promise(function (res, rej) {
-      var c = new OfflineAudioContext(1, 1, SR);
-      c.decodeAudioData(ab, res, function (err) { rej(err || new Error("Could not decode audio")); });
+      var c = decodeContext(), done = false;
+      if (!c) { rej(new Error("Web Audio unavailable")); return; }
+      function ok(b) { if (!done) { done = true; res(b); } }
+      function bad(err) { if (!done) { done = true; rej(err || new Error("Could not decode audio")); } }
+      try { var pr = c.decodeAudioData(ab, ok, bad); if (pr && pr.then) pr.then(ok, bad); } catch (e) { bad(e); }
     });
+  }
+  function makeBuffer(ch, n, sr) { // new AudioBuffer() is missing on older Safari
+    try { return new AudioBuffer({ length: n, numberOfChannels: ch, sampleRate: sr }); } catch (e) { return decodeContext().createBuffer(ch, n, sr); }
   }
   /* MP3 decoders may add up to ~50 ms of encoder-delay silence: cut it so library hits land on the grid (max 60 ms, keeps 0.3 ms) */
   function trimLead(b) {
@@ -1338,7 +1401,7 @@
     for (i = 0; i < lim; i++) if (Math.abs(d[i]) > th) break;
     at = Math.max(0, i - Math.round(b.sampleRate * 0.0003));
     if (at < 8 || i >= lim) return b;
-    var n = b.length - at, out = new AudioBuffer({ length: n, numberOfChannels: b.numberOfChannels, sampleRate: b.sampleRate });
+    var n = b.length - at, out = makeBuffer(b.numberOfChannels, n, b.sampleRate);
     for (var ch = 0; ch < b.numberOfChannels; ch++) out.getChannelData(ch).set(b.getChannelData(ch).subarray(at));
     return out;
   }
@@ -1474,7 +1537,9 @@
     LIB.prevId = it.f;
     var row = document.querySelector('.lib-row[data-f="' + it.f + '"]'); if (row) row.classList.add("previewing");
     fetchSample("lib/" + it.f).then(function (buf) {
-      if (!buf || LIB.prevId !== it.f) return;
+      if (!buf) { if (LIB.prevId === it.f) { libStopPreview(); toast("Could not load “" + it.n + "” — check your connection and try again."); } return; }
+      if (LIB.prevId !== it.f) return;
+      resumeCtx();
       var src = ctx.createBufferSource(), g = ctx.createGain();
       src.buffer = buf; g.gain.value = 0.6; src.connect(g); g.connect(master);
       src.onended = function () { if (LIB.prevSrc === src) libStopPreview(); };
@@ -1484,7 +1549,7 @@
   function libUse(it) {
     var i = S.sel, kit = S.kit;
     libStopPreview();
-    fetch("samples/lib/" + it.f).then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.arrayBuffer(); })
+    fetchBytes("samples/lib/" + it.f)
       .then(function (ab) { return setPadSample(i, kit, it.n, ab, true); })
       .then(function () { openLib(false); })
       .catch(function (e) { toast("Could not load " + it.n + " (" + e.message + ")"); });

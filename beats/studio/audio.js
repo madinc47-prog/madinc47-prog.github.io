@@ -69,12 +69,16 @@
   function anySolo(P) { return P.tracks.some(function (t) { return t.solo; }); }
 
   function ensure() {
-    if (E.ctx) { if (E.ctx.state === "suspended") E.ctx.resume(); return E.workletReady; }
+    // "interrupted" = iPhone/iPad after a call / Siri / another app: wake up from it as well as from "suspended"
+    if (E.ctx) { if (E.ctx.state !== "running" && E.ctx.state !== "closed") { try { var pr = E.ctx.resume(); if (pr && pr.catch) pr.catch(function () {}); } catch (e) {} } return E.workletReady; }
     var AC = window.AudioContext || window.webkitAudioContext;
-    E.ctx = new AC({ latencyHint: "interactive", sampleRate: S.SR });
+    try { if (navigator.audioSession && navigator.audioSession.type !== "playback") navigator.audioSession.type = "playback"; } catch (e) {} // play with the iPhone silent switch on
+    try { E.ctx = new AC({ latencyHint: "interactive", sampleRate: S.SR }); } catch (e) { E.ctx = new AC(); }
     E.master = makeMaster(E.ctx);
     E.master.meter.connect(E.ctx.destination);
-    E.workletReady = E.ctx.audioWorklet.addModule("worklets.js").then(function () { E.hasWorklet = true; }).catch(function (e) { console.warn("worklets unavailable", e); E.hasWorklet = false; });
+    E.workletReady = E.ctx.audioWorklet ? E.ctx.audioWorklet.addModule("worklets.js").then(function () { E.hasWorklet = true; }).catch(function (e) { console.warn("worklets unavailable", e); E.hasWorklet = false; }) : Promise.resolve().then(function () { E.hasWorklet = false; });
+    // phones only let audio start inside a real tap (pointerup / touchend / click), not on pointerdown
+    if (!E.unlockOn) { E.unlockOn = true; ["pointerup", "touchend", "click", "keydown"].forEach(function (ev) { document.addEventListener(ev, function () { if (E.ctx && E.ctx.state !== "running" && E.ctx.state !== "closed") { try { E.ctx.resume().catch(function () {}); } catch (e) {} } }, { capture: true, passive: true }); }); }
     return E.workletReady;
   }
   function syncGraph(P) {
