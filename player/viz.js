@@ -73,12 +73,13 @@ export function createViz(canvas) {
       for (let i = 0; i < 10; i++) { const y = hy + Math.pow(i / 9, 2) * (H - hy); g.beginPath(); g.moveTo(0, y); g.lineTo(W, y); g.stroke(); }
       for (let i = -14; i <= 14; i++) { g.beginPath(); g.moveTo(W / 2 + i * 30, hy); g.lineTo(W / 2 + i * 160, H); g.stroke(); }
     }
-    // moving-head beams from the ceiling
+    // moving-head beams: floor fixtures along the booth line, shining up and out (they used to hang from the
+    // top of the screen pointing down, which read as "upside down" — same look, colours and motion otherwise)
     beamPhase += (0.3 + energy * 1.2) / 60 * k60;
     const nb = 5;
     for (let i = 0; i < nb; i++) {
-      const ox = W * (0.08 + i * (0.84 / (nb - 1))), oy = -10;
-      const ang = Math.PI / 2 + Math.sin(beamPhase * (0.8 + i * .13) + i * 1.3) * 0.55;
+      const ox = W * (0.08 + i * (0.84 / (nb - 1))), oy = booth;
+      const ang = -Math.PI / 2 + Math.sin(beamPhase * (0.8 + i * .13) + i * 1.3) * 0.55;
       const len = H * 1.15, spread = 0.07 + bass * .03;
       const a = (0.05 + mid * .12 + flash * .12) * theme.beams;
       const col = C[i % 4];
@@ -87,7 +88,7 @@ export function createViz(canvas) {
       g.fillStyle = gr; g.beginPath(); g.moveTo(ox, oy);
       g.lineTo(ox + Math.cos(ang - spread) * len, oy + Math.sin(ang - spread) * len);
       g.lineTo(ox + Math.cos(ang + spread) * len, oy + Math.sin(ang + spread) * len); g.closePath(); g.fill();
-      g.fillStyle = hexA(col, .5 + flash * .5); g.beginPath(); g.arc(ox, 4, 5, 0, 7); g.fill();
+      g.fillStyle = hexA(col, .5 + flash * .5); g.beginPath(); g.arc(ox, oy - 4, 5, 0, 7); g.fill();
     }
     // lasers
     if (theme.lasers > 0) {
