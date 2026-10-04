@@ -2,14 +2,14 @@
 // Every module URL carries the same ?v= tag as player.js in index.html (and sw.js SHELL), so a deploy can never mix
 // old and new modules from the HTTP cache. Bump all of them together.
 import { saveTrack, listTracks, getTrack, deleteTrack, onMediaChange } from '../shared/media-store.js';
-import { createScene } from './scene.js?v=9';
-import { createViz, THEMES } from './viz.js?v=9';
-import { OUTFITS, OUTFIT_FOR_THEME } from './outfits.js?v=9';
-import { createEQ } from './eq.js?v=9';
-import { createHype } from './hype.js?v=9';
-import { createLadies } from './ladies.js?v=9';
-import { createShout } from './shout.js?v=9';
-import { fmt, hash, isAudioFile, titleFromName, makeCover, makeLabel, readTags, probeDuration, computePeaks } from './util.js?v=9';
+import { createScene } from './scene.js?v=10';
+import { createViz, THEMES } from './viz.js?v=10';
+import { OUTFITS, OUTFIT_FOR_THEME } from './outfits.js?v=10';
+import { createEQ } from './eq.js?v=10';
+import { createHype } from './hype.js?v=10';
+import { createLadies } from './ladies.js?v=10';
+import { createShout } from './shout.js?v=10';
+import { fmt, hash, isAudioFile, titleFromName, makeCover, makeLabel, readTags, probeDuration, computePeaks } from './util.js?v=10';
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];

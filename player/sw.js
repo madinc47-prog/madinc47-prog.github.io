@@ -2,11 +2,11 @@
 // v9: network-first for the app files (the old stale-while-revalidate served last version's code first, mixing
 // old and new files after an update), versioned module URLs, fresh install fetches, and a one-time reload of
 // pages still running the old code when upgrading from v8 or older.
-const VERSION = 'pf-player-v9';
-const V = '?v=9';
+const VERSION = 'pf-player-v10';
+const V = '?v=10';
 const SHELL = [
   './', './index.html', './player.css' + V, './player.js' + V, './scene.js' + V, './outfits.js' + V, './eq.js' + V, './hype.js' + V,
-  './ladies.js' + V, './viz.js' + V, './util.js' + V, './kokoro-worker.js' + V,
+  './ladies.js' + V, './shout.js' + V, './viz.js' + V, './util.js' + V, './kokoro-worker.js' + V,
   './manifest.webmanifest', './icons/icon.svg', './icons/icon-192.png', './icons/icon-512.png',
   '../shared/media-store.js', '../shared/ecosystem-nav.js',
 ];
@@ -32,7 +32,9 @@ self.addEventListener('activate', (e) => {
     }
     await Promise.all(old.map((k) => caches.delete(k)));
     await self.clients.claim();
-    if (old.length) { // upgrading from an older version: pages opened with the old code reload once onto the new code
+    // upgrading from v8 or older (which had no in-page update handling): pages still running that code reload once.
+    // v9+ pages reload themselves only while idle, so music is never cut off by an update.
+    if (old.some((k) => /^pf-player-v[0-8]$/.test(k))) {
       const wins = await self.clients.matchAll({ type: 'window' });
       for (const w of wins) { try { if (new URL(w.url).pathname.includes('/player/')) w.navigate(w.url); } catch (_) {} }
     }

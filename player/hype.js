@@ -262,7 +262,7 @@ export function createHype(api) {
   const W = { worker: null, seq: 0, calls: new Map(), files: {} };
   function kWorker() {
     if (W.worker) return W.worker;
-    W.worker = new Worker(new URL('./kokoro-worker.js?v=9', import.meta.url), { type: 'module' });
+    W.worker = new Worker(new URL('./kokoro-worker.js?v=10', import.meta.url), { type: 'module' });
     W.worker.onmessage = (e) => {
       const m = e.data || {};
       if (m.type === 'progress') { W.files[m.file] = [m.loaded, m.total]; const a = Object.values(W.files).reduce((s, x) => [s[0] + x[0], s[1] + x[1]], [0, 0]); if (!K.tts) setStatus(`Downloading the on-device voice… ${Math.round(a[0] / a[1] * 100)}%`); return; }

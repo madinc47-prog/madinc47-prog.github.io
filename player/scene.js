@@ -1,6 +1,6 @@
 // Psycho Fingers Player — DJ booth scene (original layered SVG art, IK arms, choreography)
 // Two turntables (Deck A / Deck B) with a mixer + crossfader in the middle; the DJ stands behind the mixer.
-import { applyOutfit } from './outfits.js?v=9';
+import { applyOutfit } from './outfits.js?v=10';
 const NS = 'http://www.w3.org/2000/svg';
 const D2R = Math.PI / 180;
 const ease = {
