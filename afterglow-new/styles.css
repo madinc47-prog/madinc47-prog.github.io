@@ -90,3 +90,5 @@ a{color:inherit}
  .search{width:100%}
 }
 @media (max-width:360px){.grid{grid-template-columns:1fr}}
+/* Share button (shared/share.js): on phones it sits at the right end of the brand row instead of taking its own row */
+@media (max-width:860px){.top-inner{position:relative}.top-inner>islepin-share{position:absolute;top:.6rem;right:1.25rem}}
