@@ -341,10 +341,10 @@
       });
     });
   }
-  function buildBankFiles(prefix) {
+  function buildBankFiles(prefix, quiet) {
     return getAll("clips").then(function (clips) {
       clips.sort(function (a, b) { return a.created - b.created; });
-      if (clips.length) toast("Converting " + clips.length + " clip(s) to WAV…");
+      if (clips.length && !quiet) toast("Converting " + clips.length + " clip(s) to WAV…");
       var files = [], used = {};
       return clips.reduce(function (p, c, i) {
         return p.then(function () {

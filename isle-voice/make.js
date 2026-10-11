@@ -46,7 +46,7 @@
   function setTrained(v) { try { localStorage.setItem(TRAINED_KEY, v ? "1" : "0"); } catch (e) {} }
 
   /* ---------- status / busy ---------- */
-  var busy = false;
+  var busy = false, genRunning = false;
   function status(t, frac) {
     $("mk-status").textContent = t || "";
     var bar = $("mk-bar");
@@ -91,8 +91,9 @@
     Array.prototype.forEach.call($("mk-stepper").children, function (li) {
       var s = +li.dataset.s;
       li.classList.toggle("done", s < S.step || (s === 4 && !!S.final));
-      li.classList.toggle("current", s === v);
-      if (s === v) li.setAttribute("aria-current", "step"); else li.removeAttribute("aria-current");
+      var cur = genRunning ? 2 : v;
+      li.classList.toggle("current", s === cur);
+      if (s === cur) li.setAttribute("aria-current", "step"); else li.removeAttribute("aria-current");
       li.querySelector("button").disabled = !(s <= S.step || (s === 2 && S.preview));
     });
     $("mk-p1").hidden = v !== 1;
@@ -132,7 +133,7 @@
       var n = $("mk-bank-note");
       if (t) { n.textContent = "Training is skipped: Colab uses the voice model already saved in your Google Drive (IsleVoice/models/" + S.model + ")."; n.className = "mk-note ok"; }
       else if (!clips.length) { n.innerHTML = "First time? Your voice model needs training once, from your voice bank — and it's empty. <a href=\"#bank\">Record 10–30 minutes of your voice in Voice bank</a> (once only), then come back."; n.className = "mk-note warn"; }
-      else { n.textContent = "Voice bank: " + C.fmtTime(bankSecs) + " of your voice (" + clips.length + " clips) will go in the zip to train your model once." + (bankSecs < 300 ? " Tip: 10–30 minutes trains a much better model." : ""); n.className = "mk-note" + (bankSecs < 300 ? " warn" : " ok"); }
+      else { n.textContent = "Voice bank: " + C.fmtTime(bankSecs) + " of your voice (" + clips.length + (clips.length === 1 ? " clip" : " clips") + ") will go in the zip to train your model once." + (bankSecs < 300 ? " Tip: 10–30 minutes trains a much better model." : ""); n.className = "mk-note" + (bankSecs < 300 ? " warn" : " ok"); }
     });
   }
 
@@ -167,7 +168,7 @@
     var ls = lines();
     if (!ls.length) { status("Type at least one line of lyrics first."); $("mk-lyrics").focus(); return; }
     if (!S.name) { S.name = ls[0].slice(0, 40); $("mk-name").value = S.name; }
-    setBusy(true); save();
+    setBusy(true); save(); genRunning = true; render();
     var inst;
     renderBeat().then(function (ib) {
       inst = ib;
@@ -182,7 +183,7 @@
       });
     }).then(function (r) { return finishDraft(inst, r.audio); })
       .catch(function (e) { console.warn("[make] generate failed", e); status("Couldn't make the draft voice: " + (e.message || e) + ". Check your connection and tap again, or use “record it instead”."); })
-      .then(function () { setBusy(false); });
+      .then(function () { setBusy(false); genRunning = false; render(); });
   }
 
   /* ---------- "or record it instead" ---------- */
@@ -234,7 +235,7 @@
       bpm: S.info && S.info.bpm, created: new Date().toISOString(), train_if_needed: withBank, sample_rate: 40000, output_name: C.safeName(S.name || "song") + "_my_voice.wav" };
     zipCache = C.blobU8(S.draft).then(function (u) {
       files.push({ name: "draft_vocal.wav", data: u });
-      return withBank ? C.buildBankFiles("voice_bank/") : [];
+      return withBank ? C.buildBankFiles("voice_bank/", true) : [];
     }).then(function (bank) {
       files = files.concat(bank); job.voice_bank_files = bank.length;
       files.push({ name: "job.json", data: C.textU8(JSON.stringify(job, null, 2)) });
@@ -291,7 +292,7 @@
       return remix();
     }).then(function () {
       S.step = 4; S.view = 4; save(); render(); showP4();
-      status("Your song is ready — press play. Export WAV or MP3 below.");
+      status("Your song is ready — press play. Save it with the button, or Export MP3.");
     }).catch(function (e) { console.warn("[make] import failed", e); status("Couldn't use that file: " + (e.message || e) + ". Pick the WAV that Colab downloaded."); })
       .then(function () { setBusy(false); });
   }
