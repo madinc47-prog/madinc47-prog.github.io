@@ -513,6 +513,7 @@
       return finish(v, end);
     },
     strings: function (c, dest, m, t, dur, vel) {
+      if (CUR) return stringsLive(c, dest, m, t, dur, vel);
       var v = voiceBase(c, dest, t), f = mf(m);
       var lp = c.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = 2600 + vel * 1600; lp.Q.value = 0.5; lp.connect(v.out);
       var hp = c.createBiquadFilter(); hp.type = "highpass"; hp.frequency.value = 180; hp.connect(lp);
@@ -580,6 +581,41 @@
       return finish(v, end);
     },
   };
+  /* Feel strings: a bowed section. Body formants (wood ~280 Hz / bridge ~2.6 kHz), rosin + bow-hair noise at the
+     attack that settles into a quiet bowing hiss, players slightly out of tune (ensemble drift), vibrato that starts
+     late and grows (as string players do), soft notes swell in, accents bite, bow changes (notes that follow on
+     directly) re-articulate softly instead of restarting (legato), and a natural release where the string rings on. */
+  function stringsLive(c, dest, m, t, dur, vel) {
+    var v = voiceBase(c, dest, t), f = mf(m), k = cache(c), legato;
+    if (k.strT != null && Math.abs(t - k.strT) < 0.02) legato = k.strLeg; // the rest of a (rolled) chord: same bow stroke
+    else { legato = k.strOff != null && Math.abs(t - k.strOff) < 0.06; k.strT = t; k.strLeg = legato; k.strPrevOff = k.strOff; k.strOff = null; }
+    k.strOff = Math.max(k.strOff || 0, t + dur);
+    var lp = c.createBiquadFilter(); lp.type = "lowpass"; lp.Q.value = 0.6; lp.connect(v.out);
+    var bright = 1700 + vel * 3800 + f * 1.5;
+    lp.frequency.setValueAtTime(bright * (legato ? 0.9 : 0.6), t); lp.frequency.linearRampToValueAtTime(bright, t + 0.12 + 0.25 * (1 - vel));
+    var wood = c.createBiquadFilter(); wood.type = "peaking"; wood.frequency.value = 280; wood.Q.value = 1.1; wood.gain.value = 3.5; wood.connect(lp);
+    var brid = c.createBiquadFilter(); brid.type = "peaking"; brid.frequency.value = 2600; brid.Q.value = 1.4; brid.gain.value = 2.5 + 2 * vel; brid.connect(wood);
+    var hp = c.createBiquadFilter(); hp.type = "highpass"; hp.frequency.value = Math.min(180, f * 0.7); hp.connect(brid);
+    var oscs = [];
+    [[-14, -0.6], [-5, -0.2], [4, 0.25], [13, 0.6]].forEach(function (d) { oscs.push(osc(v, c, "sawtooth", f, t, d[0], gainTo(c, 1.0, pan(c, d[1], hp)))); });
+    var vib = c.createOscillator(); vib.frequency.value = 5.0 + fh(m, Math.round(t * 50), 3) * 0.6;
+    var vg = c.createGain(), vOn = t + (legato ? 0.12 : 0.28) + 0.15 * (1 - vel);
+    vg.gain.setValueAtTime(0, t); vg.gain.setValueAtTime(0, vOn); vg.gain.linearRampToValueAtTime(7 + 6 * vel, vOn + 0.5);
+    vib.connect(vg); oscs.forEach(function (o) { vg.connect(o.detune); }); vib.start(t); v.nodes.push(vib);
+    // bow: rosin bite at the attack (stronger when accented), then a quiet bowing hiss under the note
+    var bp = c.createBiquadFilter(); bp.type = "bandpass"; bp.frequency.value = Math.min(6000, 1800 + f * 2); bp.Q.value = 0.8;
+    var ng = c.createGain(), bite = (legato ? 0.012 : 0.05) * (0.3 + vel);
+    ng.gain.setValueAtTime(0, t); ng.gain.linearRampToValueAtTime(bite, t + 0.02); ng.gain.setTargetAtTime(0.006 * (0.5 + vel), t + 0.05, 0.08);
+    ng.gain.setTargetAtTime(0, t + Math.max(0.05, dur), 0.08);
+    bp.connect(ng); ng.connect(brid); noiseSrc(v, c, t, bp);
+    var a = legato ? 0.06 : 0.05 + 0.4 * Math.pow(1 - vel, 1.3);
+    var g = v.out.gain, pk = 0.075 * (0.5 + 0.5 * vel), off = t + Math.max(a + 0.02, dur), rel = 0.55 + 0.35 * (1 - m / 108);
+    g.setValueAtTime(legato ? pk * 0.4 : 0, t);
+    if (vel > 0.85 && !legato) { g.linearRampToValueAtTime(pk * 1.15, t + 0.035); g.setTargetAtTime(pk * 0.88, t + 0.04, 0.12); } // sforzando bite
+    else { g.linearRampToValueAtTime(pk * 0.9, t + a); g.setTargetAtTime(pk, t + a, 0.4); } // swell into the note
+    g.setTargetAtTime(0, off, rel / 4);
+    return finish(v, off + rel * 1.6 + 0.05);
+  }
   /* vocal chop: doubled saw "vocal folds" (scoop + vibrato) through parallel formant band-passes, plus breath */
   var FORMANTS = {
     ah: { mk: 5.5, f: [[800, 1, 7], [1150, 0.55, 9], [2900, 0.22, 11], [3900, 0.1, 12]] },
