@@ -344,8 +344,37 @@
       playhead = playFrom;
       changed();
       if (res.speaker && P.autoClean !== false && window.IPBVocalCleanClient) { cleanClip(made[0].id, { auto: true, mic: res.mic }); return; }
+      if (proOn()) { proClip(made[0].id); return; }
       toast(name + " recorded (" + buf.duration.toFixed(1) + "s). " + (res.speaker ? "Press 🧹 Clean take to remove the speaker bleed. " : "") + "Double-click it to edit.");
     });
+  }
+
+  /* ---------------- Pro vocal (shared/vocal-chain.js): built-in mic → condenser-style vocal, automatic ----------------
+   * Runs on the RAW recording right after the take (or after Clean take in speaker mode). Non-destructive: the raw take
+   * stays as the clip's original (⟲ Original / Undo). */
+  function proOn() { return !!window.VocalChain && window.VocalChain.enabled(); }
+  function proBuf(buf) { // mono-sum → chain → AudioBuffer
+    var sr = buf.sampleRate, n = buf.length, x = new Float32Array(n);
+    for (var ch = 0; ch < buf.numberOfChannels; ch++) { var d = buf.getChannelData(ch); for (var i = 0; i < n; i++) x[i] += d[i] / buf.numberOfChannels; }
+    return window.VocalChain.render(x, sr, { profile: "builtin" }).then(function (y) { return S.bufFrom([y], sr); });
+  }
+  function proClip(id) {
+    var c = clipById(id); if (!c || c.pro) return Promise.resolve(null);
+    var raw = clClipBuf(c); if (!raw) return Promise.resolve(null);
+    return proBuf(raw).then(function (nb) {
+      var c2 = clipById(id); if (!c2 || c2.pro) return null;
+      S.pushUndo(P, "pro vocal");
+      var nid = S.addSource(nb, c2.name + " (pro vocal)");
+      P.clips.forEach(function (k) {
+        if (k !== c2 && !(k.src === c2.src && Math.abs(k.offset - c2.offset) < 1e-6 && Math.abs(k.dur - c2.dur) < 1e-6)) return;
+        if (!k.orig) k.orig = { src: k.src, offset: k.offset, dur: k.dur }; // the raw take stays in the project
+        k.src = nid; k.offset = 0; k.dur = nb.duration; k.pro = true;
+      });
+      if (view === "wave" && waveClip === c2.id) loadWave(c2, true);
+      changed("pro vocal");
+      toast(c2.name + " recorded · Pro vocal applied (EQ, compression, de-esser, gate). ⟲ Original or Undo gives the raw take.", 3600);
+      return c2;
+    }).catch(function (e) { toast("Recorded. Pro vocal isn't available here (" + (e && e.message || e) + ") — raw take kept.", 4200); return null; });
   }
 
   /* ---------------- headphones / speaker mode + "Clean take" (shared cleaner: ../vocal-clean-client.js) ---------------- */
@@ -405,7 +434,9 @@
     if (!c) { toast("Select a recorded clip first, then press 🧹 Clean take."); return Promise.resolve(null); }
     if (CL.busy) { toast("Already cleaning a take…"); return Promise.resolve(null); }
     if (c.clean) { toast(c.name + " is already cleaned. ⟲ Original (Waveform Edit) or Undo brings back the raw take."); return Promise.resolve(null); }
-    var raw = clClipBuf(c); if (!raw) return Promise.resolve(null);
+    var raw = c.pro && c.orig ? clClipBuf({ src: c.orig.src, offset: c.orig.offset, dur: c.orig.dur }) : clClipBuf(c); // clean the RAW take, not the processed one
+    if (!raw) return Promise.resolve(null);
+    var pro = proOn();
     if (raw.duration > 600) { toast("Clean take works on clips up to 10 minutes. Split it first."); return Promise.resolve(null); }
     if (E.playing) pause();
     E.stopBuffer();
@@ -419,29 +450,36 @@
       var pad = Math.round((PRE + SHIFT) * sr), n = pad + mono.length, mic = new Float32Array(n), L = new Float32Array(n), R = new Float32Array(n);
       mic.set(mono, pad);
       if (ref) { var rl = ref[0], rr = ref[1], m = Math.min(n, rl.length); L.set(rl.subarray(0, m)); R.set(rr.subarray(0, m)); }
-      return C.run(mic, L, ref ? R : null, sr, o.opts || {}, function (stage, p) {
+      var co = {}; for (var k in (o.opts || {})) co[k] = o.opts[k];
+      if (pro) { co.hpf = false; co.gate = false; } // the Pro vocal chain follows with its own high-pass and gate: one chain
+      return C.run(mic, L, ref ? R : null, sr, co, function (stage, p) {
         $("cl-bar").style.width = Math.max(2, Math.round(p * 100)) + "%";
         $("cl-step").textContent = (CL_STEPS[stage] || "Working…") + " " + Math.round(p * 100) + "%";
       }).then(function (r) { return { r: r, pad: pad, hadRef: !!ref }; });
     }).then(function (x) {
-      var out = x.r.out.subarray(x.pad, x.pad + mono.length), info = x.r.info;
+      var cb = S.bufFrom([new Float32Array(x.r.out.subarray(x.pad, x.pad + mono.length))], sr);
+      if (!pro) { x.nb = cb; return x; }
+      $("cl-step").textContent = "Pro vocal: EQ, compression, de-esser…";
+      return proBuf(cb).then(function (b) { x.nb = b; x.pro = true; return x; }, function () { x.nb = cb; return x; });
+    }).then(function (x) {
+      var info = x.r.info;
       info.wallMs = Math.round(performance.now() - T0);
       if (info.delayMs != null) info.latencyErrMs = Math.round(info.delayMs - SHIFT * 1000);
-      var nb = S.bufFrom([new Float32Array(out)], sr);
+      var nb = x.nb;
       var c2 = clipById(CL.clip); if (!c2) throw new Error("the clip was deleted");
       S.pushUndo(P, "clean take");
-      var nid = S.addSource(nb, c2.name + " (cleaned)");
+      var nid = S.addSource(nb, c2.name + (x.pro ? " (cleaned, pro vocal)" : " (cleaned)"));
       var stat = { bleed: info.bleedFound, lat: info.latencyErrMs, fin: info.floorInDb, fout: info.floorOutDb, rnn: info.rnnoise || null, ms: info.wallMs };
       // every clip made from the same recording region (several armed tracks) gets the same cleaned version
       P.clips.forEach(function (k) {
         if (k !== c2 && !(k.src === c2.src && Math.abs(k.offset - c2.offset) < 1e-6 && Math.abs(k.dur - c2.dur) < 1e-6)) return;
         if (!k.orig) k.orig = { src: k.src, offset: k.offset, dur: k.dur }; // non-destructive: the raw take stays in the project
-        k.src = nid; k.offset = 0; k.dur = nb.duration; k.clean = stat;
+        k.src = nid; k.offset = 0; k.dur = nb.duration; k.clean = stat; if (x.pro) k.pro = true; else delete k.pro;
       });
       CL.clean = nb; CL.busy = false; CL.last = { info: info, clip: c2.id, hadRef: x.hadRef };
       if (view === "wave" && waveClip === c2.id) loadWave(c2, true);
       changed("clean take");
-      $("cl-title").textContent = "Take cleaned ✓";
+      $("cl-title").textContent = x.pro ? "Take cleaned + Pro vocal ✓" : "Take cleaned ✓";
       var parts = [];
       if (!x.hadRef) parts.push("No other tracks playing: noise cleanup only");
       else if (info.bleedFound) parts.push("Beat found in the mic" + (info.latencyErrMs != null ? " (timing off by " + info.latencyErrMs + " ms)" : "") + " and removed");
@@ -465,7 +503,7 @@
     E.stopBuffer();
     if (!c || !c.clean || !c.orig) { $("clean-sheet").hidden = true; return; }
     S.pushUndo(P, "use raw take");
-    P.clips.forEach(function (k) { if (k.clean && k.src === c.src) { k.src = k.orig.src; k.offset = k.orig.offset; k.dur = k.orig.dur; delete k.orig; delete k.clean; } });
+    P.clips.forEach(function (k) { if (k.clean && k.src === c.src) { k.src = k.orig.src; k.offset = k.orig.offset; k.dur = k.orig.dur; delete k.orig; delete k.clean; delete k.pro; } });
     if (view === "wave" && waveClip === c.id) loadWave(c, false);
     changed(); $("clean-sheet").hidden = true; toast("Back to the raw take (Undo brings the cleaned one back).");
   }
@@ -627,7 +665,7 @@
     var c = clipById(waveClip) || selected();
     if (!c || !c.orig || !S.sources[c.orig.src]) { toast("This clip has no waveform edits to revert."); return; }
     S.pushUndo(P, "revert to original");
-    c.src = c.orig.src; c.offset = c.orig.offset; c.dur = c.orig.dur; delete c.orig; delete c.clean;
+    c.src = c.orig.src; c.offset = c.orig.offset; c.dur = c.orig.dur; delete c.orig; delete c.clean; delete c.pro;
     c.fadeIn = Math.min(c.fadeIn || 0, c.dur / 2); c.fadeOut = Math.min(c.fadeOut || 0, c.dur / 2);
     if (view === "wave" && waveClip === c.id) loadWave(c, false);
     changed(); toast("Restored the original recording of " + c.name + " (Undo brings your edits back).");
@@ -984,6 +1022,8 @@
       hpUI();
     });
     $("rs-autoclean").addEventListener("change", function () { P.autoClean = $("rs-autoclean").checked; changed(null, true); });
+    var pv = $("rs-pro");
+    if (pv) { pv.checked = proOn(); pv.disabled = !window.VocalChain; pv.addEventListener("change", function () { window.VocalChain.setEnabled(pv.checked); toast(pv.checked ? "Pro vocal on: new takes get condenser EQ, compression, de-esser and a gentle gate (raw take kept)." : "Pro vocal off: takes stay as recorded."); }); }
     if (navigator.mediaDevices && navigator.mediaDevices.addEventListener) navigator.mediaDevices.addEventListener("devicechange", function () { hpDetect(); });
     hpDetect();
     $("btn-clean").addEventListener("click", function () { cleanClip(selClip); });
@@ -1087,7 +1127,7 @@
     ready: false,
     project: function () { return P; },
     state: function () {
-      return { tracks: P.tracks.length, clips: P.clips.map(function (c) { return { id: c.id, track: P.tracks.indexOf(trackById(c.track)), name: c.name, start: +c.start.toFixed(4), dur: +c.dur.toFixed(4), offset: +c.offset.toFixed(4), fadeIn: c.fadeIn, fadeOut: c.fadeOut, src: c.src, clean: c.clean || null, orig: !!c.orig }; }),
+      return { tracks: P.tracks.length, clips: P.clips.map(function (c) { return { id: c.id, track: P.tracks.indexOf(trackById(c.track)), name: c.name, start: +c.start.toFixed(4), dur: +c.dur.toFixed(4), offset: +c.offset.toFixed(4), fadeIn: c.fadeIn, fadeOut: c.fadeOut, src: c.src, clean: c.clean || null, orig: !!c.orig, pro: !!c.pro }; }),
         selClip: selClip, selTrack: P.tracks.indexOf(trackById(selTrack)), playhead: playhead, playing: E.playing, recording: E.recording, view: view, pps: pps, bpm: P.bpm, loop: P.loop, undo: S.H.undo.length, redo: S.H.redo.length,
         wave: waveBuf ? { len: waveBuf.length, sr: waveBuf.sampleRate, sel: [waveEd.sel.a, waveEd.sel.b] } : null, sources: Object.keys(S.sources).length, name: P.name, id: P.id };
     },
