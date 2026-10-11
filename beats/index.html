@@ -502,9 +502,10 @@
         <p class="sub">The Vocal fader sets the vocal level in the exported mix (beat + vocal WAV). Mute leaves the vocal out.</p>
         <div class="vox-opts">
           <button type="button" id="vox-check" class="btn small">Mic check</button>
-          <label class="chk"><input type="checkbox" id="vox-monitor"> Hear mic while recording (headphones only)</label>
+          <label class="chk" title="Headphones only: on a speaker the mic would feed back. Stays silent in speaker mode."><input type="checkbox" id="vox-monitor"> Hear mic while recording (headphones only ⚠)</label>
           <span class="hp-wrap"><span class="hp-chip js-hp-chip" role="status">🔈 Speaker mode · take will be cleaned</span><label class="chk hp-tog"><input type="checkbox" class="js-hp-toggle"> I'm on headphones</label><a href="#" class="hp-auto js-hp-auto" hidden title="Go back to automatic headphone detection">auto</a></span>
           <label class="chk"><input type="checkbox" id="vox-dry"> Also save dry vocal WAV</label>
+          <label class="chk" title="Makes the phone / tablet mic sound like a studio condenser: rumble cut, warm EQ with presence and air, smooth compression, de-esser, gentle noise gate, limiter. Automatic. The raw take is always kept so you can compare (A/B) or save it."><input type="checkbox" id="vox-pro" checked> Pro vocal (auto)</label>
           <label>Latency comp <span id="vox-lat" class="mono">auto</span> + nudge
             <input type="number" id="vox-nudge" min="-300" max="300" step="5" value="0" aria-label="Vocal timing nudge in ms"> ms
           </label>
@@ -645,8 +646,9 @@
   <script src="pianoroll-data.js?v=20261003u"></script>
   <script src="keys-loops.js?v=20261003u"></script>
   <script src="pianoroll.js?v=20261003u"></script>
-  <script src="vocal-clean-client.js?v=20261003u"></script>
-  <script src="app.js?v=20261011a"></script>
+  <script src="vocal-clean-client.js?v=20261011v"></script>
+  <script src="../shared/vocal-chain.js?v=20261011v"></script>
+  <script src="app.js?v=20261011v"></script>
   <script type="module" src="user-samples.js?v=1"></script>
   <script type="module" src="../shared/ecosystem-nav.js"></script><!-- Beats | DJ Booth | Player switcher (shared/README.md) -->
 </body>

@@ -57,8 +57,8 @@ self.onmessage = async (ev) => {
     const comps = m.comps || null;
     const core = D.cleanCore(m.mic, m.L, m.R, sr, o, prog, comps);
     const info = core.info; let x = core.out, cv = core.comps;
-    D.highpass(x, sr, 70);
-    if (cv) { D.highpass(cv.voice, sr, 70); D.highpass(cv.noise, sr, 70); if (cv.bleed) D.highpass(cv.bleed, sr, 70); }
+    if (o.hpf !== false) D.highpass(x, sr, 70); // skipped when the Pro vocal chain follows (it has its own 90 Hz high-pass)
+    if (cv && o.hpf !== false) { D.highpass(cv.voice, sr, 70); D.highpass(cv.noise, sr, 70); if (cv.bleed) D.highpass(cv.bleed, sr, 70); }
     prog("denoise", 0);
     let t0 = performance.now(), vad = null;
     if (o.denoise !== false && sr === 48000) {
