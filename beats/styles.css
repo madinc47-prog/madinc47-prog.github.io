@@ -245,6 +245,10 @@ main { padding: 1rem; max-width: 1200px; margin: 0 auto; }
 .tl-seg.f-half { background: repeating-linear-gradient(135deg, #1f2636 0 6px, #192030 6px 12px); }
 .tl-seg.now { box-shadow: inset 0 0 0 1px var(--accent); }
 .tl-seg:hover { filter: brightness(1.25); }
+.tl-seg.sel { background: var(--accent); color: #111; box-shadow: 0 0 0 2px #fff inset; }
+.tl-seg.sel b, .tl-seg.sel small { color: #111; }
+.tl-seg.ov::after { content: ""; position: absolute; top: 4px; right: 4px; width: 7px; height: 7px; border-radius: 50%; background: var(--accent2); }
+.tl-seg { position: relative; }
 .tl-head { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--accent); left: 0; pointer-events: none; box-shadow: 0 0 8px var(--accent); }
 
 /* ---------- Record Vocals ---------- */
@@ -927,3 +931,32 @@ body.bt-on .rec-bar .vox-meter { display: none; }
 .sw-head, .sw-now, .sw-filters, .sw-chips, .sw-foot { flex-shrink: 0; } /* only the list scrolls; chip rows keep full 44 px height */
 .sw-chips .btn { min-height: 44px; }
 .sw-sheet .sw-chip.on, .sw-sheet .sw-tag.on { background: var(--accent2); border-color: var(--accent2); color: #10131b; font-weight: 700; }
+
+/* ---------- Section editing (tap a section in the song timeline) ---------- */
+.sec-edit { display: flex; flex-wrap: wrap; align-items: center; gap: .45rem .6rem; margin: -.5rem 0 1rem; padding: .45rem .6rem; border: 1px dashed var(--line); border-radius: var(--radius); background: var(--bg2); font-size: .82rem; }
+.sec-edit[hidden] { display: none; }
+.sec-edit.on { border: 2px solid var(--accent); background: #1d1a10; }
+.sec-chip { font-weight: 800; padding: .3rem .65rem; border-radius: 999px; background: var(--bg3); color: var(--text); white-space: nowrap; }
+.sec-edit.on .sec-chip { background: var(--accent); color: #111; }
+.sec-ctls { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem .7rem; }
+.sec-ctls[hidden] { display: none; }
+.sec-f { display: inline-flex; align-items: center; gap: .35rem; min-height: 44px; color: var(--muted); white-space: nowrap; }
+.sec-f select { background: var(--bg3); border: 1px solid var(--line); border-radius: 8px; padding: .4rem .5rem; color: var(--text); min-height: 40px; }
+.sec-f input[type=range] { width: 120px; min-height: 40px; }
+.sec-f.chk input { width: 22px; height: 22px; }
+.sec-edit .btn { min-height: 44px; }
+.sec-hint { flex: 1 1 260px; color: var(--muted); font-size: .76rem; min-width: 0; }
+.sec-pill { position: fixed; left: .6rem; bottom: .6rem; z-index: 60; display: flex; gap: 2px; box-shadow: 0 6px 20px rgba(0,0,0,.5); border-radius: 999px; overflow: hidden; }
+.sec-pill[hidden] { display: none; }
+.sec-pill button { border: 0; min-height: 44px; padding: 0 .9rem; font-weight: 800; font-size: .85rem; cursor: pointer; }
+.sec-pill-name { background: var(--accent); color: #111; }
+.sec-pill-name::before { content: "✎ Editing "; font-weight: 600; }
+.sec-pill-x { background: #1f2430; color: var(--text); }
+body.sec-editing .seq-wrap { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 8px; }
+@media (max-width: 760px) {
+  .timeline { height: auto; flex-wrap: wrap; }
+  .timeline:not(.pr-tl) .tl-seg { flex: 1 0 calc(20% - 2px) !important; min-height: 44px; }
+  .timeline:not(.pr-tl) .tl-head { display: none; }
+  .sec-f input[type=range] { width: 100px; }
+}
+@media (pointer: coarse) and (min-width: 761px) { .timeline { height: 54px; } } /* section labels are tap targets (≥ 44 px) */

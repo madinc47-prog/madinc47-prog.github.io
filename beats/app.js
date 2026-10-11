@@ -244,8 +244,11 @@
   }
 
   function saveSession() {
+    var pc = curCtx;
+    useCtx(-1); // the song's own fields (a section being edited is kept in S.secOv)
     try {
       localStorage.setItem(SESSION_KEY, JSON.stringify({
+        secOv: secOvSave(),
         fmt: 2, kit: S.kit, bpm: S.bpm, swing: S.swing, slot: S.slot, slots: S.slots,
         padCfg: S.padCfg, kitSwing: S.kitSwing, mute: S.mute, solo: S.solo, mixer: S.mixer, sel: S.sel,
         chordTrack: S.chordTrack, structure: S.structure, cueBar: S.cueBar, feel: S.feel,
@@ -254,7 +257,9 @@
         piano: S.piano, songKey: S.songKey, klTempo: S.klTempo
       }));
     } catch (e) { /* storage full or blocked */ }
+    useCtx(pc);
     libSync();
+    secMarks();
   }
   function loadSession() {
     try {
@@ -304,6 +309,7 @@
     S.chordTrack = ct;
       }
       if (d.structure && STRUCTURES[d.structure]) S.structure = d.structure;
+      S.secOv = cleanSecOv(d.secOv); // sessions before section editing: none
       if (d.cueBar != null) S.cueBar = Math.max(0, Math.floor(+d.cueBar) || 0);
       if (typeof d.lyricSong === "string") S.lyricSong = d.lyricSong;
       if (d.bpl) S.bpl = String(d.bpl);
@@ -515,6 +521,205 @@
   function totalBars(A) { return A.reduce(function (a, s) { return a + s.bars; }, 0); }
   function barSec() { return 240 / S.bpm; }
 
+  /* ---------------- Per-section editing (song form) ----------------
+   * Tap a section in the song timeline to edit ONLY that section (each Hook on its own). A section override keeps its
+   * own copy of the song fields in CTXF plus keys on/off, volume and energy; a missing field = "same as song".
+   * While a section is being edited, S shows that section's fields, so every editor (pads, steps, Piano Roll, Feel,
+   * mute / solo, layer knobs, Swap) just works. The scheduler and the offline renders switch S to each section's
+   * fields step by step (useCtx), so playback, Bounce, WAV / MP3 and Send to Studio play every section its own way.
+   * Saved as S.secOv[structure][index] with only the fields that differ; old saves have none and play unchanged.
+   */
+  var CTXF = ["slots", "slot", "mute", "solo", "feel", "padCfg", "chordTrack", "piano"];
+  var SEC_ENERGY = { full: "Full", sparse: "Sparse (no kick / snare / 808)", half: "Half-time" };
+  var curCtx = -1, SONG = null, edSec = -1;
+  S.secOv = {};
+  function secMap(create) { if (!S.structure) return null; return S.secOv[S.structure] || (create ? (S.secOv[S.structure] = {}) : null); }
+  function ovAt(i) { var m = secMap(false); return m && i >= 0 ? m[i] || null : null; }
+  function songVal(f) { return curCtx === -1 ? S[f] : SONG[f]; }
+  function deep(o) { return o === undefined ? undefined : JSON.parse(JSON.stringify(o)); }
+  /* point S at section j's fields (-1 = the song). Values changed while a section was shown are written back to it. */
+  function useCtx(j) {
+    if (j == null || j < 0) j = -1;
+    if (j === curCtx) return;
+    if (curCtx !== -1) {
+      var o = ovAt(curCtx);
+      CTXF.forEach(function (f) { if (o && o[f] !== undefined) o[f] = S[f]; S[f] = SONG[f]; });
+      SONG = null; curCtx = -1;
+    }
+    if (j !== -1) {
+      var ov = ovAt(j);
+      if (ov) {
+        SONG = {};
+        CTXF.forEach(function (f) { SONG[f] = S[f]; if (ov[f] !== undefined) S[f] = ov[f]; });
+        curCtx = j;
+      }
+    }
+    bindSlot();
+  }
+  function withSong(fn) { var pc = curCtx; useCtx(-1); try { return fn(); } finally { useCtx(pc); } }
+  function secDefFeel(i) { var A = arrangement(); return (A && A[i] && A[i].feel) || "full"; }
+  function secFeel(i) { var o = ovAt(i); return (o && o.energy) || secDefFeel(i); }
+  function secSlotLen(i) {
+    var o = ovAt(i), slots = (o && o.slots) || songVal("slots"), id = (o && o.slot) || songVal("slot");
+    return (slots[id] || songVal("slots")[songVal("slot")]).len;
+  }
+  function secLabel(i) {
+    var A = arrangement(); if (!A || !A[i]) return "";
+    var n = A[i].name, same = A.filter(function (s) { return s.name === n; }).length;
+    if (same < 2) return n;
+    var k = 0; for (var j = 0; j <= i; j++) if (A[j].name === n) k++;
+    return n + " " + k;
+  }
+  /* "same as song" tests ignore untouched layer configs that the editors create on first look */
+  function normLx(lx) { var o = {}; Object.keys(lx || {}).sort().forEach(function (k) { var p = LY.pack(lx[k], "mel"); if (p) o[k] = p; }); return o; }
+  function normPiano(pn) {
+    return JSON.stringify([pn.slot, SLOT_IDS.map(function (id) {
+      var p = pn.slots && pn.slots[id]; if (!p) return null;
+      var c = {}; Object.keys(p).sort().forEach(function (k) { c[k] = k === "lx" ? normLx(p.lx) : p[k]; }); return c;
+    })]);
+  }
+  function normCT(ct) { var c = {}; Object.keys(ct || {}).sort().forEach(function (k) { c[k] = k === "lx" ? LY.pack(ct.lx, "mel") : ct[k]; }); return JSON.stringify(c); }
+  function normPad(pc) {
+    var o = {};
+    Object.keys(pc || {}).sort().forEach(function (k) {
+      if (!D.BY_ID[k]) return;
+      var m = {}, any = false;
+      (pc[k] || []).forEach(function (c, i) { var p = c && D.BY_ID[k].pads[i] ? LY.pack(c, "drum", padBase(D.BY_ID[k].pads[i])) : null; if (p) { m[i] = p; any = true; } });
+      if (any) o[k] = m;
+    });
+    return JSON.stringify(o);
+  }
+  function sameF(f, a, b) {
+    if (a === b) return true;
+    if (a == null || b == null) return false;
+    if (f === "piano") return normPiano(a) === normPiano(b);
+    if (f === "chordTrack") return normCT(a) === normCT(b);
+    if (f === "padCfg") return normPad(a) === normPad(b);
+    return JSON.stringify(a) === JSON.stringify(b);
+  }
+  function materialize(ov) {
+    CTXF.forEach(function (f) { if (ov[f] === undefined) ov[f] = deep(songVal(f)); });
+    if (ov.keys === undefined) ov.keys = true;
+    if (ov.vol === undefined) ov.vol = 0;
+    return ov;
+  }
+  /* drop every field that equals the song (call with S on the song, i.e. curCtx !== that section) */
+  function pruneOv(ov, i) {
+    CTXF.forEach(function (f) { if (ov[f] !== undefined && sameF(f, ov[f], songVal(f))) delete ov[f]; });
+    if (ov.keys !== false) delete ov.keys;
+    if (!ov.vol) delete ov.vol;
+    if (!ov.energy || ov.energy === secDefFeel(i)) delete ov.energy;
+    return ov;
+  }
+  function ovEmpty(ov) { return !ov || !Object.keys(ov).length; }
+  function secChanged(i) {
+    if (i !== edSec) return !ovEmpty(ovAt(i));
+    var o = ovAt(i), c = {}; if (!o) return false;
+    CTXF.forEach(function (f) { c[f] = S[f]; });
+    c.keys = o.keys; c.vol = o.vol; c.energy = o.energy;
+    return !ovEmpty(pruneOv(deep(c), i));
+  }
+  function cleanSecOv(src) {
+    var out = {};
+    Object.keys(src || {}).forEach(function (st) {
+      if (!STRUCTURES[st] || !src[st] || typeof src[st] !== "object") return;
+      var n = STRUCTURES[st].sections.length, m = {};
+      Object.keys(src[st]).forEach(function (k) {
+        var i = +k, o = src[st][k];
+        if (!(i >= 0 && i < n) || !o || typeof o !== "object") return;
+        var c = {};
+        if (o.slots && typeof o.slots === "object") { c.slots = {}; SLOT_IDS.forEach(function (id) { c.slots[id] = slotFrom(o.slots[id]); }); }
+        if (SLOT_IDS.indexOf(o.slot) !== -1) c.slot = o.slot;
+        if (Array.isArray(o.mute)) c.mute = new Array(16).fill(false).map(function (x, q) { return !!o.mute[q]; });
+        if (Array.isArray(o.solo)) c.solo = new Array(16).fill(false).map(function (x, q) { return !!o.solo[q]; });
+        if (o.feel != null) c.feel = FEEL.norm(o.feel);
+        if (o.padCfg && typeof o.padCfg === "object") c.padCfg = cleanPadCfg(o.padCfg);
+        if (o.chordTrack && Array.isArray(o.chordTrack.prog)) {
+          var ct = defaultChordTrack();
+          Object.keys(ct).forEach(function (q) { if (o.chordTrack[q] != null) ct[q] = o.chordTrack[q]; });
+          ct.lx = LY.clean(ct.lx, "mel"); c.chordTrack = ct;
+        }
+        if (o.piano && o.piano.slots && typeof o.piano.slots === "object") {
+          var pn = { slot: SLOT_IDS.indexOf(o.piano.slot) !== -1 ? o.piano.slot : "A", slots: {} };
+          SLOT_IDS.forEach(function (id) { pn.slots[id] = o.piano.slots[id] ? PD.normalize(o.piano.slots[id], instOk) : PD.empty(); });
+          c.piano = pn;
+        }
+        if (o.keys === false) c.keys = false;
+        if (o.vol != null && isFinite(+o.vol) && +o.vol) c.vol = clamp(+o.vol, -24, 6);
+        if (SEC_ENERGY[o.energy]) c.energy = o.energy;
+        if (Object.keys(c).length) m[i] = c;
+      });
+      if (Object.keys(m).length) out[st] = m;
+    });
+    return out;
+  }
+  /* compact copy for the session (song fields must be on S: curCtx === -1) */
+  function secOvSave() {
+    var out = {};
+    Object.keys(S.secOv).forEach(function (st) {
+      var m = S.secOv[st], o2 = {};
+      Object.keys(m || {}).forEach(function (k) {
+        var c = deep(m[k]);
+        if (st === S.structure) pruneOv(c, +k);
+        if (!ovEmpty(c)) o2[k] = c;
+      });
+      if (Object.keys(o2).length) out[st] = o2;
+    });
+    return out;
+  }
+  /* songs keep one resolved pattern per section (pat / pp) so they load into any slot layout */
+  function secSnapshot() {
+    var m = secMap(false), out = {}, n = 0;
+    Object.keys(m || {}).forEach(function (k) {
+      var o = pruneOv(deep(m[k]), +k), r = {};
+      if (ovEmpty(o)) return;
+      Object.keys(o).forEach(function (f) { if (f !== "slots" && f !== "slot" && f !== "piano") r[f] = o[f]; });
+      if (o.slots || o.slot) r.pat = deep((o.slots || S.slots)[o.slot || S.slot]);
+      if (o.piano) r.pp = PD.normalize(o.piano.slots[o.piano.slot], instOk);
+      out[k] = r; n++;
+    });
+    return n ? out : undefined;
+  }
+  function secFromSnapshot(src) {
+    var raw = {};
+    Object.keys(src || {}).forEach(function (k) {
+      var o = src[k]; if (!o || typeof o !== "object") return;
+      var r = deep(o); delete r.pat; delete r.pp;
+      if (o.pat) { r.slots = deep(S.slots); r.slots[S.slot] = o.pat; }
+      if (o.pp) { r.piano = deep(S.piano); r.piano.slots[S.piano.slot] = o.pp; }
+      raw[k] = r;
+    });
+    var w = {}; w[S.structure] = raw;
+    return cleanSecOv(w)[S.structure] || {};
+  }
+  /* per-section drum row chains (only for sections with their own layer knobs) */
+  function stripsFor(G) {
+    if (curCtx === -1) return G.strips;
+    var ov = ovAt(curCtx);
+    if (!ov || !ov.padCfg) return G.strips;
+    var a = G.sstrips[curCtx];
+    if (!a) {
+      a = G.sstrips[curCtx] = [];
+      for (var i = 0; i < 16; i++) { var g = padDef(i).g, st = LY.Strip(G.c, G.groups[g]); st.g = g; st.apply(padCfg(i), 0); a.push(st); }
+    }
+    return a;
+  }
+  function ctxPre() { if (curCtx === -1) return ""; var o = ovAt(curCtx); return o && (o.piano || o.chordTrack) ? "s" + curCtx + ":" : ""; }
+  function dropSecStrips(j) {
+    [LG].forEach(function (G) {
+      if (!G) return;
+      (G.sstrips[j] || []).forEach(function (st) { try { st.out.disconnect(); } catch (e) { /* ignore */ } });
+      delete G.sstrips[j];
+      Object.keys(G.lstrips).forEach(function (k) { if (k.indexOf("s" + j + ":") === 0) { try { G.lstrips[k].out.disconnect(); } catch (e) { /* ignore */ } delete G.lstrips[k]; } });
+    });
+  }
+  function secStep(c, G, info, t, reg, creg, first) {
+    var j = info.secIdx >= 0 ? (ovAt(info.secIdx) ? info.secIdx : -1) : edSec;
+    if (G.secG && (first || info.secStart)) { var o = ovAt(info.secIdx >= 0 ? info.secIdx : edSec); G.secG.gain.setValueAtTime(dbGain((o && o.vol) || 0), t); }
+    useCtx(j);
+    try { scheduleStep(c, G, info, t, reg, creg, first); } finally { useCtx(edSec); }
+  }
+
   /* ---------------- IndexedDB ---------------- */
   var dbPromise = null;
   function openDB() {
@@ -596,7 +801,8 @@
     G.clipPre = gn(0.5);
     G.clip = c.createWaveShaper(); G.clip.curve = SAFETY; G.clip.oversample = "none";
     G.out = gn(1);
-    G.sum.connect(G.fader); G.fader.connect(G.lim); G.lim.connect(G.limTrim);
+    G.secG = gn(1); // per-section volume (section editing)
+    G.sum.connect(G.secG); G.secG.connect(G.fader); G.fader.connect(G.lim); G.lim.connect(G.limTrim);
     G.limTrim.connect(G.clipPre); G.clipPre.connect(G.clip); G.clip.connect(G.out);
     GROUPS.forEach(function (g) {
       var n = gn(mixGain(g.id)), tail = n;
@@ -605,13 +811,14 @@
       G.groups[g.id] = n;
     });
     for (var i = 0; i < 16; i++) G.strips.push(LY.Strip(c, G.groups[padDef(i).g])); // one chain per drum row
+    G.sstrips = {}; // per-section drum row chains (section editing)
     G.lstrips = {}; // melodic layers (piano-roll instruments, chord loop), created on first note
     graphKit(G);
     return G;
   }
   /* pad strip routing + settings; `t` = ramp time for live changes */
   function stripApply(G, i, t) {
-    var st = G.strips[i], g = padDef(i).g;
+    var st = stripsFor(G)[i], g = padDef(i).g;
     if (st.g !== g) { // kit change can move a row to another group fader
       try { st.out.disconnect(); } catch (e) { /* not connected */ }
       st.out.connect(G.groups[g]); st.g = g;
@@ -619,6 +826,12 @@
     st.apply(padCfg(i), t);
   }
   function graphKit(G, t) {
+    var pc = curCtx;
+    Object.keys(G.sstrips || {}).forEach(function (j) { useCtx(+j); for (var q = 0; q < 16; q++) stripApply(G, q, t); });
+    useCtx(-1);
+    try { graphKitSong(G, t); } finally { useCtx(pc); }
+  }
+  function graphKitSong(G, t) {
     for (var i = 0; i < 16; i++) stripApply(G, i, t);
     var b = kitDef(S.kit).bus;
     G.comp.threshold.value = b.thr; G.comp.ratio.value = b.ratio; G.comp.knee.value = 3;
@@ -702,6 +915,7 @@
   function chordCfg() { return S.chordTrack.lx || (S.chordTrack.lx = LY.defaults("mel")); }
   /* the shared chain of a melodic layer in graph G (lazily built; re-applied when its config object changes) */
   function melStrip(G, key, cfg, dest) {
+    key = ctxPre() + key;
     var st = G.lstrips[key];
     if (!st) { st = G.lstrips[key] = LY.Strip(G.c, dest); st.cfgRef = null; }
     if (st.cfgRef !== cfg) { st.apply(cfg || LY.defaults("mel"), G === LG && ctx ? ctx.currentTime : 0); st.cfgRef = cfg; }
@@ -767,7 +981,7 @@
       end = Math.min(end, when + hold + tau * 8);
     }
     if (head === src) src.connect(g); else head.connect(g);
-    g.connect(G.strips[i].inp);
+    g.connect(stripsFor(G)[i].inp);
     src.start(when);
     if (end < when + dur) src.stop(end);
     var voice = { pad: i, src: src, g: g, start: when, end: end, rate: rate, ck: def.ck };
@@ -856,7 +1070,7 @@
       var sec = A[i];
       if (bar < b0 + sec.bars) {
         var local = k - b0 * STEPS;
-        info.sec = sec; info.secIdx = i; info.feel = sec.feel || "full";
+        info.sec = sec; info.secIdx = i; info.feel = secFeel(i); L = secSlotLen(i);
         info.secStart = local === 0;
         if (info.feel === "half") {
           info.fire = local % 2 === 0;
@@ -870,7 +1084,7 @@
         return info;
       }
       b0 += sec.bars;
-      mb0 += sec.feel === "half" ? sec.bars / 2 : sec.bars;
+      mb0 += secFeel(i) === "half" ? sec.bars / 2 : sec.bars;
     }
     info.end = true;
     return info;
@@ -944,7 +1158,7 @@
         uiQueue.push({ step: -1, k: curK, time: nextTime, fire: false, pslot: true });
       }
       if (info.end && !btActive()) { endSong(nextTime); return; } // with an instrumental, its own end stops the take
-      if (info.fire && !info.end) scheduleStep(ctx, LG, info, nextTime, liveVoices, chordLive, curK === startK);
+      if (info.fire && !info.end) secStep(ctx, LG, info, nextTime, liveVoices, chordLive, curK === startK);
       uiQueue.push({ step: info.patStep, k: curK, time: nextTime, fire: info.fire });
       nextTime += stepDur();
       curK++;
@@ -1186,7 +1400,7 @@
     if (!LG || !ctx) return;
     var t = ctx.currentTime;
     if (T.kind === "drum") { if (T.kit === S.kit) stripApply(LG, T.pad, t); return; }
-    var cfg = lyCfg(T), st = LG.lstrips[T.kind === "chord" ? "chord" : T.slot + ":" + T.inst];
+    var cfg = lyCfg(T), st = LG.lstrips[ctxPre() + (T.kind === "chord" ? "chord" : T.slot + ":" + T.inst)];
     if (st) { st.apply(cfg, t); st.cfgRef = cfg; }
   }
   function lyChanged(T, quiet) {
@@ -1352,9 +1566,14 @@
   function libIds() {
     var out = [];
     function add(c) { if (c && c.src && out.indexOf(c.src) === -1) out.push(c.src); }
-    Object.keys(S.padCfg || {}).forEach(function (k) { (S.padCfg[k] || []).forEach(add); });
-    SLOT_IDS.forEach(function (id) { var p = S.piano.slots[id]; if (p && p.lx) Object.keys(p.lx).forEach(function (k) { add(p.lx[k]); }); });
-    if (S.chordTrack) add(S.chordTrack.lx);
+    function from(o) {
+      Object.keys(o.padCfg || {}).forEach(function (k) { (o.padCfg[k] || []).forEach(add); });
+      if (o.piano) SLOT_IDS.forEach(function (id) { var p = o.piano.slots[id]; if (p && p.lx) Object.keys(p.lx).forEach(function (k) { add(p.lx[k]); }); });
+      if (o.chordTrack) add(o.chordTrack.lx);
+    }
+    from(S);
+    if (SONG) from(SONG);
+    var m = secMap(false); Object.keys(m || {}).forEach(function (k) { from(m[k]); }); // section editing: every section's swaps
     return out;
   }
   function libSync(force) {
@@ -1378,7 +1597,7 @@
   function libPresetPad(c, G, i, when, o, ls, cfg, def) {
     var p = ls.it.p, m = (def.tuned && def.p && def.p.note ? def.p.note : 60) + (o.semi || 0) + (p.oct || 0) + (cfg.tune || 0) + (cfg.fine || 0) / 100;
     if (PK.setTempo) PK.setTempo(S.bpm);
-    PK.play(c, lpDest(c, G.strips[i].inp, p.lp), m, when, 0.12 + 0.6 * cfg.decay, o.vel == null ? 0.8 : o.vel, p.i, 1, p.tone || null);
+    PK.play(c, lpDest(c, stripsFor(G)[i].inp, p.lp), m, when, 0.12 + 0.6 * cfg.decay, o.vel == null ? 0.8 : o.vel, p.i, 1, p.tone || null);
   }
   /* one note of a library sound (multisample / one-shot with a root / synth preset). Returns { lib, stop(t), end } */
   function libVoice(c, dest, midi, when, dur, vel, snd, gain) {
@@ -1579,7 +1798,7 @@
   }
   function swGrid(steps) { if (!playing) return ctx.currentTime + 0.03; var add = (steps - (curK % steps)) % steps; return Math.max(ctx.currentTime + 0.01, nextTime + add * stepDur()); }
   function swDest(T) {
-    if (T.kind === "drum") return LG.strips[T.pad].inp;
+    if (T.kind === "drum") return stripsFor(LG)[T.pad].inp;
     if (T.kind === "chord") return melStrip(LG, "chord", chordCfg(), LG.groups.keys).inp;
     return melStrip(LG, T.slot + ":" + T.inst, melCfg(S.piano.slots[T.slot], T.inst, true), LG.groups.piano).inp;
   }
@@ -2277,7 +2496,7 @@
       // loop bounces ignore the structure so "4 bars" really means the 4-bar loop
       var info = songMode ? stepInfo(k) : loopInfo(k);
       if (info.end) break;
-      if (info.fire) scheduleStep(c, G, info, k * sd, reg, creg, k === 0);
+      if (info.fire) secStep(c, G, info, k * sd, reg, creg, k === 0);
     }
     cutChords(creg, total * sd);
     return { songMode: songMode, bars: bars, total: total, sd: sd, promise: c.startRendering() };
@@ -3236,7 +3455,8 @@
     for (var j = 0; j < songStore.songs.length; j++) if (songStore.songs[j].id === id) return songStore.songs[j];
     return null;
   }
-  function beatSnapshot() {
+  function beatSnapshot() { return withSong(beatSnapshotSong); }
+  function beatSnapshotSong() {
     var s = curSlot();
     function cp(g) { return g.map(function (r) { return r.slice(); }); }
     return {
@@ -3246,7 +3466,8 @@
       chords: JSON.parse(JSON.stringify(S.chordTrack)),
       structure: S.structure,
       piano: PD.normalize(pianoPat(), instOk),
-      songKey: S.songKey
+      songKey: S.songKey,
+      sections: S.structure ? secSnapshot() : undefined
     };
   }
 
@@ -3521,6 +3742,123 @@
     $("prompter").style.setProperty("--pr-scale", S.prSize);
   }
 
+
+  /* ---------------- Section editing: UI ---------------- */
+  function dropAllSecStrips() { if (LG) Object.keys(LG.sstrips).forEach(function (j) { dropSecStrips(+j); }); Object.keys(LG ? LG.lstrips : {}).forEach(function (k) { if (/^s\d+:/.test(k)) { try { LG.lstrips[k].out.disconnect(); } catch (e) { /* ignore */ } delete LG.lstrips[k]; } }); }
+  function secRefreshUI() {
+    bindSlot(); S.page = 0;
+    refreshPads(); buildSeq(); feelUI(); renderChordLoopUI();
+    if (pianoEd) pianoUI(true, true);
+    if (lyT) lyRefresh();
+    if (LG && ctx) for (var i = 0; i < 16; i++) stripApply(LG, i, ctx.currentTime);
+    document.body.classList.toggle("sec-editing", edSec >= 0);
+    renderTimelines();
+    libSync();
+  }
+  function selectSec(i) {
+    var A = arrangement();
+    if (!A || i < 0 || i >= A.length) { leaveEdit(); return; }
+    if (i === edSec) return;
+    leaveEdit(true);
+    var m = secMap(true);
+    useCtx(-1);
+    materialize(m[i] || (m[i] = {}));
+    edSec = i; useCtx(i);
+    secRefreshUI();
+    saveSession();
+  }
+  function leaveEdit(quiet) {
+    if (edSec === -1) return;
+    var i = edSec;
+    edSec = -1; useCtx(-1);
+    var m = secMap(false);
+    if (m && m[i]) { pruneOv(m[i], i); if (ovEmpty(m[i])) delete m[i]; }
+    dropSecStrips(i);
+    if (!quiet) { secRefreshUI(); saveSession(); }
+  }
+  function secReset() {
+    if (edSec < 0) return;
+    var i = edSec;
+    useCtx(-1);
+    secMap(true)[i] = materialize({});
+    dropSecStrips(i);
+    useCtx(i);
+    secRefreshUI(); saveSession();
+    toast(secLabel(i) + " is the same as the whole song again.");
+  }
+  function secPlural(n) { return /s$/i.test(n) ? n : n + "s"; }
+  function secCopyToSame() {
+    var A = arrangement();
+    if (!A || edSec < 0) return;
+    var i = edSec, name = A[i].name, n = 0;
+    useCtx(-1);
+    var src = pruneOv(deep(ovAt(i)) || {}, i), m = secMap(true);
+    A.forEach(function (s, j) {
+      if (j === i || s.name !== name) return;
+      if (ovEmpty(src)) delete m[j]; else m[j] = deep(src);
+      dropSecStrips(j); n++;
+    });
+    useCtx(i);
+    renderTimelines(); saveSession();
+    toast(n ? "Copied " + secLabel(i) + " to the other " + n + " " + secPlural(name) + "." : "There is only one " + name + ".");
+  }
+  function secSetVol(db) {
+    var o = ovAt(edSec); if (!o) return;
+    o.vol = clamp(+db || 0, -24, 6);
+    if (LG && ctx && playing && stepInfo(Math.floor(currentPosK())).secIdx === edSec) LG.secG.gain.setTargetAtTime(dbGain(o.vol), ctx.currentTime, 0.02);
+    secPanelUI(); clearTimeout(lySaveT); lySaveT = setTimeout(saveSession, 250);
+  }
+  var secMarkT = null;
+  function secMarks() { clearTimeout(secMarkT); secMarkT = setTimeout(function () { var el = $("timeline"); if (!el) return; el.querySelectorAll(".tl-seg").forEach(function (b) { b.classList.toggle("ov", secChanged(+b.dataset.i)); }); secPanelUI(); }, 120); }
+  function secPanelUI() {
+    var box = $("sec-edit"), A = arrangement();
+    if (!box) return;
+    box.hidden = !A;
+    var pill = $("sec-pill");
+    if (pill) pill.hidden = !(A && edSec >= 0);
+    if (!A) return;
+    var on = edSec >= 0, o = ovAt(edSec), name = on ? A[edSec].name : "";
+    box.classList.toggle("on", on);
+    $("sec-chip").textContent = on ? "Editing: " + secLabel(edSec) : "Editing: Whole song";
+    $("sec-whole").hidden = !on;
+    $("sec-ctls").hidden = !on;
+    var changed = 0; A.forEach(function (s, j) { if (secChanged(j)) changed++; });
+    $("sec-hint").textContent = on ? "Pads, steps, Piano Roll, keys loop, Feel, mute / solo and layer knobs now change only " + secLabel(edSec) + ". Tempo, swing, kit and the Mixer stay song-wide."
+      : "Tap a section above to change only that part" + (changed ? " · " + changed + " section" + (changed > 1 ? "s have" : " has") + " its own changes (dot)" : "") + ".";
+    if (pill) $("sec-pill-name").textContent = on ? secLabel(edSec) : "";
+    if (!on || !o) return;
+    var en = $("sec-energy"), def = secDefFeel(edSec);
+    if (!en.options.length) Object.keys(SEC_ENERGY).forEach(function (k) { var op = document.createElement("option"); op.value = k; en.appendChild(op); });
+    Array.prototype.forEach.call(en.options, function (op) { op.textContent = SEC_ENERGY[op.value] + (op.value === def ? " (song form)" : ""); });
+    en.value = o.energy || def;
+    $("sec-vol").value = o.vol || 0;
+    $("sec-vol-val").textContent = (o.vol > 0 ? "+" : "") + (+(o.vol || 0)).toFixed(1) + " dB";
+    $("sec-keys").checked = o.keys !== false;
+    $("sec-chords").checked = !!S.chordTrack.on;
+    var same = A.filter(function (s) { return s.name === name; }).length;
+    var cp = $("sec-copy"); cp.hidden = same < 2; cp.textContent = "Copy to all " + secPlural(name);
+  }
+  function secWire() {
+    $("sec-whole").addEventListener("click", function () { leaveEdit(); });
+    $("sec-pill-x").addEventListener("click", function () { leaveEdit(); });
+    $("sec-pill-name").addEventListener("click", function () { var t = $("timeline"); if (t) t.scrollIntoView({ block: "center", behavior: "smooth" }); });
+    $("sec-reset").addEventListener("click", secReset);
+    $("sec-copy").addEventListener("click", secCopyToSame);
+    $("sec-energy").addEventListener("change", function (e) {
+      var o = ovAt(edSec); if (!o) return;
+      o.energy = e.target.value;
+      renderTimelines(); saveSession();
+    });
+    $("sec-vol").addEventListener("input", function (e) { secSetVol(e.target.value); });
+    $("sec-keys").addEventListener("change", function (e) { var o = ovAt(edSec); if (!o) return; o.keys = e.target.checked; saveSession(); });
+    $("sec-chords").addEventListener("change", function (e) {
+      if (edSec < 0) return;
+      S.chordTrack.on = e.target.checked;
+      if (!S.chordTrack.on && ctx) cutChords(chordLive, ctx.currentTime);
+      renderChordLoopUI(); saveSession();
+    });
+  }
+
   /* ---------------- Song structure timeline ---------------- */
   function renderTimelines() {
     document.querySelectorAll(".timeline").forEach(function (el) {
@@ -3532,15 +3870,17 @@
       A.forEach(function (sec, i) {
         var seg = document.createElement("button");
         seg.type = "button";
-        seg.className = "tl-seg f-" + (sec.feel || "full") + (/hook/i.test(sec.name) ? " hook" : "");
+        var main = el.id === "timeline", fe = secFeel(i);
+        seg.className = "tl-seg f-" + fe + (/hook/i.test(sec.name) ? " hook" : "") + (main && i === edSec ? " sel" : "") + (main && secChanged(i) ? " ov" : "");
+        if (main) seg.setAttribute("aria-pressed", String(i === edSec));
         seg.style.flexGrow = sec.bars;
         seg.dataset.i = i;
         seg.innerHTML = "<b></b><small></small>";
-        seg.querySelector("b").textContent = sec.name;
-        seg.querySelector("small").textContent = sec.bars + (sec.feel === "half" ? " · ½-time" : "");
-        seg.title = sec.name + " · " + sec.bars + " bars" + (sec.feel === "half" ? " (half-time feel)" : sec.feel === "sparse" ? " (no kick/snare/808)" : "") + " — tap to cue";
+        seg.querySelector("b").textContent = main ? secLabel(i) : sec.name;
+        seg.querySelector("small").textContent = sec.bars + (fe === "half" ? " · ½-time" : fe === "sparse" ? " · sparse" : "");
+        seg.title = secLabel(i) + " · " + sec.bars + " bars" + (fe === "half" ? " (half-time feel)" : fe === "sparse" ? " (no kick/snare/808)" : "") + (main ? " — tap to edit only this section (and cue it)" : " — tap to cue");
         var at = b;
-        seg.addEventListener("click", function () { cueTo(at); });
+        seg.addEventListener("click", function () { if (main) { if (vox.state !== "idle") { toast("Stop the vocal take first."); return; } selectSec(i); } cueTo(at); });
         el.appendChild(seg);
         b += sec.bars;
       });
@@ -3548,6 +3888,7 @@
       head.className = "tl-head";
       el.appendChild(head);
     });
+    secPanelUI();
     var ss = $("struct-sel");
     if (ss) ss.value = S.structure || "";
     var rl = $("rec-length"), so = rl.querySelector('option[value="song"]');
@@ -3629,6 +3970,7 @@
     }
     if (vox.state !== "idle") stopVocalTake();
     stop();
+    leaveEdit(true);
     if (btActive()) btEject(); // a drum-machine beat replaces the loaded instrumental
     S.kitSwing[S.kit] = S.swing;
     S.bpm = clamp(+beat.bpm || 140, 60, 200);
@@ -3644,6 +3986,7 @@
     ct.lx = LY.clean(ct.lx, "mel");
     S.chordTrack = ct;
     S.structure = beat.structure && STRUCTURES[beat.structure] ? beat.structure : null;
+    if (S.structure) { S.secOv[S.structure] = secFromSnapshot(beat.sections); dropAllSecStrips(); } // songs before section editing: none
     S.cueBar = 0;
     if (S.structure) S.bpl = "auto";
     if (extra && extra.mixer) Object.keys(extra.mixer).forEach(function (k) { if (S.mixer[k]) S.mixer[k].v = extra.mixer[k]; });
@@ -4729,6 +5072,7 @@
     return out;
   }
   function schedulePiano(c, G, info, t, len) {
+    var so = ovAt(curCtx); if (so && so.keys === false) return; // section editing: keys / Piano Roll off in this section
     var p = pianoPat();
     if (!p.notes.length) return;
     if (klPrev && klPrev.synced && G === LG && t >= klPrev.t0 - 0.002 && t < klPrev.end) return; // a keys-loop preview has the floor
@@ -5501,10 +5845,12 @@
     });
     window.addEventListener("resize", function () { ly.prompter.tops = null; ly.preview.tops = null; prForceScroll = true; });
     // Song bar
+    secWire();
     $("song-preset").addEventListener("change", function (e) { applySongPreset(e.target.value); });
     $("struct-sel").addEventListener("change", function (e) {
       if (playing) stop();
-      S.structure = e.target.value || null; S.cueBar = 0;
+      leaveEdit(true);
+      S.structure = e.target.value || null; S.cueBar = 0; dropAllSecStrips();
       renderTimelines(); renderLyrics(); syncPrompterControls(); saveSession();
     });
     // Chord loop
@@ -5573,6 +5919,12 @@
 
   /* read-only status for automated tests / debugging */
   window.IPBBeats = {
+    sections: {
+      select: function (i) { selectSec(i); return edSec; }, whole: function () { leaveEdit(); return edSec; },
+      reset: function () { secReset(); }, copy: function () { secCopyToSame(); },
+      state: function () { var A = arrangement(); return { edSec: edSec, curCtx: curCtx, label: edSec >= 0 ? secLabel(edSec) : "Whole song", changed: A ? A.map(function (s, j) { return secChanged(j); }) : [], ov: withSong(function () { return secOvSave(); }) }; },
+      feelOf: function (i) { return secFeel(i); }
+    },
     bounceForStudio: bounceForStudio, showTab: showTab, activeTab: function () { return activeTab; },
     lastSent: function () { return lastSent; }, sendOut: sendOut, djHref: djHref,
     info: function () {

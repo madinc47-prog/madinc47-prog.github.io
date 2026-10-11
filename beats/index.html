@@ -14,7 +14,7 @@
   <meta name="theme-color" content="#0b0d12">
   <meta name="color-scheme" content="dark"><!-- the app is already dark: stops Samsung Internet / Chrome "force dark" from re-colouring it -->
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="styles.css?v=20261011k">
+  <link rel="stylesheet" href="styles.css?v=20261011m">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Island Pin Beats — Free Beat Maker">
   <meta name="twitter:description" content="Make boom-bap, trap, drill, afrobeats, amapiano, house and bouyon beats in your browser. Free, from Dominica.">
@@ -109,6 +109,20 @@
         <span id="song-pos" class="song-pos">Bar 1</span>
       </div>
       <div class="timeline" id="timeline" hidden aria-label="Song structure timeline"></div>
+      <div class="sec-edit" id="sec-edit" hidden aria-label="Section editing">
+        <span class="sec-chip" id="sec-chip" aria-live="polite">Editing: Whole song</span>
+        <button type="button" class="btn small" id="sec-whole" hidden title="Back to editing the whole song (every section that has no changes of its own)">Whole song</button>
+        <span class="sec-ctls" id="sec-ctls" hidden>
+          <label class="sec-f">Energy <select id="sec-energy" aria-label="Section energy"></select></label>
+          <label class="sec-f">Volume <input type="range" id="sec-vol" min="-12" max="6" step="0.5" value="0" aria-label="Section volume"> <span id="sec-vol-val" class="mono">0.0 dB</span></label>
+          <label class="sec-f chk"><input type="checkbox" id="sec-keys"> Keys loop / Piano Roll</label>
+          <label class="sec-f chk"><input type="checkbox" id="sec-chords"> Chord loop</label>
+          <button type="button" class="btn small" id="sec-copy">Copy to all Hooks</button>
+          <button type="button" class="btn small ghost" id="sec-reset" title="Throw away this section's own changes: it plays the whole-song beat again">Reset section to song</button>
+        </span>
+        <span class="sec-hint" id="sec-hint"></span>
+      </div>
+      <div class="sec-pill" id="sec-pill" hidden><button type="button" id="sec-pill-name" class="sec-pill-name" title="Show the song sections"></button><button type="button" id="sec-pill-x" class="sec-pill-x" title="Back to the whole song" aria-label="Back to the whole song">Whole song ✕</button></div>
 
       <!-- INSTRUMENTAL / BACKING TRACK: the beat you hear AND record over (mixed into the take, unlike the Reference) -->
       <section class="bt-panel" id="bt-panel" aria-label="Instrumental / backing track">
@@ -632,16 +646,16 @@
 
   <footer class="foot">Free · runs in your browser · synthesized drums + CC0 one-shots (<a href="samples/CREDITS.md">credits</a>), no paid APIs · <a href="studio/">Studio</a> · <a href="../dj/">DJ booth</a> · <a href="check/">Sound check</a> · <a href="../">IslePin</a></footer>
 
-  <script src="humanize.js?v=20261011k"></script>
-  <script src="layers.js?v=20261011k"></script>
-  <script src="library.js?v=20261011k"></script>
-  <script src="drums.js?v=20261011k"></script>
-  <script src="keys-instruments.js?v=20261011k"></script>
-  <script src="pianoroll-data.js?v=20261011k"></script>
-  <script src="keys-loops.js?v=20261011k"></script>
-  <script src="pianoroll.js?v=20261011k"></script>
-  <script src="vocal-clean-client.js?v=20261011k"></script>
-  <script src="app.js?v=20261011k"></script>
+  <script src="humanize.js?v=20261011m"></script>
+  <script src="layers.js?v=20261011m"></script>
+  <script src="library.js?v=20261011m"></script>
+  <script src="drums.js?v=20261011m"></script>
+  <script src="keys-instruments.js?v=20261011m"></script>
+  <script src="pianoroll-data.js?v=20261011m"></script>
+  <script src="keys-loops.js?v=20261011m"></script>
+  <script src="pianoroll.js?v=20261011m"></script>
+  <script src="vocal-clean-client.js?v=20261011m"></script>
+  <script src="app.js?v=20261011m"></script>
   <script type="module" src="../shared/ecosystem-nav.js"></script><!-- Beats | DJ Booth | Player switcher (shared/README.md) -->
 </body>
 </html>
