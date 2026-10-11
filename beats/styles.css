@@ -960,3 +960,5 @@ body.sec-editing .seq-wrap { outline: 2px solid var(--accent); outline-offset: 3
   .sec-f input[type=range] { width: 100px; }
 }
 @media (pointer: coarse) and (min-width: 761px) { .timeline { height: 54px; } } /* section labels are tap targets (≥ 44 px) */
+.groove-pick { font: inherit; color: inherit; background: var(--panel, #161a22); border: 1px solid var(--line, #333); border-radius: 8px; padding: .35rem .5rem; min-height: 40px; max-width: 12rem; }
+@media (pointer: coarse) { .groove-pick { min-height: 44px; } }

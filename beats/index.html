@@ -14,7 +14,7 @@
   <meta name="theme-color" content="#0b0d12">
   <meta name="color-scheme" content="dark"><!-- the app is already dark: stops Samsung Internet / Chrome "force dark" from re-colouring it -->
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="styles.css?v=20261011m">
+  <link rel="stylesheet" href="styles.css?v=20261011n">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Island Pin Beats — Free Beat Maker">
   <meta name="twitter:description" content="Make boom-bap, trap, drill, afrobeats, amapiano, house and bouyon beats in your browser. Free, from Dominica.">
@@ -62,11 +62,12 @@
           <label class="swing" title="Swing, MPC-style: 50% = straight · 54–58% = light shuffle · 62%+ = heavy bounce">Swing <input id="swing" type="range" min="0" max="60" step="2" value="24"> <span id="swing-val" class="swing-val">62%</span></label>
           <label class="swing" title="Feel: how the parts are played. Off = exact grid, same hit every time · Tight = trap-tight with subtle variation · Natural = played by a pro (velocity tone, round-robin, genre timing, chord rolls) · Live = a live drummer pushing and pulling, with ghost notes. Pads / MIDI you play are never delayed.">Feel <select id="feel"><option value="off">Off</option><option value="tight">Tight</option><option value="natural" selected>Natural</option><option value="live">Live</option></select></label>
           <button id="btn-demo" class="btn ghost" type="button" title="Load this kit's 2-bar starter groove, tempo and swing">Load starter</button>
+          <select id="groove-pick" class="groove-pick" hidden aria-label="Groove preset (loads into this pattern)" title="Groove presets for this kit: loads into the current pattern slot, with tempo"></select>
           <button id="btn-fresh" class="btn" type="button">Fresh beat</button>
         </div>
       </div>
       <div id="kit-browser" class="kit-browser" hidden>
-        <div class="kb-head"><span class="label">Drum kits · 18 genres</span><button id="kb-close" class="btn small ghost" type="button">Close</button></div>
+        <div class="kb-head"><span class="label">Drum kits · 20 genres</span><button id="kb-close" class="btn small ghost" type="button">Close</button></div>
         <div id="kb-cats" class="kb-cats" role="group" aria-label="Genre"></div>
         <div id="kb-grid" class="kb-grid"></div>
         <p class="kb-note">Picking a kit swaps the sounds and its swing. On an empty pattern it also loads the kit's starter groove and tempo. Your pattern stays.</p>
@@ -646,16 +647,16 @@
 
   <footer class="foot">Free · runs in your browser · synthesized drums + CC0 one-shots (<a href="samples/CREDITS.md">credits</a>), no paid APIs · <a href="studio/">Studio</a> · <a href="../dj/">DJ booth</a> · <a href="check/">Sound check</a> · <a href="../">IslePin</a></footer>
 
-  <script src="humanize.js?v=20261011m"></script>
-  <script src="layers.js?v=20261011m"></script>
-  <script src="library.js?v=20261011m"></script>
-  <script src="drums.js?v=20261011m"></script>
-  <script src="keys-instruments.js?v=20261011m"></script>
-  <script src="pianoroll-data.js?v=20261011m"></script>
-  <script src="keys-loops.js?v=20261011m"></script>
-  <script src="pianoroll.js?v=20261011m"></script>
-  <script src="vocal-clean-client.js?v=20261011m"></script>
-  <script src="app.js?v=20261011m"></script>
+  <script src="humanize.js?v=20261011n"></script>
+  <script src="layers.js?v=20261011n"></script>
+  <script src="library.js?v=20261011n"></script>
+  <script src="drums.js?v=20261011n"></script>
+  <script src="keys-instruments.js?v=20261011n"></script>
+  <script src="pianoroll-data.js?v=20261011n"></script>
+  <script src="keys-loops.js?v=20261011n"></script>
+  <script src="pianoroll.js?v=20261011n"></script>
+  <script src="vocal-clean-client.js?v=20261011n"></script>
+  <script src="app.js?v=20261011n"></script>
   <script type="module" src="../shared/ecosystem-nav.js"></script><!-- Beats | DJ Booth | Player switcher (shared/README.md) -->
 </body>
 </html>

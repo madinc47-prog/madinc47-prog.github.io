@@ -43,7 +43,14 @@
     { id: "lead", name: "Soft Lead", cat: "Classic pads & synths", poly: false },
     { id: "whine", name: "G-Funk Whine Lead", cat: "Classic pads & synths", poly: false },
     { id: "bass", name: "Sub Bass", cat: "Classic bass", poly: false },
-    { id: "synthbass", name: "Analog Bass", cat: "Classic bass", poly: false }
+    { id: "synthbass", name: "Analog Bass", cat: "Classic bass", poly: false },
+    { id: "odgtr", name: "Overdrive Guitar (crunch)", cat: "Rock", poly: true, dr: true, drive: 0.45 },
+    { id: "distgtr", name: "Distorted Guitar (high gain)", cat: "Rock", poly: true, dr: true, drive: 0.75 },
+    { id: "powerchord", name: "Power Chords (1 key = root + 5th + 8ve)", cat: "Rock", poly: true, dr: true, drive: 0.7 },
+    { id: "cleangtr", name: "Clean Electric Guitar", cat: "Rock", poly: true, dr: true, drive: 0.15 },
+    { id: "rockbass", name: "Rock Bass Guitar (pick)", cat: "Rock", poly: false, dr: true, drive: 0.3 },
+    { id: "rockorgan", name: "Rock Organ (Leslie)", cat: "Rock", poly: true, dr: true, drive: 0.35 },
+    { id: "rockpiano", name: "Rock Piano", cat: "Rock", poly: true, drive: 0.08 }
   ];
   var BY_ID = {};
   INSTRUMENTS.forEach(function (i) { BY_ID[i.id] = i; });
@@ -73,7 +80,14 @@
     { id: "voxoo", name: "Vocal Chop · Ooh", inst: "voxoo", tone: { drive: 0.05 } },
     { id: "pump", name: "Pumping Pad", inst: "sidepad", tone: { drive: 0.08 } },
     { id: "gtr", name: "Melodic Guitar Pluck", inst: "gtrpluck", tone: { drive: 0.05 } },
-    { id: "arp", name: "16th Octave Arp", inst: "arp", tone: { drive: 0.12 } }
+    { id: "arp", name: "16th Octave Arp", inst: "arp", tone: { drive: 0.12 } },
+    { id: "rockcrunch", name: "Rock Rhythm · crunch", inst: "odgtr", tone: { drive: 0.45 } },
+    { id: "metal", name: "Metal Rhythm · high gain", inst: "distgtr", tone: { drive: 0.85 } },
+    { id: "power", name: "Power Chords", inst: "powerchord", tone: { drive: 0.7 } },
+    { id: "cleanel", name: "Clean Electric Guitar", inst: "cleangtr", tone: { drive: 0.15 } },
+    { id: "rockbass", name: "Rock Bass · pick", inst: "rockbass", tone: { drive: 0.3 } },
+    { id: "leslie", name: "Rock Organ · Leslie", inst: "rockorgan", tone: { drive: 0.35 } },
+    { id: "rockpno", name: "Rock Piano", inst: "rockpiano", tone: { drive: 0.08 } }
   ];
   var DEFAULT_PRESET = "bounce26";
   var TEMPO = 120;
@@ -227,6 +241,72 @@
     for (var z = 0; z < len; z++) { d[z] -= dc * Math.pow(damp, z / N); var a = Math.abs(d[z]); if (a > peak) peak = a; }
     if (peak > 0) for (var w = 0; w < len; w++) d[w] /= peak;
     return (k[key] = { buf: b, rate: f / (sr / (N + 0.5)) });
+  }
+
+  /* ---------------- Rock guitar engine ---------------- */
+  var GTR = {
+    od: { gain: 16, preHP: 120, hump: [900, 5], cabLP: 5200, scoop: [500, -2], tracks: 2, spread: 0.45, lvl: 0.13, palm: true, notes: [0], vib: 1 },
+    dist: { gain: 70, preHP: 160, hump: [1100, 7], cabLP: 4600, scoop: [480, -4], tracks: 2, spread: 0.6, lvl: 0.11, palm: true, notes: [0], vib: 1, asym: true },
+    power: { gain: 60, preHP: 150, hump: [1000, 6], cabLP: 4600, scoop: [450, -4], tracks: 2, spread: 0.6, lvl: 0.1, palm: true, notes: [0, 7, 12], vib: 0, asym: true },
+    clean: { gain: 1.6, preHP: 70, hump: [2600, 3], cabLP: 7500, scoop: [350, -1], tracks: 1, spread: 0, lvl: 0.36, palm: false, notes: [0], vib: 1, clean: true }
+  };
+  function gtrCurve(c, asym) {
+    var k = cache(c), key = asym ? "gtrA" : "gtrS";
+    if (k[key]) return k[key];
+    var n = 4096, cur = new Float32Array(n), b = asym ? 0.18 : 0, nm = Math.tanh(4 + b) - Math.tanh(b);
+    for (var i = 0; i < n; i++) { var x = (i / (n - 1) * 2 - 1) * 4; cur[i] = (Math.tanh(x + b) - Math.tanh(b)) / nm; } // tube-ish: asymmetric = warmer even harmonics
+    return (k[key] = cur);
+  }
+  function gtrVoice(c, dest, m, t, dur, vel, o, P) {
+    var v = voiceBase(c, dest, t), mr = Math.round(m), frac = Math.pow(2, (m - mr) / 12);
+    var palm = P.palm && dur < 0.17 && vel < 0.9, stroke = fh(Math.round(t * 1000), mr, 3); // alternate pick strokes differ a little
+    var drive = P.clean ? o.drive : 0.25 + o.drive * 0.75;
+    for (var tr = 0; tr < P.tracks; tr++) {
+      var side = P.tracks > 1 ? (tr ? 1 : -1) : 0, delay = tr ? 0.009 + Math.abs(stroke) * 0.004 : 0;
+      var out = pan(c, side * P.spread, v.out);
+      // speaker cab: low resonance, scooped mids, 2-stage roll-off
+      var c1 = c.createBiquadFilter(); c1.type = "lowpass"; c1.frequency.value = P.cabLP * (tr ? 0.94 : 1); c1.Q.value = 0.9;
+      var c2 = c.createBiquadFilter(); c2.type = "lowpass"; c2.frequency.value = P.cabLP * 1.25; c2.Q.value = 0.5;
+      var res = c.createBiquadFilter(); res.type = "peaking"; res.frequency.value = 115; res.Q.value = 1.2; res.gain.value = 3;
+      var sc = c.createBiquadFilter(); sc.type = "peaking"; sc.frequency.value = P.scoop[0]; sc.Q.value = 0.8; sc.gain.value = P.scoop[1];
+      var hp2 = c.createBiquadFilter(); hp2.type = "highpass"; hp2.frequency.value = 80;
+      var mk = c.createGain(); mk.gain.value = P.lvl / (P.clean ? 1 : 1);
+      c1.connect(c2); c2.connect(res); res.connect(sc); sc.connect(hp2); hp2.connect(mk); mk.connect(out);
+      // amp: pre-emphasis → gain → clipping
+      var sh = c.createWaveShaper(); sh.curve = gtrCurve(c, P.asym); sh.oversample = "4x"; sh.connect(c1);
+      var pre = c.createGain(); pre.gain.value = (1 + drive * P.gain) / 4; pre.connect(sh);
+      var hump = c.createBiquadFilter(); hump.type = "peaking"; hump.frequency.value = P.hump[0]; hump.Q.value = 0.7; hump.gain.value = P.hump[1]; hump.connect(pre);
+      var phi = c.createBiquadFilter(); phi.type = "highpass"; phi.frequency.value = P.preHP; phi.connect(hump);
+      // pick / pickup tone (palm mute = dark and short)
+      var pk = c.createBiquadFilter(); pk.type = "lowpass"; pk.Q.value = palm ? 1.2 : 0.7;
+      pk.frequency.setValueAtTime(palm ? 700 + vel * 600 : Math.min(15000, 2200 + vel * vel * 6500 + stroke * 300), t);
+      if (!palm) pk.frequency.setTargetAtTime(palm ? 600 : 1600 + vel * 1800, t + 0.02, 0.35);
+      pk.connect(phi);
+      P.notes.forEach(function (iv, k) {
+        var ks = ksBuffer(c, mr + iv), s = c.createBufferSource(); s.buffer = ks.buf;
+        var cents = (tr ? 4 : -3) + (k ? 1.5 * k : 0);
+        s.playbackRate.setValueAtTime(ks.rate * frac, t + delay);
+        if (s.detune) {
+          s.detune.setValueAtTime(cents + (CUR ? 9 * vel : 0), t + delay); // a hard pick bends the string sharp for a moment
+          if (CUR) s.detune.setTargetAtTime(cents, t + delay + 0.005, 0.03);
+          if (CUR && P.vib && dur > 0.45 && iv === 0) { // finger vibrato on held notes
+            var lfo = c.createOscillator(); lfo.frequency.value = 5.2 + stroke * 0.4;
+            var lg = c.createGain(); lg.gain.setValueAtTime(0, t); lg.gain.setValueAtTime(0, t + 0.3); lg.gain.linearRampToValueAtTime(14 * Math.min(FEEL_A, 1.3), t + 0.6);
+            lfo.connect(lg); lg.connect(s.detune); lfo.start(t); v.nodes.push(lfo);
+          }
+        }
+        s.connect(gainTo(c, (k ? 0.7 : 1) / Math.sqrt(P.notes.length), pk)); s.start(t + delay); v.nodes.push(s);
+      });
+      // pick noise (goes through the amp, like the real thing)
+      var nb = c.createBufferSource(); nb.buffer = noise(c);
+      var nbp = c.createBiquadFilter(); nbp.type = "bandpass"; nbp.frequency.value = 2800 + stroke * 600; nbp.Q.value = 1.2;
+      var ng = c.createGain(); ng.gain.setValueAtTime(0.18 * vel, t + delay); ng.gain.exponentialRampToValueAtTime(0.0005, t + delay + 0.012);
+      nb.connect(nbp); nbp.connect(ng); ng.connect(phi); nb.start(t + delay); v.nodes.push(nb);
+    }
+    var maxLen = 2.3 / (ksBuffer(c, mr).rate * frac);
+    var hold = palm ? Math.min(dur, 0.12) : dur;
+    var end = Math.min(t + maxLen, env(v, t, hold, 1 * (P.clean ? 0.55 + 0.45 * vel : 0.82 + 0.18 * vel), 0.002, palm ? 0.2 : 1, palm ? 0.05 : 6, palm ? 0.03 : 0.07));
+    return finish(v, end);
   }
 
   var VOICES = {
@@ -456,6 +536,68 @@
       return finish(v, end);
     },
     /* ================= classic voices ================= */
+    /* ================= Rock (all synthesized) =================
+       Electric guitars: Karplus–Strong strings → pick tone → (amp) pre-emphasis + gain → tube-style clipping →
+       speaker-cab filtering. Distorted parts are double-tracked (two takes panned L/R, a few cents and ms apart) like a
+       real rock record. Short, soft notes are palm-muted. With Feel on: pick attack goes sharp then settles, alternate
+       strokes differ a little, long notes get finger vibrato. One key on "Power Chords" plays root + 5th + octave
+       through ONE amp (the real power-chord growl comes from the strings distorting together). */
+    odgtr: function (c, dest, m, t, dur, vel, o) { return gtrVoice(c, dest, m, t, dur, vel, o, GTR.od); },
+    distgtr: function (c, dest, m, t, dur, vel, o) { return gtrVoice(c, dest, m, t, dur, vel, o, GTR.dist); },
+    powerchord: function (c, dest, m, t, dur, vel, o) { return gtrVoice(c, dest, m, t, dur, vel, o, GTR.power); },
+    cleangtr: function (c, dest, m, t, dur, vel, o) { return gtrVoice(c, dest, m, t, dur, vel, o, GTR.clean); },
+    /* rock bass guitar: picked string (KS) + round sub, through a lightly driven bass amp; played mono like a bassist */
+    rockbass: function (c, dest, m, t, dur, vel, o) {
+      var v = voiceBase(c, dest, t), mr = Math.round(m), f = mf(m), ks = ksBuffer(c, mr), fr = Math.pow(2, (m - mr) / 12);
+      var cab = c.createBiquadFilter(); cab.type = "lowpass"; cab.frequency.value = 2600 + vel * 1600; cab.Q.value = 0.8; cab.connect(v.out);
+      var hp = c.createBiquadFilter(); hp.type = "highpass"; hp.frequency.value = 38; hp.connect(cab);
+      var amp = driveStage(c, hp, 0.15 + o.drive * 0.7, 0.3);
+      var pick = c.createBiquadFilter(); pick.type = "lowpass"; pick.frequency.value = 700 + vel * vel * 2600; pick.Q.value = 0.7; pick.connect(amp);
+      var s = c.createBufferSource(); s.buffer = ks.buf; s.playbackRate.setValueAtTime(ks.rate * fr, t); s.connect(gainTo(c, 0.9, pick)); s.start(t); v.nodes.push(s);
+      var sub = osc(v, c, "sine", f, t, 0, gainTo(c, 0.55, amp));
+      var bf = CUR ? bassFeel(v, c, "rockbass", m, f, t, dur, vel, [sub]) : null;
+      var maxLen = 2.4 / (ks.rate * fr) - 0.02;
+      var end = Math.min(t + Math.max(maxLen, 0.3), env(v, t, dur, 0.68 * (0.55 + 0.45 * vel), bf && bf.slide ? 0.01 : 0.003, 0.55, 0.9, 0.07));
+      return finish(v, end);
+    },
+    /* rock organ: full drawbars + 3rd-harmonic percussion and key click, driven preamp, fast Leslie (tremolo,
+       vibrato and the horn swinging left/right) */
+    rockorgan: function (c, dest, m, t, dur, vel, o) {
+      var v = voiceBase(c, dest, t), f = mf(m) / 2, per = wave(c, "rockorgan", [1, 1, 0.85, 0.85, 0.35, 0.55, 0.2, 0.45, 0.2]);
+      var pn = c.createStereoPanner ? c.createStereoPanner() : null, tail = pn || v.out; if (pn) pn.connect(v.out);
+      var trem = c.createGain(); trem.gain.value = 0.82; trem.connect(tail);
+      var lp = c.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = 6200; lp.connect(trem);
+      var pre = driveStage(c, lp, 0.2 + o.drive * 0.8, 0.22);
+      var a = osc(v, c, null, f, t, -2, pre, per), b = osc(v, c, null, f, t, 2.5, pre, per);
+      var pc = c.createGain(); pc.gain.setValueAtTime(0.35 * (0.6 + 0.4 * vel), t); pc.gain.setTargetAtTime(0, t + 0.002, 0.09); pc.connect(pre); // percussion (3rd)
+      osc(v, c, "sine", mf(m) * 3, t, 0, pc);
+      var kc = c.createGain(); kc.gain.setValueAtTime(0.06, t); kc.gain.setTargetAtTime(0, t, 0.003); kc.connect(v.out);
+      osc(v, c, "square", mf(m) * 6, t, 0, kc);
+      var rate = 6.4 + fh(Math.round(t * 100), m, 1) * 0.25, lfo = c.createOscillator(); lfo.frequency.value = rate; // Leslie fast
+      var tg = c.createGain(); tg.gain.value = 0.18; lfo.connect(tg); tg.connect(trem.gain);
+      var vg = c.createGain(); vg.gain.value = 7; lfo.connect(vg); vg.connect(a.detune); vg.connect(b.detune);
+      if (pn) { var pg = c.createGain(); pg.gain.value = 0.55; lfo.connect(pg); pg.connect(pn.pan); }
+      lfo.start(t); v.nodes.push(lfo);
+      var end = env(v, t, dur, 0.52 * (0.7 + 0.3 * vel), 0.006, 0.95, 0.3, 0.08);
+      return finish(v, end);
+    },
+    /* rock piano: bright, hard-hammered upright with a touch of honky-tonk detune and a little grit */
+    rockpiano: function (c, dest, m, t, dur, vel, o) {
+      var v = voiceBase(c, dest, t), f = mf(m), per = wave(c, "rockpiano", [1, 0.75, 0.5, 0.38, 0.3, 0.22, 0.17, 0.12, 0.09, 0.07, 0.05, 0.04]);
+      var lp = c.createBiquadFilter(); lp.type = "lowpass"; lp.Q.value = 0.5; lp.connect(v.out);
+      var bright = 1800 + vel * vel * 7000 + f * 2.5;
+      lp.frequency.setValueAtTime(Math.min(17000, bright), t);
+      lp.frequency.setTargetAtTime(Math.min(16000, 900 + f * 3), t + 0.01, 0.28 + 0.35 * (1 - m / 108));
+      osc(v, c, null, f, t, -6, lp, per); osc(v, c, null, f, t, 0, lp, per); osc(v, c, null, f, t, 7, lp, per); // three strings, slightly out
+      var nb = c.createBufferSource(); nb.buffer = noise(c);
+      var bp = c.createBiquadFilter(); bp.type = "bandpass"; bp.frequency.value = Math.min(10000, f * 6 + 1800); bp.Q.value = 0.8;
+      var ng = c.createGain(); ng.gain.setValueAtTime(0.2 * vel, t); ng.gain.exponentialRampToValueAtTime(0.0005, t + 0.03);
+      nb.connect(bp); bp.connect(ng); ng.connect(v.out); nb.start(t); v.nodes.push(nb);
+      if (CUR) pianoFeel(v, c, m, f, t, dur, vel, lp);
+      var decay = 1.1 + 2.8 * (1 - (m - 21) / 88);
+      var end = env(v, t, dur, 0.19 * (0.35 + 0.65 * vel), 0.002, 0.0001, decay / 3.2, 0.22);
+      return finish(v, end);
+    },
     grand: function (c, dest, m, t, dur, vel) {
       var v = voiceBase(c, dest, t), f = mf(m), per = wave(c, "piano", PIANO_AMPS);
       var lp = c.createBiquadFilter(); lp.type = "lowpass"; lp.Q.value = 0.4; lp.connect(v.out);

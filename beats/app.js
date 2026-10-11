@@ -337,11 +337,11 @@
     } catch (e) { return false; }
   }
   /* the kit's 2-bar starter pattern, tempo and swing into the current slot */
-  function loadStarter(id) {
-    var k = kitDef(id), st = D.starter(k), s = curSlot();
+  function loadStarter(id, pre) {
+    var k = kitDef(id), st = D.starter(k, pre), s = curSlot();
     s.len = st.len; s.pattern = st.pattern; s.vel = st.vel; s.note = st.note; s.slide = st.slide;
     bindSlot();
-    S.bpm = k.bpm;
+    S.bpm = (pre && pre.bpm) || k.bpm;
     S.swing = swingFromMpc(k.swing);
     S.kitSwing[k.id] = S.swing;
     S.page = 0;
@@ -2072,7 +2072,7 @@
       lv.textContent = "";
     }
   }
-  var CAT_COLOR = { hhlib: "#fb923c", boombap: "#f5b301", trap: "#f43f5e", afro: "#34d399", club: "#22d3ee", rnb: "#a78bfa" };
+  var CAT_COLOR = { hhlib: "#fb923c", boombap: "#f5b301", trap: "#f43f5e", afro: "#34d399", club: "#22d3ee", rnb: "#a78bfa", rock: "#ef4444" };
   function refreshKitUI() {
     var k = kitDef(S.kit), cat = (D.CATS.filter(function (c) { return c.id === k.cat; })[0] || {}).name || "";
     $("kit-cat").textContent = cat;
@@ -2082,10 +2082,20 @@
     document.querySelectorAll(".kit-card").forEach(function (b) { b.classList.toggle("active", b.dataset.kit === S.kit); });
     $("swing").value = S.swing;
     $("swing-val").textContent = mpcSwing(S.swing) + "%";
+    grooveUI(k);
+  }
+  /* kits with groove presets (Rock, Hardcore Rock) get a "Groove…" picker next to Load starter */
+  function grooveUI(k) {
+    var sel = $("groove-pick"); if (!sel) return;
+    var pr = k.presets || [];
+    sel.hidden = !pr.length;
+    if (sel.dataset.kit === k.id) return;
+    sel.dataset.kit = k.id;
+    sel.innerHTML = '<option value="">Groove…</option>' + pr.map(function (p, i) { return '<option value="' + i + '">' + escapeHtml(p.name) + (p.bpm ? " · " + p.bpm : "") + "</option>"; }).join("");
   }
   /* the beat maker leans hip-hop: hip-hop kits and genres are listed first (every kit is still there) */
   var HIPHOP_KITS = ["trap26", "drill26", "dusty", "westcoast", "lofilib", "jerseylib", "qb", "buffalo", "lofi", "trap", "bkdrill", "ukdrill", "sexydrill", "pluggnb", "rage", "phonk", "rnb", "jersey"];
-  var CAT_ORDER = ["all", "hhlib", "boombap", "trap", "rnb", "afro", "club"];
+  var CAT_ORDER = ["all", "hhlib", "boombap", "trap", "rnb", "afro", "club", "rock"];
   function hipHopKits() {
     function r(k) { var i = HIPHOP_KITS.indexOf(k.id); return i === -1 ? 100 + D.KITS.indexOf(k) : i; }
     return D.KITS.slice().sort(function (a, b) { return r(a) - r(b); });
@@ -5704,6 +5714,16 @@
       $("bpm").value = S.bpm;
       refreshKitUI(); repaintSeq(); saveSession();
       toast(kitName(S.kit) + " starter · " + S.bpm + " BPM · swing " + mpcSwing(S.swing) + "%");
+    });
+    $("groove-pick").addEventListener("change", function () {
+      var k = kitDef(S.kit), pre = (k.presets || [])[+this.value];
+      this.value = "";
+      if (!pre) return;
+      if (playing && !arrangement()) stop();
+      loadStarter(S.kit, pre);
+      $("bpm").value = S.bpm;
+      refreshKitUI(); repaintSeq(); saveSession();
+      toast(k.name + " · " + pre.name + " · " + S.bpm + " BPM");
     });
     $("btn-clear-row").addEventListener("click", function () {
       var p = S.sel;

@@ -28,6 +28,8 @@
     if (!kit) return "tight";
     if (SWUNG[kit.cat] || SWUNG_ID[kit.id]) return "swing";
     if (kit.cat === "afro" || kit.id === "bouyon") return "afro";
+    if (kit.id === "hardrock") return "metal"; // triggered-tight double kick, hard snare
+    if (kit.cat === "rock") return "rock";     // live drummer: big backbeat a hair late, ride/hat accents on the beat
     return "tight"; // trap, drill, club, techno, jersey
   }
   /* drum role from the pad definition */
@@ -47,6 +49,8 @@
   var T = {
     swing: { kick: [0, 3, 4, 0.05, 0], snare: [8, 3, 7, 0.06, 0], hat: [3, 4, 11, 0.07, 0.1], ohat: [3, 3, 6, 0.05, 0.04], perc: [2, 5, 10, 0.07, 0.06], cym: [0, 3, 5, 0.04, 0], keys: [4, 3, 0, 0.04, 0] },
     tight: { kick: [0, 1.2, 3, 0.04, 0], snare: [1.5, 1.2, 6, 0.05, 0], hat: [0, 0.9, 10, 0.06, 0.07], ohat: [0, 0.8, 6, 0.05, 0.03], perc: [0, 1.5, 9, 0.06, 0.05], cym: [0, 1, 4, 0.04, 0], keys: [0, 1, 0, 0.03, 0] },
+    rock: { kick: [0, 2.4, 4, 0.06, 0], snare: [4, 2.2, 6, 0.05, 0], hat: [0, 2.6, 10, 0.08, 0.13], ohat: [0, 2.2, 6, 0.05, 0.05], perc: [1.5, 3, 9, 0.07, 0.04], cym: [0, 2.2, 5, 0.05, 0.08], keys: [2, 2.5, 0, 0.04, 0] },
+    metal: { kick: [0, 0.8, 2, 0.025, 0], snare: [1, 1.2, 5, 0.04, 0], hat: [0, 1.2, 9, 0.06, 0.1], ohat: [0, 1.2, 6, 0.05, 0.04], perc: [0, 1.6, 8, 0.05, 0.03], cym: [0, 1.4, 5, 0.04, 0.06], keys: [0, 1.2, 0, 0.03, 0] },
     afro: { kick: [0, 2, 4, 0.05, 0], snare: [3, 2.5, 7, 0.06, 0], hat: [-2, 3, 11, 0.07, 0.09], ohat: [-1, 2.5, 6, 0.05, 0.04], perc: [-1, 4, 12, 0.08, 0.08], cym: [0, 2, 5, 0.04, 0], keys: [1, 2, 0, 0.04, 0] }
   };
   /* metric accent: quarter > 8th > 16th (how a drummer rides hats) */
@@ -88,7 +92,7 @@
   function liveDrum(mode, kit, def, pad, vel) { liveN++; return drum({ mode: mode, kit: kit, def: def, k: liveN, pad: pad, vel: vel, live: true }); }
   /* ghost note before a backbeat (Live feel, swung styles): returns velocity or 0 */
   function ghost(mode, kit, def, k, step, hasNow, nextIsBackbeat) {
-    if (norm(mode) !== "live" || hasNow || !nextIsBackbeat || def.v !== "snare" || style(kit) === "tight") return 0;
+    if (norm(mode) !== "live" || hasNow || !nextIsBackbeat || def.v !== "snare" || style(kit) === "tight" || style(kit) === "metal") return 0;
     return h(k, 7, 99) > 0.1 ? 0.26 + 0.06 * h(k, 3, 5) : 0;
   }
   /* Piano Roll / chord notes. notes = [{ t, v, p, mono }] starting together (same tick) → modifies t / v in place.
@@ -116,6 +120,8 @@
     horn: { sw: 0.06, vt: 1, rel: 1.2 }, whine: { sw: 0.05, rel: 1.2 }, lead: { sw: 0.05, vt: 1 }, trapflute: { sw: 0.06, rel: 1.15 },
     trappluck: { vt: 1 }, gtrpluck: { vt: 1, rel: 1.3 }, pluck: { vt: 1, rel: 1.2 }, arp: { vt: 1 }, dbell: { rel: 1.2 }, bell: { rel: 1.2 },
     voxah: { sw: 0.05 }, voxoo: { sw: 0.05 },
+    odgtr: { vt: 1, rel: 1.15 }, distgtr: { vt: 1 }, powerchord: { vt: 1 }, cleangtr: { vt: 1, rel: 1.3 }, rockbass: { vt: 1, rel: 1.2 },
+    rockorgan: { rel: 1.1 }, rockpiano: { rel: 1.5, pno: 1 },
     "808": { rel: 1.25 }, reese: { rel: 1.2 }, bass: { rel: 1.3 }, synthbass: { vt: 1, rel: 1.2 }
   };
   function art(id) { return ART[id] || null; }

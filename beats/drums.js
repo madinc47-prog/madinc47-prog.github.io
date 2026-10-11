@@ -1033,12 +1033,88 @@
         rows: { 0: "X---X---X---X---X---X---X---X---", 4: "--x---x---x---x---x---x---x-x-x-", 12: "x--x--x---x--x--x--x--x---x-x---",
           13: "--x---x-x---x-x---x---x-x---xx--", 10: "xoxoxoxoxoxoxoxoxoxoxoxoxoxoxoxo" }
       }
+    },
+    /* ---- Rock (synthesized shells + CC0 acoustic-kit layers from samples/lib, credited in samples/lib/CREDITS.md) ---- */
+    {
+      id: "rock", name: "Rock", cat: "rock", genre: "Rock / pop-rock (live kit)", bpm: 120, swing: 50,
+      desc: "Live rock kit: 24\" kick, deep snare in a room, hats, ride, crash, three toms. Parallel-squashed like a rock record.",
+      color: {}, bus: { thr: -15, ratio: 3, atk: 0.008, rel: 0.16, smash: 0.42, drive: 1.3 },
+      pads: [
+        P("Rock Kick", "drums", "kick", { f0: 125, f1: 58, fEnd: 52, pitchT: 0.03, dec: 0.32, drive: 2, click: 0.5, clickF: 4200, knock: 0.35, knockF: 110, hold: 0.01 }, { rr: 3, db: 0, L: [lay("lib/kick/tb-dw-24in.mp3", -3, { hp: 35 })], hum: 2 }),
+        P("Kick (soft)", "drums", "kick", { f0: 115, f1: 56, fEnd: 50, pitchT: 0.03, dec: 0.26, drive: 1.6, click: 0.25, knock: 0.25, hold: 0.005 }, { rr: 2, db: -6, L: [lay("lib/kick/dv-dw-open.mp3", -4, { hp: 40 })] }),
+        P("Rock Snare", "drums", "snare", { tone1: 190, tone2: 340, bodyDec: 0.12, noiseDec: 0.24, crack: 0.7, room: 0.32, roomLen: 0.5, drive: 2 }, { rr: 3, db: 0, L: [lay(["lib/snare/tb-snare-to-god.mp3", "lib/snare/dv-dw-comp.mp3", "lib/snare/tb-snare-to-god.mp3"], -2, { hp: 90 })], hum: 3 }),
+        P("Snare Rimshot", "drums", "snare", { tone1: 240, tone2: 460, bodyDec: 0.1, noiseDec: 0.22, crack: 1, crackF: 2800, room: 0.32, roomLen: 0.5, drive: 2.6 }, { rr: 2, db: -1, L: [lay("lib/snare/tb-hard-day.mp3", -2, { hp: 110 })] }),
+        P("Snare Ghost", "drums", "snare", { tone1: 200, tone2: 350, bodyDec: 0.05, noiseDec: 0.1, crack: 0.15, room: 0.15, lp: 7000 }, { rr: 3, db: -12, L: [lay("lib/snare/tb-center.mp3", -6, { hp: 150, lp: 7000 })], hum: 4 }),
+        rim("Cross-stick", -6, { f: 1500, L: [lay("sidestick_retro", -2, { hp: 300 })] }),
+        closedHat("Closed Hat", -9, { dec: 0.06, bright: 0.9, L: [lay("lib/hat/cl-dry.mp3", -5, { hp: 2200 })], hum: 4, chick: 0.12 }),
+        openHat("Half-open Hat", -10, { dec: 0.2, L: [lay("lib/hat/dv-semi.mp3", -4, { hp: 1800 })] }),
+        openHat("Open Hat", -11, { dec: 0.55, L: [lay("openhat_retro", -5, { hp: 2000 })] }),
+        closedHat("Hat Pedal", -13, { dec: 0.03, chick: 0.6, lp: 9000 }),
+        P("Ride", "hats", "crash", { dec: 2.4, bell: 620, bellAmt: 0.1, noiseAmt: 0.45, hp: 3800, bright: 0.95 }, { db: -11, pan: 0.25, L: [lay("lib/cym/dv-ride.mp3", -2, { hp: 500 })], len: 2.6 }),
+        P("Ride Bell", "hats", "crash", { dec: 1.6, bell: 780, bellAmt: 0.6, noiseAmt: 0.2, hp: 5000 }, { db: -11, pan: 0.25, L: [lay("lib/cym/dv-ride.mp3", -8, { hp: 1500 })], len: 1.9 }),
+        P("Crash", "hats", "crash", { dec: 2.2, bright: 0.9 }, { db: -9, pan: -0.3, L: [lay("lib/cym/tb-crash.mp3", -2, { hp: 300 })], len: 2.6 }),
+        P("High Tom", "perc", "tom", { f: 210, dec: 0.45, drive: 1.8 }, { rr: 2, db: -4, pan: -0.25, L: [lay("lib/tom/tb-chosen.mp3", -3, { rate: 1.12, hp: 80 })] }),
+        P("Mid Tom", "perc", "tom", { f: 150, dec: 0.55, drive: 1.8 }, { rr: 2, db: -4, pan: 0.05, L: [lay("lib/tom/tb-chosen.mp3", -3, { rate: 0.9, hp: 70 })] }),
+        P("Floor Tom", "perc", "tom", { f: 98, dec: 0.75, drive: 1.8 }, { rr: 2, db: -3, pan: 0.3, L: [lay("lib/tom/tb-gravity.mp3", -2, { hp: 50 })], len: 0.9 })
+      ],
+      starter: {
+        rows: { 0: "X-------X-x-----X-------X-x-----", 2: "----X-------X-------X-------X---", 4: "-------o-----o---------o--------",
+          6: "X-x-X-x-X-x-X-x-X-x-X-x-X-x-----", 12: "X-------------------------------", 13: "----------------------------xx--", 14: "------------------------------x-", 15: "-------------------------------x" }
+      },
+      presets: [
+        { name: "Straight 8ths", rows: { 0: "X-------X-x-----X-------X-x-----", 2: "----X-------X-------X-------X---", 4: "-------o-----o---------o--------", 6: "X-x-X-x-X-x-X-x-X-x-X-x-X-x-X-x-", 12: "X-------------------------------" } },
+        { name: "Four on the floor", rows: { 0: "X---X---X---X---X---X---X---X---", 2: "----X-------X-------X-------X---", 8: "--x---x---x---x---x---x---x---x-", 6: "x---x---x---x---x---x---x---x---", 12: "X-------------------------------" } },
+        { name: "Ride groove", rows: { 0: "X-----x-X-------X-----x-X-x-----", 2: "----X-------X-------X-------X---", 10: "X-x-X-x-X-x-X-x-X-x-X-x-X-x-X-x-", 11: "X-------X-------X-------X-------", 9: "--x---x---x---x---x---x---x---x-" } },
+        { name: "Half-time", bpm: 140, rows: { 0: "X-----x---x-----X-----x---x--x--", 2: "--------X---------------X-------", 4: "------------o--o------------o---", 6: "X-x-X-x-X-x-X-x-X-x-X-x-X-x-X-x-", 12: "X-------------------------------" } },
+        { name: "Tom groove", rows: { 0: "X-----X---X-----X-----X---X-----", 2: "----X-------X-------X-------X---", 15: "x-x---x-x-x---x-x-x---x-x-x---x-", 14: "----x-------x-------x-------x---", 9: "--x---x---x---x---x---x---x---x-" } },
+        { name: "Punk 2-beat", bpm: 180, rows: { 0: "X---X---X---X---X---X---X---X---", 2: "--X---X---X---X---X---X---X---X-", 6: "x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-", 12: "X-------------------------------" } },
+        { name: "Ballad (cross-stick)", bpm: 76, rows: { 0: "X-------X-x-----X-------X-------", 5: "----x-------x-------x-------x---", 6: "x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-", 12: "X-------------------------------" } },
+        { name: "Fill: toms down", rows: { 0: "X-------X-x-----X---------------", 2: "----X-------X-------X-x-X-------", 6: "X-x-X-x-X-x-X-x-X-x-X-----------", 13: "------------------------xx------", 14: "--------------------------xx----", 15: "----------------------------x-x-", 12: "X-------------------------------" } }
+      ]
+    },
+    {
+      id: "hardrock", name: "Hardcore Rock", cat: "rock", genre: "Hardcore / metal (double kick)", bpm: 170, swing: 50,
+      desc: "Tight, clicky double kick, cracking metal snare, china, splash, stack, two crashes. Built for fast double-kick parts.",
+      color: {}, bus: { thr: -15, ratio: 4, atk: 0.003, rel: 0.08, smash: 0.5, drive: 1.6 },
+      pads: [
+        P("Metal Kick L", "drums", "kick", { f0: 150, f1: 62, fEnd: 56, pitchT: 0.02, dec: 0.19, drive: 2.5, click: 0.9, clickF: 4500, clickHP: true, clickDec: 0.008, knock: 0.25, knockF: 120, hold: 0.004 }, { rr: 3, db: 0, L: [lay("lib/kick/tb-dw-24in.mp3", -6, { hp: 50 })], hum: 1, pan: -0.04 }),
+        P("Metal Kick R", "drums", "kick", { f0: 152, f1: 62, fEnd: 56, pitchT: 0.02, dec: 0.19, drive: 2.5, click: 0.85, clickF: 4600, clickHP: true, clickDec: 0.008, knock: 0.25, knockF: 121, hold: 0.004 }, { rr: 3, db: -0.5, L: [lay("lib/kick/tb-dw-24in.mp3", -6, { hp: 50 })], hum: 1, pan: 0.04 }),
+        P("Metal Snare", "drums", "snare", { tone1: 230, tone2: 420, bodyDec: 0.08, noiseDec: 0.2, crack: 0.9, crackF: 2600, room: 0.25, roomLen: 0.4, drive: 3 }, { rr: 3, db: 0, L: [lay(["lib/snare/tb-puckin.mp3", "lib/snare/tb-snot-shot.mp3", "lib/snare/tb-puckin.mp3"], -2, { hp: 120 })], hum: 1 }),
+        P("Snare Rimshot", "drums", "snare", { tone1: 260, tone2: 480, bodyDec: 0.08, noiseDec: 0.2, crack: 1, crackF: 3000, room: 0.25, drive: 3.4 }, { rr: 2, db: -0.5, L: [lay("lib/snare/tb-hard-day.mp3", -2, { hp: 130 })] }),
+        P("Snare Ghost", "drums", "snare", { tone1: 230, tone2: 400, bodyDec: 0.04, noiseDec: 0.09, crack: 0.2, room: 0.12, lp: 7500 }, { rr: 3, db: -12 }),
+        P("Stack", "hats", "crash", { dec: 0.35, trashy: true, bright: 1.2, hp: 3000 }, { db: -10, pan: 0.15, L: [lay("lib/cym/sa-trash-china.mp3", -6, { hp: 1500, rate: 1.4 })], len: 0.6 }),
+        closedHat("Closed Hat", -9, { dec: 0.05, L: [lay("lib/hat/cl-dry.mp3", -5, { hp: 2500 })] }),
+        openHat("Open Hat", -11, { dec: 0.45 }),
+        P("China", "hats", "crash", { dec: 1.4, trashy: true, bright: 1.1, hp: 2500 }, { db: -10, pan: 0.35, L: [lay("lib/cym/tb-china.mp3", -2, { hp: 300 })], len: 1.8 }),
+        P("Splash", "hats", "crash", { dec: 0.7, bright: 1.2, hp: 5000 }, { db: -11, pan: -0.2, L: [lay("lib/cym/dr-cymbal-19.mp3", -4, { hp: 800, rate: 1.3 })], len: 1 }),
+        P("Ride", "hats", "crash", { dec: 2.2, bell: 640, bellAmt: 0.12, noiseAmt: 0.45, hp: 3800 }, { db: -11, pan: 0.25, L: [lay("lib/cym/dv-ride.mp3", -2, { hp: 500 })], len: 2.4 }),
+        P("Ride Bell", "hats", "crash", { dec: 1.5, bell: 800, bellAmt: 0.7, noiseAmt: 0.2, hp: 5000 }, { db: -10, pan: 0.25, L: [lay("lib/cym/dv-ride.mp3", -8, { hp: 1500 })], len: 1.8 }),
+        P("Crash L", "hats", "crash", { dec: 2, bright: 0.95 }, { db: -9, pan: -0.35, L: [lay("lib/cym/tb-crash.mp3", -2, { hp: 300 })], len: 2.4 }),
+        P("Crash R", "hats", "crash", { dec: 1.8, bright: 1.05 }, { db: -9, pan: 0.35, L: [lay("lib/cym/dr-cymbal-19.mp3", -2, { hp: 300 })], len: 2.2 }),
+        P("Rack Tom", "perc", "tom", { f: 175, dec: 0.4, drive: 2.4 }, { rr: 2, db: -4, pan: -0.2, L: [lay("lib/tom/tb-chosen.mp3", -3, { hp: 80 })] }),
+        P("Floor Tom", "perc", "tom", { f: 92, dec: 0.6, drive: 2.4 }, { rr: 2, db: -3, pan: 0.3, L: [lay("lib/tom/tb-gravity.mp3", -2, { hp: 50 })], len: 0.8 })
+      ],
+      starter: {
+        rows: { 0: "x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-", 1: "-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x", 2: "----X-------X-------X-------X---",
+          12: "X-------------------------------", 10: "--x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-", 8: "--------------------------------" }
+      },
+      presets: [
+        { name: "Double-kick drive", rows: { 0: "x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-", 1: "-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x", 2: "----X-------X-------X-------X---", 10: "x---x---x---x---x---x---x---x---", 12: "X-------------------------------" } },
+        { name: "D-beat", bpm: 160, rows: { 0: "X-----x-X-------X-----x-X-------", 2: "----X-------X-------X-------X---", 12: "X---x---x---x---X---x---x---x---" } },
+        { name: "Blast beat", bpm: 190, rows: { 0: "x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-", 2: "-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x", 12: "x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-" } },
+        { name: "Breakdown (half-time)", bpm: 140, rows: { 0: "X--x--x---x--x--X--x--x---x-xx--", 1: "------------------------------xx", 2: "--------X---------------X-------", 8: "X-------X-------X-------X-------" } },
+        { name: "Gallop", bpm: 150, rows: { 0: "X-xxX-xxX-xxX-xxX-xxX-xxX-xxX-xx", 2: "----X-------X-------X-------X---", 6: "x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-", 12: "X-------------------------------" } },
+        { name: "Thrash skank", bpm: 200, rows: { 0: "X---X---X---X---X---X---X---X---", 2: "--X---X---X---X---X---X---X---X-", 6: "x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-x-", 12: "X-------------------------------" } },
+        { name: "Hardcore stomp", bpm: 120, rows: { 0: "X-X-----X-X-----X-X-----X-X--X--", 2: "----X-------X-------X-------X---", 5: "X---X---X---X---X---X---X---X---", 12: "X-------------------------------" } },
+        { name: "Fill: double-kick + toms", rows: { 0: "x-x-x-x-x-x-x-x-xxxxxxxxxxxxxxxx", 2: "----X-------X-------------------", 14: "----------------X-X-X-X---------", 15: "------------------------X-X-X-X-", 12: "X-------------------------------" } }
+      ]
+
     }
   ];
 
   var CATS = [
     { id: "all", name: "All" }, { id: "hhlib", name: "Hip-Hop Sample Kits" }, { id: "boombap", name: "Boom-Bap" }, { id: "trap", name: "Trap & Drill" },
-    { id: "afro", name: "Afro & Caribbean" }, { id: "club", name: "Club" }, { id: "rnb", name: "R&B & Lo-Fi" }
+    { id: "afro", name: "Afro & Caribbean" }, { id: "club", name: "Club" }, { id: "rnb", name: "R&B & Lo-Fi" }, { id: "rock", name: "Rock" }
   ];
   /* Lo-Fi Tape lives with R&B */
   KITS.splice(2, 0, {
@@ -1260,8 +1336,9 @@
 
   /* starter strings → steps (roll count), velocity, notes, slides. Legend: X accent · x hit · o ghost · r 32nd roll · t triplet roll */
   var VEL = { X: 1, x: 0.8, o: 0.45, r: 0.8, t: 0.8 };
-  function starter(kit) {
-    var st = kit.starter, L = 32, out = { len: L, pattern: [], vel: [], note: [], slide: [] };
+  function starter(kit, st) {
+    st = st || kit.starter;
+    var L = 32, out = { len: L, pattern: [], vel: [], note: [], slide: [] };
     for (var i = 0; i < 16; i++) {
       var str = (st.rows[i] || "").replace(/\s+/g, ""), pr = [], vr = [], nr = [], sr = [];
       for (var s = 0; s < L; s++) {
