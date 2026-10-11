@@ -313,7 +313,7 @@
     E.stopBuffer(); if (!CL.busy) $("clean-sheet").hidden = true;
     if (!hpWarned) {
       hpWarned = true;
-      toast((spk ? "🔈 Speaker mode: echo-cancel is on and the take gets cleaned after you stop. Headphones still sound best. " : "🎧 Headphones mode. ") + (bars ? "Count-in: " + bars + " bar" + (bars > 1 ? "s" : "") + "." : ""), 3600);
+      toast((spk ? "🔈 Speaker mode: the take is saved exactly as recorded (the mic will hear some of the beat; 🧹 Clean take is there if you want it). Headphones keep the beat out. " : "🎧 Headphones mode. ") + (bars ? "Count-in: " + bars + " bar" + (bars > 1 ? "s" : "") + "." : ""), 3600);
     }
     E.startRecord(P, from, pre, { speaker: spk }).then(function () {
       $("t-rec").classList.add("on"); $("t-play").classList.add("on"); $("t-in").hidden = false;
@@ -360,9 +360,8 @@
       playhead = playFrom;
       changed();
       if (silent) { toast(name + " was saved, but it is silent. " + MIC_SILENT, 9000); return; }
-      if (res.speaker && P.autoClean !== false && window.IPBVocalCleanClient) { cleanClip(made[0].id, { auto: true, mic: res.mic }); return; }
       if (proOn()) { proClip(made[0].id); return; }
-      toast(name + " recorded (" + buf.duration.toFixed(1) + "s). " + (res.speaker ? "Press 🧹 Clean take to remove the speaker bleed. " : "") + "Double-click it to edit.");
+      toast(name + " recorded (" + buf.duration.toFixed(1) + "s). " + (res.speaker ? "Saved as recorded. 🧹 Clean take is optional. " : "") + "Double-click it to edit.");
     });
   }
 
@@ -403,7 +402,7 @@
     var chip = $("rs-hpchip"); if (!chip) return;
     var on = onHeadphones();
     chip.className = "hp-chip " + (on ? "hp" : "spk");
-    chip.textContent = on ? "🎧 Headphones" + (hp.manual ? " (you said so)" : hp.label ? ": " + hp.label : "") : "🔈 Speaker mode" + (hp.manual === false ? " (you said so)" : "") + " · echo-cancel + Clean take";
+    chip.textContent = on ? "🎧 Headphones" + (hp.manual ? " (you said so)" : hp.label ? ": " + hp.label : "") : "🔈 Speaker mode" + (hp.manual === false ? " (you said so)" : "") + " · raw take (Clean take optional)";
     $("rs-hpon").checked = on;
     $("rs-autoclean").checked = P ? P.autoClean !== false : true;
     $("rs-autoclean").disabled = on;

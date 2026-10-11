@@ -2195,7 +2195,7 @@
     } else { vox.inMax = 0; vox.liveT0 = 0; vox.silentWarned = false; }
   }
   var MIC_SILENT = "Your mic is sending silence. Close any call or app using the mic (voice calls, WhatsApp, recorders), check Microphone access is ON in quick settings, then try again.";
-  function micWantsProcessing() { return hpMode() === "spk" && S.vox.aec; }
+  function micWantsProcessing() { return false; } // raw mic in every mode (no browser echo-cancel / noise suppression / auto gain)
   function openMic() {
     if (!window.isSecureContext || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       return Promise.reject({ name: "Unsupported" });
@@ -2375,9 +2375,8 @@
     vox.last = { L: L, R: R, V: V, frames: frames, sr: sr, title: btActive() ? bt.title : song ? song.title : "", mode: vox.takeMode || "hp", clean: null, lat: null,
       mic: vox.micSettings || null, spk: vox.takeMode === "spk" ? spkBeatGain() : 1 };
     applyMixer();
-    if (vox.last.mode === "spk" && S.vox.clean) cleanTake(vox.last);
-    else if (proOn()) proTake(vox.last);
-    else exportVocalMix(true);
+    if (proOn()) proTake(vox.last);
+    else exportVocalMix(true); // raw take: no automatic speaker-mode cleanup
     renderLastTake();
   }
   function vocalPeak(V) {
@@ -2539,7 +2538,7 @@
       txt = (hp.pref === "hp" ? "🎧 Headphones (confirmed)" : "🎧 Headphones detected") + " · monitoring " + (S.vox.monitor ? "on" : "off");
       tip = hp.pref === "hp" ? "You said you're on headphones: takes are recorded as-is, no cleanup." : "Detected: " + hp.label + ". Takes are recorded as-is, no cleanup.";
     } else {
-      txt = "🔈 Speaker mode · " + (S.vox.clean ? "take will be cleaned" : "take saved as recorded");
+      txt = "🔈 Speaker mode · take saved as recorded";
       tip = hp.pref === "spk" ? "You chose speaker mode." : hp.labels ? "No headphones detected (phones often can't tell). Tick “I'm on headphones” if you are." : "Headphones can't be detected until the mic is allowed. Tick “I'm on headphones” if you are.";
     }
     document.querySelectorAll(".js-hp-chip").forEach(function (el) { el.textContent = txt; el.title = tip; el.classList.toggle("hp", m === "hp"); el.classList.toggle("spk", m !== "hp"); });

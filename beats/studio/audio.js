@@ -199,9 +199,7 @@
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return Promise.reject(new Error("This browser cannot record from a microphone."));
     return ensure().then(function () {
       if (!E.hasWorklet) throw new Error("Recording needs AudioWorklet support (use an up-to-date browser).");
-      // Pro vocal on: the phone's auto-gain stays off (it pumps; the Pro vocal leveler evens the level instead)
-      var pro = !!window.VocalChain && window.VocalChain.enabled();
-      return navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: spk, noiseSuppression: spk, autoGainControl: spk && !pro, channelCount: 1 } })
+      return navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: 1 } }) // raw mic in every mode
         .catch(function (e) { if (e && (e.name === "OverconstrainedError" || e.name === "TypeError")) return navigator.mediaDevices.getUserMedia({ audio: true }); throw e; });
     }).then(function (stream) {
       var mic = {}; try { mic = stream.getAudioTracks()[0].getSettings() || {}; } catch (e) { /* ignore */ }
