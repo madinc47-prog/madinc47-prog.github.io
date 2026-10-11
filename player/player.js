@@ -2,14 +2,16 @@
 // Every module URL carries the same ?v= tag as player.js in index.html (and sw.js SHELL), so a deploy can never mix
 // old and new modules from the HTTP cache. Bump all of them together.
 import { saveTrack, listTracks, getTrack, deleteTrack, onMediaChange } from '../shared/media-store.js';
-import { createScene } from './scene.js?v=12';
-import { createViz, THEMES } from './viz.js?v=12';
-import { OUTFITS, OUTFIT_FOR_THEME } from './outfits.js?v=12';
-import { createEQ } from './eq.js?v=12';
-import { createHype } from './hype.js?v=12';
-import { createLadies } from './ladies.js?v=12';
-import { createShout } from './shout.js?v=12';
-import { fmt, hash, isAudioFile, titleFromName, makeCover, makeLabel, readTags, probeDuration, computePeaks } from './util.js?v=12';
+import { createScene } from './scene.js?v=13';
+import { createViz, THEMES } from './viz.js?v=13';
+import { OUTFITS, OUTFIT_FOR_THEME } from './outfits.js?v=13';
+import { createEQ } from './eq.js?v=13';
+import { createHype } from './hype.js?v=13';
+import { createLadies } from './ladies.js?v=13';
+import { createShout } from './shout.js?v=13';
+import { initPhoto } from './photo.js?v=13';
+import { td, TD } from './td.js?v=13';
+import { fmt, hash, isAudioFile, titleFromName, makeCover, makeLabel, readTags, probeDuration, computePeaks } from './util.js?v=13';
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -1156,6 +1158,8 @@ async function boot() {
     current = start; updateNowPlaying(start); renderList(); buildOrder(start.key);
     showBigPlay(`Play “${start.title}”`);
   } else { const first = visible()[0] || library[0]; if (first) { current = first; updateNowPlaying(first); renderList(); showBigPlay('Tap to drop the needle'); } else { renderList(); toast('No tracks yet: send a beat here from Beats or the DJ Booth, or add a file / URL.'); } }
+  try { initPhoto({ scene, toast, td }); } catch (e) { console.warn('[player] photo', e); }
+  if (TD) td('player ' + (document.querySelector('script[src*="player.js"]') || {}).src + ' · ' + innerWidth + 'x' + innerHeight);
   applyQualityMode(); requestAnimationFrame(frameLoop);
   window.__pf = { get deck() { return deck; }, get cued() { return cued; }, get outgoing() { return outgoing; }, get transition() { return transition; }, XF, xfPos, setXf, get slot() { return slot; }, get ctx() { return ctx; }, startTransition, get activeSlot() { return activeSlot; }, eq, hype, ladies, get current() { return current; }, F, scene, playItem, refreshLibrary, get library() { return library; }, next, S, setOutfit, setTheme, Q, setQuality, WD, watchdog, get pendingDeck() { return pendingDeck; }, get liveDecks() { return [...liveDecks]; }, pool, finishTransition };
 }

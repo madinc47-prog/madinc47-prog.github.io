@@ -1,6 +1,6 @@
 // Psycho Fingers Player — DJ booth scene (original layered SVG art, IK arms, choreography)
 // Two turntables (Deck A / Deck B) with a mixer + crossfader in the middle; the DJ stands behind the mixer.
-import { applyOutfit } from './outfits.js?v=12';
+import { applyOutfit } from './outfits.js?v=13';
 const NS = 'http://www.w3.org/2000/svg';
 const D2R = Math.PI / 180;
 const ease = {
@@ -189,6 +189,10 @@ const svgMarkup = `
         <path d="M-32,1 C-26,-4 -18,-4 -12,0 L-12,1.6 C-18,-1.2 -26,-1.2 -32,2.4Z M32,1 C26,-4 18,-4 12,0 L12,1.6 C18,-1.2 26,-1.2 32,2.4Z" fill="#160c07"/>
       </g>
       <path d="M-35,-11 C-28,-17 -17,-17 -9,-12 L-10,-8 C-18,-12 -27,-12 -34,-7Z M35,-11 C28,-17 17,-17 9,-12 L10,-8 C18,-12 27,-12 34,-7Z" fill="#0f0907"/>
+      <g id="photoFace" style="display:none"><clipPath id="clipFace"><path d="M0,-75 C35,-75 58,-50 58,-10 C58,25 50,52 30,66 C18,74 -18,74 -30,66 C-50,52 -58,25 -58,-10 C-58,-50 -35,-75 0,-75Z"/></clipPath>
+        <path d="M0,-75 C35,-75 58,-50 58,-10 C58,25 50,52 30,66 C18,74 -18,74 -30,66 C-50,52 -58,25 -58,-10 C-58,-50 -35,-75 0,-75Z" fill="#1a1410"/>
+        <image id="photoImg" href="" x="-58" y="-75" width="116" height="150" clip-path="url(#clipFace)" preserveAspectRatio="xMidYMid slice"/>
+        <path d="M0,-75 C35,-75 58,-50 58,-10 C58,25 50,52 30,66 C18,74 -18,74 -30,66 C-50,52 -58,25 -58,-10 C-58,-50 -35,-75 0,-75Z" fill="none" stroke="#000" stroke-opacity=".35" stroke-width="2"/></g>
       <g data-ov="hair" style="display:none"><path d="M-58,-14 C-62,-60 -34,-80 0,-80 C34,-80 62,-60 58,-14 C54,-36 40,-50 0,-52 C-40,-50 -54,-36 -58,-14Z" fill="#120c0a"/><path d="M-50,-40 C-30,-56 30,-56 50,-40" fill="none" stroke="#2a1d17" stroke-width="1.5" opacity=".6"/></g>
       <g data-ov="shades" style="display:none"><path d="M-36,-6 L-6,-6 C-6,8 -10,14 -22,14 C-34,14 -37,6 -36,-6Z M36,-6 L6,-6 C6,8 10,14 22,14 C34,14 37,6 36,-6Z" fill="#07080b" stroke="#c9ccd4" stroke-width="1.6"/><path d="M-6,-3 C-3,-6 3,-6 6,-3 M-36,-5 L-56,-8 M36,-5 L56,-8" stroke="#c9ccd4" stroke-width="2" fill="none"/><path d="M-30,-3 L-20,-3 M14,-3 L26,-3" stroke="#fff" stroke-opacity=".35" stroke-width="2"/></g>
       <g class="o-cap">
@@ -847,6 +851,8 @@ export function createScene(container) {
   return {
     svg, st, frame, anchors, loadRecord, cueRecord, dropNeedle, liftNeedle, needleRedrop, cancel, tween, flush, snapRecord,
     setQuality(level) { st.quality = level; },
+    /** own photo on the DJ's face (data/object URL) or null for the drawn face */
+    setPhoto(url) { const pf = svg.querySelector('#photoFace'), im = svg.querySelector('#photoImg'); if (!pf || !im) return; if (url) { im.setAttribute('href', url); pf.style.display = ''; } else { pf.style.display = 'none'; im.setAttribute('href', ''); } svg.classList.toggle('has-photo', !!url); },
     setOutfit(id) { return applyOutfit(svg, id); },
     setXfader(v) { st.xf = Math.max(0, Math.min(1, v)); },
     setActive(d) { st.active = d === 'B' ? 'B' : 'A'; },
