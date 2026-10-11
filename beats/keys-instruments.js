@@ -419,6 +419,7 @@
     },
     /* hip-hop horn stab: saw section + octave trumpet layer, brassy filter "blat", scoop, saturation (modern, not orchestral) */
     horn: function (c, dest, m, t, dur, vel) {
+      if (CUR) return hornLive(c, dest, m, t, dur, vel);
       var v = voiceBase(c, dest, t), f = mf(m);
       var lp = c.createBiquadFilter(); lp.type = "lowpass"; lp.Q.value = 1.3; lp.connect(v.out);
       lp.frequency.setValueAtTime(f * 1.2, t); lp.frequency.linearRampToValueAtTime(Math.min(13000, f * (5 + vel * 6)), t + 0.035);
@@ -614,6 +615,38 @@
     if (vel > 0.85 && !legato) { g.linearRampToValueAtTime(pk * 1.15, t + 0.035); g.setTargetAtTime(pk * 0.88, t + 0.04, 0.12); } // sforzando bite
     else { g.linearRampToValueAtTime(pk * 0.9, t + a); g.setTargetAtTime(pk, t + a, 0.4); } // swell into the note
     g.setTargetAtTime(0, off, rel / 4);
+    return finish(v, off + rel * 1.6 + 0.05);
+  }
+  /* Feel brass: a horn section played with breath. Breath noise leads the tone, the lips "blat" (filter opens
+     fast and far on loud notes, slowly and less on soft ones), soft long notes swell (crescendo), long notes get a
+     late lip vibrato, loud short stabs end with a fall (pitch drops as the player lets go), every player scoops in
+     slightly differently. */
+  function hornLive(c, dest, m, t, dur, vel) {
+    var v = voiceBase(c, dest, t), f = mf(m), longN = dur > 0.45, fall = vel > 0.82 && dur < 0.3;
+    var lp = c.createBiquadFilter(); lp.type = "lowpass"; lp.Q.value = 1.2; lp.connect(v.out);
+    var open = Math.min(13000, f * (3 + vel * 8)), rise = 0.02 + 0.09 * (1 - vel);
+    lp.frequency.setValueAtTime(f * 1.1, t); lp.frequency.linearRampToValueAtTime(open, t + rise);
+    lp.frequency.setTargetAtTime(Math.min(8000, f * (2 + 1.6 * vel) + 400), t + rise + 0.02, 0.25);
+    var body = c.createBiquadFilter(); body.type = "peaking"; body.frequency.value = 1200; body.Q.value = 0.9; body.gain.value = 3 * vel; body.connect(lp);
+    var oscs = [];
+    [[-12, -0.5, 0.97], [0, 0, 0.975], [10, 0.5, 0.965]].forEach(function (d, i) {
+      var o = osc(v, c, "sawtooth", f, t, d[0], gainTo(c, 0.34, pan(c, d[1], body))); o.__sc = d[2] - 0.004 * fh(m, i, Math.round(t * 100)); oscs.push(o);
+    });
+    var tr = osc(v, c, "sawtooth", f * 2, t, 4, gainTo(c, 0.06 + 0.1 * vel, pan(c, 0.2, body))); tr.__mul = 2; tr.__sc = 0.975; oscs.push(tr);
+    oscs.forEach(function (x, i) {
+      var mm = x.__mul || 1; x.frequency.setValueAtTime(f * mm * x.__sc, t); x.frequency.exponentialRampToValueAtTime(f * mm, t + 0.04 + 0.02 * i);
+      if (fall) { x.frequency.setValueAtTime(f * mm, t + dur); x.frequency.exponentialRampToValueAtTime(f * mm * 0.8, t + dur + 0.16); }
+    });
+    if (longN) { var vib = c.createOscillator(); vib.frequency.value = 5.3; var vg = c.createGain(); vg.gain.setValueAtTime(0, t); vg.gain.setValueAtTime(0, t + 0.35); vg.gain.linearRampToValueAtTime(9, t + 0.8);
+      vib.connect(vg); oscs.forEach(function (o) { vg.connect(o.detune); }); vib.start(t); v.nodes.push(vib); }
+    var bp = c.createBiquadFilter(); bp.type = "bandpass"; bp.frequency.value = Math.min(5000, f * 3 + 900); bp.Q.value = 1.2;
+    var ng = c.createGain(); ng.gain.setValueAtTime(0, t); ng.gain.linearRampToValueAtTime(0.05 * (0.4 + vel), t + 0.012); ng.gain.setTargetAtTime(0.004, t + 0.03, 0.05);
+    ng.gain.setTargetAtTime(0, t + dur, 0.05); bp.connect(ng); ng.connect(v.out); noiseSrc(v, c, t, bp);
+    var g = v.out.gain, pk = 0.29 * (0.5 + 0.5 * vel), off = t + Math.max(0.03, dur), rel = fall ? 0.2 : 0.16;
+    g.setValueAtTime(0, t);
+    if (longN && vel < 0.65) { g.linearRampToValueAtTime(pk * 0.45, t + 0.06); g.linearRampToValueAtTime(pk * 0.95, t + Math.min(dur, 0.9)); } // swell
+    else { g.linearRampToValueAtTime(pk, t + 0.012 + 0.03 * (1 - vel)); g.setTargetAtTime(pk * (longN ? 0.7 : 0.55), t + 0.05, 0.2); }
+    g.setTargetAtTime(0, off, rel / (fall ? 2 : 4));
     return finish(v, off + rel * 1.6 + 0.05);
   }
   /* vocal chop: doubled saw "vocal folds" (scoop + vibrato) through parallel formant band-passes, plus breath */
