@@ -19,12 +19,12 @@
       bleed: { on: false }, nr: { on: false }, gate: { on: false },
       lowcut: { on: false, f: 90 },
       eq: { on: false, low: 0, mid: 0, midF: 2500, high: 0 },
-      comp: { on: false, amt: 0.4 },
+      comp: { on: false, amt: 0.5 },
       deess: { on: false, amt: 0.5 },
       sat: { on: false, amt: 0.3 },
       chorus: { on: false, mix: 0.35 },
       delay: { on: false, div: "1/8d", pp: false, fb: 0.3, mix: 0.2 },
-      reverb: { on: false, type: "plate", decay: 1.8, pre: 0.02, mix: 0.18 }
+      reverb: { on: false, type: "plate", decay: 1.8, pre: 0.02, mix: 0.25 }
     };
   }
   /* fills missing blocks / fields (old saves load with every effect off) */
@@ -32,6 +32,9 @@
     var d = defaults(), o = {};
     fx = fx && typeof fx === "object" ? fx : {};
     Object.keys(d).forEach(function (k) { o[k] = Object.assign({}, d[k], fx[k] && typeof fx[k] === "object" ? fx[k] : {}); o[k].on = !!o[k].on; });
+    // effects that were never touched (still off at the old quiet defaults) get the clearer new defaults when turned on
+    if (!o.reverb.on && +o.reverb.mix === 0.18) o.reverb.mix = 0.25;
+    if (!o.comp.on && o.comp.amt != null && +o.comp.amt === 0.4) o.comp.amt = 0.5;
     Object.keys(fx).forEach(function (k) { if (!o[k]) o[k] = fx[k]; }); // keep fields other apps own (Studio: gate, detailed comp)
     return o;
   }
@@ -186,9 +189,11 @@
     var keys = [];
     if (buses) {
       if (fx.reverb.on && fx.reverb.mix > 0) { var rb = buses.get("rev", fx.reverb); if (X.revKey !== rb.key) { try { X.revSend.disconnect(); } catch (x) { /* none */ } X.revSend.connect(rb.input); X.revKey = rb.key; } keys.push(rb.key); }
-      else if (X.revKey) { try { X.revSend.disconnect(); } catch (x) { /* none */ } X.revKey = null; }
+      else if (X.revKey && !live) { try { X.revSend.disconnect(); } catch (x) { /* none */ } X.revKey = null; }
+      else if (X.revKey) keys.push(X.revKey); // live: stay connected, the send gain ramps to 0 (no click, the tail rings out)
       if (fx.delay.on && fx.delay.mix > 0) { var dbs = buses.get("dly", fx.delay, bpm); if (X.dlyKey !== dbs.key) { try { X.dlySend.disconnect(); } catch (x) { /* none */ } X.dlySend.connect(dbs.input); X.dlyKey = dbs.key; } keys.push(dbs.key); }
-      else if (X.dlyKey) { try { X.dlySend.disconnect(); } catch (x) { /* none */ } X.dlyKey = null; }
+      else if (X.dlyKey && !live) { try { X.dlySend.disconnect(); } catch (x) { /* none */ } X.dlyKey = null; }
+      else if (X.dlyKey) keys.push(X.dlyKey);
     }
     set(X.revSend.gain, fx.reverb.on ? clamp(+fx.reverb.mix || 0, 0, 1) : 0);
     set(X.dlySend.gain, fx.delay.on ? clamp(+fx.delay.mix || 0, 0, 1) : 0);

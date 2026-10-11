@@ -14,7 +14,7 @@
   <meta name="theme-color" content="#0b0d12">
   <meta name="color-scheme" content="dark"><!-- the app is already dark: stops Samsung Internet / Chrome "force dark" from re-colouring it -->
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="styles.css?v=20261011u">
+  <link rel="stylesheet" href="styles.css?v=20261011v">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Island Pin Beats — Free Beat Maker">
   <meta name="twitter:description" content="Make boom-bap, trap, drill, afrobeats, amapiano, house and bouyon beats in your browser. Free, from Dominica.">
@@ -93,6 +93,8 @@
             <label>Load into <select id="kl-slot" aria-label="Load into piano pattern"><option value="">Current pattern (A)</option><option value="A">Pattern A</option><option value="B">Pattern B</option><option value="C">Pattern C</option><option value="D">Pattern D</option></select></label>
             <label class="chk" title="Loops always play at the song BPM. Tick to switch the song to the loop's suggested tempo when you load it."><input type="checkbox" id="kl-tempo"> Use loop tempo</label>
             <button type="button" id="kl-stop" class="btn small ghost" hidden>■ Stop preview</button>
+            <label class="sv-ctl" title="Volume of loop previews (this device)"><span>Sample volume</span><input type="range" class="js-samplevol" min="0" max="100" step="1" aria-label="Sample preview volume"><output class="mono js-samplevol-val"></output></label>
+            <span class="mt-ctl"><button type="button" class="btn small js-match" data-k="sync" aria-pressed="true" title="Previews join on the next bar while the beat plays (loops always follow the song BPM + swing)">Match to beat</button></span>
           </div>
           <div id="kl-cats" class="kb-cats" role="group" aria-label="Keys loop style"></div>
           <div id="kl-grid" class="kb-grid kl-grid"></div>
@@ -696,20 +698,21 @@
 
   <footer class="foot">Free · runs in your browser · synthesized drums + CC0 one-shots (<a href="samples/CREDITS.md">credits</a>), no paid APIs · <a href="studio/">Studio</a> · <a href="../dj/">DJ booth</a> · <a href="check/">Sound check</a> · <a href="../">IslePin</a></footer>
 
-  <script src="fresh.js?v=20261011u"></script>
-  <script src="humanize.js?v=20261011u"></script>
-  <script src="layers.js?v=20261011u"></script>
-  <script src="library.js?v=20261011u"></script>
-  <script src="drums.js?v=20261011u"></script>
-  <script src="keys-instruments.js?v=20261011u"></script>
-  <script src="pianoroll-data.js?v=20261011u"></script>
-  <script src="keys-loops.js?v=20261011u"></script>
-  <script src="pianoroll.js?v=20261011u"></script>
-  <script src="fx-chain.js?v=20261011u"></script>
-  <script src="vocal-clean-client.js?v=20261011u"></script>
-  <script src="app.js?v=20261011u"></script>
-  <script src="master/master-dsp.js?v=20261011u"></script>
-  <script src="master/master.js?v=20261011u"></script>
+  <script src="fresh.js?v=20261011v"></script>
+  <script src="humanize.js?v=20261011v"></script>
+  <script src="layers.js?v=20261011v"></script>
+  <script src="library.js?v=20261011v"></script>
+  <script src="drums.js?v=20261011v"></script>
+  <script src="keys-instruments.js?v=20261011v"></script>
+  <script src="pianoroll-data.js?v=20261011v"></script>
+  <script src="keys-loops.js?v=20261011v"></script>
+  <script src="pianoroll.js?v=20261011v"></script>
+  <script src="fx-chain.js?v=20261011v"></script>
+  <script src="match.js?v=20261011v"></script>
+  <script src="vocal-clean-client.js?v=20261011v"></script>
+  <script src="app.js?v=20261011v"></script>
+  <script src="master/master-dsp.js?v=20261011v"></script>
+  <script src="master/master.js?v=20261011v"></script>
   <script type="module" src="../shared/ecosystem-nav.js"></script><!-- Beats | DJ Booth | Player switcher (shared/README.md) -->
 </body>
 </html>

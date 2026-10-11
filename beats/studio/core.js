@@ -14,12 +14,12 @@
       gate: { on: false, thr: -50, rel: 0.12 },
       lowcut: { on: false, f: 90 },
       eq: { on: false, low: 0, mid: 0, midF: 1200, high: 0 },
-      comp: { on: false, thr: -18, ratio: 3, atk: 0.01, rel: 0.15, makeup: 3 },
+      comp: { on: false, thr: -22, ratio: 4, atk: 0.008, rel: 0.15, makeup: 5 },
       deess: { on: false, amt: 0.5 },
       sat: { on: false, amt: 0.3 },
       chorus: { on: false, mix: 0.35 },
       delay: { on: false, div: "1/8d", pp: false, fb: 0.3, mix: 0.2 },
-      reverb: { on: false, type: "plate", decay: 1.8, pre: 0.02, mix: 0.18 }
+      reverb: { on: false, type: "plate", decay: 1.8, pre: 0.02, mix: 0.25 }
     };
   }
   /* saved projects → current fx shape. Every new effect starts OFF; older reverbs ("size") become a Plate of that decay */
@@ -29,19 +29,22 @@
     Object.keys(d).forEach(function (k) { o[k] = Object.assign({}, d[k], fx[k] && typeof fx[k] === "object" ? fx[k] : {}); o[k].on = !!o[k].on; });
     if (fx.reverb && fx.reverb.decay == null && fx.reverb.size != null) o.reverb.decay = +fx.reverb.size || 1.8;
     delete o.reverb.size;
+    if (!o.reverb.on && +o.reverb.mix === 0.18) o.reverb.mix = 0.25; // untouched reverb: the clearer new default
     if (o.comp.amt != null) delete o.comp.amt; // Studio uses the detailed compressor
     return o;
   }
   function newTrack(i, name) {
     var nm = name || ("Track " + (i + 1));
     // auto level match: ON for new vocal tracks (not the beat track); offset = vocal vs beat in dB
-    return { id: uid("t"), name: nm, color: COLORS[i % COLORS.length], vol: 0, pan: 0, mute: false, solo: false, arm: false, fx: defaultFx(), auto: !/beat/i.test(nm), autoOff: 1 };
+    return { id: uid("t"), name: nm, color: COLORS[i % COLORS.length], vol: 0, pan: 0, mute: false, solo: false, arm: false, fx: defaultFx(), auto: !/beat/i.test(nm), autoOff: 1, fxOff: false, tight: { on: false, str: 0.5 } };
   }
   /* saved projects: tracks without the auto-match fields load with it OFF (old saves keep their sound) */
   function normTrack(t) {
     t.fx = normFx(t.fx);
     t.auto = typeof t.auto === "boolean" ? t.auto : false;
     t.autoOff = isFinite(+t.autoOff) && t.autoOff != null ? clamp(+t.autoOff, -12, 12) : 1;
+    t.fxOff = !!t.fxOff;
+    t.tight = { on: !!(t.tight && t.tight.on), str: t.tight && isFinite(+t.tight.str) ? clamp(+t.tight.str, 0, 1) : 0.5 }; // Tighten to beat: off unless turned on
     return t;
   }
 

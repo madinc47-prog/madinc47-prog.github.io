@@ -46,6 +46,7 @@
     });
     if (kind === "mel") { out.m = !!o.m; out.s = !!o.s; }
     out.src = typeof o.src === "string" && o.src ? o.src.slice(0, 80) : null; // instrument-library hook
+    out.sg = out.src ? clamp(num(o.sg, 0), -30, 12) : 0; // library sound level match (dB), set when the sound is picked
     return out;
   }
   function defaults(kind, base) { return clean(null, kind, base); }
@@ -59,7 +60,7 @@
     if (!tweaked(cfg, kind, base)) return null;
     var d = defaults(kind, base), o = {};
     KNOBS.forEach(function (k) { if (Math.abs(cfg[k.key] - d[k.key]) > 1e-6) o[k.key] = cfg[k.key]; });
-    if (cfg.m) o.m = true; if (cfg.s) o.s = true; if (cfg.src) o.src = cfg.src;
+    if (cfg.m) o.m = true; if (cfg.s) o.s = true; if (cfg.src) o.src = cfg.src; if (cfg.src && cfg.sg) o.sg = Math.round(cfg.sg * 10) / 10;
     return o;
   }
 

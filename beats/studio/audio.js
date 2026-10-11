@@ -37,13 +37,15 @@
     T.post.connect(T.wd); T.wd.connect(T.wl); T.wd.connect(T.wr); T.wl.connect(T.wpl); T.wr.connect(T.wpr); T.wpl.connect(T.fader); T.wpr.connect(T.fader);
     return T;
   }
+  /* FX A/B (per track): every insert + send off (ramped); the track's level / pan stay */
+  function fxAllOff(fx) { var o = {}; Object.keys(fx).forEach(function (k) { o[k] = Object.assign({}, fx[k], { on: false }); }); return o; }
   function applyFx(c, T, tr, P, solo) {
-    var f = tr.fx, t = c.currentTime;
+    var f = tr.fxOff ? fxAllOff(tr.fx) : tr.fx, t = c.currentTime;
     function set(p, v) { if (c instanceof OfflineAudioContext) p.value = v; else p.setTargetAtTime(v, t, 0.015); }
     if (T.gate.parameters) { T.gate.parameters.get("on").value = f.gate.on ? 1 : 0; T.gate.parameters.get("thr").value = f.gate.thr; T.gate.parameters.get("rel").value = f.gate.rel; }
     T.busKeys = window.IPBFx.apply(c, T.X, f, P.bpm, T.buses, !(c instanceof OfflineAudioContext));
     set(T.pan.pan, tr.pan);
-    set(T.wl.gain, tr.wide ? 0.32 : 0); set(T.wr.gain, tr.wide ? -0.32 : 0);
+    set(T.wl.gain, tr.wide && !tr.fxOff ? 0.32 : 0); set(T.wr.gain, tr.wide && !tr.fxOff ? -0.32 : 0);
     var audible = !tr.mute && (!solo || tr.solo);
     set(T.fader.gain, audible ? db(tr.vol + S.autoGain(tr)) : 0); // manual volume + auto level match (if on)
   }
@@ -94,13 +96,39 @@
   }
 
   /* ---- clip scheduling ---- */
-  function clipSource(c, clip, dest, when, from, until, reg) {
+  /* Tighten to beat (per track, off by default): the clip's syllable onsets nudged toward the project's 16th grid.
+     A processed copy per clip position + strength (computed in match-worker.js); the source / raw take is untouched. */
+  function trackOf(P, id) { for (var i = 0; i < P.tracks.length; i++) if (P.tracks[i].id === id) return P.tracks[i]; return null; }
+  function tightOn(tr) { return tr && tr.tight && tr.tight.on && tr.tight.str > 0; }
+  function tightKey(clip, tr, P) { return [clip.src, (+clip.start).toFixed(4), (+clip.offset || 0).toFixed(4), P.bpm, tr.tight.str].join(":"); }
+  function tightBuf(clip, P) {
+    if (!P) return null; var tr = trackOf(P, clip.track); if (!tightOn(tr)) return null;
+    var s = S.sources[clip.src]; return s && s.tight ? s.tight[tightKey(clip, tr, P)] || null : null;
+  }
+  function prepTight(P) {
+    if (!window.IPBMatch || !P) return Promise.resolve();
+    var jobs = [];
+    P.clips.forEach(function (cl) {
+      var tr = trackOf(P, cl.track); if (!tightOn(tr)) return;
+      var s = S.sources[cl.src]; if (!s || !s.buf) return;
+      s.tight = s.tight || {}; var k = tightKey(cl, tr, P); if (s.tight[k] || s.tightP === k) return;
+      var b = s.buf, mono = b.getChannelData(0);
+      if (b.numberOfChannels > 1) { var r = b.getChannelData(1); mono = new Float32Array(b.length); for (var i = 0; i < b.length; i++) mono[i] = 0.5 * (b.getChannelData(0)[i] + r[i]); }
+      s.tightP = k;
+      jobs.push(window.IPBMatch.tighten(mono, b.sampleRate, { step: 60 / P.bpm / 4, swing: 0, offset: cl.start - (cl.offset || 0) }, tr.tight.str).then(function (res) {
+        var mk = E.ctx || new OfflineAudioContext(1, 1, b.sampleRate), nb = mk.createBuffer(1, res.out.length, b.sampleRate);
+        nb.getChannelData(0).set(res.out); s.tight[k] = nb; s.tightInfo = res.info; s.tightP = null; E.tightInfo = res.info;
+      }, function () { s.tightP = null; }));
+    });
+    return Promise.all(jobs);
+  }
+  function clipSource(c, clip, dest, when, from, until, reg, P) {
     // plays the part of `clip` that lies in timeline [from, until) starting at context time `when`
     var s = S.sources[clip.src]; if (!s) return;
     var cs = clip.start, ce = clip.start + clip.dur;
     var a = Math.max(cs, from), b = Math.min(ce, until);
     if (b - a <= 0.0005) return;
-    var src = c.createBufferSource(); src.buffer = s.buf;
+    var src = c.createBufferSource(); src.buffer = tightBuf(clip, P || E.P) || s.buf;
     var g = c.createGain(), gv = db(clip.gain || 0), at = when + (a - from), off = clip.offset + (a - cs);
     var fi = Math.min(clip.fadeIn || 0, clip.dur), fo = Math.min(clip.fadeOut || 0, clip.dur);
     // fades as gain automation in timeline time, mapped to context time
@@ -159,7 +187,7 @@
     if (E.onTick) E.onTick(pos);
   }
   function play(P, from, pre) {
-    return ensure().then(function () {
+    return ensure().then(function () { return prepTight(P); }).then(function () {
       stop(false);
       syncGraph(P);
       var c = E.ctx, start = c.currentTime + 0.06, when = start + (pre || 0);
@@ -292,12 +320,12 @@
   /* ---- offline mixdown ---- */
   function render(P, from, to) {
     var dur = Math.max(0.1, to - from), tail = 2.5, c = new OfflineAudioContext(2, Math.ceil((dur + tail) * S.SR), S.SR);
-    return c.audioWorklet.addModule("worklets.js").then(function () { return true; }, function () { return false; }).then(function (gate) {
+    return prepTight(P).then(function () { return c.audioWorklet.addModule("worklets.js"); }).then(function () { return true; }, function () { return false; }).then(function (gate) {
       var M = makeMaster(c); M.meter.connect(c.destination); applyMaster(c, M, P);
       var solo = anySolo(P), T = {}; S.autoMatch(P);
       var buses = window.IPBFx.Buses(c, M.bus);
       P.tracks.forEach(function (tr) { T[tr.id] = makeStrip(c, M.bus, gate, buses); applyFx(c, T[tr.id], tr, P, solo); });
-      P.clips.forEach(function (cl) { if (T[cl.track]) clipSource(c, cl, T[cl.track].input, 0, from, to, null); });
+      P.clips.forEach(function (cl) { if (T[cl.track]) clipSource(c, cl, T[cl.track].input, 0, from, to, null, P); });
       return c.startRendering();
     }).then(function (buf) {
       // trim the silent tail (keep reverb/delay decay), 10 ms fade at the very end
@@ -324,7 +352,7 @@
   }
 
   E.autoLatency = autoLatency; E.latency = latency; E.countLeft = countLeft; E.ensure = ensure; E.syncGraph = syncGraph; E.play = play; E.stop = stop; E.startRecord = startRecord; E.stopRecord = stopRecord;
-  E.inputLevel = inputLevel; E.meters = meters; E.render = render; E.projectEnd = projectEnd; E.playBuffer = playBuffer; E.stopBuffer = stopBuffer; E.bufferPos = bufferPos;
+  E.prepTight = prepTight; E.inputLevel = inputLevel; E.meters = meters; E.render = render; E.projectEnd = projectEnd; E.playBuffer = playBuffer; E.stopBuffer = stopBuffer; E.bufferPos = bufferPos;
   E.pos = function () { return E.playing ? posAt(E.ctx.currentTime) : null; };
   S.E = E;
 })();

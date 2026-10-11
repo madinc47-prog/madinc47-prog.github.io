@@ -807,11 +807,32 @@
     box.querySelectorAll("[data-off]").forEach(function (b) { b.addEventListener("click", function () { S.pushUndo(P, "auto offset"); tr.autoOff = +b.dataset.off; tr.auto = true; openFx(tr.id); changed(null, true); }); });
     return box;
   }
+  /* FX A/B: hear this track with / without its effects (instant, ramped; nothing rebuilt) */
+  function abBlock(tr) {
+    var box = document.createElement("div"); box.className = "fxs fx-ab";
+    box.innerHTML = '<h4><span>Effects A/B <small>effects are heard live while you play; compare instantly</small></span><button type="button" class="btn small vx-ab' + (tr.fxOff ? " on" : "") + '" aria-pressed="' + !!tr.fxOff + '">' + (tr.fxOff ? "FX: OFF" : "FX: ON") + '</button></h4>';
+    box.querySelector(".vx-ab").addEventListener("click", function () { tr.fxOff = !tr.fxOff; E.ctx && E.syncGraph(P); openFx(tr.id); changed(null, true); renderHeads(); });
+    return box;
+  }
+  /* Tighten to beat (off by default = raw): nudges syllable / phrase starts toward the 16th grid; pitch untouched, raw kept */
+  function tightBlock(tr) {
+    var tg = tr.tight || (tr.tight = { on: false, str: 0.5 }), box = document.createElement("div"); box.className = "fxs fx-tight" + (tg.on ? " on" : "");
+    box.innerHTML = '<h4><span>Tighten to beat <small>moves the start of each syllable toward the beat grid · pitch and voice untouched · raw take kept · latency is always lined up</small></span><button type="button" class="sw' + (tg.on ? " on" : "") + '" aria-pressed="' + !!tg.on + '" title="Tighten to beat on / off"></button></h4>' +
+      '<label><span>Strength</span><input type="range" min="0" max="100" step="5"><output></output></label>';
+    var r = box.querySelector("input"), o = box.querySelector("output");
+    r.value = Math.round(tg.str * 100); o.textContent = r.value + "%";
+    function replay() { if (E.playing) { var p = E.pos(); if (p != null) E.play(P, p); } }
+    box.querySelector(".sw").addEventListener("click", function () { S.pushUndo(P, "tighten"); tg.on = !tg.on; if (tg.on && !(tg.str > 0)) tg.str = 0.5; openFx(tr.id); changed(null, true); replay(); });
+    r.addEventListener("input", function () { o.textContent = r.value + "%"; });
+    r.addEventListener("change", function () { S.pushUndo(P, "tighten strength"); tg.str = +r.value / 100; if (!tg.on) tg.on = true; openFx(tr.id); changed(null, true); replay(); });
+    return box;
+  }
   function openFx(id) {
     fxTrack = id; var tr = trackById(id); if (!tr) return;
     $("fx-track").textContent = (P.tracks.indexOf(tr) + 1) + " · " + tr.name; fillFxPresets(); $("fx-preset").value = "";
     var B = $("fx-body"); B.innerHTML = "";
-    if (tr.id !== S.beatTrackId(P)) B.appendChild(autoBlock(tr));
+    B.appendChild(abBlock(tr));
+    if (tr.id !== S.beatTrackId(P)) { B.appendChild(autoBlock(tr)); B.appendChild(tightBlock(tr)); }
     FXS.forEach(function (sec) {
       var st = tr.fx[sec.k], box = document.createElement("div"); box.className = "fxs" + (st.on ? " on" : ""); box.dataset.k = sec.k;
       box.innerHTML = '<h4><span>' + sec.name + ' <small>' + sec.desc + '</small></span><button type="button" class="sw' + (st.on ? " on" : "") + '" title="Turn ' + sec.name + ' on / off" aria-pressed="' + st.on + '"></button></h4>';

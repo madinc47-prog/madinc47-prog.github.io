@@ -108,6 +108,84 @@
   var FXC = window.IPBFx;             // shared track effects, channel fix, loudness (fx-chain.js)
   var FEEL = window.IPBFeel;          // Feel engine: velocity tone, micro-timing, variation (humanize.js)
   var LIB = window.IPBLibrary;        // instrument library + Swap (library.js, library/manifest.json)
+  var MATCH = window.IPBMatch;        // Match to beat: loop stretch + vocal tighten (match.js / match-worker.js)
+  /* ---- sample previews: their own "Samples" bus (normalized, user volume, soft limiter) → master fader (pre-limiter).
+     Remembered per device. Previews never touch the transport or the AudioContext. */
+  var SV_KEY = "ipb_samplevol", MT_KEY = "ipb_match", SV_DEF = 70, PREV_LUFS = -20, PV = null;
+  function sampleVol() { var r = null; try { r = localStorage.getItem(SV_KEY); } catch (e) { /* private mode */ } var v = r == null ? SV_DEF : +r; return isFinite(v) ? clamp(v, 0, 100) : SV_DEF; }
+  function svGain(v) { v = v == null ? sampleVol() : v; return v <= 0 ? 0 : Math.pow(v / SV_DEF, 2); } // 70 % = 0 dB on the (already normalized) preview
+  function svDb(v) { var g = svGain(v); return g <= 0 ? "off" : (g >= 1 ? "+" : "") + (20 * Math.log10(g)).toFixed(1) + " dB"; }
+  function setSampleVol(v) {
+    v = clamp(Math.round(+v), 0, 100);
+    try { localStorage.setItem(SV_KEY, String(v)); } catch (e) { /* private mode */ }
+    if (PV && ctx) PV.fader.gain.setTargetAtTime(svGain(v), ctx.currentTime, 0.02);
+    svUI();
+  }
+  function svUI() {
+    var v = sampleVol();
+    document.querySelectorAll(".js-samplevol").forEach(function (r) { if (+r.value !== v) r.value = v; });
+    document.querySelectorAll(".js-samplevol-val").forEach(function (o) { o.textContent = v + "%"; o.title = svDb(v); });
+  }
+  function matchCfg() { var o = {}; try { o = JSON.parse(localStorage.getItem(MT_KEY) || "{}") || {}; } catch (e) { o = {}; } return { sync: o.sync !== false, key: !!o.key }; }
+  function setMatch(k, v) {
+    var m = matchCfg(); m[k] = !!v;
+    try { localStorage.setItem(MT_KEY, JSON.stringify(m)); } catch (e) { /* private mode */ }
+    matchUI();
+    toast(k === "sync" ? (v ? "Match to beat ON: loops follow the song BPM (pitch kept), previews start on the grid" : "Match to beat OFF: loops play at their own speed (old behaviour), previews start right away")
+      : (v ? "Match key ON: loops are transposed to the song key" : "Match key OFF: loops keep their own key"));
+  }
+  function matchUI() {
+    var m = matchCfg();
+    document.querySelectorAll(".js-match").forEach(function (b) { var on = !!m[b.dataset.k]; b.classList.toggle("on", on); b.setAttribute("aria-pressed", String(on)); });
+  }
+  function pvEnsure() {
+    if (PV) return PV;
+    if (!ctx || !LG) return null;
+    PV = { inp: ctx.createGain(), fader: ctx.createGain(), lim: ctx.createDynamicsCompressor(), trim: ctx.createGain(), an: ctx.createAnalyser() };
+    PV.fader.gain.value = svGain();
+    PV.lim.threshold.value = -10; PV.lim.knee.value = 4; PV.lim.ratio.value = 20; PV.lim.attack.value = 0.001; PV.lim.release.value = 0.12;
+    PV.trim.gain.value = dbGain(-makeupDb(-10, 20)); // compressors add make-up gain: take it back out
+    PV.an.fftSize = 512;
+    PV.inp.connect(PV.fader); PV.fader.connect(PV.lim); PV.lim.connect(PV.trim); PV.trim.connect(PV.an); PV.an.connect(LG.fader);
+    return PV;
+  }
+  /* short-term max loudness (LUFS, as heard: a mono file plays on both sides) of a decoded library sound, cached */
+  function bufLoud(b) {
+    if (!b) return -70;
+    if (b._ipbL != null) return b._ipbL;
+    var sr = b.sampleRate, chs = [], n = Math.min(b.length, sr * 12); // the first 12 s are plenty
+    for (var c = 0; c < b.numberOfChannels; c++) chs.push(FXC.kFilter(b.getChannelData(c).subarray(0, n), sr));
+    var bl = FXC.blocks(chs, sr, 0.4, 0.1), mx = 0;
+    for (var i = 0; i < bl.length; i++) if (bl[i] > mx) mx = bl[i];
+    var L = mx > 0 ? -0.691 + 10 * Math.log10(mx) + (b.numberOfChannels === 1 ? 3.01 : 0) : -70;
+    try { b._ipbL = L; } catch (e) { /* frozen */ }
+    return L;
+  }
+  function sndLoud(snd) {
+    if (!snd || !snd.zones || !snd.zones.length) return null;
+    var z = snd.it.k === "multi" ? LIB.zone(snd, 60, 0.8) : snd.zones[0];
+    return bufLoud(z && z.buf);
+  }
+  /* gain that brings a library sound to the preview loudness (synth presets: fixed) */
+  function sndNorm(snd) { var L = sndLoud(snd); return L == null ? 0.45 : dbGain(clamp(PREV_LUFS - L, -30, 12)); }
+  function pvDest(norm) { var P = pvEnsure(); if (!P) return null; var g = ctx.createGain(); g.gain.value = norm; g.connect(P.inp); return g; }
+  /* key shift (semitones, −6…+5) from a loop's key ("Ebm", "G") to the song key */
+  var KEYIX = { C: 0, "C#": 1, Db: 1, D: 2, "D#": 3, Eb: 3, E: 4, F: 5, "F#": 6, Gb: 6, G: 7, "G#": 8, Ab: 8, A: 9, "A#": 10, Bb: 10, B: 11 };
+  function keyShift(k) {
+    if (!k || S.songKey == null) return 0;
+    var r = KEYIX[String(k).replace(/m$/, "")]; if (r == null) return 0;
+    var d = ((S.songKey - r) % 12 + 12) % 12; return d > 6 ? d - 12 : d;
+  }
+  /* how a library loop plays: { buf, rate } — Match to beat: time-stretched to the song BPM (pitch kept, quality WSOLA
+     in a worker, cached); until the stretch is ready (first ~0.1 s) it falls back to the old speed change */
+  function loopPlay(it, buf) {
+    var m = matchCfg(), r0 = S.bpm / (it.bpm || S.bpm);
+    if (!m.sync || !MATCH) return { buf: buf, rate: r0, ready: true };
+    var semi = m.key ? keyShift(it.key) : 0, pr = Math.pow(2, semi / 12), F = pr / r0, sb = MATCH.readyStretch(buf, F);
+    if (sb) return { buf: sb, rate: pr, ready: true };
+    if (ctx) MATCH.stretchBuffer(ctx, buf, F).catch(function () { /* worker unavailable: speed change stays */ });
+    return { buf: buf, rate: r0, ready: false };
+  }
   var LY = window.IPBLayers;          // tweakable layers: per-layer knobs + one shared chain per layer (layers.js)
   var PIANO_LIB_KEY = "ipb_piano_lib_v1";
   function instOk(id) { return !!PK.BY_ID[id]; }
@@ -185,7 +263,7 @@
     lyricSong: "streets", // song shown in Lyrics / Teleprompter
     bpl: "auto",          // teleprompter bars per line ("auto" = fit song sections)
     prSize: 1,
-    vox: { nudge: 0, monitor: false, dry: false, clean: true, aec: true, raw: true, spk: 80, guide: false,
+    vox: { fxOff: false, tight: { on: false, str: 0.5 }, nudge: 0, monitor: false, dry: false, clean: true, aec: true, raw: true, spk: 80, guide: false,
       pan: 0, wide: false, fx: null, auto: true, autoOff: 1 }, // vocal channel: pan, Wide, effects (manual, non-destructive), auto level match
     tool: "hit", lane: "vel", page: 0,
     piano: { slot: "A", slots: { A: PD.empty(), B: PD.empty(), C: PD.empty(), D: PD.empty() } }, // piano-roll pattern slots
@@ -337,6 +415,8 @@
         if (isFinite(+d.vox.spk) && d.vox.spk != null) S.vox.spk = clamp(Math.round(+d.vox.spk), 10, 100);
         S.vox.pan = clamp(+d.vox.pan || 0, -1, 1);
         S.vox.wide = !!d.vox.wide;
+        S.vox.fxOff = !!d.vox.fxOff;
+        S.vox.tight = { on: !!(d.vox.tight && d.vox.tight.on), str: d.vox.tight && isFinite(+d.vox.tight.str) ? clamp(+d.vox.tight.str, 0, 1) : 0.5 };
         S.vox.fx = d.vox.fx ? FXC.norm(d.vox.fx) : null;                      // older sessions: every effect off
         S.vox.auto = typeof d.vox.auto === "boolean" ? d.vox.auto : false;     // older sessions: auto match off
         S.master = d.master && typeof d.master === "object" ? d.master : null;  // Master tab settings (master/master.js normalizes)
@@ -942,7 +1022,8 @@
     if (ls && ls.it.k === "preset") { libPresetPad(c, G, i, when, o, ls, cfg, def); return; }
     if (ls && ls.zones.length) {
       var it = ls.it, base = def.tuned && def.p && def.p.note ? def.p.note : (it.r != null ? it.r : 60), z = LIB.zone(ls, base + (o.semi || 0), o.vel);
-      buf = z.buf; lrate = it.k === "loop" ? S.bpm / (it.bpm || S.bpm) : Math.pow(2, (base - z.root) / 12);
+      buf = z.buf; lrate = Math.pow(2, (base - z.root) / 12);
+      if (it.k === "loop") { var lp = loopPlay(it, buf); buf = lp.buf; lrate = lp.rate; }
     }
     if (!buf) return;
     var rate = lrate * Math.pow(2, ((cfg.tune || 0) + (o.semi || 0) + ((o.cents || 0) + (cfg.fine || 0)) / 100) / 12);
@@ -974,6 +1055,7 @@
       }
     }
     var vel = o.vel == null ? 0.8 : o.vel, amp = Math.pow(vel / 0.8, 1.5);
+    if (ls && cfg.sg) amp *= dbGain(cfg.sg); // library sound matched to the kit sound it replaced (set on Use)
     var src = c.createBufferSource();
     src.buffer = buf;
     src.playbackRate.value = rate;
@@ -1320,7 +1402,7 @@
     FEEL.chord(S.feel, cn, Math.round(t * 1000), FEEL.style(kitDef(S.kit)));
     var ls = libSnd(lc);
     cn.forEach(function (n) {
-      if (ls) { reg.push(libVoice(c, dest, n.p, n.t, dur - (n.t - t), n.v, ls, 0.6)); return; }
+      if (ls) { reg.push(libVoice(c, dest, n.p, n.t, dur - (n.t - t), n.v, ls, 0.6 * (lc.sg ? dbGain(lc.sg) : 1))); return; }
       reg.push(synthNote(c, dest, n.p, n.t, dur - (n.t - t), S.chordTrack.sound, S.feel === "off" ? null : n.v / 0.8));
     });
   }
@@ -1634,7 +1716,7 @@
   }
   function melPlay(c, dest, midi, when, dur, vel, inst, gain, tone, lc) {
     var ls = libSnd(lc);
-    if (ls) return libVoice(c, dest, midi, when, dur, vel, ls, gain);
+    if (ls) return libVoice(c, dest, midi, when, dur, vel, ls, (gain == null ? 1 : gain) * (lc && lc.sg ? dbGain(lc.sg) : 1));
     return PK.play(c, dest, midi, when, dur, vel, inst, gain, tone);
   }
   function onLongPress(el, fn) {
@@ -1690,6 +1772,7 @@
     sh.setAttribute("aria-label", "Swap sound");
     sh.innerHTML =
       '<div class="sw-head"><div class="sw-title"><span class="label">Swap sound</span> <strong id="sw-layer"></strong></div><button type="button" class="btn small ghost sw-x" id="sw-close" aria-label="Close swap">✕</button></div>' +
+      '<div class="sw-vol">' + svCtl() + matchCtl() + '</div>' +
       '<div class="sw-now"><span class="sw-cur-l">Now: <strong id="sw-cur"></strong></span>' +
       '<span class="sw-nav"><button type="button" class="btn small" id="sw-prev" aria-label="Previous sound">◀</button><button type="button" class="btn small" id="sw-next" aria-label="Next sound">▶</button>' +
       '<button type="button" class="btn small ghost" id="sw-undo" title="Undo">↶</button><button type="button" class="btn small ghost" id="sw-redo" title="Redo">↷</button>' +
@@ -1700,6 +1783,7 @@
       '<div class="sw-foot"><span id="sw-store">…</span><button type="button" class="btn small ghost" id="sw-clear">Clear unused</button></div>';
     document.body.appendChild(sh);
     swEls = { sh: sh, list: sh.querySelector("#sw-list") };
+    svUI(); matchUI();
     sh.querySelector("#sw-close").addEventListener("click", swClose);
     sh.querySelector("#sw-prev").addEventListener("click", function () { swStep(-1); });
     sh.querySelector("#sw-next").addEventListener("click", function () { swStep(1); });
@@ -1717,6 +1801,9 @@
       if (e.target.closest(".sw-use")) swApply(swT, id); else swPreview(id);
     });
   }
+  /* "Sample volume" slider + Match toggles (Swap sheet, Keys loops sheet; the Mixer has a "Samples" fader) */
+  function svCtl() { return '<label class="sv-ctl" title="Volume of sound / loop previews (this device)"><span>Sample volume</span><input type="range" class="js-samplevol" min="0" max="100" step="1" aria-label="Sample preview volume"><output class="mono js-samplevol-val"></output></label>'; }
+  function matchCtl() { return '<span class="mt-ctl"><button type="button" class="btn small js-match" data-k="sync" aria-pressed="true" title="Loops follow the song BPM (pitch kept) and previews start on the beat grid">Match to beat</button><button type="button" class="btn small js-match" data-k="key" aria-pressed="false" title="Transpose library loops to the song key">Match key</button></span>'; }
   function swChips() {
     var mel = swT.kind !== "drum", sug = swSuggest(swT), m = LIB.manifest();
     var cats = [["sug", "★ " + sug.label]].concat(m.cats.filter(function (c) { return !mel || ["keys", "synth", "orch", "bass", "808"].indexOf(c[0]) !== -1; })).concat([["all", "All"]]);
@@ -1784,9 +1871,10 @@
   function swApply(T, id) {
     var c = lyCfg(T), before = c.src || null;
     if (before === (id || null)) return Promise.resolve(true);
+    var sgBefore = c.sg || 0;
     function go() {
-      c = lyCfg(T); c.src = id || null;
-      lyPush(T, id ? "swap" : "back to kit sound", { src: before }, { src: c.src });
+      c = lyCfg(T); c.src = id || null; c.sg = id ? swMatchDb(T, LIB.get(id)) : 0;
+      lyPush(T, id ? "swap" : "back to kit sound", { src: before, sg: sgBefore }, { src: c.src, sg: c.sg });
       lyChanged(T); libSync(); swRender();
       var li = LIB.item(id); toast(id ? "Swapped to " + (li ? li.n : id) + " — knobs kept" : "Back to the kit sound");
       return true;
@@ -1796,6 +1884,16 @@
     return LIB.load(id, ctx).then(function () { swBusyId = null; return go(); }, function () {
       swBusyId = null; swNow(); toast("Couldn't download that sound (offline?) — kept the current one."); return false;
     });
+  }
+  /* level match on Use: the swapped-in sound plays as loud as the kit sound it replaces (drums), or at the usual
+     instrument level (melodic). Stored as the layer's hidden source gain; the layer's Volume knob is untouched. */
+  var MEL_REF_LUFS = -17;
+  function swMatchDb(T, snd) {
+    if (!snd || snd.it.k === "preset") return 0;
+    var L = sndLoud(snd); if (L == null || L <= -69) return 0;
+    var ref = MEL_REF_LUFS;
+    if (T.kind === "drum") { var bs = T.kit === S.kit ? stockBufs[T.pad] : null; ref = bs && bs.length ? bufLoud(bs[0]) : -14; if (ref <= -69) ref = -14; }
+    return Math.round(clamp(ref - L, -24, 6) * 10) / 10;
   }
   function swStep(dir) {
     if (!swT || !swList.length) return;
@@ -1808,24 +1906,28 @@
       var row = swEls.list.querySelector('.sw-row[data-id="' + id + '"]'); if (row && row.scrollIntoView) row.scrollIntoView({ block: "nearest" });
     });
   }
-  function swGrid(steps) { if (!playing) return ctx.currentTime + 0.03; var add = (steps - (curK % steps)) % steps; return Math.max(ctx.currentTime + 0.01, nextTime + add * stepDur()); }
+  function swGrid(steps) { if (!playing || !matchCfg().sync) return ctx.currentTime + 0.03; var add = (steps - (curK % steps)) % steps; return Math.max(ctx.currentTime + 0.01, nextTime + add * stepDur()); }
   function swDest(T) {
     if (T.kind === "drum") return stripsFor(LG)[T.pad].inp;
     if (T.kind === "chord") return melStrip(LG, "chord", chordCfg(), LG.groups.keys).inp;
     return melStrip(LG, T.slot + ":" + T.inst, melCfg(S.piano.slots[T.slot], T.inst, true), LG.groups.piano).inp;
   }
+  var swTok = 0;
   function swPreview(id) {
     if (!swT || !ensureCtx()) return Promise.resolve(null);
-    var T = swT; swSel = id; swBusyId = id; swNow();
+    var T = swT, tok = ++swTok; swSel = id; swBusyId = id; swNow();
+    if (swPrevVoice) { swPrevVoice.stop(ctx.currentTime); swPrevVoice = null; } // one preview at a time: quick fade-out
     return LIB.load(id, ctx).then(function (snd) {
+      if (tok !== swTok) return null; // a newer tap won
       swBusyId = null; swNow();
       if (swT !== T) return null;
       if (swPrevVoice) { swPrevVoice.stop(ctx.currentTime); swPrevVoice = null; }
-      var it = snd.it, cfg = lyCfg(T), dest = swDest(T), when, key = S.songKey != null ? S.songKey : 0, v = null;
+      var it = snd.it, cfg = lyCfg(T), dest = pvDest(sndNorm(snd)), when, key = S.songKey != null ? S.songKey : 0, v = null;
+      if (!dest) return null;
       if (it.k === "loop") {
         when = swGrid(16);
-        var z = snd.zones[0], src = ctx.createBufferSource(), g = ctx.createGain(), len = (it.bars || 2) * 4 * 60 / S.bpm;
-        src.buffer = z.buf; src.playbackRate.value = S.bpm / (it.bpm || S.bpm); g.gain.value = 0.8; src.connect(g); g.connect(dest);
+        var z = snd.zones[0], src = ctx.createBufferSource(), g = ctx.createGain(), len = (it.bars || 2) * 4 * 60 / S.bpm, lpp = loopPlay(it, z.buf);
+        src.buffer = lpp.buf; src.playbackRate.value = lpp.rate; g.gain.value = 1; src.connect(g); g.connect(dest);
         src.start(when); src.stop(when + len + 0.05);
         v = { stop: function (t) { try { g.gain.setTargetAtTime(0, Math.max(t, when), 0.02); src.stop(Math.max(t, when) + 0.1); } catch (e) { /* ignore */ } } };
       } else if (T.kind === "drum") {
@@ -2821,8 +2923,20 @@
       }
       meterEls[g.id] = st.querySelector(".meter i");
       wrap.appendChild(st);
+      if (g.id === "vocal") wrap.appendChild(samplesStrip());
     });
-    vxPanUI();
+    vxPanUI(); svUI();
+  }
+  /* Mixer "Samples" fader: sound / loop previews (Swap sheet, Keys loops). Per device, not part of the song. */
+  function samplesStrip() {
+    var st = document.createElement("div"); st.className = "strip samples";
+    st.innerHTML = '<span class="sname">Samples</span><div class="faders"><div class="meter"><i></i></div><div class="vwrap"><input type="range" class="js-samplevol" min="0" max="100" aria-label="Samples (previews) volume"></div></div>' +
+      '<span class="val js-samplevol-val"></span><button type="button" class="mute js-sv-mute" title="Mute previews">MUTE</button>';
+    var mb = st.querySelector(".js-sv-mute"), last = 0;
+    mb.classList.toggle("on", sampleVol() === 0);
+    mb.addEventListener("click", function () { var v = sampleVol(); if (v > 0) { last = v; setSampleVol(0); } else setSampleVol(last || SV_DEF); mb.classList.toggle("on", sampleVol() === 0); });
+    meterEls.samples = st.querySelector(".meter i");
+    return st;
   }
   /* ---------------- Vocal channel: Pan, Wide, auto level match, effects (manual, non-destructive) ---------------- */
   var VXFX = [
@@ -2844,12 +2958,119 @@
     document.querySelectorAll(".js-vx-pan").forEach(function (e) { e.value = p; });
     document.querySelectorAll(".js-vx-panval").forEach(function (e) { e.textContent = txt; });
   }
-  function vxChanged() { saveSession(); applyMixer(); var b = $("vx-reexp"); if (b) b.hidden = !vox.last; }
+  function vxChanged() { saveSession(); applyMixer(); vxLive(); var b = $("vx-reexp"); if (b) b.hidden = !vox.last; }
+  /* ---------------- Vocal FX, live: ONE persistent chain for the vocal channel, built once and kept connected for the
+   * life of the page. Every take playback (▶ Play take with beat, the Clean-take A/B player) feeds it; knobs and
+   * switches ramp the existing nodes (no rebuilds, no clicks). Exports render the same settings through the same
+   * fx-chain.js code offline. FX A/B = level-matched-ish bypass (dry path, same 6 ms as the compressor look-ahead). */
+  var VX = null;
+  function vxEnsure() {
+    if (VX) return VX;
+    if (!ctx || !LG) return null;
+    var c = ctx;
+    function gn(v) { var g = c.createGain(); g.gain.value = v == null ? 1 : v; return g; }
+    VX = { inp: gn(1), X: FXC.build(c), dry: c.createDelay(0.05), dryG: gn(0), wetG: gn(1), wsum: gn(1), wd: c.createDelay(0.05), wl: gn(0), wr: gn(0),
+      wpl: c.createStereoPanner(), wpr: c.createStereoPanner(), pan: c.createStereoPanner(), busG: gn(1), sum: gn(1), lvl: gn(0), toMaster: gn(0), toSpk: gn(0), an: c.createAnalyser() };
+    VX.dry.delayTime.value = 0.006; VX.wd.delayTime.value = 0.012; VX.wpl.pan.value = -1; VX.wpr.pan.value = 1; VX.an.fftSize = 2048;
+    VX.inp.connect(VX.X.input);
+    VX.X.out.connect(VX.wsum); VX.X.out.connect(VX.wd); VX.wd.connect(VX.wl); VX.wd.connect(VX.wr); VX.wl.connect(VX.wpl); VX.wr.connect(VX.wpr); VX.wpl.connect(VX.wsum); VX.wpr.connect(VX.wsum);
+    VX.wsum.connect(VX.wetG); VX.wetG.connect(VX.pan);
+    VX.inp.connect(VX.dry); VX.dry.connect(VX.dryG); VX.dryG.connect(VX.pan);
+    VX.pan.connect(VX.sum);
+    VX.buses = FXC.Buses(c, VX.busG); VX.busG.connect(VX.sum);
+    VX.sum.connect(VX.lvl); VX.lvl.connect(VX.an); VX.lvl.connect(VX.toMaster); VX.lvl.connect(VX.toSpk);
+    VX.toMaster.connect(LG.fader); // with the beat: through the master fader + limiter (never into the mic recorder)
+    VX.toSpk.connect(c.destination); // the Clean-take A/B player: straight to the speakers
+    vxLive();
+    return VX;
+  }
+  function vxLive() {
+    if (!VX || !ctx) return;
+    var t = ctx.currentTime, off = !!S.vox.fxOff, keep = {};
+    FXC.apply(ctx, VX.X, S.vox.fx || FXC.defaults(), S.bpm, VX.buses, true).forEach(function (k) { keep[k] = 1; });
+    clearTimeout(VX.gcT); VX.gcT = setTimeout(function () { if (VX) VX.buses.gc(keep); }, 6000); // old reverb / delay settings ring out first
+    VX.wl.gain.setTargetAtTime(S.vox.wide ? 0.32 : 0, t, 0.015); VX.wr.gain.setTargetAtTime(S.vox.wide ? -0.32 : 0, t, 0.015);
+    if (VX.pan.pan) VX.pan.pan.setTargetAtTime(S.vox.pan || 0, t, 0.015);
+    VX.wetG.gain.setTargetAtTime(off ? 0 : 1, t, 0.012); VX.busG.gain.setTargetAtTime(off ? 0 : 1, t, 0.012); VX.dryG.gain.setTargetAtTime(off ? 1 : 0, t, 0.012);
+    vxABUI();
+  }
+  function vxRoute(where, lvl) { // "master" | "spk" | null
+    if (!VX) return; var t = ctx.currentTime;
+    VX.toMaster.gain.setTargetAtTime(where === "master" ? 1 : 0, t, 0.01); VX.toSpk.gain.setTargetAtTime(where === "spk" ? 1 : 0, t, 0.01);
+    if (lvl != null) VX.lvl.gain.setTargetAtTime(lvl, t, 0.03);
+  }
+  function vxABUI() {
+    document.querySelectorAll(".js-vx-ab").forEach(function (b) {
+      var off = !!S.vox.fxOff; b.classList.toggle("on", off); b.setAttribute("aria-pressed", String(off));
+      b.textContent = off ? "FX: OFF (A/B)" : "FX: ON (A/B)"; b.title = off ? "Hearing the vocal without effects. Tap to hear the effects again." : "Hearing the effects. Tap to compare without them (instant).";
+    });
+  }
+  function vxToggleAB() { S.vox.fxOff = !S.vox.fxOff; vxLive(); saveSession(); }
+  /* a playing take source that can be swapped (cleanup / tighten changed mid-play) with a short crossfade */
+  function vxSrcStart(P, buf, at, off) {
+    var s = ctx.createBufferSource(), g = ctx.createGain(); s.buffer = buf;
+    g.gain.setValueAtTime(0, at); g.gain.linearRampToValueAtTime(1, at + 0.02);
+    s.connect(g); g.connect(vxEnsure().inp); s.start(at, Math.max(0, off || 0));
+    P.src = s; P.sg = g; P.buf = buf; P.at0 = at - (off || 0);
+    return s;
+  }
+  function vxSrcStop(P, t) {
+    if (!P.src) return;
+    var s = P.src, g = P.sg; t = t || ctx.currentTime;
+    try { s.onended = null; g.gain.cancelScheduledValues(t); g.gain.setValueAtTime(g.gain.value, t); g.gain.linearRampToValueAtTime(0, t + 0.025); s.stop(t + 0.04); } catch (e) { /* ended */ }
+    setTimeout(function () { try { g.disconnect(); } catch (e) { /* gone */ } }, 300);
+    P.src = null; P.sg = null;
+  }
+  /* the take as it sits on the beat: latency shift + manual cleanup (bleed / NR / gate) + Tighten to beat. Cached. */
+  function vocalAligned(t, which) {
+    var useClean = which === "clean" || (which == null && t.clean);
+    var V0 = useClean && t.clean ? t.clean : t.V, sh = takeShift(t), n = t.frames;
+    return vocalPre(t, V0).then(function (V) {
+      var key = (useClean ? "c" : "r") + preKey() + ":" + sh;
+      t.al = t.al || {};
+      var vs = t.al[key];
+      if (!vs) { vs = new Float32Array(n); for (var i = 0; i < n; i++) { var j = i + sh; vs[i] = j >= 0 && j < n ? V[j] : 0; } t.al = {}; t.al[key] = vs; }
+      return vocalTight(t, vs, key);
+    });
+  }
+  function preKey() { var f = FXC.norm(S.vox.fx); return (f.bleed.on ? "B" : "") + (f.nr.on ? "N" : "") + (f.gate.on ? "G" : ""); }
+  /* Tighten to beat (off by default): syllable onsets nudged toward the 16th grid (with the song swing), Strength %.
+     Segments are moved, never resampled: pitch and formants stay; the raw take is kept. */
+  function vocalTight(t, vs, key) {
+    var tg = S.vox.tight;
+    if (!tg || !tg.on || !(tg.str > 0) || !MATCH) return Promise.resolve(vs);
+    var k = key + ":" + tg.str + ":" + S.bpm + ":" + S.swing;
+    t.tc = t.tc || {};
+    if (t.tc[k]) return Promise.resolve(t.tc[k]);
+    return MATCH.tighten(vs, t.sr, { step: stepDur(), swing: stepDur() * S.swing / 100, offset: 0 }, tg.str).then(function (r) {
+      t.tc = {}; t.tc[k] = r.out; t.tightInfo = r.info; return r.out;
+    }).catch(function () { return vs; });
+  }
+  /* settings that change the take itself (cleanup / tighten) changed while a take plays → swap in the new version */
+  var vxSwapKey = null;
+  function vxRefreshPlaying() {
+    var P = vpv.src ? vpv : vc.src ? vc : null; if (!P) return;
+    var t = vox.last, which = P === vc ? (vc.ab === "clean" ? "clean" : "raw") : null;
+    var want = preKey() + (S.vox.tight && S.vox.tight.on ? "T" + S.vox.tight.str : "") + ":" + which;
+    if (want === vxSwapKey) return; vxSwapKey = want;
+    vocalAligned(t, which).then(function (vs) {
+      if (!P.src || vxSwapKey !== want || (P.buf && P.buf._vs === vs)) return;
+      var b = ctx.createBuffer(1, vs.length, t.sr); b.getChannelData(0).set(vs); b._vs = vs;
+      var now = ctx.currentTime + 0.02, pos = now - P.at0, old = P.src, onend = old.onended;
+      vxSrcStop(P, now); var s = vxSrcStart(P, b, now, pos); s.onended = onend;
+    });
+  }
   function buildVxFx() {
     var box = document.querySelector(".vox-box"); if (!box || $("vx-fx")) return;
     if (!S.vox.fx) S.vox.fx = FXC.defaults();
     var d = document.createElement("details"); d.id = "vx-fx"; d.className = "vx-fx";
-    d.innerHTML = '<summary><strong>Vocal level, pan &amp; effects</strong> <small class="sub">manual · the raw take is never changed · applied to exports, Send to Player / DJ / Studio</small></summary>' +
+    d.innerHTML = '<summary><strong>Vocal level, pan &amp; effects</strong> <small class="sub">manual · heard live on take playback · the raw take is never changed · same settings on exports, Send to Player / DJ / Studio</small></summary>' +
+      '<div class="vx-row"><button type="button" class="btn small vx-ab js-vx-ab" aria-pressed="false">FX: ON (A/B)</button>' +
+      '<button type="button" class="btn small" id="vx-play2">▶ Play take with beat</button>' +
+      '<small class="sub">Effects change live while the take plays. FX A/B switches them off / on instantly so you can compare.</small></div>' +
+      '<div class="vx-row vx-tight"><label class="chk vx-big" title="Off by default (raw). Nudges the start of each syllable / phrase toward the beat grid; pitch and voice untouched, raw take kept."><input type="checkbox" id="vx-tight"> Tighten to beat</label>' +
+      '<label>Strength <input type="range" id="vx-tight-str" min="0" max="100" step="5" aria-label="Tighten strength"> <output id="vx-tight-val" class="mono"></output></label>' +
+      '<small class="sub" id="vx-tight-info">Latency is always lined up automatically.</small></div>' +
       '<div class="vx-row"><label>Vocal presets <select id="vx-preset" aria-label="Vocal presets"></select></label>' +
       '<small class="sub">Nothing is applied until you pick one. Recording itself is always raw.</small></div>' +
       '<div class="vx-row">' +
@@ -2863,6 +3084,7 @@
       '<span class="vx-applied">Applied <b id="vx-auto-val" class="mono">—</b></span></div>' +
       '<div class="vx-grid" id="vx-grid"></div>' +
       '<div class="vx-row"><button type="button" class="btn small" id="vx-reexp" hidden>Export last take again with these settings</button>' +
+      '<button type="button" class="btn small" id="vx-exp-fx">Export: With FX (beat + vocal)</button><button type="button" class="btn small" id="vx-exp-raw">Export: Raw take (no FX)</button>' +
       '<button type="button" class="btn small ghost" id="vx-alloff">All effects off</button></div>';
     var anchor = box.querySelector(".vox-opts");
     box.insertBefore(d, anchor);
@@ -2873,7 +3095,7 @@
         var st = S.vox.fx[sec.k], b = document.createElement("div"); b.className = "vx-blk" + (st.on ? " on" : ""); b.dataset.k = sec.k;
         b.innerHTML = '<div class="vx-h"><span>' + sec.name + '</span><button type="button" class="vx-sw' + (st.on ? " on" : "") + '" aria-pressed="' + st.on + '" aria-label="' + sec.name + ' on/off">' + (st.on ? "ON" : "OFF") + "</button></div>";
         if (sec.tip) { var tp = document.createElement("small"); tp.className = "vx-tip"; tp.textContent = sec.tip; b.appendChild(tp); }
-        b.querySelector(".vx-sw").addEventListener("click", function () { st.on = !st.on; render(); vxChanged(); });
+        b.querySelector(".vx-sw").addEventListener("click", function () { st.on = !st.on; render(); vxChanged(); if (sec.k === "bleed" || sec.k === "nr" || sec.k === "gate") vxRefreshPlaying(); });
         sec.p.forEach(function (p) {
           var lab = document.createElement("label"); lab.className = "vx-p";
           if (p[2] === "bool") {
@@ -2893,7 +3115,7 @@
             lab.innerHTML = "<span>" + p[1] + '</span><input type="range"><output class="mono"></output>';
             var rg = lab.querySelector("input"), o = lab.querySelector("output");
             rg.min = p[2]; rg.max = p[3]; rg.step = p[4]; rg.value = st[p[0]]; o.textContent = vxFmt(st[p[0]], p[5]);
-            rg.addEventListener("input", function () { st[p[0]] = +rg.value; o.textContent = vxFmt(st[p[0]], p[5]); if (!st.on) { st.on = true; b.classList.add("on"); var w = b.querySelector(".vx-sw"); w.classList.add("on"); w.textContent = "ON"; w.setAttribute("aria-pressed", "true"); } });
+            rg.addEventListener("input", function () { st[p[0]] = +rg.value; o.textContent = vxFmt(st[p[0]], p[5]); if (!st.on) { st.on = true; b.classList.add("on"); var w = b.querySelector(".vx-sw"); w.classList.add("on"); w.textContent = "ON"; w.setAttribute("aria-pressed", "true"); } vxLive(); });
             rg.addEventListener("change", vxChanged);
           }
           b.appendChild(lab);
@@ -2904,7 +3126,7 @@
     render();
     document.addEventListener("input", function (e) {
       if (!e.target.classList || !e.target.classList.contains("js-vx-pan")) return;
-      S.vox.pan = clamp(+e.target.value / 100, -1, 1); vxPanUI(); applyMixer();
+      S.vox.pan = clamp(+e.target.value / 100, -1, 1); vxPanUI(); applyMixer(); vxLive();
     });
     document.addEventListener("change", function (e) { if (e.target.classList && e.target.classList.contains("js-vx-pan")) vxChanged(); });
     $("vx-center").addEventListener("click", function () { S.vox.pan = 0; vxPanUI(); vxChanged(); });
@@ -2917,6 +3139,16 @@
     off.addEventListener("change", vxChanged);
     d.querySelectorAll(".vx-pre button").forEach(function (b) { b.addEventListener("click", function () { S.vox.autoOff = +b.dataset.off; if (!S.vox.auto) { S.vox.auto = true; au.checked = true; } offUI(); vxChanged(); }); });
     $("vx-reexp").addEventListener("click", function () { exportVocalMix(false); });
+    $("vx-exp-fx").addEventListener("click", function () { if (!vox.last) { toast("Record a vocal take first."); return; } exportVocalMix(false); });
+    $("vx-exp-raw").addEventListener("click", exportRawTake);
+    d.querySelector(".js-vx-ab").addEventListener("click", vxToggleAB);
+    $("vx-play2").addEventListener("click", voxPlayTake);
+    var tg = $("vx-tight"), ts = $("vx-tight-str"), tv = $("vx-tight-val");
+    function tightUI() { tg.checked = !!S.vox.tight.on; ts.value = Math.round(S.vox.tight.str * 100); tv.textContent = Math.round(S.vox.tight.str * 100) + "%"; ts.disabled = !S.vox.tight.on; }
+    tg.addEventListener("change", function () { S.vox.tight.on = tg.checked; if (tg.checked && !(S.vox.tight.str > 0)) S.vox.tight.str = 0.5; tightUI(); vxChanged(); vxRefreshPlaying(); });
+    ts.addEventListener("input", function () { S.vox.tight.str = +ts.value / 100; tv.textContent = ts.value + "%"; });
+    ts.addEventListener("change", function () { vxChanged(); vxRefreshPlaying(); });
+    tightUI(); vxABUI();
     $("vx-alloff").addEventListener("click", function () { Object.keys(S.vox.fx).forEach(function (k) { if (S.vox.fx[k]) S.vox.fx[k].on = false; }); render(); vxChanged(); });
     offUI(); vxPanUI();
     var ps = $("vx-preset");
@@ -3056,6 +3288,7 @@
         meterEls[g.id].style.height = Math.min(100, peak(groupNodes[g.id].an) * 100) + "%";
       });
       meterEls.master.style.height = Math.min(100, peak(masterAnalyser) * 100) + "%";
+      if (meterEls.samples) meterEls.samples.style.height = (PV ? Math.min(100, peak(PV.an) * 100) : 0) + "%";
       if (meterEls.vocal && vocalInAn) meterEls.vocal.style.height = (vox.stream ? Math.min(100, peak(vocalInAn) * 100) : 0) + "%"; // real mic input (pre-fader: a muted / pulled-down Vocal fader no longer hides a working mic)
     }
     var posK = currentPosK(), bar = posK / STEPS;
@@ -3384,10 +3617,9 @@
   }
   function vocalMixFx(t, which) {
     var useClean = which === "clean" || (which == null && t.clean);
-    var V0 = useClean && t.clean ? t.clean : t.V, sh = takeShift(t), n = t.frames, vs = new Float32Array(n), V = V0;
-    return vocalPre(t, V0).then(function (Vp) {
-    V = Vp;
-    for (var i = 0; i < n; i++) { var j = i + sh; vs[i] = j >= 0 && j < n ? V[j] : 0; }
+    var V0 = useClean && t.clean ? t.clean : t.V, sh = takeShift(t), n = t.frames, V = V0;
+    return vocalAligned(t, useClean ? "clean" : "raw").then(function (vs) {
+    V = vs; sh = 0; // already shifted (and tightened when that is on)
     return FXC.renderMono(vs, t.sr, { fx: S.vox.fx, pan: S.vox.pan, wide: S.vox.wide, bpm: S.bpm });
     }).then(function (pr) {
       var ad = vocalAutoDb(t, pr), vg = S.vox.auto ? mixGain("vocal") / VOC_FADER0 * Math.pow(10, ad / 20) : mixGain("vocal");
@@ -3441,38 +3673,56 @@
     var t = vpv && vpv.t; if (!t) return 0;
     return S.vox.auto ? mixGain("vocal") / VOC_FADER0 * Math.pow(10, liveAutoDb(t) / 20) : mixGain("vocal");
   }
-  function voxPrevApply() { if (vpv && vpv.g && ctx) vpv.g.gain.setTargetAtTime(voxPrevGain(), ctx.currentTime, 0.03); voxAutoUI(); }
+  function voxPrevApply() { if (vpv && vpv.src && VX && ctx) VX.lvl.gain.setTargetAtTime(voxPrevGain(), ctx.currentTime, 0.03); voxAutoUI(); if (vpv && vpv.src && S.vox.auto) vxAutoSoon(); }
+  /* auto level match follows FX changes: the take is rendered through the same settings offline (in the background,
+     debounced) and its loudness re-measured; the live gain then ramps to the new match */
+  var vxAutoT = null;
+  function vxAutoSoon(ms) {
+    clearTimeout(vxAutoT);
+    vxAutoT = setTimeout(function () {
+      var t = vpv.t; if (!t || !vpv.src) return;
+      var fxk = JSON.stringify([S.vox.fx, S.vox.wide, S.vox.pan, preKey(), S.vox.tight]);
+      if (t.autoKey === fxk) return;
+      vocalAligned(t).then(function (vs) { return FXC.renderMono(vs, t.sr, { fx: S.vox.fx, pan: S.vox.pan, wide: S.vox.wide, bpm: S.bpm }); })
+        .then(function (pr) { t.autoKey = fxk; vocalAutoDb(t, pr); if (vpv.src && VX) VX.lvl.gain.setTargetAtTime(voxPrevGain(), ctx.currentTime, 0.05); voxAutoUI(); });
+    }, ms == null ? 700 : ms);
+  }
   function voxPrevStop(fromStop) {
-    if (vpv.src) { try { vpv.src.onended = null; vpv.src.stop(); } catch (e) { /* ended */ } try { vpv.g.disconnect(); } catch (e) { /* gone */ } }
+    if (vpv.src) vxSrcStop(vpv);
     vpv.src = null; vpv.g = null; vpv.t = null;
-    var b = $("vox-playtake"); if (b) { b.textContent = "▶ Play take with beat"; b.classList.remove("on"); }
+    document.querySelectorAll("#vox-playtake, #vx-play2").forEach(function (b) { b.textContent = "▶ Play take with beat"; b.classList.remove("on"); });
     if (!fromStop && playing) stop(true);
   }
   function voxPlayTake() {
     if (vpv.src) { voxPrevStop(); return; }
     var t = vox.last;
     if (!t || !ensureCtx() || vox.state !== "idle" || rec.on) return;
-    var b = $("vox-playtake"); b.disabled = true; b.textContent = "Preparing…";
-    var useClean = !!t.clean, V0 = useClean ? t.clean : t.V, sh = takeShift(t), n = t.frames;
-    vocalPre(t, V0).then(function (V) {
-      var vs = new Float32Array(n);
-      for (var i = 0; i < n; i++) { var j = i + sh; vs[i] = j >= 0 && j < n ? V[j] : 0; }
-      return FXC.renderMono(vs, t.sr, { fx: S.vox.fx, pan: S.vox.pan, wide: S.vox.wide, bpm: S.bpm });
-    }).then(function (pr) {
-      vocalAutoDb(t, pr);
+    var b = $("vox-playtake") || $("vx-play2"); b.disabled = true; b.textContent = "Preparing…";
+    if (vc.src) vcStop();
+    vocalAligned(t).then(function (vs) {
       b.disabled = false;
       if (playing) stop(true);
-      var buf = ctx.createBuffer(2, pr[0].length, t.sr); buf.getChannelData(0).set(pr[0]); buf.getChannelData(1).set(pr[1]);
-      var s = ctx.createBufferSource(), g = ctx.createGain(); s.buffer = buf;
-      vpv.t = t; vpv.g = g; vpv.src = s; g.gain.value = voxPrevGain();
-      s.connect(g); g.connect(LG.fader); // through the master fader + limiter, like the beat
+      var buf = ctx.createBuffer(1, vs.length, t.sr); buf.getChannelData(0).set(vs); buf._vs = vs;
+      vxEnsure(); vpv.t = t; vpv.g = VX.lvl;
+      vxRoute("master", voxPrevGain()); // live FX chain → master fader + limiter, like the beat
+      vxSwapKey = preKey() + (S.vox.tight && S.vox.tight.on ? "T" + S.vox.tight.str : "") + ":null";
       S.cueBar = t.cueBar || 0; if (btActive()) S.cueBar = 0;
       var at = ctx.currentTime + 0.12;
-      play(at); s.start(at);
+      play(at); var s = vxSrcStart(vpv, buf, at, 0);
       s.onended = function () { if (vpv.src === s) voxPrevStop(); };
-      b.textContent = "■ Stop take"; b.classList.add("on");
+      document.querySelectorAll("#vox-playtake, #vx-play2").forEach(function (x) { x.textContent = "■ Stop take"; x.classList.add("on"); });
+      if (S.vox.auto) vxAutoSoon(0);
       voxAutoUI();
     }).catch(function (e) { b.disabled = false; b.textContent = "▶ Play take with beat"; toast("Couldn't play the take (" + (e && e.message || e) + ")"); });
+  }
+  /* Raw take (no FX): the vocal exactly as recorded (latency-aligned only), vocal alone, for mixing / mastering elsewhere */
+  function exportRawTake() {
+    var t = vox.last;
+    if (!t) { toast("Record a vocal take first."); return; }
+    var n = t.frames, sh = takeShift(t), V = t.V, out = new Float32Array(n);
+    for (var i = 0; i < n; i++) { var j = i + sh; out[i] = j >= 0 && j < n ? V[j] : 0; }
+    saveToVault(encodeWav(out, out, n, t.sr), n / t.sr, "Raw take (no FX)" + (t.title ? " · " + t.title : ""));
+    toast("Saved “Raw take (no FX)” to the Vault: your voice exactly as recorded, lined up with the beat");
   }
   function exportVocalMix(first, which) {
     var t = vox.last;
@@ -3709,9 +3959,11 @@
     for (var i = 0; i < t.frames; i++) { l[i] = mx.L[i] * sc; r[i] = mx.R[i] * sc; }
     return (vc.bufs[key] = b);
   }
-  function vcPos() { return vc.src ? vc.off + (ctx.currentTime - vc.t0) : vc.off; }
+  function vcPos() { return vc.src ? ctx.currentTime - vc.at0 : vc.off; }
   function vcStop(keepPos) {
-    if (vc.src) { var p = vcPos(); try { vc.src.onended = null; vc.src.stop(); } catch (e) { /* ignore */ } vc.src = null; vc.off = keepPos ? p : 0; }
+    vc.tok = (vc.tok || 0) + 1;
+    if (vc.bsrc) { try { vc.bsrc.stop(); } catch (e) { /* ended */ } vc.bsrc = null; }
+    if (vc.src) { var p = vcPos(); vxSrcStop(vc); vc.off = keepPos ? p : 0; }
     else if (!keepPos) vc.off = 0;
     var b = $("vc-play"); if (b) b.textContent = "▶ Play";
   }
@@ -3719,12 +3971,23 @@
     if (!vox.last || !vox.last.clean || !ensureCtx()) return;
     if (vox.state !== "idle") return;
     if (playing) stop(true);
-    var b = vcBuf(vc.ab, vc.solo), s = ctx.createBufferSource();
-    if (vc.off >= b.duration) vc.off = 0;
-    s.buffer = b; s.connect(ctx.destination); // straight to the speakers: never into master / recordings
-    s.start(ctx.currentTime + 0.02, vc.off); vc.t0 = ctx.currentTime + 0.02; vc.src = s;
-    s.onended = function () { if (vc.src === s) { vc.src = null; vc.off = 0; $("vc-play").textContent = "▶ Play"; } };
-    $("vc-play").textContent = "■ Stop";
+    if (vpv.src) voxPrevStop(true);
+    var t = vox.last, which = vc.ab === "clean" ? "clean" : "raw", tok = vc.tok = (vc.tok || 0) + 1;
+    vocalAligned(t, which).then(function (vs) {
+      if (vc.tok !== tok || vc.src) return;
+      var dur = t.frames / t.sr; if (vc.off >= dur) vc.off = 0;
+      var at = ctx.currentTime + 0.03;
+      if (!vc.solo) { // the beat exactly as it played during the take, straight to the speakers
+        var bb = vc.beatBuf; if (!bb || bb._t !== t) { bb = ctx.createBuffer(2, t.frames, t.sr); bb.getChannelData(0).set(t.L); bb.getChannelData(1).set(t.R); bb._t = t; vc.beatBuf = bb; }
+        var bs = ctx.createBufferSource(); bs.buffer = bb; bs.connect(ctx.destination); bs.start(at, vc.off); vc.bsrc = bs;
+      }
+      var vb = ctx.createBuffer(1, vs.length, t.sr); vb.getChannelData(0).set(vs); vb._vs = vs;
+      vxEnsure(); vxRoute("spk", vc.solo ? 1 : mixGain("vocal")); // vocal through the live FX chain, never into master / recordings
+      vxSwapKey = preKey() + (S.vox.tight && S.vox.tight.on ? "T" + S.vox.tight.str : "") + ":" + which;
+      var s = vxSrcStart(vc, vb, at, vc.off); vc.t0 = at;
+      s.onended = function () { if (vc.src === s) { vc.src = null; vc.off = 0; if (vc.bsrc) { try { vc.bsrc.stop(); } catch (e) { /* ended */ } vc.bsrc = null; } $("vc-play").textContent = "▶ Play"; } };
+      $("vc-play").textContent = "■ Stop";
+    });
   }
   function vcSetAB(ab) {
     var was = !!vc.src; vc.ab = ab;
@@ -5414,7 +5677,6 @@
     var so = ovAt(curCtx); if (so && so.keys === false) return; // section editing: keys / Piano Roll off in this section
     var p = pianoPat();
     if (!p.notes.length) return;
-    if (klPrev && klPrev.synced && G === LG && t >= klPrev.t0 - 0.002 && t < klPrev.end) return; // a keys-loop preview has the floor
     var s16 = pianoStepOf(info), t0 = s16 * PD.STEP, tickSec = len / PD.STEP;
     var sw = s16 % 2 === 1 ? len * (S.swing / 100) : 0;
     var ns = PD.notesStarting(p, t0, t0 + PD.STEP), gl = PD.gainLin(p);
@@ -5741,6 +6003,7 @@
    * BPM + swing. Preview plays through the Piano Roll mixer channel; while the beat is playing it joins on the next
    * bar, in time with the drums, and the current piano pattern steps aside for it.
    */
+  var KL_NORM = 0.5; // keys-loop previews on the Samples bus (the synths peak near full scale)
   var KL = window.IPBKeysLoops, klPrev = null, klReady = false, klCat = "rap", klWhere = "beats";
   function klInstName(id) { var i = PK.BY_ID[id]; return i ? i.name : id; }
   function patInstLabel(p) { return PD.instsOf(p).map(klInstName).join(" + "); } // "Trap Pluck + Tuned 808 (glide + drive) + …"
@@ -5839,8 +6102,9 @@
     klLoading = null;
     var p = klBuild(id), sd = stepDur(), tick = sd / PD.STEP, L = p.bars * PD.TPBAR, passes = Math.max(1, Math.round(4 / p.bars));
     var t0 = ctx.currentTime + 0.08, synced = false;
-    if (playing && drumsOn()) { var barK = Math.ceil(curK / STEPS) * STEPS; t0 = nextTime + (barK - curK) * sd; synced = true; }
-    var voices = [], dest = LG.groups.piano;
+    if (playing && drumsOn() && matchCfg().sync) { var barK = Math.ceil(curK / STEPS) * STEPS; t0 = nextTime + (barK - curK) * sd; synced = true; }
+    var voices = [], dest = pvDest(KL_NORM);
+    if (!dest) return;
     if (PK.setTempo) PK.setTempo(S.bpm);
     if (PK.setFeel) PK.setFeel(S.feel);
     for (var r = 0; r < passes; r++) {
@@ -5853,13 +6117,10 @@
       });
     }
     var end = t0 + passes * L * tick;
-    if (synced) LG.preg.forEach(function (v) { v.stop(t0); }); // the current piano pattern steps aside
     klPrev = { id: id, t0: t0, end: end, synced: synced, voices: voices, notes: p.notes.length * passes };
     klPrev.timer = setTimeout(function () { if (klPrev && klPrev.id === id) { klPrev = null; klRefreshCards(); } }, (end - ctx.currentTime) * 1000 + 400);
     klRefreshCards();
-    pianoChannelCheck();
     var Lp = KL.BY_ID[id];
-    if (mixGain("piano") === 0) return;
     toast("Preview: " + Lp.name + " · " + KL.keyLabel(Lp, S.songKey) + " · " + S.bpm + " BPM" + (synced ? " · joins on the next bar" : ""));
   }
   /* keys loops + Piano Roll play through the "Piano Roll" mixer channel: if it is at 0 or muted, say so (with a one-tap fix) instead of silence */
@@ -6243,6 +6504,9 @@
     buildChords();
     buildPiano();
     buildMixer(); buildVxFx(); voButtons();
+    document.addEventListener("input", function (e) { if (e.target.classList && e.target.classList.contains("js-samplevol")) setSampleVol(e.target.value); });
+    document.addEventListener("click", function (e) { var b = e.target.closest && e.target.closest(".js-match"); if (b) setMatch(b.dataset.k, !matchCfg()[b.dataset.k]); });
+    svUI(); matchUI();
     wire();
     renderChordLoopUI();
     renderTimelines();
@@ -6383,6 +6647,16 @@
       ids: libIds, preview: function (id) { return swPreview(id); }, storage: function () { return LIB.storage(); }, clear: function () { return LIB.clearUnused(libIds()); },
       manifest: function () { return LIB.manifest(); }, load: function (id) { ensureCtx(); return LIB.load(id, ctx).then(function (s) { return { zones: s.zones.length, dur: s.zones.length ? s.zones[0].buf.duration : 0 }; }); }
     },
+    samples: { vol: sampleVol, set: setSampleVol, match: matchCfg, setMatch: setMatch,
+      bus: function () { return PV ? { peak: peak(PV.an), gain: PV.fader.gain.value } : null; },
+      loud: function (id) { var x = LIB.get(id); return x ? sndLoud(x) : null; }, cfg: function (T) { var c = lyCfg(T); return { src: c.src, sg: c.sg }; },
+      lag: function () { return playing && ctx ? nextTime - ctx.currentTime : null; }, masterPeak: function () { return masterAnalyser ? peak(masterAnalyser) : 0; }, kl: function (id) { return klPreview(id); },
+      loopPlan: function (id) { var x = LIB.get(id); if (!x) return null; var lp = loopPlay(x.it, x.zones[0].buf); return { ready: lp.ready, rate: lp.rate, len: lp.buf.duration, bar: 240 / S.bpm, bars: x.it.bars }; } },
+    vx: { get: function () { return VX; }, ensure: vxEnsure, ab: vxToggleAB, live: vxLive, an: function () { return VX && VX.an; },
+      state: function () { return { vpv: !!vpv.src, vc: !!vc.src, fxOff: !!S.vox.fxOff, tight: S.vox.tight, info: vox.last && vox.last.tightInfo, playing: playing }; },
+      fx: function () { return S.vox.fx; }, set: function (k, o) { S.vox.fx = S.vox.fx || FXC.defaults(); Object.assign(S.vox.fx[k], o); vxChanged(); },
+      tight: function (on, str) { S.vox.tight = { on: !!on, str: str == null ? 0.5 : str }; vxChanged(); vxRefreshPlaying(); }, play: voxPlayTake, stop: function () { voxPrevStop(); },
+      setTake: function (o) { vox.last = o; } },
     backingTempo: function () { try { return bt.buf ? refEstimateBpm(bt.buf) : null; } catch (e) { return null; } }
   };
   window.IPBVocalClean = {

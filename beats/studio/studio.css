@@ -193,3 +193,5 @@ body.embed .st-standalone { display: none; }
 .fx-auto-pre { display: flex; flex-wrap: wrap; gap: .4rem; margin: .2rem 0; }
 .fx-auto-pre .btn { min-height: 44px; }
 .fx-auto-pre .btn.on { border-color: var(--accent, #22d3ee); color: var(--accent, #22d3ee); }
+.fx-ab .vx-ab { min-height: 44px; min-width: 84px; font-weight: 800; }
+.fx-ab .vx-ab.on { background: rgba(250,204,21,.18); border-color: rgba(250,204,21,.75); color: #fef08a; }
