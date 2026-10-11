@@ -1512,7 +1512,7 @@
       var meta = (it.t || []).slice(0, 2).join(" · ") + (it.k === "multi" ? " · multisampled" : it.k === "preset" ? " · synth preset" : it.k === "loop" ? " · " + it.bpm + " BPM" + (it.key ? " " + it.key : "") : "");
       html += '<div class="sw-row' + (it.id === cur ? " using" : "") + (it.id === swSel ? " sel" : "") + (it.id === swBusyId ? " busy" : "") + '" role="listitem" data-id="' + it.id + '">' +
         '<button type="button" class="sw-play" aria-label="Preview ' + it.n.replace(/"/g, "") + '"><span class="sw-n">▶ ' + it.n.replace(/</g, "&lt;") + '</span><span class="sw-m">' + meta +
-        ' <span class="sw-h" title="heaviness">' + dots + '</span> ' + (it.b ? fmtKB(it.b) : "0 KB") + (swCached[it.id] || !it.b ? " ✓" : "") + '</span></button>' +
+        ' <span class="sw-h" title="heaviness">' + dots + '</span> ' + (it.b ? fmtKB(it.b) + (swCached[it.id] ? " ✓" : "") : "built in") + '</span></button>' +
         '<button type="button" class="btn small sw-use">' + (it.id === cur ? "In use" : "Use") + '</button></div>';
     });
     swEls.list.innerHTML = html || '<p class="sw-empty">No sounds match — clear the search or pick "All".</p>';
