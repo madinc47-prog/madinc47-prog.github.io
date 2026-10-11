@@ -889,3 +889,5 @@ body.bt-on .rec-bar .vox-meter { display: none; }
   .lyr-acts { width: 100%; justify-content: space-between; }
   .lyr-hint { display: none; }
 }
+/* the Send box sits bottom-right and compact on wide screens so it doesn't sit over the Record / Stop row (626 px-tall tablets) */
+@media (min-width: 900px) { .send-toast { left: auto; right: 1rem; bottom: 1rem; transform: none; max-width: 400px; font-size: .8rem; } }
