@@ -20,6 +20,7 @@
   var PD = window.IPBPianoData;       // piano-roll pattern format + library (pianoroll-data.js)
   var PK = window.IPBKeys;            // melodic instruments (keys-instruments.js)
   var FEEL = window.IPBFeel;          // Feel engine: velocity tone, micro-timing, variation (humanize.js)
+  var LY = window.IPBLayers;          // tweakable layers: per-layer knobs + one shared chain per layer (layers.js)
   var PIANO_LIB_KEY = "ipb_piano_lib_v1";
   function instOk(id) { return !!PK.BY_ID[id]; }
   var DEFAULT_KIT = "qb";
@@ -39,7 +40,8 @@
   /* swing: stored as % of a 16th (0–60, as before); shown MPC-style (50 % = straight, 62 % = QB bounce) */
   function mpcSwing(sw) { return Math.round(50 + sw / 2); }
   function swingFromMpc(p) { return clamp(Math.round((p - 50) * 2), 0, 60); }
-  function defaultPadCfg(def) { return { tune: 0, decay: 1, level: 0, pan: def.pan || 0, drive: 0, nudge: def.nudge || 0 }; }
+  function padBase(def) { return { pan: def.pan || 0, nudge: def.nudge || 0 }; }
+  function defaultPadCfg(def) { return LY.defaults("drum", padBase(def)); } // tune / fine / decay / filter / level / pan / drive / nudge
   function padCfg(i, kit) {
     kit = kitId(kit || S.kit);
     var all = S.padCfg[kit] || (S.padCfg[kit] = []);
@@ -50,13 +52,7 @@
     Object.keys(src || {}).forEach(function (k) {
       if (!D.BY_ID[k] || !Array.isArray(src[k])) return;
       out[k] = src[k].slice(0, 16).map(function (c, i) {
-        var d = defaultPadCfg(D.BY_ID[k].pads[i]);
-        if (!c || typeof c !== "object") return d;
-        return {
-          tune: clamp(+c.tune || 0, -12, 12), decay: clamp(c.decay == null ? 1 : +c.decay, 0.05, 1),
-          level: clamp(+c.level || 0, -24, 6), pan: clamp(c.pan == null ? d.pan : +c.pan, -1, 1),
-          drive: clamp(+c.drive || 0, 0, 1), nudge: clamp(c.nudge == null ? d.nudge : +c.nudge, -30, 30)
-        };
+        return LY.clean(c, "drum", padBase(D.BY_ID[k].pads[i])); // older saves: missing knobs → defaults
       });
     });
     return out;
@@ -79,7 +75,7 @@
   }
   function defaultChordTrack() {
     // Cm – Ab – Fm – G7 (indices into CHORDS), off until the user or a preset turns it on
-    return { on: false, prog: [6, 10, 8, 15], bars: 2, sound: "pad", bassFollow: false };
+    return { on: false, prog: [6, 10, 8, 15], bars: 2, sound: "pad", bassFollow: false, lx: LY.defaults("mel") };
   }
   var S = {
     kit: DEFAULT_KIT,
@@ -208,7 +204,8 @@
       if (d.chordTrack && Array.isArray(d.chordTrack.prog)) {
         var ct = defaultChordTrack();
         Object.keys(ct).forEach(function (k) { if (d.chordTrack[k] != null) ct[k] = d.chordTrack[k]; });
-        S.chordTrack = ct;
+        ct.lx = LY.clean(ct.lx, "mel"); // sessions before tweakable layers → defaults
+    S.chordTrack = ct;
       }
       if (d.structure && STRUCTURES[d.structure]) S.structure = d.structure;
       if (d.cueBar != null) S.cueBar = Math.max(0, Math.floor(+d.cueBar) || 0);
@@ -478,10 +475,6 @@
     return (x < 0 ? -1 : 1) * Math.min(1, y) * CEIL;
   });
   function busCurve(k) { k = Math.max(1.01, k); return softCurve("bus" + k.toFixed(2), function (x) { return Math.tanh(k * x) / k; }); }
-  function padDriveCurve(dr) {
-    var k = 1 + dr * 4;
-    return softCurve("pd" + dr.toFixed(2), function (x) { return Math.tanh(k * Math.max(-1, Math.min(1, x))) / Math.tanh(k); });
-  }
   function makeGraph(c, live) {
     function gn(v) { var g = c.createGain(); g.gain.value = v == null ? 1 : v; return g; }
     var G = { c: c, groups: {}, an: {}, strips: [], rr: new Array(16).fill(0), preg: [] }; // preg = piano-roll voices
@@ -515,33 +508,19 @@
       tail.connect(g.id === "keys" || g.id === "inst" || g.id === "piano" ? G.keysDelay : G.bus);
       G.groups[g.id] = n;
     });
-    for (var i = 0; i < 16; i++) {
-      var st = { inp: gn(1), drv: c.createWaveShaper(), post: gn(1), pan: c.createStereoPanner ? c.createStereoPanner() : null, key: "" };
-      st.drv.oversample = "none";
-      G.strips.push(st);
-    }
+    for (var i = 0; i < 16; i++) G.strips.push(LY.Strip(c, G.groups[padDef(i).g])); // one chain per drum row
+    G.lstrips = {}; // melodic layers (piano-roll instruments, chord loop), created on first note
     graphKit(G);
     return G;
   }
   /* pad strip routing + settings; `t` = ramp time for live changes */
   function stripApply(G, i, t) {
-    var st = G.strips[i], cfg = padCfg(i), def = padDef(i), on = cfg.drive > 0.005;
-    var key = def.g + (on ? "d" : "");
-    if (st.key !== key) {
-      [st.inp, st.drv, st.post].concat(st.pan ? [st.pan] : []).forEach(function (n) { try { n.disconnect(); } catch (e) { /* not connected */ } });
-      if (on) { st.inp.connect(st.drv); st.drv.connect(st.post); } else st.inp.connect(st.post);
-      if (st.pan) { st.post.connect(st.pan); st.pan.connect(G.groups[def.g]); } else st.post.connect(G.groups[def.g]);
-      st.key = key;
+    var st = G.strips[i], g = padDef(i).g;
+    if (st.g !== g) { // kit change can move a row to another group fader
+      try { st.out.disconnect(); } catch (e) { /* not connected */ }
+      st.out.connect(G.groups[g]); st.g = g;
     }
-    if (on) st.drv.curve = padDriveCurve(Math.round(cfg.drive * 50) / 50);
-    var lvl = dbGain(cfg.level) * (on ? 1 / Math.pow(1 + cfg.drive * 4, 0.6) : 1);
-    if (t) {
-      st.inp.gain.setTargetAtTime(lvl, t, 0.015);
-      if (st.pan) st.pan.pan.setTargetAtTime(cfg.pan, t, 0.015);
-    } else {
-      st.inp.gain.value = lvl;
-      if (st.pan) st.pan.pan.value = cfg.pan;
-    }
+    st.apply(padCfg(i), t);
   }
   function graphKit(G, t) {
     for (var i = 0; i < 16; i++) stripApply(G, i, t);
@@ -597,7 +576,36 @@
     if (spkGain) spkGain.gain.setTargetAtTime(vox.state !== "idle" && vox.takeMode === "spk" ? spkBeatGain() : 1, t, 0.02);
   }
   function hasPad(i) { return !!(customBuf[i] || stockBufs[i]); }
-  function audible(p) { return !S.mute[p] && (!S.solo.some(Boolean) || S.solo[p]); }
+  function anySolo() {
+    if (S.solo.some(Boolean)) return true;
+    var lx = pianoPat().lx;
+    if (lx && Object.keys(lx).some(function (k) { return lx[k].s; })) return true;
+    return !!(S.chordTrack.lx && S.chordTrack.lx.s);
+  }
+  function audible(p) { return !S.mute[p] && (!anySolo() || S.solo[p]); }
+  function melAudible(cfg) { return !cfg || (!cfg.m && (!anySolo() || cfg.s)); }
+  /* melodic layer config: one per instrument inside a piano-roll pattern (p.lx[inst]); chord loop = S.chordTrack.lx */
+  function melCfg(p, inst, create) {
+    var lx = p.lx || (create ? (p.lx = {}) : null);
+    if (!lx) return null;
+    return lx[inst] || (create ? (lx[inst] = LY.defaults("mel")) : null);
+  }
+  /* melodic Decay below 100 %: the note is held for less AND its ring is faded (plucks / pianos ring past the key-up) */
+  function melDecay(c, dest, t, dur, d) {
+    var g = c.createGain(), hold = dur * d * 0.5, tau = dur * d * 0.2 + 0.015;
+    g.gain.setValueAtTime(1, t + hold);
+    g.gain.setTargetAtTime(0, t + hold, tau);
+    g.connect(dest);
+    return g;
+  }
+  function chordCfg() { return S.chordTrack.lx || (S.chordTrack.lx = LY.defaults("mel")); }
+  /* the shared chain of a melodic layer in graph G (lazily built; re-applied when its config object changes) */
+  function melStrip(G, key, cfg, dest) {
+    var st = G.lstrips[key];
+    if (!st) { st = G.lstrips[key] = LY.Strip(G.c, dest); st.cfgRef = null; }
+    if (st.cfgRef !== cfg) { st.apply(cfg || LY.defaults("mel"), G === LG && ctx ? ctx.currentTime : 0); st.cfgRef = cfg; }
+    return st;
+  }
 
   /* shared by live playback + offline bounce. o = { vel, semi, slide } */
   function playPadInto(c, G, i, when, reg, o) {
@@ -605,7 +613,7 @@
     var def = padDef(i), cfg = padCfg(i), bufs = stockBufs[i];
     var buf = customBuf[i] || (bufs && bufs.length ? bufs[G.rr[i]++ % bufs.length] : null);
     if (!buf) return;
-    var rate = Math.pow(2, ((cfg.tune || 0) + (o.semi || 0) + (o.cents || 0) / 100) / 12);
+    var rate = Math.pow(2, ((cfg.tune || 0) + (o.semi || 0) + ((o.cents || 0) + (cfg.fine || 0)) / 100) / 12);
     var k, v;
     if (def.ck) {
       if (o.slide) { // legato glide: bend the voice that is still ringing instead of retriggering
@@ -733,7 +741,7 @@
     var sw = info.patStep % 2 === 1 ? len * (S.swing / 100) : 0;
     schedulePiano(c, G, info, t, len);
     var ch = chordAt(info, first);
-    if (ch && ch.change) startChord(c, ch.idx, t, G.groups.keys, creg);
+    if (ch && ch.change) { var cc = chordCfg(); startChord(c, ch.idx, t + cc.nudge / 1000, melStrip(G, "chord", cc, G.groups.keys).inp, creg); }
     var kit = kitDef(S.kit), s = info.patStep;
     for (var p = 0; p < 16; p++) {
       var v = S.pattern[p][s];
@@ -920,8 +928,10 @@
     cutChords(reg, t);
     var ch = CHORDS[ci];
     if (!ch) return; // "—" = rest
-    var dur = barSec() * Math.max(1, S.chordTrack.bars) * 2 + 0.5; // cut earlier by the next chord / stop
-    var cn = QUAL[ch.q].map(function (iv) { return { p: 48 + ch.r + iv, t: t, v: 0.8 }; });
+    var lc = chordCfg();
+    if (!melAudible(lc)) return; // chord layer muted / another layer soloed
+    var dur = barSec() * Math.max(1, S.chordTrack.bars) * 2 * lc.decay + 0.5; // cut earlier by the next chord / stop
+    var cn = QUAL[ch.q].map(function (iv) { return { p: 48 + ch.r + iv + lc.tune + lc.fine / 100, t: Math.max(0, t), v: 0.8 }; });
     FEEL.chord(S.feel, cn, Math.round(t * 1000), FEEL.style(kitDef(S.kit)));
     cn.forEach(function (n) {
       reg.push(synthNote(c, dest, n.p, n.t, dur - (n.t - t), S.chordTrack.sound, S.feel === "off" ? null : n.v / 0.8));
@@ -988,6 +998,184 @@
     });
     $("pe-mute").classList.toggle("on", !!S.mute[i]);
     $("pe-solo").classList.toggle("on", !!S.solo[i]);
+    if (lyT) { if (lyT.kind === "drum" && (lyT.pad !== i || lyT.kit !== S.kit)) { lyT = { kind: "drum", pad: i, kit: S.kit }; } lyRefresh(); }
+    lyDots();
+  }
+  /* ---------------- Layer sheet: tweakable layers (one strip of big knobs per sound layer) ----------------
+     Targets: { kind: "drum", pad, kit } · { kind: "mel", slot, inst } (piano-roll / keys-loop instrument) · { kind: "chord" } */
+  var lyHist = LY.History(150), lyT = null, lySaveT = null, lyEls = null;
+  function lyKind(T) { return T.kind === "drum" ? "drum" : "mel"; }
+  function lyBase(T) { return T.kind === "drum" ? padBase(kitDef(T.kit).pads[T.pad]) : null; }
+  function lyCfg(T) { return T.kind === "drum" ? padCfg(T.pad, T.kit) : T.kind === "chord" ? chordCfg() : melCfg(S.piano.slots[T.slot], T.inst, true); }
+  function lyName(T) {
+    if (T.kind === "drum") return (T.pad + 1) + " · " + kitDef(T.kit).pads[T.pad].n;
+    if (T.kind === "chord") return "Chord loop";
+    return klInstName(T.inst) + " · Piano " + T.slot;
+  }
+  function lySub(T) {
+    if (T.kind === "drum") { var d = kitDef(T.kit).pads[T.pad]; return ((GROUPS.filter(function (g) { return g.id === d.g; })[0] || {}).name || "") + " row" + (d.ck ? " · glide on slides" : ""); }
+    return T.kind === "chord" ? "Chord loop synth" : "Piano Roll layer";
+  }
+  function lyMuted(T) { return T.kind === "drum" ? !!S.mute[T.pad] : !!lyCfg(T).m; }
+  function lySoloed(T) { return T.kind === "drum" ? !!S.solo[T.pad] : !!lyCfg(T).s; }
+  function lyTweaked(T) { return LY.tweaked(lyCfg(T), lyKind(T), lyBase(T)); }
+  function lyApply(T) {
+    if (!LG || !ctx) return;
+    var t = ctx.currentTime;
+    if (T.kind === "drum") { if (T.kit === S.kit) stripApply(LG, T.pad, t); return; }
+    var cfg = lyCfg(T), st = LG.lstrips[T.kind === "chord" ? "chord" : T.slot + ":" + T.inst];
+    if (st) { st.apply(cfg, t); st.cfgRef = cfg; }
+  }
+  function lyChanged(T, quiet) {
+    lyApply(T);
+    lyDots();
+    if (T.kind === "drum" && T.pad === S.sel && !quiet) refreshInspector();
+    if (lyT) lyRefresh();
+    clearTimeout(lySaveT); lySaveT = setTimeout(saveSession, 250);
+  }
+  function lySet(T, key, v) { lyCfg(T)[key] = v; lyChanged(T); }
+  function lyHistUI() { if (!lyEls) return; var c = lyHist.can(); lyEls.undo.disabled = !c.undo; lyEls.redo.disabled = !c.redo; }
+  function lyPush(T, label, before, after) {
+    lyHist.push({ label: label,
+      undo: function () { var c = lyCfg(T); Object.keys(before).forEach(function (k) { c[k] = before[k]; }); lyChanged(T); },
+      redo: function () { var c = lyCfg(T); Object.keys(after).forEach(function (k) { c[k] = after[k]; }); lyChanged(T); } });
+    lyHistUI();
+  }
+  function lyAudition(T) {
+    if (playing) return;
+    if (T.kind === "drum") { if (T.kit === S.kit) triggerPad(T.pad); }
+    else if (T.kind === "mel" && T.slot === S.piano.slot && T.inst === pianoPat().inst) pianoPreview(60 + (pianoPat().key || 0) - (pianoPat().key > 5 ? 12 : 0));
+  }
+  function lyKnobVal(k, el) { return k.val ? k.val(+el.value) : +el.value; }
+  function lyBuild() {
+    var sh = document.createElement("section");
+    sh.className = "lyr-sheet"; sh.id = "lyr-sheet"; sh.hidden = true;
+    sh.setAttribute("aria-label", "Layer knobs");
+    sh.innerHTML =
+      '<div class="lyr-head"><div class="lyr-title"><span class="label">Layer</span> <strong id="lyr-name"></strong> <span class="lyr-sub" id="lyr-sub"></span></div>' +
+      '<div class="lyr-acts"><button type="button" class="ms lyr-ms" id="lyr-m" title="Mute this layer">M</button><button type="button" class="ms lyr-ms" id="lyr-s" title="Solo this layer">S</button>' +
+      '<button type="button" class="btn small ghost" id="lyr-undo" title="Undo knob change">↶</button><button type="button" class="btn small ghost" id="lyr-redo" title="Redo knob change">↷</button>' +
+      '<button type="button" class="btn small ghost" id="lyr-reset">Reset layer</button><button type="button" class="btn small ghost lyr-x" id="lyr-close" aria-label="Close layer knobs">✕</button></div></div>' +
+      '<div class="lyr-knobs" id="lyr-knobs"></div><p class="lyr-hint">Drag a slider · double-tap it to reset · changes play live</p>';
+    document.body.appendChild(sh);
+    var wrap = sh.querySelector("#lyr-knobs"), knobs = {};
+    LY.KNOBS.forEach(function (k) {
+      var lab = document.createElement("label"); lab.className = "lyr-k"; lab.dataset.key = k.key;
+      lab.innerHTML = '<span class="lyr-l"></span><output class="lyr-v mono"></output><input type="range">';
+      var el = lab.querySelector("input"), out = lab.querySelector("output"), before = null, lastTap = 0, holdUntil = 0;
+      el.min = k.min; el.max = k.max; el.step = k.step;
+      function grab() { if (lyT && before === null) before = lyCfg(lyT)[k.key]; }
+      function commit() {
+        if (!lyT || before === null) return;
+        var after = lyCfg(lyT)[k.key], b = {}, a = {};
+        if (after !== before) { b[k.key] = before; a[k.key] = after; lyPush(lyT, k.label, b, a); }
+        before = null;
+        if (k.key === "tune" || k.key === "fine" || k.key === "decay") lyAudition(lyT);
+      }
+      function reset() {
+        if (!lyT) return;
+        var d = LY.defaults(lyKind(lyT), lyBase(lyT))[k.key], cur = lyCfg(lyT)[k.key], b = {}, a = {};
+        before = null;
+        holdUntil = Date.now() + 450; // the second tap's own slider jump must not undo the reset
+        if (cur === d) return;
+        b[k.key] = cur; a[k.key] = d;
+        lySet(lyT, k.key, d); lyPush(lyT, k.label + " reset", b, a);
+        toast(k.label + " reset");
+      }
+      el.addEventListener("pointerdown", function (e) {
+        var now = Date.now();
+        if (now - lastTap < 320) { e.preventDefault(); lastTap = 0; reset(); return; }
+        lastTap = now; grab();
+      });
+      el.addEventListener("dblclick", function (e) { e.preventDefault(); reset(); });
+      el.addEventListener("focus", grab);
+      el.addEventListener("input", function () {
+        if (!lyT) return;
+        if (Date.now() < holdUntil) { var cv = lyCfg(lyT)[k.key]; el.value = k.pos ? k.pos(cv) : cv; return; }
+        grab(); var c = lyCfg(lyT); c[k.key] = lyKnobVal(k, el); out.textContent = k.fmt(c[k.key]); lyChanged(lyT); });
+      el.addEventListener("change", commit);
+      wrap.appendChild(lab);
+      knobs[k.key] = { k: k, lab: lab, el: el, out: out, name: lab.querySelector(".lyr-l") };
+    });
+    lyEls = { sh: sh, knobs: knobs, undo: sh.querySelector("#lyr-undo"), redo: sh.querySelector("#lyr-redo") };
+    sh.querySelector("#lyr-close").addEventListener("click", function () { lyClose(); });
+    lyEls.undo.addEventListener("click", function () { var e = lyHist.undo(); if (e) toast("Undo " + e.label); lyHistUI(); });
+    lyEls.redo.addEventListener("click", function () { var e = lyHist.redo(); if (e) toast("Redo " + e.label); lyHistUI(); });
+    sh.querySelector("#lyr-reset").addEventListener("click", function () {
+      if (!lyT) return;
+      var T = lyT, c = lyCfg(T), d = LY.defaults(lyKind(T), lyBase(T)), b = {}, a = {};
+      LY.KNOBS.forEach(function (k) { if (c[k.key] !== d[k.key]) { b[k.key] = c[k.key]; a[k.key] = d[k.key]; c[k.key] = d[k.key]; } });
+      if (!Object.keys(b).length) { toast("Layer is already at its defaults"); return; }
+      lyPush(T, "reset layer", b, a); lyChanged(T); toast("Layer reset");
+    });
+    sh.querySelector("#lyr-m").addEventListener("click", function () { lyMS("m"); });
+    sh.querySelector("#lyr-s").addEventListener("click", function () { lyMS("s"); });
+  }
+  function lyMS(kind) {
+    if (!lyT) return;
+    if (lyT.kind === "drum") { toggleMS(kind, lyT.pad); }
+    else { var c = lyCfg(lyT); c[kind] = !c[kind]; refreshMS(); }
+    lyChanged(lyT);
+  }
+  function lyRefresh() {
+    if (!lyEls || !lyT) return;
+    var T = lyT, c = lyCfg(T), kind = lyKind(T);
+    $("lyr-name").textContent = lyName(T);
+    $("lyr-sub").textContent = lySub(T);
+    $("lyr-m").classList.toggle("on", lyMuted(T));
+    $("lyr-s").classList.toggle("on", lySoloed(T));
+    lyEls.sh.classList.toggle("tw", lyTweaked(T));
+    var d = LY.defaults(kind, lyBase(T));
+    LY.KNOBS.forEach(function (k) {
+      var o = lyEls.knobs[k.key], r = LY.range(k, kind);
+      o.name.textContent = r.label;
+      if (!k.pos) { o.el.min = r.min; o.el.max = r.max; }
+      var pos = k.pos ? k.pos(c[k.key]) : c[k.key];
+      if (document.activeElement !== o.el || +o.el.value !== pos) o.el.value = pos;
+      o.out.textContent = k.fmt(c[k.key]);
+      o.lab.classList.toggle("changed", Math.abs(c[k.key] - d[k.key]) > 1e-6);
+    });
+    lyHistUI();
+  }
+  function lyOpen(T) {
+    if (!lyEls) lyBuild();
+    if (T.kind === "drum") T.kit = S.kit;
+    lyT = T;
+    lyEls.sh.hidden = false;
+    document.body.classList.add("lyr-open");
+    lyRefresh();
+    requestAnimationFrame(function () { document.body.style.paddingBottom = lyEls.sh.offsetHeight + "px"; });
+  }
+  function lyClose() {
+    lyT = null;
+    if (lyEls) lyEls.sh.hidden = true;
+    document.body.classList.remove("lyr-open");
+    document.body.style.paddingBottom = "";
+  }
+  /* "tweaked" dots on drum rows, pads, piano layer chips and the chord loop button */
+  function lyDots() {
+    seqRows.forEach(function (row, p) { var n = row.querySelector(".rname"); if (n) n.classList.toggle("tw", LY.tweaked(padCfg(p), "drum", padBase(padDef(p)))); });
+    padEls.forEach(function (el, p) { el.classList.toggle("tw", LY.tweaked(padCfg(p), "drum", padBase(padDef(p)))); });
+    var cb = $("cl-layer"); if (cb) cb.classList.toggle("tw", LY.tweaked(chordCfg(), "mel"));
+    lyBar();
+  }
+  /* Piano Roll "Layers" bar: one chip per instrument in the current pattern (+ the chord loop when it is on) */
+  function lyBar() {
+    var bar = $("pn-layers");
+    if (!bar) return;
+    var p = pianoPat(), slot = S.piano.slot, html = '<span class="label">Layers</span>';
+    var items = PD.instsOf(p).map(function (id) { return { kind: "mel", slot: slot, inst: id }; });
+    if (S.chordTrack.on) items.push({ kind: "chord" });
+    bar.innerHTML = html;
+    items.forEach(function (T) {
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "btn small lyr-chip" + (lyTweaked(T) ? " tw" : "") + (lyMuted(T) ? " muted" : "") + (lyT && lyT.kind === T.kind && lyT.inst === T.inst && lyT.slot === T.slot ? " on" : "");
+      b.textContent = "🎛 " + (T.kind === "chord" ? "Chord loop" : klInstName(T.inst));
+      b.title = "Knobs for this layer: pitch, length, filter, volume, pan, grit, swing push, mute / solo";
+      b.addEventListener("click", function () { lyOpen(T); lyBar(); });
+      bar.appendChild(b);
+    });
   }
   function flashPad(i) {
     var el = padEls[i];
@@ -1081,7 +1269,8 @@
         nm.className = "rname";
         nm.textContent = padLabel(p);
         nm.title = padLabel(p);
-        nm.addEventListener("click", function () { selectPad(p); triggerPad(p); });
+        nm.title = padLabel(p) + " — tap for this layer's knobs";
+        nm.addEventListener("click", function () { selectPad(p); triggerPad(p); lyOpen({ kind: "drum", pad: p }); });
         var m = document.createElement("button");
         m.type = "button"; m.className = "ms ms-m"; m.textContent = "M"; m.title = "Mute row";
         m.addEventListener("click", function () { toggleMS("m", p); });
@@ -1606,15 +1795,15 @@
     }
     bounceNow(barsSel, then, fail);
   }
-  function bounceNow(barsSel, then, fail) {
-    var say = function (m) { toast(m); if (fail) fail(new Error(m)); };
+  /* offline render of the beat (Bounce, WAV / MP3 export, Send to Studio, level checks): same graph + layer chains as live */
+  function renderOffline(barsSel) {
     var sd = stepDur();
     var A = arrangement();
     var songMode = barsSel === "song";
-    if (songMode && !A) { say("Pick a song structure first (Song bar above)."); return; }
+    if (songMode && !A) return { err: "Pick a song structure first (Song bar above)." };
     var bars = songMode ? totalBars(A) : +barsSel;
     var total = bars * STEPS;
-    if (!btActive() && !S.chordTrack.on && !patternHasNotes() && !PD.hasNotes(pianoPat())) { say("Pattern is empty — add steps first."); return; }
+    if (!btActive() && !S.chordTrack.on && !patternHasNotes() && !PD.hasNotes(pianoPat())) return { err: "Pattern is empty — add steps first." };
     var dur = total * sd + 2.5 + GRAPH_LAT;
     var c = new OfflineAudioContext(2, Math.ceil(SR * dur), SR);
     var G = makeGraph(c, false);
@@ -1628,8 +1817,15 @@
       if (info.fire) scheduleStep(c, G, info, k * sd, reg, creg, k === 0);
     }
     cutChords(creg, total * sd);
+    return { songMode: songMode, bars: bars, total: total, sd: sd, promise: c.startRendering() };
+  }
+  function bounceNow(barsSel, then, fail) {
+    var say = function (m) { toast(m); if (fail) fail(new Error(m)); };
+    var r = renderOffline(barsSel);
+    if (r.err) { say(r.err); return; }
+    var songMode = r.songMode, bars = r.bars, total = r.total, sd = r.sd;
     $("rec-status").textContent = songMode ? "Bouncing full song… (can take up to a minute)" : "Bouncing…";
-    c.startRendering().then(function (buf) {
+    r.promise.then(function (buf) {
       var off = Math.round(GRAPH_LAT * SR); // compressor look-ahead → bar 1 starts at 0:00
       var frames = Math.min(Math.round((total * sd + 0.8) * SR), buf.length - off);
       var blob = encodeWav(buf.getChannelData(0).subarray(off), buf.getChannelData(1).subarray(off), frames, SR);
@@ -2956,6 +3152,7 @@
   /* ---------------- Chord loop UI ---------------- */
   function renderChordLoopUI() {
     var CT = S.chordTrack;
+    lyDots();
     $("cl-on").checked = !!CT.on;
     $("cl-bars").value = String(CT.bars);
     $("cl-sound").value = CT.sound;
@@ -3013,6 +3210,7 @@
     if (Array.isArray(conv.pads)) { var pc = {}; pc[conv.kit] = conv.pads; S.padCfg[conv.kit] = cleanPadCfg(pc)[conv.kit]; }
     var ct = defaultChordTrack();
     if (beat.chords) Object.keys(ct).forEach(function (k) { if (beat.chords[k] != null) ct[k] = JSON.parse(JSON.stringify(beat.chords[k])); });
+    ct.lx = LY.clean(ct.lx, "mel");
     S.chordTrack = ct;
     S.structure = beat.structure && STRUCTURES[beat.structure] ? beat.structure : null;
     S.cueBar = 0;
@@ -4113,8 +4311,12 @@
     if (PK.setFeel) PK.setFeel(S.feel);
     var fn = feelNotes(ns.map(function (n) { return { n: n, t: t + (n.s - t0) * tickSec + (n.s === t0 ? sw : 0) }; }), info.k, p.inst);
     for (var i = 0; i < fn.length; i++) {
-      var n = fn[i].n;
-      G.preg.push(PK.play(c, G.groups.piano, n.p, Math.max(0, fn[i].t), n.l * tickSec, fn[i].v, n.i || p.inst, gl, n.i ? null : p.tone));
+      var n = fn[i].n, inst = n.i || p.inst, lc = melCfg(p, inst);
+      if (!melAudible(lc)) continue;
+      var dest = melStrip(G, S.piano.slot + ":" + inst, lc, G.groups.piano).inp;
+      var tn = lc ? lc.tune + lc.fine / 100 : 0, nt = Math.max(0, fn[i].t + (lc ? lc.nudge / 1000 : 0)), nd = n.l * tickSec;
+      if (lc && lc.decay < 0.995) dest = melDecay(c, dest, nt, nd, lc.decay);
+      G.preg.push(PK.play(c, dest, n.p + tn, nt, nd * (lc ? lc.decay : 1), fn[i].v, inst, gl, n.i ? null : p.tone));
     }
     if (G.preg.length > 96) G.preg = G.preg.filter(function (v) { return v.end > c.currentTime; });
   }
@@ -4129,7 +4331,8 @@
   function pianoPreview(m, v) {
     if (!ensureCtx()) return;
     if (PK.setTempo) PK.setTempo(S.bpm);
-    PK.play(ctx, LG.groups.piano, m, ctx.currentTime + 0.005, 0.32, v == null ? 0.8 : v, pianoPat().inst, PD.gainLin(pianoPat()), pianoPat().tone);
+    var p = pianoPat(), lc = melCfg(p, p.inst), dest = melStrip(LG, S.piano.slot + ":" + p.inst, lc, LG.groups.piano).inp; // audition through the layer's knobs
+    PK.play(ctx, dest, m + (lc ? lc.tune + lc.fine / 100 : 0), ctx.currentTime + 0.005, 0.32, v == null ? 0.8 : v, p.inst, PD.gainLin(p), p.tone);
   }
   /* Sound row: preset, drive and glide reflect the current pattern (tone missing = instrument defaults) */
   function pianoToneUI(p) {
@@ -4184,6 +4387,9 @@
     $("pn-sum").textContent = pianoSummary();
     document.querySelectorAll('#pn-lib [data-act="load"]').forEach(function (b) { b.textContent = "Load → " + S.piano.slot; });
     if (klReady) { klBarUI(); klRefreshCards(); }
+    if (lyT && lyT.kind === "mel" && lyT.slot !== S.piano.slot) lyClose(); // the open layer belongs to another slot
+    else if (lyT) lyRefresh();
+    lyBar();
   }
   function pianoChanged(kind) {
     if (kind !== "view") saveSession();
@@ -4715,13 +4921,17 @@
       repaintSeq(); saveSession();
     });
     $("btn-pad-reset").addEventListener("click", function () { resetPad(S.sel); });
+    $("btn-pad-layer").addEventListener("click", function () { lyOpen({ kind: "drum", pad: S.sel }); });
+    $("cl-layer").addEventListener("click", function () { lyOpen({ kind: "chord" }); });
     PE.forEach(function (pe) {
       var el = $("pad-" + pe.id);
       el.addEventListener("input", function () {
         var cfg = padCfg(S.sel);
         cfg[pe.key] = +el.value;
         $("pad-" + pe.id + "-val").textContent = pe.fmt(cfg[pe.key]);
-        if (LG && (pe.key === "level" || pe.key === "pan" || pe.key === "drive")) stripApply(LG, S.sel, ctx.currentTime);
+        if (LG) stripApply(LG, S.sel, ctx.currentTime);
+        if (lyT) lyRefresh();
+        lyDots();
         saveSession();
       });
       el.addEventListener("change", function () { if (!playing) triggerPad(S.sel); });
@@ -4963,6 +5173,22 @@
         open: !$("kl-browser").hidden, cat: klCat, loading: klLoading, visible: document.querySelectorAll(".kl-card:not([hidden])").length,
         preview: klPrev ? { id: klPrev.id, t0: klPrev.t0, end: klPrev.end, synced: klPrev.synced, notes: klPrev.notes, now: ctx.currentTime, kAt: klPrev.synced ? curK + (klPrev.t0 - nextTime) / stepDur() : null } : null,
         peakNow: ctx && masterAnalyser ? peak(masterAnalyser) : 0 };
+    },
+    /* tweakable layers (tests + the coming instrument library): T = { kind: "drum", pad } | { kind: "mel", slot, inst } | { kind: "chord" } */
+    layers: {
+      open: function (T) { lyOpen(T); }, close: lyClose, target: function () { return lyT ? JSON.parse(JSON.stringify(lyT)) : null; },
+      cfg: function (T) { if (T.kind === "drum") T.kit = T.kit || S.kit; return JSON.parse(JSON.stringify(lyCfg(T))); },
+      set: function (T, key, v) { if (T.kind === "drum") T.kit = T.kit || S.kit; lySet(T, key, v); },
+      list: function () {
+        var out = kitDef(S.kit).pads.map(function (d, i) { return { kind: "drum", pad: i, name: d.n, g: d.g, tweaked: LY.tweaked(padCfg(i), "drum", padBase(d)) }; });
+        PD.instsOf(pianoPat()).forEach(function (id) { var T = { kind: "mel", slot: S.piano.slot, inst: id }; out.push({ kind: "mel", slot: T.slot, inst: id, name: klInstName(id), tweaked: lyTweaked(T) }); });
+        out.push({ kind: "chord", name: "Chord loop", on: !!S.chordTrack.on, tweaked: LY.tweaked(chordCfg(), "mel") });
+        return out;
+      },
+      undo: function () { lyHist.undo(); lyHistUI(); }, redo: function () { lyHist.redo(); lyHistUI(); },
+      render: function (bars) { var r = renderOffline(bars || 2); return r.err ? Promise.reject(new Error(r.err)) : r.promise; },
+      save: saveSession,
+      peakNow: function () { return ctx && masterAnalyser ? peak(masterAnalyser) : 0; }, playing: function () { return playing; }
     },
     backingTempo: function () { try { return bt.buf ? refEstimateBpm(bt.buf) : null; } catch (e) { return null; } }
   };

@@ -14,7 +14,7 @@
   <meta name="theme-color" content="#0b0d12">
   <meta name="color-scheme" content="dark"><!-- the app is already dark: stops Samsung Internet / Chrome "force dark" from re-colouring it -->
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="styles.css?v=20261011z">
+  <link rel="stylesheet" href="styles.css?v=20261011L1">
 </head>
 <body>
   <header class="topbar">
@@ -238,6 +238,7 @@
               <label class="pe-k"><span>Nudge</span><input type="range" id="pad-nudge" min="-30" max="30" step="1" value="0"><output id="pad-nudge-val">0 ms</output></label>
             </div>
             <div class="pad-edit-actions">
+              <button id="btn-pad-layer" class="btn small" type="button" title="All knobs for this row: pitch, fine, decay, filter, volume, pan, grit, swing push">🎛 Layer knobs</button>
               <button id="btn-pad-reset" class="btn small ghost" type="button">Reset pad</button>
             </div>
           </div>
@@ -271,6 +272,7 @@
       <div class="chordloop" id="cl-wrap">
         <span class="label">Chord loop</span>
         <label class="chk"><input type="checkbox" id="cl-on"> On</label>
+        <button type="button" class="btn small ghost lyr-chip" id="cl-layer" title="Knobs for the chord loop layer: pitch, length, filter, volume, pan, grit, swing push">🎛 Layer</button>
         <div class="cl-slots" id="cl-slots"></div>
         <label>Bars each
           <select id="cl-bars"><option value="1">1</option><option value="2">2</option><option value="4">4</option></select>
@@ -367,6 +369,7 @@
         <button type="button" class="btn small ghost" id="pn-seed" title="Write the chord loop progression (Beats tab) into this pattern">From chord loop</button>
         <button type="button" class="btn small ghost" id="pn-clear">Clear</button>
       </div>
+      <div class="pn-bar lyr-bar" id="pn-layers" aria-label="Layers in this pattern"></div>
       <div class="pn-roll" id="pn-roll"></div>
       <p class="hint pn-hint">Click = add note · drag = move · drag the right edge = length · right-click / double-click = delete · phone: tap = add, drag empty grid = scroll, long-press = delete · drag bars in VEL = velocity · Del / arrows edit the selected note · Ctrl/⌘+wheel = zoom. Loops with the drum pattern at the same BPM and swing; goes through the Mixer's Piano Roll fader, master and limiter.</p>
 
@@ -630,14 +633,15 @@
   <footer class="foot">Free · runs in your browser · synthesized drums + CC0 one-shots (<a href="samples/CREDITS.md">credits</a>), no paid APIs · instrumental “Gunwalk” © Emmanuel Griffith / DJ Psycho Fingers (<a href="tracks/CREDITS.md">credits</a>) · <a href="studio/">Studio</a> · <a href="../dj/">DJ booth</a> · <a href="check/">Sound check</a> · <a href="../">IslePin</a></footer>
 
   <script src="humanize.js?v=20261011a"></script>
+  <script src="layers.js?v=20261011L"></script>
   <script src="drums.js?v=20261003u"></script>
-  <script src="keys-instruments.js?v=20261011a"></script>
-  <script src="pianoroll-data.js?v=20261003u"></script>
+  <script src="keys-instruments.js?v=20261011L"></script>
+  <script src="pianoroll-data.js?v=20261011L"></script>
   <script src="keys-loops.js?v=20261003u"></script>
   <script src="pianoroll.js?v=20261003u"></script>
   <script src="vocal-clean-client.js?v=20261011v"></script>
   <script src="../shared/vocal-chain.js?v=20261011v"></script>
-  <script src="app.js?v=20261011z"></script>
+  <script src="app.js?v=20261011L1"></script>
   <script type="module" src="../shared/ecosystem-nav.js"></script><!-- Beats | DJ Booth | Player switcher (shared/README.md) -->
 </body>
 </html>
