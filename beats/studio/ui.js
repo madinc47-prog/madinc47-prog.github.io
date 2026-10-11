@@ -740,9 +740,12 @@
     mf.addEventListener("change", function () { end(); changed(null, true); });
     M.appendChild(m);
   }
+  var mlIdle = 0;
   function meterLoop() {
     requestAnimationFrame(meterLoop);
-    if (!E.ctx) return;
+    if (!E.ctx || document.hidden) return;
+    if (!E.playing && !E.recording && (++mlIdle % 12)) return; // idle: ~5 updates a second (meters fall back to zero), full rate while playing
+    if (window.frameElement && window.frameElement.offsetParent === null && !E.playing && !E.recording) return; // Studio hidden behind another Beat tab
     var m = E.meters(), pct = function (v) { var d = 20 * Math.log10(Math.max(v, 1e-5)); return Math.max(0, Math.min(100, (d + 60) / 60 * 100)); };
     $("t-meter").style.width = pct(m.master) + "%";
     if (E.recording) { var il = E.inputLevel(); $("t-in").querySelector("i").style.width = pct(il) + "%"; micWatch(il); }

@@ -168,7 +168,7 @@
   }
   /* gain that brings a library sound to the preview loudness (synth presets: fixed) */
   function sndNorm(snd) { var L = sndLoud(snd); return L == null ? 0.45 : dbGain(clamp(PREV_LUFS - L, -30, 12)); }
-  function pvDest(norm) { var P = pvEnsure(); if (!P) return null; var g = ctx.createGain(); g.gain.value = norm; g.connect(P.inp); return g; }
+  function pvDest(norm) { unpark(); var P = pvEnsure(); if (!P) return null; var g = ctx.createGain(); g.gain.value = norm; g.connect(P.inp); return g; }
   /* key shift (semitones, −6…+5) from a loop's key ("Ebm", "G") to the song key */
   var KEYIX = { C: 0, "C#": 1, Db: 1, D: 2, "D#": 3, Eb: 3, E: 4, F: 5, "F#": 6, Gb: 6, G: 7, "G#": 8, Ab: 8, A: 9, "A#": 10, Bb: 10, B: 11 };
   function keyShift(k) {
@@ -936,7 +936,39 @@
     if (!ctx || ctx.state === "running" || ctx.state === "closed") return;
     try { var pr = ctx.resume(); if (pr && pr.then) pr.then(flushHits, function () {}); } catch (e) { /* not allowed yet */ }
   }
+  /* Master preview "park": while the Master tab plays its rendered song, the idle Beats graph (kit bus, layers, vocal FX,
+     reference meters, recorder tap) is unhooked from the speakers so the audio thread only renders the master chain.
+     Anything on the Beats side that makes sound calls ensureCtx() (or unpark()) first, which hooks it all back up. */
+  var parked = false;
+  function parkTargets() {
+    var t = [];
+    if (spkGain) t.push(spkGain); if (recSink) t.push(recSink); if (monitorGain && !vox.stream) t.push(monitorGain);
+    if (refN) { t.push(refN.gate); if (refN.sink && refN.sinkOn) t.push(refN.sink); }
+    if (VX && VX.toSpk) t.push(VX.toSpk);
+    return t;
+  }
+  function park() {
+    if (parked || !ctx || playing || vox.state !== "idle" || vox.stream || vc.src || (vpv && vpv.src)) return false;
+    parked = parkTargets(); parked.forEach(function (n) { try { n.disconnect(ctx.destination); } catch (e) { /* not connected */ } });
+    return true;
+  }
+  function unpark() {
+    if (!parked) return;
+    var t = parked; parked = false;
+    t.forEach(function (n) { try { n.connect(ctx.destination); } catch (e) { /* gone */ } });
+  }
+  /* reference meters (two K-weighted 32k analyser chains) only run while a reference track is loaded */
+  function refSinkSync() {
+    if (!refN || !refN.sink) return;
+    var want = !!(ref && ref.loaded);
+    if (want === !!refN.sinkOn) return;
+    refN.sinkOn = want;
+    if (want && !refMixN) { refN.meter = refMeterChain(refN.fader, refN.sink); refMixN = refMeterChain(master, refN.sink); }
+    if (parked) { if (want) parked.push(refN.sink); else parked = parked.filter(function (n) { return n !== refN.sink; }); if (!want) try { refN.sink.disconnect(ctx.destination); } catch (e) { /* not connected */ } return; }
+    try { if (want) refN.sink.connect(ctx.destination); else refN.sink.disconnect(ctx.destination); } catch (e) { /* ignore */ }
+  }
   function ensureCtx() {
+    if (parked) unpark();
     if (ctx) { resumeCtx(); return ctx; }
     var AC = window.AudioContext || window.webkitAudioContext;
     if (!AC) { toast("Web Audio is not supported in this browser."); return null; }
@@ -1237,8 +1269,13 @@
     pendingSlot = null;
     patAnchor = k;
   }
+  /* lookahead grows (0.12 → up to 0.3 s) if the main thread is ever late (busy tablet), so notes are never scheduled late */
+  var LOOK = 0.12, schedLast = 0;
   function scheduler() {
-    while (playing && nextTime < ctx.currentTime + 0.12) {
+    var now = performance.now();
+    if (schedLast && playing) { var gap = (now - schedLast) / 1000; if (gap > LOOK * 0.6) LOOK = Math.min(0.3, Math.max(LOOK, gap * 1.6)); }
+    schedLast = now;
+    while (playing && nextTime < ctx.currentTime + LOOK) {
       var info = stepInfo(curK);
       if (pendingSlot && !info.end && info.fire && info.patStep === 0) {
         applySlot(pendingSlot, curK);
@@ -1282,6 +1319,7 @@
     uiQueue = [];
     posAnchor = { k: curK, time: nextTime };
     if (btActive()) btStart(nextTime, S.cueBar * barSec());
+    schedLast = 0;
     timer = setInterval(scheduler, 25);
     scheduler();
     $("btn-play").classList.add("on");
@@ -2432,7 +2470,7 @@
    */
   var rec = { on: false, mode: "beat", L: [], R: [], V: [], V2: [], frames: 0, limit: 0, startedPattern: false, t0: 0, tick: null };
   var micSplit = null, vocalPan = null;
-  var recNode = null, vocalBus = null, vocalFader = null, vocalAnalyser = null, vocalInAn = null, monitorGain = null;
+  var recSink = null, recNode = null, vocalBus = null, vocalFader = null, vocalAnalyser = null, vocalInAn = null, monitorGain = null;
   function setupRecorder() {
     var stereo = ctx.createGain(); // force stereo so a mono master lands in both L and R
     stereo.channelCount = 2; stereo.channelCountMode = "explicit"; stereo.channelInterpretation = "speakers";
@@ -2468,7 +2506,7 @@
     var z = ctx.createGain();
     z.gain.value = 0;
     recNode.connect(z);
-    z.connect(ctx.destination);
+    z.connect(ctx.destination); recSink = z;
     applyMixer();
     recNode.onaudioprocess = function (e) {
       if (!rec.on) return;
@@ -2500,6 +2538,7 @@
     return +v;
   }
   function startRec() {
+    unpark();
     if (!ensureCtx() || rec.on || vox.state !== "idle") return;
     var secs = recLengthSecs();
     rec.mode = "beat";
@@ -2986,7 +3025,7 @@
     VX = { inp: gn(1), X: FXC.build(c), dry: c.createDelay(0.05), dryG: gn(0), wetG: gn(1), wsum: gn(1), wd: c.createDelay(0.05), wl: gn(0), wr: gn(0),
       wpl: c.createStereoPanner(), wpr: c.createStereoPanner(), pan: c.createStereoPanner(), busG: gn(1), sum: gn(1), lvl: gn(0), toMaster: gn(0), toSpk: gn(0), an: c.createAnalyser() };
     VX.dry.delayTime.value = 0.006; VX.wd.delayTime.value = 0.012; VX.wpl.pan.value = -1; VX.wpr.pan.value = 1; VX.an.fftSize = 2048;
-    VX.inp.connect(VX.X.input);
+    VX.wetOn = false; // the insert chain is hooked up only while an effect (or Wide) is on — see vxLive
     VX.X.out.connect(VX.wsum); VX.X.out.connect(VX.wd); VX.wd.connect(VX.wl); VX.wd.connect(VX.wr); VX.wl.connect(VX.wpl); VX.wr.connect(VX.wpr); VX.wpl.connect(VX.wsum); VX.wpr.connect(VX.wsum);
     VX.wsum.connect(VX.wetG); VX.wetG.connect(VX.pan);
     VX.inp.connect(VX.dry); VX.dry.connect(VX.dryG); VX.dryG.connect(VX.pan);
@@ -3000,7 +3039,10 @@
   }
   function vxLive() {
     if (!VX || !ctx) return;
-    var t = ctx.currentTime, off = !!S.vox.fxOff, keep = {};
+    var t = ctx.currentTime, keep = {}, fxs = S.vox.fx || FXC.defaults();
+    var off = !!S.vox.fxOff || !(FXC.anyOn(fxs) || S.vox.wide); // nothing on = the same as the dry path, so the chain can sleep
+    if (!off && !VX.wetOn) { VX.inp.connect(VX.X.input); VX.wetOn = true; clearTimeout(VX.unhookT); VX.unhookT = null; }
+    if (off && VX.wetOn && !VX.unhookT) VX.unhookT = setTimeout(function () { VX.unhookT = null; if (VX && VX.wetOn && (S.vox.fxOff || !(FXC.anyOn(S.vox.fx || FXC.defaults()) || S.vox.wide))) { try { VX.inp.disconnect(VX.X.input); } catch (e) { /* not hooked */ } VX.wetOn = false; } }, 8000); // after reverb / delay tails ring out
     FXC.apply(ctx, VX.X, S.vox.fx || FXC.defaults(), S.bpm, VX.buses, true).forEach(function (k) { keep[k] = 1; });
     clearTimeout(VX.gcT); VX.gcT = setTimeout(function () { if (VX) VX.buses.gc(keep); }, 6000); // old reverb / delay settings ring out first
     VX.wl.gain.setTargetAtTime(S.vox.wide ? 0.32 : 0, t, 0.015); VX.wr.gain.setTargetAtTime(S.vox.wide ? -0.32 : 0, t, 0.015);
@@ -3488,6 +3530,7 @@
   }
   function clearVoxTimers() { vox.timers.forEach(clearTimeout); vox.timers = []; }
   function startVocalTake() {
+    unpark();
     if (vox.state !== "idle") { stopVocalTake(); return; }
     if (rec.on) { toast("Finish the current recording first."); return; }
     if (!ensureCtx()) return;
@@ -3691,29 +3734,35 @@
   /* auto level match follows FX changes: the take is rendered through the same settings offline (in the background,
      debounced) and its loudness re-measured; the live gain then ramps to the new match */
   var vxAutoT = null;
+  /* auto level re-measure (offline FX render + loudness) never runs while the take plays: it waits for Stop / the take end */
+  var vxAutoPending = false;
+  function vxAutoKey() { return JSON.stringify([S.vox.fx, S.vox.wide, S.vox.pan, preKey(), S.vox.tight]); }
+  function vxAutoMeasure(t) {
+    var fxk = vxAutoKey();
+    if (!t || t.autoKey === fxk) return Promise.resolve();
+    return vocalAligned(t).then(function (vs) { return FXC.renderMono(vs, t.sr, { fx: S.vox.fx, pan: S.vox.pan, wide: S.vox.wide, bpm: S.bpm }); })
+      .then(function (pr) { t.autoKey = fxk; vocalAutoDb(t, pr); if (vpv.src && VX) VX.lvl.gain.setTargetAtTime(voxPrevGain(), ctx.currentTime, 0.05); voxAutoUI(); });
+  }
   function vxAutoSoon(ms) {
     clearTimeout(vxAutoT);
-    vxAutoT = setTimeout(function () {
-      var t = vpv.t; if (!t || !vpv.src) return;
-      var fxk = JSON.stringify([S.vox.fx, S.vox.wide, S.vox.pan, preKey(), S.vox.tight]);
-      if (t.autoKey === fxk) return;
-      vocalAligned(t).then(function (vs) { return FXC.renderMono(vs, t.sr, { fx: S.vox.fx, pan: S.vox.pan, wide: S.vox.wide, bpm: S.bpm }); })
-        .then(function (pr) { t.autoKey = fxk; vocalAutoDb(t, pr); if (vpv.src && VX) VX.lvl.gain.setTargetAtTime(voxPrevGain(), ctx.currentTime, 0.05); voxAutoUI(); });
-    }, ms == null ? 700 : ms);
+    if (vpv.src) { vxAutoPending = true; return; }
+    vxAutoT = setTimeout(function () { vxAutoMeasure(vox.last).catch(function () {}); }, ms == null ? 700 : ms);
   }
   function voxPrevStop(fromStop) {
     if (vpv.src) vxSrcStop(vpv);
     vpv.src = null; vpv.g = null; vpv.t = null;
+    if (vxAutoPending && S.vox.auto) { vxAutoPending = false; vxAutoSoon(400); }
     document.querySelectorAll("#vox-playtake, #vx-play2").forEach(function (b) { b.textContent = "▶ Play take with beat"; b.classList.remove("on"); });
     if (!fromStop && playing) stop(true);
   }
   function voxPlayTake() {
+    unpark();
     if (vpv.src) { voxPrevStop(); return; }
     var t = vox.last;
     if (!t || !ensureCtx() || vox.state !== "idle" || rec.on) return;
     var b = $("vox-playtake") || $("vx-play2"); b.disabled = true; b.textContent = "Preparing…";
     if (vc.src) vcStop();
-    vocalAligned(t).then(function (vs) {
+    (S.vox.auto ? vxAutoMeasure(t).catch(function () {}) : Promise.resolve()).then(function () { return vocalAligned(t); }).then(function (vs) { // level measured before the beat starts
       b.disabled = false;
       if (playing) stop(true);
       var buf = ctx.createBuffer(1, vs.length, t.sr); buf.getChannelData(0).set(vs); buf._vs = vs;
@@ -3725,7 +3774,6 @@
       play(at); var s = vxSrcStart(vpv, buf, at, 0);
       s.onended = function () { if (vpv.src === s) voxPrevStop(); };
       document.querySelectorAll("#vox-playtake, #vx-play2").forEach(function (x) { x.textContent = "■ Stop take"; x.classList.add("on"); });
-      if (S.vox.auto) vxAutoSoon(0);
       voxAutoUI();
     }).catch(function (e) { b.disabled = false; b.textContent = "▶ Play take with beat"; toast("Couldn't play the take (" + (e && e.message || e) + ")"); });
   }
@@ -3836,6 +3884,7 @@
     $("vox-remix").disabled = false;
   }
   function startMicCheck() {
+    unpark();
     if (!ensureCtx() || vox.state !== "idle") return;
     openMic().then(function () {
       vox.check = true; setVoxButtons();
@@ -3982,6 +4031,7 @@
     var b = $("vc-play"); if (b) b.textContent = "▶ Play";
   }
   function vcPlay() {
+    unpark();
     if (!vox.last || !vox.last.clean || !ensureCtx()) return;
     if (vox.state !== "idle") return;
     if (playing) stop(true);
@@ -4863,7 +4913,7 @@
   function refInstall(meta, buf) {
     refStopSrc(); ref.playing = false; ref.syncing = false;
     ref.fileTok++;
-    ref.loaded = true; ref.name = meta.name; ref.type = meta.type || ""; ref.size = meta.size || 0; ref.bytes = meta.bytes;
+    ref.loaded = true; refSinkSync(); ref.name = meta.name; ref.type = meta.type || ""; ref.size = meta.size || 0; ref.bytes = meta.bytes;
     ref.buf = buf; ref.playBuf = null; ref.prep = null; ref.dur = buf.duration;
     ref.peaks = refComputePeaks(buf); ref.bpm = null; ref.lufs = null; ref.peak = null; ref.pos = 0;
     var key = meta.name + "|" + meta.size;
@@ -4944,7 +4994,7 @@
     if (!confirm("Remove the reference track from this browser?")) return;
     refStopSrc();
     ref.fileTok++;
-    ref.loaded = false; ref.playing = false; ref.syncing = false; ref.buf = ref.playBuf = ref.bytes = null; ref.peaks = null;
+    ref.loaded = false; refSinkSync(); ref.playing = false; ref.syncing = false; ref.buf = ref.playBuf = ref.bytes = null; ref.peaks = null;
     ref.bpm = null; ref.lufs = ref.peak = null; ref.ab = "A"; ref.pos = 0; ref.name = "";
     refPrefs.key = ""; refPrefs.gainDb = 0; refPrefs.beatTrim = 0; refPrefs.muted = false; refPrefs.loop = false; refPrefs.a = refPrefs.b = refPrefs.cue = 0; refPrefs.matched = null;
     refSavePrefs();
@@ -4979,13 +5029,12 @@
   }
   function refOnCtx() {
     if (refN || !ctx || !master) return;
-    var sink = ctx.createGain(); sink.gain.value = 0; sink.connect(ctx.destination); // keeps analysers pulled, inaudible
+    var sink = ctx.createGain(); sink.gain.value = 0; // keeps analysers pulled, inaudible — only while a reference is loaded (refSinkSync)
     refN = { fader: ctx.createGain(), gate: ctx.createGain(), outRef: ctx.createAnalyser(), outBeat: ctx.createAnalyser() };
     refN.gate.gain.value = 0;
     refN.fader.connect(refN.gate);
     refN.gate.connect(ctx.destination);
-    refN.meter = refMeterChain(refN.fader, sink);
-    refMixN = refMeterChain(master, sink);
+    refN.sink = sink; refSinkSync(); // the K-weighted meter chains are built the first time a reference is loaded (IIR filters are slow to create)
     // post-gate taps: what actually reaches the speakers from each side
     refN.outRef.fftSize = 2048; refN.outBeat.fftSize = 2048;
     refN.gate.connect(refN.outRef); refN.outRef.connect(sink);
@@ -5245,7 +5294,7 @@
       document.querySelectorAll(".js-ref-time").forEach(function (el) { if (el.textContent !== tt) el.textContent = tt; });
       ref.dirty = false;
     }
-    if (onMix && ctx && refN && ref.loaded) {
+    if (onMix && ctx && refN && refMixN && ref.loaded) {
       var pm = refPk(refMixN), pr = refPk(refN.meter);
       $("ref-meter-mix").style.height = meterPct(pm) + "%";
       $("ref-meter-ref").style.height = meterPct(pr) + "%";
@@ -6557,6 +6606,7 @@
     /* Master tab (master/master.js): sources, reference, Vault, settings storage */
     master: {
       ctx: function () { return ensureCtx(); },
+      park: function () { return park(); }, unpark: function () { unpark(); }, parked: function () { return !!parked; },
       stopBeat: function () { if (playing) stop(); if (vpv && vpv.src) voxPrevStop(true); },
       isPlaying: function () { return playing; },
       renderBeat: function (sel, onProg) {

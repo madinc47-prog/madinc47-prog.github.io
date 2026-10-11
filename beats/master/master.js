@@ -80,22 +80,37 @@
     // M/S width, side high-passed at "mono below"
     N.split = c.createChannelSplitter(2); N.merge = c.createChannelMerger(2);
     N.mid = g(); N.side = g(); N.lM = g(0.5); N.rM = g(0.5); N.lS = g(0.5); N.rS = g(-0.5); N.sHa = bq("highpass", 10, 0.7071); N.sHb = bq("highpass", 10, 0.7071); N.sW = g(1); N.sInv = g(-1);
-    N.tgt = g(); N.output = g();
-    N.input.connect(N.inG); N.inG.connect(N.hp); N.hp.connect(N.ls); N.ls.connect(N.bell); N.bell.connect(N.hs); N.hs.connect(N.tl); N.tl.connect(N.th);
-    N.th.connect(N.glue); N.glue.connect(N.glueMk);
-    N.glueMk.connect(N.l1a); N.l1a.connect(N.l1b); N.l1b.connect(N.ap2); N.ap2.connect(N.cLo); N.cLo.connect(N.mLo); N.mLo.connect(N.mbSum);
-    N.glueMk.connect(N.h1a); N.h1a.connect(N.h1b); N.h1b.connect(N.l2a); N.l2a.connect(N.l2b); N.l2b.connect(N.cMid); N.cMid.connect(N.mMid); N.mMid.connect(N.mbSum);
+    N.tgt = g(); N.output = g(); N.mbIn = g();
+    N.input.connect(N.inG); N.hp.connect(N.ls); N.ls.connect(N.bell); N.bell.connect(N.hs); N.hs.connect(N.tl); N.tl.connect(N.th);
+    N.glue.connect(N.glueMk);
+    N.mbIn.connect(N.l1a); N.l1a.connect(N.l1b); N.l1b.connect(N.ap2); N.ap2.connect(N.cLo); N.cLo.connect(N.mLo); N.mLo.connect(N.mbSum);
+    N.mbIn.connect(N.h1a); N.h1a.connect(N.h1b); N.h1b.connect(N.l2a); N.l2a.connect(N.l2b); N.l2b.connect(N.cMid); N.cMid.connect(N.mMid); N.mMid.connect(N.mbSum);
     N.h1b.connect(N.h2a); N.h2a.connect(N.h2b); N.h2b.connect(N.cHi); N.cHi.connect(N.mHi); N.mHi.connect(N.mbSum);
-    N.mbSum.connect(N.sat); N.sat.connect(N.tapeH); N.tapeH.connect(N.tapeL); N.tapeL.connect(N.split);
+    N.sat.connect(N.tapeH); N.tapeH.connect(N.tapeL);
     N.split.connect(N.lM, 0); N.split.connect(N.rM, 1); N.split.connect(N.lS, 0); N.split.connect(N.rS, 1);
     N.lM.connect(N.mid); N.rM.connect(N.mid); N.lS.connect(N.side); N.rS.connect(N.side);
     N.mid.channelCount = 1; N.mid.channelCountMode = "explicit"; N.side.channelCount = 1; N.side.channelCountMode = "explicit";
     N.side.connect(N.sHa); N.sHa.connect(N.sHb); N.sHb.connect(N.sW); N.sW.connect(N.sInv);
     N.mid.connect(N.merge, 0, 0); N.mid.connect(N.merge, 0, 1); N.sW.connect(N.merge, 0, 0); N.sInv.connect(N.merge, 0, 1);
-    N.merge.connect(N.tgt); N.tgt.connect(N.output);
+    N.tgt.connect(N.output);
+    N.stages = { eq: [N.hp, N.th], glue: [N.glue, N.glueMk], mb: [N.mbIn, N.mbSum], sat: [N.sat, N.tapeL], width: [N.split, N.merge] };
+    N.route = null;
     return N;
   }
+  /* a stage that is switched off is unhooked (not just set to unity), so a mostly-off chain costs almost nothing */
+  var STAGES = ["eq", "glue", "mb", "sat", "width"];
+  function routeKey(s) { return STAGES.filter(function (k) { return s[k] && s[k].on; }).join(","); }
+  function route(N, s) {
+    var key = routeKey(s); if (N.route === key) return false;
+    N.inG.disconnect(); STAGES.forEach(function (k) { N.stages[k][1].disconnect(); });
+    var at = N.inG;
+    STAGES.forEach(function (k) { if (s[k] && s[k].on) { at.connect(N.stages[k][0]); at = N.stages[k][1]; } });
+    at.connect(N.tgt); N.route = key;
+    return true;
+  }
+  function latFor(s, sr) { var k = latCache[sr] || 0; return k * ((s.glue.on ? 1 : 0) + (s.mb.on ? 1 : 0)); } // only the compressors add look-ahead
   function applyChain(c, N, s, ramp) {
+    if (!ramp || c instanceof OfflineAudioContext) route(N, s);
     var t = c.currentTime, live = ramp && !(c instanceof OfflineAudioContext);
     function set(p, v) { if (live) p.setTargetAtTime(v, t, 0.02); else p.value = v; }
     set(N.inG.gain, db(s.inGain));
@@ -121,26 +136,39 @@
 
   /* ---------------- offline render + measurements ---------------- */
   var latCache = {};
-  function chainLatency(sr) { // native compressors add a fixed look-ahead: measured once per rate with a click
+  function chainLatency(sr) { // native compressors add a fixed look-ahead: measured once per rate with a click (per compressor)
     if (latCache[sr] != null) return Promise.resolve(latCache[sr]);
     var n = Math.round(sr * 0.2), c = new OfflineAudioContext(2, n, sr), b = c.createBuffer(2, n, sr);
     b.getChannelData(0)[100] = 0.5; b.getChannelData(1)[100] = 0.5;
-    var src = c.createBufferSource(); src.buffer = b; var N = buildChain(c); applyChain(c, N, defaults(), false); src.connect(N.input); N.output.connect(c.destination); src.start(0);
+    var src = c.createBufferSource(); src.buffer = b; var k = c.createDynamicsCompressor(); k.threshold.value = 0; k.ratio.value = 1; src.connect(k); k.connect(c.destination); src.start(0); // one compressor's look-ahead
     return c.startRendering().then(function (o) { var d = o.getChannelData(0), pk = 0, at = 100; for (var i = 0; i < d.length; i++) if (Math.abs(d[i]) > pk) { pk = Math.abs(d[i]); at = i; } latCache[sr] = Math.max(0, at - 100); return latCache[sr]; });
+  }
+  /* limiter + loudness of offline renders run in master-worker.js (a 2-minute song would otherwise block the page for seconds) */
+  var MW = null, mwSeq = 0, mwWait = {};
+  function post(msg) {
+    if (MW === false) return Promise.reject(new Error("no worker"));
+    if (!MW) { try { MW = new Worker("master/master-worker.js?v=20261011x"); MW.onmessage = function (e) { var w = mwWait[e.data.id]; if (!w) return; delete mwWait[e.data.id]; if (e.data.ok) w.res(e.data); else w.rej(new Error(e.data.err)); };
+      MW.onerror = function () { MW = false; Object.keys(mwWait).forEach(function (k) { mwWait[k].rej(new Error("worker failed")); delete mwWait[k]; }); }; } catch (e) { MW = false; return Promise.reject(e); } }
+    msg.id = ++mwSeq;
+    return new Promise(function (res, rej) { mwWait[msg.id] = { res: res, rej: rej }; MW.postMessage(msg, [msg.L.buffer, msg.R.buffer]); });
   }
   function renderChain(src, s) {
     var sr = src.sr, n = src.L.length;
-    return chainLatency(sr).then(function (lat) {
+    return chainLatency(sr).then(function () {
+      var lat = latFor(s, sr);
       var c = new OfflineAudioContext(2, n + lat + Math.round(sr * 0.05), sr), b = c.createBuffer(2, n, sr);
       b.getChannelData(0).set(src.L); b.getChannelData(1).set(src.R);
       var s0 = c.createBufferSource(); s0.buffer = b; var N = buildChain(c); applyChain(c, N, s, false);
       s0.connect(N.input); N.output.connect(c.destination); s0.start(0);
       return c.startRendering().then(function (o) {
         var L = o.getChannelData(0).slice(lat, lat + n), R = o.getChannelData(1).slice(lat, lat + n);
-        if (s.lim.on) { var r = D.limitArrays(L, R, 0, s.lim.ceil, { sr: sr }); L = r.L; R = r.R; }
         var og = db(Math.min(0, s.outGain));
-        if (og !== 1) for (var i = 0; i < n; i++) { L[i] *= og; R[i] *= og; }
-        return { L: L, R: R, sr: sr };
+        return post({ op: "post", L: L, R: R, sr: sr, lim: { on: s.lim.on, ceil: s.lim.ceil }, og: og }).then(function (r) { return { L: r.L, R: r.R, sr: sr, lufs: r.lufs }; }, function () {
+          if (!L.length && n) { L = o.getChannelData(0).slice(lat, lat + n); R = o.getChannelData(1).slice(lat, lat + n); } // worker died after taking the arrays
+          if (s.lim.on) { var r = D.limitArrays(L, R, 0, s.lim.ceil, { sr: sr }); L = r.L; R = r.R; } // no worker: same thing on the page
+          if (og !== 1) for (var i = 0; i < n; i++) { L[i] *= og; R[i] *= og; }
+          return { L: L, R: R, sr: sr };
+        });
       });
     });
   }
@@ -273,6 +301,7 @@
 
   /* ---------------- live preview ---------------- */
   var L = null, srcBuf = null, prev = null, mode = "master", mono = false, dryMatch = null, outLufs = null;
+  function MFFT(sr) { return sr > 50000 ? 16384 : 8192; } // ≥ the 100 ms the meters read each tick (was 32768)
   function ensureLive() {
     var c = B.ctx(); if (!c) return Promise.reject(new Error("Audio not available"));
     if (L && L.c === c) return Promise.resolve(L);
@@ -280,15 +309,15 @@
     L.proc = c.createGain(); L.dry = c.createGain(); L.refG = c.createGain(); L.mon = c.createGain(); L.monoG = c.createGain(); L.stG = c.createGain(); L.trim = c.createGain();
     L.dryDelay = c.createDelay(0.2);
     L.monoG.channelCount = 1; L.monoG.channelCountMode = "explicit"; L.monoG.gain.value = 0;
-    L.split = c.createChannelSplitter(2); L.anL = c.createAnalyser(); L.anR = c.createAnalyser(); L.anL.fftSize = L.anR.fftSize = 32768;
+    L.split = c.createChannelSplitter(2); L.anL = c.createAnalyser(); L.anR = c.createAnalyser(); L.anL.fftSize = L.anR.fftSize = MFFT(c.sampleRate);
     L.spec = c.createAnalyser(); L.spec.fftSize = 4096; L.spec.smoothingTimeConstant = 0.75;
     L.kl = []; // K-weighting (native biquads = BS.1770 shelf + RLB high-pass) for the live LUFS meters
     L.kIn = c.createGain(); L.kSh = c.createBiquadFilter(); L.kSh.type = "highshelf"; L.kSh.frequency.value = 1681.97; L.kSh.gain.value = 4;
     L.kHp = c.createBiquadFilter(); L.kHp.type = "highpass"; L.kHp.frequency.value = 38.14; L.kHp.Q.value = 20 * Math.log10(0.5003); // Q in dB for LP/HP
-    L.kSplit = c.createChannelSplitter(2); L.kAL = c.createAnalyser(); L.kAR = c.createAnalyser(); L.kAL.fftSize = L.kAR.fftSize = 32768;
+    L.kSplit = c.createChannelSplitter(2); L.kAL = c.createAnalyser(); L.kAR = c.createAnalyser(); L.kAL.fftSize = L.kAR.fftSize = MFFT(c.sampleRate);
     var after = function (lim) {
       L.N.output.connect(lim); lim.connect(L.trim); L.trim.connect(L.proc);
-      L.dryDelay.delayTime.value = ((latCache[c.sampleRate] || 0) + (L.limLat || 0)) / c.sampleRate;
+      route(L.N, st); L.dryDelay.delayTime.value = (latFor(st, c.sampleRate) + (L.limLat || 0)) / c.sampleRate;
       L.dryDelay.connect(L.dry);
       [L.proc, L.dry, L.refG].forEach(function (n) { n.connect(L.mon); });
       L.mon.connect(L.split); L.split.connect(L.anL, 0); L.split.connect(L.anR, 1); L.mon.connect(L.spec);
@@ -297,7 +326,7 @@
       applyLive(); return L;
     };
     var go = function () { return chainLatency(c.sampleRate).then(function () {
-      if (c.audioWorklet && !L.noWorklet) return c.audioWorklet.addModule("master/master-dsp.js?v=20261011w").then(function () { return c.audioWorklet.addModule("master/master-worklet.js?v=20261011w"); }).then(function () {
+      if (c.audioWorklet && !L.noWorklet) return c.audioWorklet.addModule("master/master-dsp.js?v=20261011x").then(function () { return c.audioWorklet.addModule("master/master-worklet.js?v=20261011x"); }).then(function () {
         var w = new AudioWorkletNode(c, "ipb-tplimiter", { numberOfInputs: 1, numberOfOutputs: 1, outputChannelCount: [2] });
         w.port.onmessage = function (e) { L.limGr = e.data.gr; }; L.lim = w; L.limLat = Math.round(0.005 * c.sampleRate) + 8; return after(w);
       });
@@ -305,10 +334,15 @@
     }); };
     return go().catch(function (e) { console.warn("master limiter worklet", e); L.noWorklet = true; return go(); });
   }
+  var rerouteT = null;
   function applyLive() {
     if (!L || !L.lim) return;
     applyChain(L.c, L.N, st, true);
     var t = L.c.currentTime;
+    if (L.N.route !== routeKey(st) && !rerouteT) { // a stage switched on / off: dip 25 ms, re-hook, keep the dry path aligned
+      L.N.output.gain.setTargetAtTime(0, t, 0.004);
+      rerouteT = setTimeout(function () { rerouteT = null; if (!L) return; route(L.N, st); var c = L.c; L.dryDelay.delayTime.setValueAtTime((latFor(st, c.sampleRate) + (L.limLat || 0)) / c.sampleRate, c.currentTime); L.N.output.gain.setTargetAtTime(1, c.currentTime, 0.006); }, 30);
+    }
     if (L.limFallback) { L.lim.threshold.setTargetAtTime(st.lim.on ? st.lim.ceil - 1 : 0, t, 0.02); L.lim.ratio.setTargetAtTime(st.lim.on ? 20 : 1, t, 0.02); }
     else { L.lim.parameters.get("ceil").setValueAtTime(st.lim.ceil, t); L.lim.parameters.get("on").setValueAtTime(st.lim.on ? 1 : 0, t); }
     L.trim.gain.setTargetAtTime(db(Math.min(0, st.outGain)), t, 0.02);
@@ -340,6 +374,7 @@
       s.onended = function () { if (prev && prev.s === s) { stopPrev(); prevPos = 0; } };
       $("mst-play").textContent = "■ Stop"; $("mst-play").classList.add("on");
       resetMeters(); meterTimer = setInterval(meterTick, 100); applyLive();
+      if (B.park) B.park(); // the idle Beats graph stops rendering while the master plays
     }).catch(function (e) { B.toast("Preview failed: " + ((e && e.message) || e)); });
   }
   var prevPos = 0;
@@ -348,13 +383,18 @@
     prevPos = prev.off + (L.c.currentTime - prev.t0);
     try { prev.s.onended = null; prev.s.stop(); } catch (e) { /* ended */ } if (prev.r) try { prev.r.stop(); } catch (e) { /* ended */ }
     prev = null; clearInterval(meterTimer); $("mst-play").textContent = "▶ Play"; $("mst-play").classList.remove("on");
+    if (B.unpark) B.unpark();
+    if (measPending) { measPending = false; clearTimeout(measT); measT = setTimeout(measureOut, 300); }
   }
 
   /* ---------------- live meters ---------------- */
-  var meterTimer = null, mt = null, tbuf = null, tbuf2 = null, kb1 = null, kb2 = null, fbuf = null, tpPh = D.tpPhases(16, 4);
-  function resetMeters() { mt = { blocks: [], mom: [], st: [], tp: -Infinity }; }
+  var meterTimer = null, mt = null, tbuf = null, tbuf2 = null, kb1 = null, kb2 = null, fbuf = null;
+  function resetMeters() { mt = { blocks: [], mom: [], st: [], tp: -Infinity }; mtN = 0; mtLast = { I: -Infinity, LRA: 0 }; }
+  var mtN = 0, mtLast = { I: -Infinity, LRA: 0 };
   function meterTick() {
     if (!L || !prev) return;
+    if (document.hidden) return;
+    mtN++;
     var c = L.c, sr = c.sampleRate, N = L.anL.fftSize;
     tbuf = tbuf || new Float32Array(N); tbuf2 = tbuf2 || new Float32Array(N); kb1 = kb1 || new Float32Array(N); kb2 = kb2 || new Float32Array(N);
     L.kAL.getFloatTimeDomainData(kb1); L.kAR.getFloatTimeDomainData(kb2);
@@ -364,14 +404,13 @@
     var LU = function (x) { return -0.691 + 10 * Math.log10(x + 1e-20); };
     var avg = function (k) { var a = mt.blocks.slice(-k), s = 0; a.forEach(function (x) { s += x; }); return s / Math.max(1, a.length); };
     var M = LU(avg(4)), S = LU(avg(30)); mt.mom.push(avg(4)); if (mt.blocks.length >= 30) mt.st.push(S);
-    var I = FX.gated(mt.mom);
-    var g = mt.st.filter(function (x) { return x > -70; }), lra = 0;
-    if (g.length > 10) { var mean = 10 * Math.log10(g.reduce(function (a, x) { return a + Math.pow(10, x / 10); }, 0) / g.length); g = g.filter(function (x) { return x > mean - 20; }).sort(function (a, b) { return a - b; }); if (g.length > 1) lra = g[Math.round(0.95 * (g.length - 1))] - g[Math.round(0.1 * (g.length - 1))]; }
+    var I = mtLast.I, lra = mtLast.LRA, g = [];
+    if (mtN % 5 === 1) { I = mtLast.I = FX.gated(mt.mom); g = mt.st.filter(function (x) { return x > -70; }); lra = 0; }
+    if (g.length > 10) { var mean = 10 * Math.log10(g.reduce(function (a, x) { return a + Math.pow(10, x / 10); }, 0) / g.length); g = g.filter(function (x) { return x > mean - 20; }).sort(function (a, b) { return a - b; }); if (g.length > 1) lra = g[Math.round(0.95 * (g.length - 1))] - g[Math.round(0.1 * (g.length - 1))]; mtLast.LRA = lra; }
     L.anL.getFloatTimeDomainData(tbuf); L.anR.getFloatTimeDomainData(tbuf2);
     var sl = 0, sr2 = 0, slr = 0, pk = 0, s0 = N - h;
     for (i = s0; i < N; i++) { var a = tbuf[i], b = tbuf2[i]; sl += a * a; sr2 += b * b; slr += a * b; }
-    [tbuf, tbuf2].forEach(function (x) { for (var j = s0; j < N; j++) { var v = x[j] < 0 ? -x[j] : x[j]; if (v > pk) pk = v; }
-      for (var k = 0; k < tpPh.length; k++) { var hh = tpPh[k]; for (j = s0; j < N - 8; j++) { var q = 0, bb = j - 7; for (var m = 0; m < 16; m++) q += hh[m] * x[bb + m]; if (q < 0) q = -q; if (q > pk) pk = q; } } });
+    [tbuf, tbuf2].forEach(function (x) { for (var j = s0; j < N; j++) { var v = x[j] < 0 ? -x[j] : x[j]; if (v > pk) pk = v; } }); // live: sample peak (cheap); the oversampled true peak is measured on export
     var tp = toDb(pk); mt.tp = Math.max(mt.tp, tp);
     var corr = sl > 1e-9 && sr2 > 1e-9 ? slr / Math.sqrt(sl * sr2) : 0;
     showMeters({ M: M, S: S, I: I, LRA: lra, tp: tp, tpMax: mt.tp, corr: corr });
@@ -409,14 +448,14 @@
     var tok = ++measTok;
     return renderChain(src, st).then(function (o) {
       if (tok !== measTok) return;
-      outLufs = FX.lufs([o.L, o.R], o.sr);
+      outLufs = o.lufs != null ? o.lufs : FX.lufs([o.L, o.R], o.sr);
       dryMatch = isFinite(outLufs) && isFinite(src.lufs) ? clamp(db(outLufs - src.lufs), 0.05, 16) : 1;
       $("mst-out").textContent = isFinite(outLufs) ? outLufs.toFixed(1) + " LUFS out" : "—";
       applyLive();
     });
   }
-  var measT = null;
-  function changed() { save(); applyLive(); clearTimeout(measT); measT = setTimeout(measureOut, 700); renderReadouts(); }
+  var measT = null, measPending = false;
+  function changed() { save(); applyLive(); clearTimeout(measT); if (prev) measPending = true; else measT = setTimeout(measureOut, 700); renderReadouts(); } // never re-analyse while playing: on Stop
   function fitTarget() {
     if (!src) return;
     var tg = TARGETS[st.target]; if (!tg) return;
@@ -424,7 +463,7 @@
     var tries = 0;
     (function step() {
       renderChain(src, st).then(function (o) {
-        var I = FX.lufs([o.L, o.R], o.sr), err = tg.lufs - I; tries++;
+        var I = o.lufs != null ? o.lufs : FX.lufs([o.L, o.R], o.sr), err = tg.lufs - I; tries++;
         if (!isFinite(I)) throw new Error("The source is silent");
         if (Math.abs(err) <= 0.2 || tries >= 5) {
           busy(false); outLufs = I; dryMatch = isFinite(src.lufs) ? clamp(db(I - src.lufs), 0.05, 16) : 1; applyLive(); renderAll();
