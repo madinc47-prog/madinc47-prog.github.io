@@ -1637,7 +1637,7 @@
    *   2   = raw mic (only used by Record Vocals; silent otherwise)
    */
   var rec = { on: false, mode: "beat", L: [], R: [], V: [], frames: 0, limit: 0, startedPattern: false, t0: 0, tick: null };
-  var recNode = null, vocalBus = null, vocalFader = null, vocalAnalyser = null, monitorGain = null, proMon = null;
+  var recNode = null, vocalBus = null, vocalFader = null, vocalAnalyser = null, vocalInAn = null, monitorGain = null, proMon = null;
   function proOn() { return !!window.VocalChain && window.VocalChain.enabled(); }
   function setupRecorder() {
     var stereo = ctx.createGain(); // force stereo so a mono master lands in both L and R
@@ -1654,6 +1654,9 @@
     vocalFader = ctx.createGain();
     vocalAnalyser = ctx.createAnalyser();
     vocalAnalyser.fftSize = 512;
+    vocalInAn = ctx.createAnalyser(); // pre-fader mic level for the live input meter next to Record Vocals
+    vocalInAn.fftSize = 1024;
+    vocalBus.connect(vocalInAn);
     monitorGain = ctx.createGain();
     monitorGain.gain.value = 0;
     vocalBus.connect(vocalFader);
@@ -2195,7 +2198,7 @@
         meterEls[g.id].style.height = Math.min(100, peak(groupNodes[g.id].an) * 100) + "%";
       });
       meterEls.master.style.height = Math.min(100, peak(masterAnalyser) * 100) + "%";
-      if (meterEls.vocal && vocalAnalyser) meterEls.vocal.style.height = (vox.stream ? Math.min(100, peak(vocalAnalyser) * 100) : 0) + "%";
+      if (meterEls.vocal && vocalInAn) meterEls.vocal.style.height = (vox.stream ? Math.min(100, peak(vocalInAn) * 100) : 0) + "%"; // real mic input (pre-fader: a muted / pulled-down Vocal fader no longer hides a working mic)
     }
     var posK = currentPosK(), bar = posK / STEPS;
     if (activeTab === "beats" || ly.open) updatePositionUI(posK);
@@ -2213,6 +2216,7 @@
     if (activeTab === "beats" && bt.buf) btTick();
     if (activeTab === "piano" && pianoEd) pianoTick();
     if (vc.src || vc.off) vcTick();
+    voxMeterTick();
     requestAnimationFrame(loop);
   }
 
@@ -2223,12 +2227,40 @@
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return "This browser can't record from a microphone.";
     var n = e && e.name;
     if (n === "NotAllowedError" || n === "PermissionDeniedError" || n === "SecurityError")
-      return "Microphone permission was denied. Allow the mic for this site (lock / tune icon in the address bar → Microphone → Allow), then tap Record Vocals again. Beat-only ● Record still works.";
-    if (n === "NotFoundError" || n === "DevicesNotFoundError") return "No microphone found. Plug in a mic or headset and try again.";
+      return "Microphone is blocked. Allow the microphone: tap the lock icon by the address bar > Permissions > Microphone > Allow, then tap Record Vocals again.";
+    if (n === "NotFoundError" || n === "DevicesNotFoundError" || n === "OverconstrainedError") return "No microphone found. Plug in a mic or headset (or check the tablet's mic isn't turned off in Android settings) and try again.";
     if (n === "NotReadableError" || n === "TrackStartError") return "The mic is busy or blocked by the system (another app may be using it).";
     if (n === "AbortError") return "Opening the mic was interrupted. Try again.";
     return "Could not open the mic" + (e && e.message ? ": " + e.message : ".");
   }
+  /* live mic level next to every Record Vocals status line (count-in, take, mic check), plus a no-signal warning */
+  function voxMeterTick() {
+    var live = !!(vox.stream && vocalInAn && (vox.state !== "idle" || vox.check));
+    var lvl = live ? peak(vocalInAn) : 0;
+    document.querySelectorAll(".js-vox-status").forEach(function (el) {
+      var m = el.nextElementSibling;
+      if (!m || !m.classList.contains("vox-meter")) {
+        if (!live) return;
+        m = document.createElement("div"); m.className = "vox-meter"; m.setAttribute("aria-label", "Microphone level");
+        m.innerHTML = '<b>MIC</b><span><i></i></span><em></em>'; el.parentNode.insertBefore(m, el.nextSibling);
+      }
+      m.hidden = !live;
+      if (!live) return;
+      var db = lvl > 0 ? 20 * Math.log10(lvl) : -99, w = Math.max(0, Math.min(100, (db + 60) / 60 * 100));
+      m.querySelector("i").style.width = w + "%";
+      m.classList.toggle("hot", lvl > 0.9);
+      m.querySelector("em").textContent = lvl < 0.003 ? "no sound yet" : lvl > 0.9 ? "too loud" : "hearing you";
+    });
+    // Android hands the mic to an active call (or the "Microphone access" toggle is off) → a live stream of pure silence, no error
+    if (live) {
+      vox.inMax = Math.max(vox.inMax || 0, lvl);
+      if (!vox.liveT0) vox.liveT0 = performance.now();
+      if (!vox.silentWarned && performance.now() - vox.liveT0 > 1500 && vox.inMax < 0.00005) {
+        vox.silentWarned = true; toast(MIC_SILENT, 9000); setVoxStatus(MIC_SILENT, true);
+      }
+    } else { vox.inMax = 0; vox.liveT0 = 0; vox.silentWarned = false; }
+  }
+  var MIC_SILENT = "Your mic is sending silence. Close any call or app using the mic (voice calls, WhatsApp, recorders), check Microphone access is ON in quick settings, then try again.";
   function micWantsProcessing() { return hpMode() === "spk" && S.vox.aec; }
   function openMic() {
     if (!window.isSecureContext || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
@@ -2253,6 +2285,14 @@
         vox.src.connect(vocalBus);
         var tr = stream.getAudioTracks()[0];
         var st = tr && tr.getSettings ? tr.getSettings() : {};
+        vox.liveT0 = 0; vox.inMax = 0; vox.silentWarned = false;
+        if (tr) { // the system can take the mic away (a call starts) or mute it: say so instead of recording silence
+          var onLost = function (why) { if (vox.stream !== stream) return; vox.silentWarned = true; var m = why === "ended" ? "The microphone was disconnected or taken by another app (a call?). Close it and tap Record Vocals / Mic check again." : MIC_SILENT; toast(m, 9000); setVoxStatus(m, true); };
+          tr.addEventListener("ended", function () { onLost("ended"); });
+          tr.addEventListener("mute", function () { onLost("mute"); });
+          if (tr.readyState === "ended") throw { name: "NotReadableError" };
+          if (tr.muted) setTimeout(function () { if (tr.muted) onLost("mute"); }, 400);
+        }
         vox.micSettings = { echoCancellation: st.echoCancellation, noiseSuppression: st.noiseSuppression, autoGainControl: st.autoGainControl, label: tr ? tr.label : "", requested: proc };
         hpDetect(); // labels are readable once the mic is allowed
         vox.inLat = typeof st.latency === "number" && st.latency < 0.5 ? st.latency : 0;
@@ -2332,7 +2372,7 @@
         click(t0 + i * beat, i === 0);
         (function (n, at) {
           vox.timers.push(setTimeout(function () {
-            showCount(n); setVoxStatus("Count-in " + n + " / 4 — bar " + (S.cueBar + 1) + " next");
+            showCount(n); if (!vox.silentWarned) setVoxStatus("Count-in " + n + " / 4 — bar " + (S.cueBar + 1) + " next");
           }, Math.max(0, (at - ctx.currentTime) * 1000)));
         })(i + 1, t0 + i * beat);
       }
@@ -2359,7 +2399,7 @@
     clearInterval(rec.tick);
     rec.tick = setInterval(function () {
       var el = (Date.now() - rec.t0) / 1000;
-      setVoxStatus("● REC VOCALS " + fmtTime(el) + (secs ? " / " + fmtTime(secs) : " (free)") + " · tap Stop take to finish");
+      if (!vox.silentWarned) setVoxStatus("● REC VOCALS " + fmtTime(el) + (secs ? " / " + fmtTime(secs) : " (free)") + " · tap Stop take to finish");
     }, 200);
   }
   function stopVocalTake() {
@@ -2521,7 +2561,7 @@
     if (!ensureCtx() || vox.state !== "idle") return;
     openMic().then(function () {
       vox.check = true; setVoxButtons();
-      setVoxStatus("Mic check on — watch the Vocal meter" + (S.vox.monitor ? " (monitoring)" : ""));
+      setVoxStatus("Mic check on — talk and watch the MIC bar" + (S.vox.monitor ? " (monitoring)" : ""));
     }).catch(function (e) { var m = micErrorMsg(e); setVoxStatus(m, true); toast(m); });
   }
   function stopMicCheck() {
