@@ -708,7 +708,7 @@
       d.innerHTML = '<span class="snum">' + (i + 1) + '</span><span class="sname"></span><button class="mini fx" title="Effects">FX</button>' +
         '<input type="range" class="pan" min="-1" max="1" step="0.05" title="Pan"><span class="dbv pv"></span>' +
         '<div class="fadwrap"><input type="range" class="fader" min="-60" max="6" step="0.5" title="Level (dB) · double-click for 0 dB"><span class="meter"><i></i></span></div>' +
-        '<span class="dbv vv"></span><div class="btns"><button class="mini arm" title="Record arm">R</button><button class="mini mute" title="Mute">M</button><button class="mini solo" title="Solo">S</button><button class="mini wide" title="Wide: subtle stereo double (mono-safe). Off = the track stays exactly where Pan puts it.">W</button></div>';
+        '<span class="dbv vv"></span><button type="button" class="autob" title="Auto match to beat: this track\'s level follows the beat (non-destructive, on top of the fader). Tap to turn on / off; set the offset in FX."><span>AUTO</span> <b class="av"></b></button><div class="btns"><button class="mini arm" title="Record arm">R</button><button class="mini mute" title="Mute">M</button><button class="mini solo" title="Solo">S</button><button class="mini wide" title="Wide: subtle stereo double (mono-safe). Off = the track stays exactly where Pan puts it.">W</button></div>';
       d.querySelector(".sname").textContent = tr.name; d.querySelector(".sname").title = tr.name;
       var f = d.querySelector(".fader"), vv = d.querySelector(".vv"), pn = d.querySelector(".pan"), pv = d.querySelector(".pv");
       f.value = tr.vol; vv.textContent = (tr.vol > 0 ? "+" : "") + tr.vol.toFixed(1) + " dB"; pn.value = tr.pan; pv.textContent = panTxt(tr.pan);
@@ -722,8 +722,12 @@
         b.addEventListener("click", function () { S.pushUndo(P, k); tr[k] = !tr[k]; changed(); });
       });
       var fx = d.querySelector(".fx"); fx.classList.toggle("on", anyFx(tr)); fx.addEventListener("click", function () { openFx(tr.id); });
+      var ab = d.querySelector(".autob");
+      if (tr.id === S.beatTrackId(P)) ab.hidden = true;
+      ab.addEventListener("click", function () { S.pushUndo(P, "auto match"); tr.auto = !tr.auto; changed(null, true); toast(tr.name + ": auto match to beat " + (tr.auto ? "ON" : "OFF")); });
       M.appendChild(d);
     });
+    autoUI();
     var m = document.createElement("div"); m.className = "strip master";
     m.innerHTML = '<span class="snum">OUT</span><span class="sname">Master</span><label class="chk" title="Brickwall limiter on the master: stops clipping and makes the mix louder"><input type="checkbox" class="lim"> Limiter</label>' +
       '<label class="chk" title="Limiter ceiling (dBFS)">Ceiling <select class="ceil"><option value="-0.3">−0.3</option><option value="-1">−1.0</option><option value="-2">−2.0</option></select></label>' +
@@ -769,10 +773,45 @@
   };
   var fxTrack = null;
   function fmtP(v, u) { return u === "%" ? Math.round(v * 100) + "%" : u === "s" ? (v < 0.1 ? (v * 1000).toFixed(0) + "ms" : v.toFixed(2) + "s") : u === "Hz" ? (v >= 1000 ? (v / 1000).toFixed(1) + "k" : Math.round(v)) : u === ":1" ? v.toFixed(1) + ":1" : (v > 0 ? "+" : "") + (+v).toFixed(1); }
+  /* auto level match readouts (mixer strips + FX sheet), refreshed after every graph sync */
+  function autoTxt(tr) {
+    if (!tr.auto) return "off";
+    var I = S.autoInfo(tr.id); if (!I) return "on";
+    if (I.state !== "ok") return I.state;
+    return (I.db >= 0 ? "+" : "") + I.db.toFixed(1) + " dB" + (I.capped ? " (max)" : "");
+  }
+  function autoUI() {
+    if (!E.ctx && P) S.autoMatch(P); // before audio starts: measure anyway so the readouts are right
+    document.querySelectorAll("#mixer .strip").forEach(function (d) {
+      var tr = trackById(d.dataset.id); if (!tr) return; var b = d.querySelector(".autob"); if (!b) return;
+      b.classList.toggle("on", !!tr.auto); b.setAttribute("aria-pressed", String(!!tr.auto)); var I = S.autoInfo(tr.id);
+      b.querySelector(".av").textContent = !tr.auto ? "off" : I && I.state === "ok" ? (I.db >= 0 ? "+" : "") + I.db.toFixed(1) : "—";
+    });
+    var el = $("fx-auto-val"), tr = fxTrack && trackById(fxTrack);
+    if (el && tr) { var I = S.autoInfo(tr.id); el.textContent = autoTxt(tr) + (tr.auto && I && I.state === "ok" ? " · beat " + I.beat.toFixed(1) + " LUFS, take " + I.vocal.toFixed(1) + " LUFS → " + I.target.toFixed(1) : ""); }
+  }
+  E.onSync = autoUI;
+  function autoBlock(tr) {
+    var box = document.createElement("div"); box.className = "fxs fx-auto" + (tr.auto ? " on" : "");
+    var o = tr.autoOff;
+    box.innerHTML = '<h4><span>Auto match to beat <small>this track\'s level follows the beat · non-destructive, the fader still works on top</small></span><button type="button" class="sw' + (tr.auto ? " on" : "") + '" aria-pressed="' + !!tr.auto + '" title="Auto match to beat on / off"></button></h4>' +
+      '<label><span>Vocal vs beat</span><input type="range" min="-12" max="12" step="0.5"><output></output></label>' +
+      '<div class="fx-auto-pre"><button type="button" class="btn small" data-off="3">Upfront +3</button><button type="button" class="btn small" data-off="0">Balanced 0</button><button type="button" class="btn small" data-off="-3">Tucked −3</button></div>' +
+      '<p class="kb-note">Applied gain: <b id="fx-auto-val" class="mono"></b></p>';
+    var r = box.querySelector("input"), out = box.querySelector("output");
+    function ov() { out.textContent = (tr.autoOff > 0 ? "+" : "") + (+tr.autoOff).toFixed(1) + " dB"; box.querySelectorAll("[data-off]").forEach(function (b) { b.classList.toggle("on", +b.dataset.off === tr.autoOff); }); }
+    r.value = o; ov();
+    box.querySelector(".sw").addEventListener("click", function () { S.pushUndo(P, "auto match"); tr.auto = !tr.auto; openFx(tr.id); changed(null, true); });
+    r.addEventListener("input", function () { begin("auto offset"); tr.autoOff = +r.value; if (!tr.auto) { tr.auto = true; box.classList.add("on"); box.querySelector(".sw").classList.add("on"); } ov(); E.ctx && E.syncGraph(P); autoUI(); });
+    r.addEventListener("change", function () { end(); changed(null, true); });
+    box.querySelectorAll("[data-off]").forEach(function (b) { b.addEventListener("click", function () { S.pushUndo(P, "auto offset"); tr.autoOff = +b.dataset.off; tr.auto = true; openFx(tr.id); changed(null, true); }); });
+    return box;
+  }
   function openFx(id) {
     fxTrack = id; var tr = trackById(id); if (!tr) return;
     $("fx-track").textContent = (P.tracks.indexOf(tr) + 1) + " · " + tr.name; fillFxPresets(); $("fx-preset").value = "";
     var B = $("fx-body"); B.innerHTML = "";
+    if (tr.id !== S.beatTrackId(P)) B.appendChild(autoBlock(tr));
     FXS.forEach(function (sec) {
       var st = tr.fx[sec.k], box = document.createElement("div"); box.className = "fxs" + (st.on ? " on" : ""); box.dataset.k = sec.k;
       box.innerHTML = '<h4><span>' + sec.name + ' <small>' + sec.desc + '</small></span><button type="button" class="sw' + (st.on ? " on" : "") + '" title="Turn ' + sec.name + ' on / off" aria-pressed="' + st.on + '"></button></h4>';
@@ -806,6 +845,7 @@
       });
       B.appendChild(box);
     });
+    autoUI();
     $("fx-sheet").hidden = false;
   }
   /* Remove beat bleed / Noise reduction on a track: every clip goes back to its raw take, then (if either is on) is
@@ -877,7 +917,7 @@
   }
   function setProject(p) {
     E.stop(false); uiStopped();
-    P = p; P.tracks.forEach(function (t) { t.fx = S.normFx(t.fx); });
+    P = p; P.tracks.forEach(S.normTrack);
     if (P.countIn == null) P.countIn = 1;
     selTrack = P.tracks[0] && P.tracks[0].id; selClip = null; playhead = 0; waveClip = null; waveBuf = null;
     if (waveEd) waveEd.load(null);

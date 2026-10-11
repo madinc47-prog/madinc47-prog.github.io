@@ -45,7 +45,7 @@
     set(T.pan.pan, tr.pan);
     set(T.wl.gain, tr.wide ? 0.32 : 0); set(T.wr.gain, tr.wide ? -0.32 : 0);
     var audible = !tr.mute && (!solo || tr.solo);
-    set(T.fader.gain, audible ? db(tr.vol) : 0);
+    set(T.fader.gain, audible ? db(tr.vol + S.autoGain(tr)) : 0); // manual volume + auto level match (if on)
   }
   function makeMaster(c) {
     var M = { bus: c.createGain(), lim: c.createDynamicsCompressor(), trim: c.createGain(), out: c.createGain(), meter: c.createAnalyser() };
@@ -80,6 +80,7 @@
     if (!E.ctx) return;
     var c = E.ctx, solo = anySolo(P), seen = {}, keep = {};
     if (!E.buses) E.buses = window.IPBFx.Buses(c, E.master.bus);
+    S.autoMatch(P);
     P.tracks.forEach(function (tr) {
       if (!E.tracks[tr.id]) E.tracks[tr.id] = makeStrip(c, E.master.bus, E.hasWorklet, E.buses);
       applyFx(c, E.tracks[tr.id], tr, P, solo);
@@ -89,6 +90,7 @@
     Object.keys(E.tracks).forEach(function (id) { if (!seen[id]) { try { E.tracks[id].fader.disconnect(); } catch (e) { /* gone */ } delete E.tracks[id]; } });
     E.buses.gc(keep);
     applyMaster(c, E.master, P);
+    if (E.onSync) E.onSync();
   }
 
   /* ---- clip scheduling ---- */
@@ -292,7 +294,7 @@
     var dur = Math.max(0.1, to - from), tail = 2.5, c = new OfflineAudioContext(2, Math.ceil((dur + tail) * S.SR), S.SR);
     return c.audioWorklet.addModule("worklets.js").then(function () { return true; }, function () { return false; }).then(function (gate) {
       var M = makeMaster(c); M.meter.connect(c.destination); applyMaster(c, M, P);
-      var solo = anySolo(P), T = {};
+      var solo = anySolo(P), T = {}; S.autoMatch(P);
       var buses = window.IPBFx.Buses(c, M.bus);
       P.tracks.forEach(function (tr) { T[tr.id] = makeStrip(c, M.bus, gate, buses); applyFx(c, T[tr.id], tr, P, solo); });
       P.clips.forEach(function (cl) { if (T[cl.track]) clipSource(c, cl, T[cl.track].input, 0, from, to, null); });

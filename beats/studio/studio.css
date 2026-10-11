@@ -185,3 +185,11 @@ body.embed .st-standalone { display: none; }
 .vo-btn .vo-hint { flex-basis: 100%; font-size: .64rem; color: var(--muted); font-weight: 600; }
 .vo-btn.on { border-color: #22c55e; background: rgba(34,197,94,.16); box-shadow: 0 0 0 2px rgba(34,197,94,.35), 0 0 14px rgba(34,197,94,.4); }
 .vo-btn.on .vo-state { background: #22c55e; color: #052e16; }
+/* auto level match */
+.strip .autob { min-height: 32px; width: 100%; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--muted); font: inherit; font-size: .66rem; font-weight: 800; cursor: pointer; padding: .1rem .2rem; position: relative; }
+.strip .autob::before { content: ""; position: absolute; inset: -6px 0; }
+.strip .autob.on { border-color: #22c55e; color: #86efac; background: rgba(34,197,94,.12); }
+.strip .autob .av { font-family: ui-monospace, monospace; font-weight: 700; }
+.fx-auto-pre { display: flex; flex-wrap: wrap; gap: .4rem; margin: .2rem 0; }
+.fx-auto-pre .btn { min-height: 44px; }
+.fx-auto-pre .btn.on { border-color: var(--accent, #22d3ee); color: var(--accent, #22d3ee); }

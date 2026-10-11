@@ -897,6 +897,7 @@
     // mic monitoring only on headphones: through a speaker it would feed back and end up in the take
     if (monitorGain) monitorGain.gain.setTargetAtTime(S.vox.monitor && hpMode() === "hp" ? 1 : 0, t, 0.01);
     if (spkGain) spkGain.gain.setTargetAtTime(vox.state !== "idle" && vox.takeMode === "spk" ? spkBeatGain() : 1, t, 0.02);
+    if (typeof voxPrevApply === "function") voxPrevApply(); // live auto match follows the beat faders
   }
   function hasPad(i) { return !!(customBuf[i] || stockBufs[i]); }
   function anySolo() {
@@ -1207,6 +1208,7 @@
   /* stop = stop and rewind to bar 1 (old behaviour); keepCue = pause at the current bar */
   function stop(keepCue) {
     if (!playing) return;
+    if (vpv && vpv.src) voxPrevStop(true);
     var pos = currentPosK();
     playing = false;
     clearInterval(timer);
@@ -2368,6 +2370,7 @@
     recNode.onaudioprocess = function (e) {
       if (!rec.on) return;
       var ib = e.inputBuffer;
+      if (!rec.frames) { rec.pt0 = e.playbackTime; rec.ct0 = ctx.currentTime; } // timing of the first captured block (take ↔ live beat alignment)
       var l = ib.getChannelData(0);
       var r = ib.numberOfChannels > 1 ? ib.getChannelData(1) : l;
       rec.L.push(new Float32Array(l));
@@ -2906,7 +2909,7 @@
     $("vx-center").addEventListener("click", function () { S.vox.pan = 0; vxPanUI(); vxChanged(); });
     var wide = $("vx-wide"); wide.checked = !!S.vox.wide; wide.addEventListener("change", function () { S.vox.wide = wide.checked; vxChanged(); });
     var au = $("vx-auto"), off = $("vx-off"), ov = $("vx-off-val");
-    function offUI() { off.value = S.vox.autoOff; ov.textContent = (S.vox.autoOff > 0 ? "+" : "") + (+S.vox.autoOff).toFixed(1) + " dB"; d.querySelectorAll(".vx-pre button").forEach(function (b) { b.classList.toggle("on", +b.dataset.off === +S.vox.autoOff); }); voxAutoUI(); }
+    function offUI() { off.value = S.vox.autoOff; ov.textContent = (S.vox.autoOff > 0 ? "+" : "") + (+S.vox.autoOff).toFixed(1) + " dB"; d.querySelectorAll(".vx-pre button").forEach(function (b) { b.classList.toggle("on", +b.dataset.off === +S.vox.autoOff); }); voxPrevApply(); }
     au.checked = !!S.vox.auto;
     au.addEventListener("change", function () { S.vox.auto = au.checked; if (vox.last) vox.last.autoDb = null; offUI(); vxChanged(); });
     off.addEventListener("input", function () { S.vox.autoOff = +off.value; offUI(); });
@@ -3260,7 +3263,7 @@
           }, Math.max(0, (at - ctx.currentTime) * 1000)));
         })(i + 1, t0 + i * beat);
       }
-      play(start);
+      play(start); vox.beatStart = start; vox.cueBar = S.cueBar;
       vox.timers.push(setTimeout(function () { beginVocalCapture(); }, Math.max(0, (start - 0.12 - ctx.currentTime) * 1000)));
       vox.timers.push(setTimeout(function () { showCount(0); }, Math.max(0, (start - ctx.currentTime) * 1000)));
     }).catch(function (e) {
@@ -3281,7 +3284,10 @@
     rec.on = true;
     vox.state = "rec"; setVoxButtons();
     clearInterval(rec.tick);
+    rec.grpE = {}; rec.grpG = {}; rec.mst = mixGain("master");
+    GROUPS.forEach(function (g) { rec.grpE[g.id] = 0; rec.grpG[g.id] = mixGain(g.id); });
     rec.tick = setInterval(function () {
+      grpSample(rec.grpE);
       var el = (Date.now() - rec.t0) / 1000;
       if (!vox.silentWarned) setVoxStatus("● REC VOCALS " + fmtTime(el) + (secs ? " / " + fmtTime(secs) : " (free)") + " · tap Stop take to finish");
     }, 200);
@@ -3324,7 +3330,8 @@
     if (cut) { L = L.subarray(cut); R = R.subarray(cut); V = V.subarray(cut); frames -= cut; }
     var song = getSong(S.lyricSong);
     vox.last = { L: L, R: R, V: V, frames: frames, sr: sr, title: btActive() ? bt.title : song ? song.title : "", mode: vox.takeMode || "hp", clean: null, lat: null,
-      mic: vox.micSettings || null, spk: vox.takeMode === "spk" ? spkBeatGain() : 1 };
+      mic: vox.micSettings || null, spk: vox.takeMode === "spk" ? spkBeatGain() : 1,
+      beatStart: vox.beatStart, cueBar: vox.cueBar, grpE: rec.grpE, grpG: rec.grpG, mst: rec.mst, pt0: rec.pt0, ct0: rec.ct0, bs: recNode ? recNode.bufferSize : 4096 };
     applyMixer();
     if (vox.voTake) { // voice only: keep the raw take (Vault) and add a copy with the beat bleed removed
       var tk = vox.last; tk.voiceOnly = true;
@@ -3401,8 +3408,70 @@
   }
   function voxAutoUI() {
     var el = $("vx-auto-val"); if (!el) return;
+    var t = vox.last, live = t && t.autoDb != null ? liveAutoDb(t) : null;
+    var base = t && t.vocLufs != null && t.beatLufs != null ? FXC.autoGainDb(t.beatLufs, t.vocLufs, S.vox.autoOff) : t && t.autoDb;
+    el.textContent = !S.vox.auto ? "off" : t && t.autoDb != null ? (base >= 0 ? "+" : "") + base.toFixed(1) + " dB" + (Math.abs(base) >= FXC.AUTO.max - 0.01 ? " (max)" : "") +
+      (live != null && Math.abs(live - base) >= 0.1 ? " · live " + (live >= 0 ? "+" : "") + live.toFixed(1) + " dB (beat level changed)" : "") : "on · next take";
+  }
+  /* beat level now vs during the take, from each beat group's energy measured while recording (post fader) and the
+     group / master faders now → the live re-match. Exports keep the beat exactly as recorded, so they use t.autoDb. */
+  var grpBuf = null;
+  function grpSample(E) {
+    if (!LG || !LG.an) return;
+    grpBuf = grpBuf || new Float32Array(512);
+    GROUPS.forEach(function (g) { var an = LG.an[g.id]; if (!an) return; an.getFloatTimeDomainData(grpBuf); var s = 0; for (var i = 0; i < grpBuf.length; i++) s += grpBuf[i] * grpBuf[i]; E[g.id] += s; });
+  }
+  function beatDeltaDb(t) {
+    if (!t || !t.grpE) return 0;
+    var tot = 0, now = 0;
+    GROUPS.forEach(function (g) { var e = t.grpE[g.id] || 0, g0 = t.grpG[g.id] || 0; if (!e || !g0) return; var r = mixGain(g.id) / g0; tot += e; now += e * r * r; });
+    if (!tot) return 0;
+    var m = t.mst > 0 ? mixGain("master") / t.mst : 1;
+    return 10 * Math.log10(Math.max(1e-6, now / tot)) + 20 * Math.log10(Math.max(1e-3, m));
+  }
+  function liveAutoDb(t) {
+    if (!S.vox.auto || t.beatLufs == null || t.vocLufs == null) return t.autoDb || 0;
+    return FXC.autoGainDb(t.beatLufs + beatDeltaDb(t), t.vocLufs, S.vox.autoOff);
+  }
+  /* ▶ Play take with beat: the live beat (current settings) from where the take started + the vocal through Pan /
+     Wide / Vocal FX, auto matched to the beat level as it is NOW (re-matches while you move faders). Never recorded. */
+  var vpv = { src: null, g: null, t: null };
+  function voxPrevGain() {
+    var t = vpv && vpv.t; if (!t) return 0;
+    return S.vox.auto ? mixGain("vocal") / VOC_FADER0 * Math.pow(10, liveAutoDb(t) / 20) : mixGain("vocal");
+  }
+  function voxPrevApply() { if (vpv && vpv.g && ctx) vpv.g.gain.setTargetAtTime(voxPrevGain(), ctx.currentTime, 0.03); voxAutoUI(); }
+  function voxPrevStop(fromStop) {
+    if (vpv.src) { try { vpv.src.onended = null; vpv.src.stop(); } catch (e) { /* ended */ } try { vpv.g.disconnect(); } catch (e) { /* gone */ } }
+    vpv.src = null; vpv.g = null; vpv.t = null;
+    var b = $("vox-playtake"); if (b) { b.textContent = "▶ Play take with beat"; b.classList.remove("on"); }
+    if (!fromStop && playing) stop(true);
+  }
+  function voxPlayTake() {
+    if (vpv.src) { voxPrevStop(); return; }
     var t = vox.last;
-    el.textContent = !S.vox.auto ? "off" : t && t.autoDb != null ? (t.autoDb >= 0 ? "+" : "") + t.autoDb.toFixed(1) + " dB" + (Math.abs(t.autoDb) >= FXC.AUTO.max - 0.01 ? " (max)" : "") : "on · next take";
+    if (!t || !ensureCtx() || vox.state !== "idle" || rec.on) return;
+    var b = $("vox-playtake"); b.disabled = true; b.textContent = "Preparing…";
+    var useClean = !!t.clean, V0 = useClean ? t.clean : t.V, sh = takeShift(t), n = t.frames;
+    vocalPre(t, V0).then(function (V) {
+      var vs = new Float32Array(n);
+      for (var i = 0; i < n; i++) { var j = i + sh; vs[i] = j >= 0 && j < n ? V[j] : 0; }
+      return FXC.renderMono(vs, t.sr, { fx: S.vox.fx, pan: S.vox.pan, wide: S.vox.wide, bpm: S.bpm });
+    }).then(function (pr) {
+      vocalAutoDb(t, pr);
+      b.disabled = false;
+      if (playing) stop(true);
+      var buf = ctx.createBuffer(2, pr[0].length, t.sr); buf.getChannelData(0).set(pr[0]); buf.getChannelData(1).set(pr[1]);
+      var s = ctx.createBufferSource(), g = ctx.createGain(); s.buffer = buf;
+      vpv.t = t; vpv.g = g; vpv.src = s; g.gain.value = voxPrevGain();
+      s.connect(g); g.connect(LG.fader); // through the master fader + limiter, like the beat
+      S.cueBar = t.cueBar || 0; if (btActive()) S.cueBar = 0;
+      var at = ctx.currentTime + 0.12;
+      play(at); s.start(at);
+      s.onended = function () { if (vpv.src === s) voxPrevStop(); };
+      b.textContent = "■ Stop take"; b.classList.add("on");
+      voxAutoUI();
+    }).catch(function (e) { b.disabled = false; b.textContent = "▶ Play take with beat"; toast("Couldn't play the take (" + (e && e.message || e) + ")"); });
   }
   function exportVocalMix(first, which) {
     var t = vox.last;
@@ -3496,7 +3565,8 @@
   function renderLastTake() {
     var el = $("vox-last");
     if (!el) return;
-    if (!vox.last) { el.textContent = "No take yet this session."; $("vox-remix").disabled = true; return; }
+    if (!vox.last) { el.textContent = "No take yet this session."; $("vox-remix").disabled = true; $("vox-playtake").disabled = true; return; }
+    $("vox-playtake").disabled = false;
     el.textContent = "Last take: " + fmtTime(vox.last.frames / vox.last.sr) + (vox.last.title ? " · " + vox.last.title : "");
     $("vox-remix").disabled = false;
   }
@@ -6155,6 +6225,7 @@
       e.target.value = S.vox.nudge; saveSession();
     });
     $("vox-remix").addEventListener("click", function () { exportVocalMix(false); });
+    $("vox-playtake").addEventListener("click", voxPlayTake);
     $("vox-check").addEventListener("click", function () { vox.check ? stopMicCheck() : startMicCheck(); });
     initVocalClean();
     window.addEventListener("beforeunload", function (e) {
@@ -6301,7 +6372,9 @@
       });
     },
     vox: function () { return JSON.parse(JSON.stringify(S.vox)); },
-    lastArrays: function () { var t = vox.last; return t ? { V: t.V, clean: t.clean, L: t.L, R: t.R, sr: t.sr } : null; },
+    autoLive: function () { var t = vox.last; return t ? { autoDb: t.autoDb, beatLufs: t.beatLufs, vocLufs: t.vocLufs, delta: beatDeltaDb(t), live: liveAutoDb(t), prevGain: vpv.g ? vpv.g.gain.value : null, playing: !!vpv.src, ui: ($("vx-auto-val") || {}).textContent } : null; },
+    setMix: function (id, v) { S.mixer[id].v = v; applyMixer(); },
+    lastArrays: function () { var t = vox.last; return t ? { V: t.V, clean: t.clean, L: t.L, R: t.R, sr: t.sr, beatStart: t.beatStart, pt0: t.pt0, ct0: t.ct0, bs: t.bs } : null; },
     detect: hpDetect
   };
 

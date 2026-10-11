@@ -33,8 +33,64 @@
     return o;
   }
   function newTrack(i, name) {
-    return { id: uid("t"), name: name || ("Track " + (i + 1)), color: COLORS[i % COLORS.length], vol: 0, pan: 0, mute: false, solo: false, arm: false, fx: defaultFx() };
+    var nm = name || ("Track " + (i + 1));
+    // auto level match: ON for new vocal tracks (not the beat track); offset = vocal vs beat in dB
+    return { id: uid("t"), name: nm, color: COLORS[i % COLORS.length], vol: 0, pan: 0, mute: false, solo: false, arm: false, fx: defaultFx(), auto: !/beat/i.test(nm), autoOff: 1 };
   }
+  /* saved projects: tracks without the auto-match fields load with it OFF (old saves keep their sound) */
+  function normTrack(t) {
+    t.fx = normFx(t.fx);
+    t.auto = typeof t.auto === "boolean" ? t.auto : false;
+    t.autoOff = isFinite(+t.autoOff) && t.autoOff != null ? clamp(+t.autoOff, -12, 12) : 1;
+    return t;
+  }
+
+  /* ---- auto level match (non-destructive): each vocal track's gain = beat loudness (beat track, over the vocal's
+     region, incl. the beat track's volume) + offset − the vocal's gated loudness (silence ignored). The clips are
+     never changed; the gain sits in the track's fader on top of the manual volume. Measurements are cached per
+     clip layout, so moving the beat volume re-matches instantly and a new take re-measures only its own track. */
+  var autoDb = {}, autoCache = {}, autoInfo = {};
+  function beatTrackId(P) { var t = P.tracks.filter(function (t) { return /beat/i.test(t.name); })[0] || P.tracks[0]; return t && t.id; }
+  function regionMeasure(P, trackId, a, b, mono) {
+    var cl = P.clips.filter(function (c) { return c.track === trackId && c.start < b && c.start + c.dur > a && sources[c.src]; });
+    if (!cl.length) return null;
+    var key = (mono ? "m" : "s") + a.toFixed(3) + "|" + b.toFixed(3) + "|" + cl.map(function (c) { return [c.src, c.start, c.offset, c.dur, c.gain || 0].join(","); }).join(";");
+    if (autoCache[key]) return autoCache[key];
+    var sr = sources[cl[0].src].buf.sampleRate || SR, n = Math.max(1, Math.round((b - a) * sr));
+    var L = new Float32Array(n), R = mono ? null : new Float32Array(n), peak = 0;
+    cl.forEach(function (c) {
+      var buf = sources[c.src].buf, g = db(c.gain || 0), ch0 = buf.getChannelData(0), ch1 = buf.numberOfChannels > 1 ? buf.getChannelData(1) : ch0;
+      var s0 = Math.max(a, c.start), s1 = Math.min(b, c.start + c.dur), i0 = Math.round((s0 - a) * sr), i1 = Math.round((s1 - a) * sr), o = Math.round((c.offset + s0 - c.start) * sr) - i0;
+      for (var i = i0; i < i1 && i < n; i++) { var j = i + o; if (j < 0 || j >= ch0.length) continue;
+        if (mono) L[i] += (buf.numberOfChannels > 1 ? 0.5 * (ch0[j] + ch1[j]) : ch0[j]) * g; else { L[i] += ch0[j] * g; R[i] += ch1[j] * g; } }
+    });
+    for (var k = 0; k < n; k++) { var v = Math.abs(L[k]); if (v > peak) peak = v; if (R) { v = Math.abs(R[k]); if (v > peak) peak = v; } }
+    // a mono take plays the same signal on both sides (strip upmix → centre), so its loudness is the mono value + 3 dB
+    var r = { lufs: window.IPBFx.lufs(mono ? [L] : [L, R], sr) + (mono ? 10 * Math.log10(2) : 0), peak: peak };
+    var ks = Object.keys(autoCache); if (ks.length > 40) delete autoCache[ks[0]];
+    autoCache[key] = r; return r;
+  }
+  function autoMatch(P) {
+    autoDb = {}; autoInfo = {};
+    if (!window.IPBFx || !window.IPBFx.lufs) return autoDb;
+    var bid = beatTrackId(P), bt = P.tracks.filter(function (t) { return t.id === bid; })[0];
+    P.tracks.forEach(function (tr) {
+      if (!tr.auto || tr.id === bid) return;
+      var cl = P.clips.filter(function (c) { return c.track === tr.id; });
+      if (!cl.length) { autoInfo[tr.id] = { state: "no take yet" }; return; }
+      var a = Math.min.apply(null, cl.map(function (c) { return c.start; })), b = Math.max.apply(null, cl.map(function (c) { return c.start + c.dur; }));
+      var v = regionMeasure(P, tr.id, a, b, true), bm = bt ? regionMeasure(P, bid, a, b, false) : null; // the beat's level setting counts, not mute / solo
+      if (!v || !isFinite(v.lufs)) { autoInfo[tr.id] = { state: "take is silent" }; return; }
+      if (!bm || !isFinite(bm.lufs)) { autoInfo[tr.id] = { state: "no beat under this take" }; return; }
+      var beatL = bm.lufs + (bt.vol || 0), g = window.IPBFx.autoGainDb(beatL, v.lufs, tr.autoOff), capped = false;
+      var room = v.peak > 0 ? -toDb(v.peak) - 0.3 : 99; // never push the take itself past full scale (the master limiter guards the mix)
+      if (g > room) { g = room; capped = true; }
+      autoDb[tr.id] = g;
+      autoInfo[tr.id] = { state: "ok", db: g, beat: beatL, vocal: v.lufs, target: beatL + tr.autoOff, capped: capped || g >= window.IPBFx.AUTO.max - 0.01 };
+    });
+    return autoDb;
+  }
+  function autoGain(tr) { return tr.auto && autoDb[tr.id] != null ? autoDb[tr.id] : 0; }
   function newProject() {
     var p = { v: 1, id: uid("p"), name: "My Song", bpm: 96, snap: true, metro: false, loop: { on: false, start: 0, end: 8 },
       tracks: [], clips: [], master: { vol: 0, limiter: true, ceiling: -1 }, latencyMs: null, countIn: 1 };
@@ -229,7 +285,8 @@
 
   window.IPBS = window.IPBS || {};
   Object.assign(window.IPBS, {
-    SR: SR, COLORS: COLORS, uid: uid, clamp: clamp, db: db, toDb: toDb, defaultFx: defaultFx, normFx: normFx, newTrack: newTrack, newProject: newProject,
+    SR: SR, COLORS: COLORS, uid: uid, clamp: clamp, db: db, toDb: toDb, defaultFx: defaultFx, normFx: normFx, newTrack: newTrack, newProject: newProject, normTrack: normTrack,
+    autoMatch: autoMatch, autoGain: autoGain, autoInfo: function (id) { return autoInfo[id] || null; }, beatTrackId: beatTrackId,
     sources: sources, addSource: addSource, makeBuffer: makeBuffer, bufFrom: bufFrom, chans: chans,
     H: H, pushUndo: pushUndo, undo: undo, redo: redo, clearHistory: clearHistory,
     encodeWav: encodeWav, encodeMp3: encodeMp3, loadScript: loadScript,
