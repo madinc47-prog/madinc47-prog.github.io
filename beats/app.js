@@ -1863,7 +1863,7 @@
       '<div class="sw-filters"><input type="search" id="sw-q" placeholder="Search sounds" autocomplete="off"><select id="sw-sort" aria-label="Sort"><option value="lh">Light → heavy</option><option value="hl">Heavy → light</option><option value="az">A–Z</option></select></div>' +
       '<div class="sw-chips" id="sw-cats"></div><div class="sw-chips" id="sw-tags"></div>' +
       '<div class="sw-list" id="sw-list" role="list"></div>' +
-      '<div class="sw-foot"><span id="sw-store">…</span><button type="button" class="btn small ghost" id="sw-clear">Clear unused</button></div>';
+      '<div class="sw-foot"><span id="sw-store">…</span><button type="button" class="btn small ghost" id="sw-all" title="Save every library sound on this device so the whole library works offline (about 15 MB)">⬇ Download all sounds</button><button type="button" class="btn small ghost" id="sw-clear">Clear unused</button></div>';
     document.body.appendChild(sh);
     swEls = { sh: sh, list: sh.querySelector("#sw-list") };
     svUI(); matchUI();
@@ -1875,6 +1875,7 @@
     sh.querySelector("#sw-kit").addEventListener("click", function () { if (swT) swApply(swT, null); });
     sh.querySelector("#sw-q").addEventListener("input", function (e) { swF.q = e.target.value; swRender(); });
     sh.querySelector("#sw-sort").addEventListener("change", function (e) { swF.sort = e.target.value; swRender(); });
+    sh.querySelector("#sw-all").addEventListener("click", function () { libDownloadAll(this); });
     sh.querySelector("#sw-clear").addEventListener("click", function () {
       LIB.clearUnused(libIds()).then(function (n) { toast(n ? "Cleared " + n + " unused files" : "Nothing to clear"); swStore(); });
     });
@@ -1930,6 +1931,14 @@
       var on = r.dataset.id === cur; r.classList.toggle("using", on); r.classList.toggle("sel", r.dataset.id === swSel); r.classList.toggle("busy", r.dataset.id === swBusyId);
       var u = r.querySelector(".sw-use"); if (u) u.textContent = on ? "In use" : "Use";
     });
+  }
+  function libDownloadAll(btn) {
+    btn.disabled = true;
+    LIB.downloadAll(function (d, t, b) { btn.textContent = "⬇ " + d + " / " + t + " · " + fmtKB(b); }).then(function (r) {
+      btn.disabled = false; btn.textContent = r.failed ? "⬇ Finish download (" + r.failed + " left)" : "✓ All sounds offline";
+      toast(r.failed ? r.failed + " sounds couldn't download (connection?). Tap again to finish." : "All " + r.total + " library sounds are saved on this device — they work offline.");
+      swStore();
+    }, function (e) { btn.disabled = false; btn.textContent = "⬇ Download all sounds"; toast("Download failed: " + (e && e.message || e)); });
   }
   function swStore() {
     LIB.storage().then(function (st) {
@@ -6833,7 +6842,7 @@
     detect: hpDetect
   };
 
-  /* stale-build guard: Beats has no service worker, but the tablet can keep an older cached index.html for a while.
+  /* stale-build guard: sw.js serves pages network-first, but the tablet can still keep an older index.html (HTTP cache / offline copy).
      Ask the network for the current page; if it loads a newer app.js than this one, reload once. */
   /* in-app browsers (WhatsApp / Facebook / Instagram / TikTok webviews) often block sound and the mic: say so up front */
   (function inAppHint() {

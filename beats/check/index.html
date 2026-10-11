@@ -64,7 +64,8 @@
   <section class="step" id="s-output"><h2>8 · Speaker / headphones and screen <span class="badge">…</span></h2><div class="out"></div><div class="msg"></div></section>
 
   <section class="step" id="s-storage"><h2>9 · Storage <span class="badge">…</span></h2>
-    <div class="row"><button type="button" id="b-st-refresh">↻ Measure storage</button><button type="button" id="b-st-copy">📋 Copy report</button><button type="button" id="b-st-persist">🛡 Keep Beat data safe</button></div>
+    <div class="row"><button type="button" id="b-st-refresh">↻ Measure storage</button><button type="button" id="b-st-copy">📋 Copy report</button><button type="button" id="b-st-persist">🛡 Keep Beat data safe</button><button type="button" id="b-st-all">⬇ Download all sounds (offline)</button></div>
+    <div class="msg" id="st-off"></div>
     <pre class="out" id="st-out">Measuring…</pre><div class="msg" id="st-msg"></div></section>
 
   <section class="step" id="s-report"><h2>Report</h2>
@@ -72,8 +73,9 @@
     <div class="msg" id="copy-msg"></div>
     <pre id="report"></pre></section>
 </main>
-<script src="check.js?v=20261011z"></script>
-<script src="../storage.js?v=20261011z"></script>
+<script src="check.js?v=20261011aa"></script>
+<script src="../storage.js?v=20261011aa"></script>
+<script src="../library.js?v=20261011aa"></script>
 <script>
 (function () {
   var S = window.IPBStorage, out = document.getElementById("st-out"), msg = document.getElementById("st-msg"), badge = document.querySelector("#s-storage .badge"), last = "";
@@ -86,8 +88,25 @@
   document.getElementById("b-st-refresh").addEventListener("click", run);
   document.getElementById("b-st-copy").addEventListener("click", function () { (navigator.clipboard ? navigator.clipboard.writeText(last) : Promise.reject()).then(function () { msg.textContent = "Copied — paste it in the chat."; }, function () { msg.textContent = "Copy didn't work: select the text above and copy it."; }); });
   document.getElementById("b-st-persist").addEventListener("click", function () { S.persist().then(function (ok) { msg.textContent = ok ? "Done: Chrome will keep your Beat data (it won't clear it to free space)." : "Chrome said not yet. It usually allows it after you add Beat to the home screen or use it more often; your data is still saved."; run(); }); });
+  document.getElementById("b-st-all").addEventListener("click", function () {
+    var b = this; b.disabled = true;
+    IPBLibrary.downloadAll(function (d, t, by) { b.textContent = "⬇ " + d + " / " + t + " · " + (by / 1048576).toFixed(1) + " MB"; }).then(function (r) {
+      b.disabled = false; b.textContent = r.failed ? "⬇ Finish download (" + r.failed + " left)" : "✓ All sounds offline"; msg.textContent = r.failed ? r.failed + " sounds didn't download (connection?) — tap again to finish." : "All " + r.total + " library sounds are saved on this device."; run();
+    }, function (e) { b.disabled = false; b.textContent = "⬇ Download all sounds (offline)"; msg.textContent = "Download failed: " + (e && e.message || e); });
+  });
+  (function offline() { // is the app itself saved for offline?
+    var el = document.getElementById("st-off");
+    if (!("serviceWorker" in navigator)) { el.textContent = "Offline app: not supported in this browser."; return; }
+    navigator.serviceWorker.getRegistration("../").then(function (r) {
+      if (!r) { el.textContent = "Offline app: not installed yet (it saves itself the first time Beats opens with a connection)."; return; }
+      caches.keys().then(function (ks) { var k = ks.filter(function (x) { return /^ipb-app-/.test(x); })[0]; if (!k) { el.textContent = "Offline app: installing…"; return; }
+        caches.open(k).then(function (c) { return c.keys(); }).then(function (rs) { el.textContent = "Offline app: ready ✓ (" + k.replace("ipb-app-", "build ") + ", " + rs.length + " files saved). Beats, Studio, Master and the kit sounds work without internet."; }); });
+    });
+  })();
   run();
 })();
 </script>
+<script>/* offline app (sw.js): after the first visit Beat works with no connection. ?nosw=1 skips it. */
+if ("serviceWorker" in navigator && !/[?&]nosw/.test(location.search) && !(window.parent !== window && /\/beats\/studio\//.test(location.pathname))) addEventListener("load", function () { setTimeout(function () { navigator.serviceWorker.register("../sw.js", { scope: "../" }).catch(function () {}); }, 1500); });</script>
 </body>
 </html>

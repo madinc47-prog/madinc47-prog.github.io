@@ -129,6 +129,31 @@
       return { count: n, bytes: b, ids: ids };
     });
   }
+  /* "Download all sounds": every library file into the device cache (no decoding), 3 at a time, with progress.
+     onProg(done, total, bytes). Already-saved files are skipped, so it can be tapped again to finish after a drop-out. */
+  var dlAll = null;
+  function downloadAll(onProg) {
+    if (dlAll) { dlAll.cbs.push(onProg); return dlAll.p; }
+    dlAll = { cbs: [onProg] };
+    dlAll.p = init().then(function () { return cacheOpen(); }).then(function (c) {
+      if (!c) throw new Error("This browser can't store files offline.");
+      var list = []; man.items.forEach(function (it) { files(it).forEach(function (f) { list.push(f); }); });
+      var done = 0, bytes = 0, failed = 0, i = 0, total = list.length;
+      var tell = function () { dlAll.cbs.forEach(function (f) { try { f && f(done, total, bytes); } catch (e) { /* ignore */ } }); };
+      function worker() {
+        if (i >= list.length) return Promise.resolve();
+        var u = url(list[i++]);
+        return c.match(u).then(function (hit) {
+          if (hit) return hit.headers.get("content-length") || 0;
+          return fetch(u).then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); var n = +r.headers.get("content-length") || 0; return c.put(u, r).then(function () { return n; }); });
+        }).then(function (n) { bytes += +n || 0; }, function () { failed++; }).then(function () { done++; tell(); return worker(); });
+      }
+      tell();
+      return Promise.all([worker(), worker(), worker()]).then(function () { return { total: total, failed: failed, bytes: bytes }; });
+    });
+    dlAll.p.then(function () { dlAll = null; }, function () { dlAll = null; });
+    return dlAll.p;
+  }
   /* remove every cached file not used by `keep` (ids in use by layers) */
   function clearUnused(keep) {
     var k = {}; (keep || []).forEach(function (id) { if (byId[id]) files(byId[id]).forEach(function (f) { k[url(f)] = 1; }); });
@@ -145,7 +170,7 @@
   }
   window.IPBLibrary = { edge: edge,
     init: init, load: load, get: get, zone: zone, want: want, pin: pin, files: files, url: url, storage: storage, clearUnused: clearUnused, cachedIds: cachedIds,
-    item: function (id) { return byId[id] || null; }, manifest: function () { return man; }, onLoad: function (f) { listeners.push(f); },
+    downloadAll: downloadAll, item: function (id) { return byId[id] || null; }, manifest: function () { return man; }, onLoad: function (f) { listeners.push(f); },
     memory: function () { return { bytes: memBytes(), ids: Object.keys(mem), pinned: Object.keys(pinned) }; }
   };
 })();
