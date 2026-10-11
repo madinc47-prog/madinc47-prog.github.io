@@ -2,17 +2,17 @@
 // Every module URL carries the same ?v= tag as player.js in index.html (and sw.js SHELL), so a deploy can never mix
 // old and new modules from the HTTP cache. Bump all of them together.
 import { saveTrack, listTracks, getTrack, deleteTrack, onMediaChange } from '../shared/media-store.js';
-import { createScene } from './scene.js?v=19';
-import { createViz, THEMES } from './viz.js?v=19';
-import { OUTFITS, OUTFIT_FOR_THEME } from './outfits.js?v=19';
-import { createEQ } from './eq.js?v=19';
-import { createHype } from './hype.js?v=19';
-import { createLadies } from './ladies.js?v=19';
-import { createShout } from './shout.js?v=19';
-import { initPhoto } from './photo.js?v=19';
-import { initRec } from './rec.js?v=19';
-import { td, TD } from './td.js?v=19';
-import { fmt, hash, isAudioFile, titleFromName, makeCover, makeLabel, readTags, probeDuration, probeMedia, computePeaks, notMusicReason } from './util.js?v=19';
+import { createScene } from './scene.js?v=20';
+import { createViz, THEMES } from './viz.js?v=20';
+import { OUTFITS, OUTFIT_FOR_THEME } from './outfits.js?v=20';
+import { createEQ } from './eq.js?v=20';
+import { createHype } from './hype.js?v=20';
+import { createLadies } from './ladies.js?v=20';
+import { createShout } from './shout.js?v=20';
+import { initPhoto } from './photo.js?v=20';
+import { initRec } from './rec.js?v=20';
+import { td, TD } from './td.js?v=20';
+import { fmt, hash, isAudioFile, titleFromName, makeCover, makeLabel, readTags, probeDuration, probeMedia, computePeaks, notMusicReason } from './util.js?v=20';
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -734,12 +734,15 @@ function drawWave() {
   wg.fillStyle = c1; wg.beginPath(); wg.arc(Math.max(5, Math.min(w - 5, w * prog)), ly, 5.5, 0, 7); wg.fill();
   wave.setAttribute('aria-valuenow', Math.round(pos)); wave.setAttribute('aria-valuemax', Math.round(dur || 0)); wave.setAttribute('aria-valuetext', `${fmt(pos)} of ${fmt(dur)}`);
 }
-function seekFromEvent(e) { const r = wave.getBoundingClientRect(); const k = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)); const dur = deck && Number.isFinite(deck.el.duration) ? deck.el.duration : 0; return k * dur; }
+// length used by the progress bar: the element's, or the measured/decoded one when the browser reports none (streams)
+function seekDur() { if (!deck) return 0; const d = deck.el.duration; return Number.isFinite(d) && d > 0 ? d : (deck.item && (deck.item.trueDur || deck.item.duration)) || 0; }
+function seekFromEvent(e) { const r = wave.getBoundingClientRect(); const k = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)); return k * seekDur(); }
 wave.addEventListener('pointerdown', (e) => { if (!deck) return; wave.setPointerCapture(e.pointerId); seekPreview = seekFromEvent(e); $('#tCur').textContent = fmt(seekPreview); drawWave(); });
 wave.addEventListener('pointermove', (e) => { if (seekPreview == null) return; seekPreview = seekFromEvent(e); $('#tCur').textContent = fmt(seekPreview); drawWave(); });
-const endSeek = (e) => { if (seekPreview == null) return; seekTo(seekPreview); seekPreview = null; };
+const endSeek = (e) => { if (seekPreview == null) return; td('seek: ' + fmt(seekPreview) + ' of ' + fmt(seekDur())); seekTo(seekPreview); seekPreview = null; };
+wave.addEventListener('keydown', (e) => { if (!deck) return; const st = e.shiftKey ? 30 : 5; if (e.key === 'ArrowRight') { e.preventDefault(); seekTo(deck.el.currentTime + st); } else if (e.key === 'ArrowLeft') { e.preventDefault(); seekTo(deck.el.currentTime - st); } else if (e.key === 'Home') { e.preventDefault(); seekTo(0); } });
 wave.addEventListener('pointerup', endSeek); wave.addEventListener('pointercancel', () => { seekPreview = null; });
-function seekTo(t) { if (!deck) return; const d = deck.el.duration; if (!Number.isFinite(d)) return; const delta = t - deck.el.currentTime; deck.el.currentTime = Math.max(0, Math.min(d - .05, t)); scene.st.decks[deck.slot].rot += delta * 200; drawWave(); if (t < d - 20) invalidateCue(); }
+function seekTo(t) { if (!deck) return; const d = seekDur(); if (!d) return; const delta = t - deck.el.currentTime; deck.el.currentTime = Math.max(0, Math.min(d - .05, t)); scene.st.decks[deck.slot].rot += delta * 200; drawWave(); if (t < d - 20) invalidateCue(); }
 
 // list
 function itemSourceLabel(it) { return it.demo ? 'Demo · Beats' : it.source === 'beats' ? 'From Beats' : it.source === 'dj' ? 'From DJ Booth' : it.kind === 'url' ? 'URL' : it.kind === 'session' ? 'This session' : 'Imported'; }
