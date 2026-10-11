@@ -4814,7 +4814,7 @@
     if (prev === "studio" && name !== "studio") { var w = studioWin(); if (w) w.IPBStudio.pause(); }
     if (name === "studio") { if (playing) stop(); studioEnsure(); }
     if (activeTab === "vault") renderVault();
-    if (activeTab === "lyrics") { ly.preview.tops = null; }
+    if (activeTab === "lyrics" && ly.preview) { ly.preview.tops = null; }
     if (activeTab === "mixer") updateLatencyLabel();
     if (activeTab === "piano") pianoShown();
   }
