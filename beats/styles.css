@@ -82,6 +82,7 @@ main { padding: 1rem; max-width: 1200px; margin: 0 auto; }
 .toolbar-right { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; }
 .swing { display: flex; align-items: center; gap: .4rem; font-size: .78rem; color: var(--muted); }
 .swing input { width: 90px; accent-color: var(--accent); }
+.swing select { font: inherit; color: inherit; background: transparent; border: 1px solid currentColor; border-radius: 6px; padding: .1rem .3rem; }
 
 .rec-bar {
   display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .6rem;

@@ -19,6 +19,7 @@
   var D = window.IPBDrums;            // kit library + offline pad renderer (drums.js)
   var PD = window.IPBPianoData;       // piano-roll pattern format + library (pianoroll-data.js)
   var PK = window.IPBKeys;            // melodic instruments (keys-instruments.js)
+  var FEEL = window.IPBFeel;          // Feel engine: velocity tone, micro-timing, variation (humanize.js)
   var PIANO_LIB_KEY = "ipb_piano_lib_v1";
   function instOk(id) { return !!PK.BY_ID[id]; }
   var DEFAULT_KIT = "qb";
@@ -84,6 +85,7 @@
     kit: DEFAULT_KIT,
     bpm: 90,
     swing: 24,
+    feel: "natural",   // Feel engine (humanize.js): off | tight | natural | live
     slots: { A: newSlot(16), B: newSlot(16), C: newSlot(16), D: newSlot(16) },
     slot: "A",
     pattern: null, vel: null, note: null, slide: null, // views of the current slot
@@ -164,7 +166,7 @@
       localStorage.setItem(SESSION_KEY, JSON.stringify({
         fmt: 2, kit: S.kit, bpm: S.bpm, swing: S.swing, slot: S.slot, slots: S.slots,
         padCfg: S.padCfg, kitSwing: S.kitSwing, mute: S.mute, solo: S.solo, mixer: S.mixer, sel: S.sel,
-        chordTrack: S.chordTrack, structure: S.structure, cueBar: S.cueBar,
+        chordTrack: S.chordTrack, structure: S.structure, cueBar: S.cueBar, feel: S.feel,
         lyricSong: S.lyricSong, bpl: S.bpl, prSize: S.prSize, vox: S.vox, tool: S.tool,
         backing: bt.id ? { id: bt.id, layer: bt.layer, prevBpm: bt.prevBpm } : null,
         piano: S.piano, songKey: S.songKey, klTempo: S.klTempo
@@ -195,6 +197,7 @@
       bindSlot();
       if (d.bpm) S.bpm = clamp(+d.bpm, 60, 200);
       if (d.swing != null) S.swing = clamp(+d.swing, 0, 60);
+      S.feel = FEEL.norm(d.feel); // sessions saved before the Feel engine → Natural
       S.kitSwing[S.kit] = S.swing;
       if (d.mixer) {
         var dm = defaultMixer();
@@ -602,7 +605,7 @@
     var def = padDef(i), cfg = padCfg(i), bufs = stockBufs[i];
     var buf = customBuf[i] || (bufs && bufs.length ? bufs[G.rr[i]++ % bufs.length] : null);
     if (!buf) return;
-    var rate = Math.pow(2, ((cfg.tune || 0) + (o.semi || 0)) / 12);
+    var rate = Math.pow(2, ((cfg.tune || 0) + (o.semi || 0) + (o.cents || 0) / 100) / 12);
     var k, v;
     if (def.ck) {
       if (o.slide) { // legato glide: bend the voice that is still ringing instead of retriggering
@@ -636,6 +639,11 @@
     src.playbackRate.value = rate;
     var g = c.createGain();
     g.gain.value = amp;
+    var head = src;
+    if (o.lp > 0) { // Feel: softer hit = darker (stick / beater barely lifts), as on a real kit
+      var tf = c.createBiquadFilter(); tf.type = "lowpass"; tf.frequency.value = o.lp; tf.Q.value = 0.5;
+      src.connect(tf); head = tf;
+    }
     var dur = buf.duration / rate, end = when + dur;
     if (cfg.decay < 0.995) {
       var hold = dur * cfg.decay * 0.35, tau = dur * cfg.decay * 0.12 + 0.003;
@@ -643,7 +651,8 @@
       g.gain.setTargetAtTime(0, when + hold, tau);
       end = Math.min(end, when + hold + tau * 8);
     }
-    src.connect(g); g.connect(G.strips[i].inp);
+    if (head === src) src.connect(g); else head.connect(g);
+    g.connect(G.strips[i].inp);
     src.start(when);
     if (end < when + dur) src.stop(end);
     var voice = { pad: i, src: src, g: g, start: when, end: end, rate: rate, ck: def.ck };
@@ -653,9 +662,11 @@
       if (idx !== -1) reg.splice(idx, 1);
     };
   }
+  function feelUI() { var fe = $("feel"); if (fe) fe.value = S.feel; }
   function triggerPad(i, when, vel) {
     if (!ensureCtx()) return;
-    playPadInto(ctx, LG, i, when || ctx.currentTime, liveVoices, { vel: vel == null ? TOOL_VEL[S.tool] : vel });
+    var hv = FEEL.liveDrum(S.feel, kitDef(S.kit), padDef(i), i, vel == null ? TOOL_VEL[S.tool] : vel); // tone + variation, never delayed
+    playPadInto(ctx, LG, i, when || ctx.currentTime, liveVoices, { vel: hv.vel, cents: hv.cents, lp: hv.lp });
   }
 
   /* ---------------- Sequencer ---------------- */
@@ -734,8 +745,16 @@
       var off = (padCfg(p).nudge || 0) / 1000 + (def.hum ? humJitter(info.k, p) * def.hum / 1000 : 0);
       var vel = S.vel[p][s], slide = !!S.slide[p][s];
       for (var r = 0; r < v; r++) {
-        playPadInto(c, G, p, Math.max(0, t + sw + off + (r * len) / v), reg, { semi: semi, vel: r ? vel * 0.88 : vel, slide: slide && r === 0 });
+        var hz = FEEL.drum({ mode: S.feel, kit: kit, def: def, k: info.k, step: s, pad: p, vel: vel, r: r, n: v });
+        playPadInto(c, G, p, Math.max(0, t + sw + off + hz.dt + (r * len) / v), reg, { semi: semi, vel: hz.vel, cents: hz.cents, lp: hz.lp, slide: slide && r === 0 });
       }
+    }
+    // Live feel: a drummer's ghost note on the 16th before a backbeat (swung styles only, never on top of a written hit)
+    if (S.feel === "live" && !half) for (var gp = 0; gp < 16; gp++) {
+      var gd = kit.pads[gp], nx = (s + 1) % plen();
+      if (!gd || !audible(gp) || customBuf[gp] || !S.pattern[gp][nx] || nx % 8 !== 4) continue;
+      var gv = FEEL.ghost(S.feel, kit, gd, info.k, s, !!S.pattern[gp][s], true);
+      if (gv) { var gz = FEEL.drum({ mode: S.feel, kit: kit, def: gd, k: info.k, step: s, pad: gp, vel: gv }); playPadInto(c, G, gp, Math.max(0, t + sw + gz.dt), reg, { vel: gz.vel, cents: gz.cents, lp: gz.lp }); }
     }
     // crash on each new section (not intro / sparse parts)
     if (info.secStart && info.secIdx > 0 && info.feel !== "sparse" && kit.crashPad >= 0) playPadInto(c, G, kit.crashPad, t, reg, {});
@@ -2632,7 +2651,7 @@
     var s = curSlot();
     function cp(g) { return g.map(function (r) { return r.slice(); }); }
     return {
-      fmt: 2, kit: S.kit, bpm: S.bpm, swing: S.swing, len: s.len,
+      fmt: 2, kit: S.kit, bpm: S.bpm, swing: S.swing, feel: S.feel, len: s.len,
       pattern: cp(s.pattern), vel: cp(s.vel), note: cp(s.note), slide: cp(s.slide),
       pads: JSON.parse(JSON.stringify(S.padCfg[S.kit] || [])),
       chords: JSON.parse(JSON.stringify(S.chordTrack)),
@@ -3024,6 +3043,7 @@
     S.kitSwing[S.kit] = S.swing;
     S.bpm = clamp(+beat.bpm || 140, 60, 200);
     S.swing = clamp(+beat.swing || 0, 0, 60);
+    S.feel = FEEL.norm(beat.feel); feelUI();
     S.slots[S.slot] = conv.slot; pendingSlot = null; bindSlot(); S.page = 0;
     if (beat.songKey != null && isFinite(+beat.songKey)) { S.songKey = clamp(Math.round(+beat.songKey), 0, 11); klKeyUI(); }
     if (beat.piano) { S.piano.slots[S.piano.slot] = PD.normalize(beat.piano, instOk); pianoPending = null; pianoUI(true, true); } // older songs have no piano part: keep the current one
@@ -4687,6 +4707,12 @@
       lastPosLabel = "";
       saveSession();
     });
+    var fe = $("feel");
+    if (fe) fe.addEventListener("change", function () {
+      S.feel = FEEL.norm(fe.value); feelUI(); saveSession();
+      toast("Feel: " + FEEL.LABEL[S.feel] + (S.feel === "off" ? " (exact grid, fixed velocity tone)" : S.feel === "tight" ? " (trap-tight, subtle variation)" : S.feel === "live" ? " (drummer push/pull + ghost notes)" : " (played, genre-aware)"));
+    });
+    feelUI();
     var sw = $("swing");
     sw.value = S.swing;
     sw.addEventListener("input", function () {

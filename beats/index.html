@@ -13,7 +13,7 @@
   <meta property="og:type" content="website">
   <meta name="theme-color" content="#0b0d12">
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="styles.css?v=20261003u">
+  <link rel="stylesheet" href="styles.css?v=20261011a">
 </head>
 <body>
   <header class="topbar">
@@ -54,6 +54,7 @@
         </button>
         <div class="kitbar-right">
           <label class="swing" title="Swing, MPC-style: 50% = straight · 54–58% = light shuffle · 62%+ = heavy bounce">Swing <input id="swing" type="range" min="0" max="60" step="2" value="24"> <span id="swing-val" class="swing-val">62%</span></label>
+          <label class="swing" title="Feel: how the parts are played. Off = exact grid, same hit every time · Tight = trap-tight with subtle variation · Natural = played by a pro (velocity tone, round-robin, genre timing, chord rolls) · Live = a live drummer pushing and pulling, with ghost notes. Pads / MIDI you play are never delayed.">Feel <select id="feel"><option value="off">Off</option><option value="tight">Tight</option><option value="natural" selected>Natural</option><option value="live">Live</option></select></label>
           <button id="btn-demo" class="btn ghost" type="button" title="Load this kit's 2-bar starter groove, tempo and swing">Load starter</button>
           <button id="btn-fresh" class="btn" type="button">Fresh beat</button>
         </div>
@@ -638,13 +639,14 @@
 
   <footer class="foot">Free · runs in your browser · synthesized drums + CC0 one-shots (<a href="samples/CREDITS.md">credits</a>), no paid APIs · instrumental “Gunwalk” © Emmanuel Griffith / DJ Psycho Fingers (<a href="tracks/CREDITS.md">credits</a>) · <a href="studio/">Studio</a> · <a href="../dj/">DJ booth</a> · <a href="../">IslePin</a></footer>
 
+  <script src="humanize.js?v=20261011a"></script>
   <script src="drums.js?v=20261003u"></script>
-  <script src="keys-instruments.js?v=20261003u"></script>
+  <script src="keys-instruments.js?v=20261011a"></script>
   <script src="pianoroll-data.js?v=20261003u"></script>
   <script src="keys-loops.js?v=20261003u"></script>
   <script src="pianoroll.js?v=20261003u"></script>
   <script src="vocal-clean-client.js?v=20261003u"></script>
-  <script src="app.js?v=20261003u"></script>
+  <script src="app.js?v=20261011a"></script>
   <script type="module" src="user-samples.js?v=1"></script>
   <script type="module" src="../shared/ecosystem-nav.js"></script><!-- Beats | DJ Booth | Player switcher (shared/README.md) -->
 </body>
