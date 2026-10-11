@@ -282,7 +282,16 @@
       S.kitSwing[S.kit] = S.swing;
       if (d.mixer) {
         var dm = defaultMixer();
-        Object.keys(dm).forEach(function (k) { if (d.mixer[k]) dm[k] = d.mixer[k]; });
+        Object.keys(dm).forEach(function (k) { // a channel missing from an older save, or with a broken level, keeps its default
+          var s = d.mixer[k];
+          if (s && isFinite(+s.v) && s.v !== null) dm[k] = { v: clamp(+s.v, 0, 1), m: !!s.m };
+        });
+        try { // one-time fix (Oct 2026): a Piano Roll channel saved at exactly 0 silenced keys loops with no clue why; back to the default (an explicit MUTE stays)
+          if (!localStorage.getItem("ipb_mix_piano_fix_v1")) {
+            localStorage.setItem("ipb_mix_piano_fix_v1", "1");
+            if (dm.piano && dm.piano.v === 0) dm.piano.v = defaultMixer().piano.v;
+          }
+        } catch (e) { /* ignore */ }
         S.mixer = dm;
       }
       if (d.sel != null) S.sel = clamp(+d.sel, 0, 15);
@@ -4876,8 +4885,26 @@
     klPrev = { id: id, t0: t0, end: end, synced: synced, voices: voices, notes: p.notes.length * passes };
     klPrev.timer = setTimeout(function () { if (klPrev && klPrev.id === id) { klPrev = null; klRefreshCards(); } }, (end - ctx.currentTime) * 1000 + 400);
     klRefreshCards();
+    pianoChannelCheck();
     var Lp = KL.BY_ID[id];
+    if (mixGain("piano") === 0) return;
     toast("Preview: " + Lp.name + " · " + KL.keyLabel(Lp, S.songKey) + " · " + S.bpm + " BPM" + (synced ? " · joins on the next bar" : ""));
+  }
+  /* keys loops + Piano Roll play through the "Piano Roll" mixer channel: if it is at 0 or muted, say so (with a one-tap fix) instead of silence */
+  function pianoChannelCheck() {
+    var el = $("piano-down");
+    if (mixGain("piano") !== 0) { if (el) el.hidden = true; return; }
+    if (!el) {
+      el = document.createElement("button"); el.type = "button"; el.id = "piano-down"; el.className = "audio-paused piano-down";
+      el.addEventListener("click", function () {
+        var m = S.mixer.piano; if (m.v === 0) m.v = defaultMixer().piano.v; m.m = false;
+        buildMixer(); applyMixer(); saveSession(); el.hidden = true; toast("Piano Roll channel back on (" + Math.round(m.v * 100) + "%)");
+      });
+      document.body.appendChild(el);
+    }
+    el.textContent = "🔇 The Piano Roll channel is " + (S.mixer.piano.m ? "muted" : "turned down to 0") + " in the Mixer, so keys loops are silent. Tap to fix.";
+    el.hidden = false;
+    clearTimeout(el._t); el._t = setTimeout(function () { el.hidden = true; }, 10000);
   }
   function klLoad(id) {
     var L = KL.BY_ID[id];
@@ -4897,7 +4924,7 @@
       (autoKey ? " (song key set)" : "") + " · " + S.bpm + " BPM";
     if (btActive() && !bt.layer) msg += " — tick “Layer drum machine” to hear it with the instrumental";
     else if (!playing) msg += " — press ▶ to hear it with the drums";
-    toast(msg);
+    toast(msg); pianoChannelCheck();
   }
   /* song key change: loops loaded from the bank follow it (hand-drawn patterns are left alone) */
   function klSetSongKey(v) {
