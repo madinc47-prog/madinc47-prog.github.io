@@ -4198,12 +4198,7 @@
    * instrumental is loaded unless "Layer drum machine" is ticked. Takes always start at 0:00 of the instrumental
    * after the count-in and end with it (or with Stop take).
    */
-  var BACKING_TRACKS = {
-    gunwalk: {
-      title: "Gunwalk", artist: "DJ Psycho Fingers", url: "tracks/gunwalk-instrumental.mp3", bpm: 96,
-      credit: "Emmanuel Griffith's own beat (DJ Psycho Fingers) · vocals removed"
-    }
-  };
+  var BACKING_TRACKS = {}; // no built-in instrumentals ship right now (picker stays hidden while this is empty); load your own with "Load instrumental…"
   var BT_IDB_KEY = "backing:file"; // an uploaded instrumental is kept in the "pads" store so it survives a reload
   var bt = { id: null, title: "", artist: "", credit: "", buf: null, bytes: null, prep: null, bpm: 0, layer: false, prevBpm: null,
     src: null, g: null, startCtx: 0, offset: 0, loading: "", tok: 0 };
@@ -4374,6 +4369,7 @@
     $("bt-body").hidden = !on;
     $("bt-eject").hidden = !on;
     $("bt-pick").value = bt.id && BACKING_TRACKS[bt.id] ? bt.id : "";
+    $("bt-pick").hidden = !Object.keys(BACKING_TRACKS).length;
     $("bt-layer").checked = bt.layer;
     var lv = Math.round(S.mixer.inst.v * 100);
     $("bt-level").value = lv;
@@ -4402,7 +4398,7 @@
     var q = "";
     try { q = (new URLSearchParams(location.search).get("beat") || "").toLowerCase(); } catch (e) { q = ""; }
     btUI();
-    if (BACKING_TRACKS[q]) { // deep link: ?beat=gunwalk → instrumental loaded, Record Vocals ready
+    if (BACKING_TRACKS[q]) { // deep link: ?beat=<built-in id> → instrumental loaded, Record Vocals ready (unknown ids, e.g. the removed "gunwalk", just load normally)
       if (btRestore && btRestore.prevBpm != null) bt.prevBpm = btRestore.prevBpm;
       btRestore = null;
       btLoadBuiltin(q, false).then(function (ok) {
@@ -4417,6 +4413,7 @@
       bt.layer = r0.layer; bt.prevBpm = r0.prevBpm;
       if (BACKING_TRACKS[r0.id]) btLoadBuiltin(r0.id, true);
       else if (r0.id === "file") btLoadStoredFile();
+      else bt.prevBpm = null; // a removed built-in (old saves with "gunwalk"): nothing to load, keep the drum machine
     }
   }
 

@@ -109,9 +109,9 @@
     P.clips.forEach(function (c) { L.appendChild(clipEl(c)); });
     if (!P.clips.length) {
       var em = document.createElement("div"); em.className = "mt-empty";
-      em.innerHTML = '<b>Step 1 · put a beat on Track 1:</b> <button type="button" class="btn small primary" data-e="bounce">Bounce current beat to track</button> <button type="button" class="btn small" data-e="gunwalk">Gunwalk instrumental</button> <button type="button" class="btn small" data-e="file">Import / drop a file</button><br><b>Step 2:</b> press <b class="r">R</b> on Vocals and hit <b>●</b> (1-bar count-in, headphones on).';
+      em.innerHTML = '<b>Step 1 · put a beat on Track 1:</b> <button type="button" class="btn small primary" data-e="bounce">Bounce current beat to track</button> <button type="button" class="btn small" data-e="file">Import / drop a file</button><br><b>Step 2:</b> press <b class="r">R</b> on Vocals and hit <b>●</b> (1-bar count-in, headphones on).';
       em.addEventListener("pointerdown", function (e) { e.stopPropagation(); });
-      em.querySelectorAll("[data-e]").forEach(function (b) { b.addEventListener("click", function () { var k = b.dataset.e; if (k === "bounce") bounceFromBeats(); else if (k === "gunwalk") importGunwalk().then(zoomFit); else { selTrack = beatTrackId(); $("file-in").click(); } }); });
+      em.querySelectorAll("[data-e]").forEach(function (b) { b.addEventListener("click", function () { var k = b.dataset.e; if (k === "bounce") bounceFromBeats(); else { selTrack = beatTrackId(); $("file-in").click(); } }); });
       L.appendChild(em);
     }
     var ls = $("loop-shade"); ls.style.left = (P.loop.start * pps) + "px"; ls.style.width = Math.max(0, (P.loop.end - P.loop.start) * pps) + "px"; ls.classList.toggle("off", !P.loop.on);
@@ -579,16 +579,6 @@
       return c;
     }).catch(function (e) { toast("Bounce failed: " + (e && e.message || e), 4200); return null; });
   }
-  function importGunwalk() {
-    toast("Loading the Gunwalk instrumental…");
-    return fetch("../tracks/gunwalk-instrumental.mp3").then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.arrayBuffer(); })
-      .then(decode).then(function (buf) {
-        var beatTrack = P.tracks.filter(function (t) { return /beat/i.test(t.name); })[0];
-        var c = placeBuffer(buf, "Gunwalk (instrumental)", 0, beatTrack ? beatTrack.id : P.tracks[0].id, 96);
-        toast("Gunwalk added (" + fmtDur(c.dur) + ", 96 BPM). Arm a vocal track and press ● to record.", 3800);
-        return c;
-      }).catch(function (e) { toast("Could not load Gunwalk (" + e.message + ")."); });
-  }
   function openVault() {
     $("vault-sheet").hidden = false;
     var L = $("vault-list"); L.innerHTML = '<p class="kb-note">Loading…</p>';
@@ -953,7 +943,7 @@
       b.addEventListener("click", function () {
         $("import-menu").hidden = true;
         var k = b.dataset.imp;
-        if (k === "file") $("file-in").click(); else if (k === "gunwalk") importGunwalk(); else if (k === "vault") openVault(); else if (k === "bounce") bounceFromBeats();
+        if (k === "file") $("file-in").click(); else if (k === "vault") openVault(); else if (k === "bounce") bounceFromBeats();
       });
     });
     $("file-in").addEventListener("change", function (e) { importFiles(e.target.files); e.target.value = ""; });
@@ -1096,7 +1086,6 @@
           return importVaultItem(it, snapT(at), P.clips.length ? selTrack : beatTrackId()).then(function (c) { if (c) { zoomFit(); toast("Beat from the beat maker added to " + trackById(c.track).name + ". Arm a track and press ● to record.", 4000); } });
         });
       }
-      if (q.get("demo") === "gunwalk" && !P.clips.length) { history.replaceState(null, "", location.pathname); return importGunwalk().then(zoomFit); }
     }).then(function () { window.IPBStudio.ready = true; });
   }
 
@@ -1121,7 +1110,7 @@
         var at = overlaps(beatTrackId(), 0, 0.01) ? snapT(E.projectEnd(P)) : 0;
         return importVaultItem(it, at, beatTrackId()).then(function (c) { if (c) { setView("multi"); zoomFit(); toast("Beat added to " + trackById(c.track).name + ". Arm Vocals (R) and press ● to record.", 4000); } return c; });
       });
-    }, importGunwalk: importGunwalk, importFiles: importFiles, revertClip: revertClip, lastTake: function () { return lastTake; },
+    }, importFiles: importFiles, revertClip: revertClip, lastTake: function () { return lastTake; },
     arm: function (i, on) { var t = P.tracks[i]; if (t) { t.arm = on !== false; render(); } }, record: record, stop: stopAll, play: play, latency: function () { return E.ctx ? E.latency() : null; },
     addTake: function (data, sr, start, ti, name) { // tests: put a mono "recording" on track ti as if it had just been recorded
       S.pushUndo(P, "record"); var buf = S.bufFrom([data], sr), id = S.addSource(buf, name || "Take " + (takeN++)), tr = P.tracks[ti] || P.tracks[0];
