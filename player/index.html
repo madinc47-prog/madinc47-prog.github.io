@@ -18,7 +18,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
-  <link rel="stylesheet" href="player.css?v=17">
+  <link rel="stylesheet" href="player.css?v=18">
 </head>
 <body data-theme="club">
   <canvas id="viz" aria-hidden="true"></canvas>
@@ -76,6 +76,7 @@
       <div class="ctrls">
         <button id="prevBtn" class="icon-btn lg" aria-label="Previous" title="Previous (P)"><svg viewBox="0 0 24 24" class="fill"><path d="M6 5h2.4v14H6zM20 5v14L9 12z"/></svg></button>
         <button id="playBtn" class="play" aria-label="Play" title="Play / pause (Space)"><svg class="i-play fill" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg><svg class="i-pause fill" viewBox="0 0 24 24"><path d="M6.5 5h4v14h-4zM13.5 5h4v14h-4z"/></svg></button>
+        <button id="stopBtn" class="icon-btn lg" aria-label="Stop" title="Stop: back to the start (Pause keeps your place)"><svg viewBox="0 0 24 24" class="fill"><rect x="6" y="6" width="12" height="12" rx="1.5"/></svg></button>
         <button id="nextBtn" class="icon-btn lg" aria-label="Next" title="Next (N)"><svg viewBox="0 0 24 24" class="fill"><path d="M15.6 5H18v14h-2.4zM4 5v14l11-7z"/></svg></button>
       </div>
       <div class="mixbar" aria-label="Decks and crossfader">
@@ -187,6 +188,6 @@
   <input type="file" id="photoIn" accept="image/*" hidden>
 
   <script type="module" src="../shared/ecosystem-nav.js"></script>
-  <script type="module" src="player.js?v=17"></script>
+  <script type="module" src="player.js?v=18"></script>
 </body>
 </html>

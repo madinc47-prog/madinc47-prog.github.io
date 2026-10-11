@@ -2,17 +2,17 @@
 // Every module URL carries the same ?v= tag as player.js in index.html (and sw.js SHELL), so a deploy can never mix
 // old and new modules from the HTTP cache. Bump all of them together.
 import { saveTrack, listTracks, getTrack, deleteTrack, onMediaChange } from '../shared/media-store.js';
-import { createScene } from './scene.js?v=17';
-import { createViz, THEMES } from './viz.js?v=17';
-import { OUTFITS, OUTFIT_FOR_THEME } from './outfits.js?v=17';
-import { createEQ } from './eq.js?v=17';
-import { createHype } from './hype.js?v=17';
-import { createLadies } from './ladies.js?v=17';
-import { createShout } from './shout.js?v=17';
-import { initPhoto } from './photo.js?v=17';
-import { initRec } from './rec.js?v=17';
-import { td, TD } from './td.js?v=17';
-import { fmt, hash, isAudioFile, titleFromName, makeCover, makeLabel, readTags, probeDuration, probeMedia, computePeaks, notMusicReason } from './util.js?v=17';
+import { createScene } from './scene.js?v=18';
+import { createViz, THEMES } from './viz.js?v=18';
+import { OUTFITS, OUTFIT_FOR_THEME } from './outfits.js?v=18';
+import { createEQ } from './eq.js?v=18';
+import { createHype } from './hype.js?v=18';
+import { createLadies } from './ladies.js?v=18';
+import { createShout } from './shout.js?v=18';
+import { initPhoto } from './photo.js?v=18';
+import { initRec } from './rec.js?v=18';
+import { td, TD } from './td.js?v=18';
+import { fmt, hash, isAudioFile, titleFromName, makeCover, makeLabel, readTags, probeDuration, probeMedia, computePeaks, notMusicReason } from './util.js?v=18';
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -23,7 +23,7 @@ const LS = {
 
 // ---------------- settings ----------------
 const S = {
-  vol: LS.get('vol', 0.85), muted: false, shuffle: LS.get('shuffle', false), repeat: LS.get('repeat', 'all'),
+  vol: LS.get('vol', 0.85), muted: LS.get('muted', false), shuffle: LS.get('shuffle', false), repeat: LS.get('repeat', 'all'),
   xfade: LS.get('xfade', 6), theme: LS.get('theme', 'club'), anim: LS.get('anim', 'full'), tab: LS.get('tab', 'all'),
   saveImports: LS.get('saveImports', true), liked: new Set(LS.get('liked', [])),
   outfit: LS.get('outfit', 'classic'), matchOutfit: LS.get('matchOutfit', false), autoMix: LS.get('autoMix', true),
@@ -405,10 +405,24 @@ function setDuration(item, dur) {
 function togglePlay() {
   ensureCtx();
   if (!deck) { const it = current || visible()[0] || library[0]; if (!it) { toast('No tracks yet: send a beat here from Beats or the DJ Booth, or add a file / URL.'); return; } playItem(it); return; }
+  if (deck.el.paused && stopped) { stopped = false; hideBigPlay(); const d = deck; d.wantPlay = true; scene.needleRedrop(animSpeed(), () => { d.el.currentTime = 0; d.el.play().catch(() => {}); scene.setPlaying(d.slot, true); SFX.crackle(); }, SFX); td('transport: play from the top after stop'); return; }
+  if (deck.el.paused) td('transport: resume at ' + fmt(deck.el.currentTime || 0) + ' (pause kept the position, mix and shout-out schedule)'); else td('transport: pause at ' + fmt(deck.el.currentTime || 0));
   if (deck.el.paused) { hideBigPlay(); deck.wantPlay = true; deck.el.play().catch((e) => { if (e.name === 'NotAllowedError') { deck.wantPlay = false; showBigPlay('Tap to play'); } }); if (outgoing) outgoing.el.play().catch(() => {}); }
   else pauseAll();
 }
 function pauseAll() { if (deck) { deck.wantPlay = false; deck.el.pause(); } if (outgoing) outgoing.el.pause(); }
+// Stop (separate from Pause): ends any mix, puts the track back to the start, lifts the needle and resets the shout-out
+// schedule. Pause keeps the position, the mix and the schedule.
+let stopped = false;
+function stopAll() {
+  if (!deck) return;
+  if (transition) finishTransition(true);
+  pauseAll(); try { deck.el.currentTime = 0; } catch (e) {}
+  scene.setPlaying(deck.slot, false); if (!document.hidden) scene.liftNeedle({ deck: deck.slot, speed: animSpeed(), sounds: SFX });
+  try { hype.resetSchedule(); } catch (e) {}
+  stopped = true; drawWave(); syncPlayUI && syncPlayUI();
+  td('transport: stop · back to 0:00, shout-out schedule reset');
+}
 function playAll() { if (!deck || deck.el.paused) togglePlay(); }
 function next(dir = 1) {
   if (dir < 0 && deck && deck.el.currentTime > 3) { seekTo(0); return; }
@@ -967,6 +981,7 @@ $('#hypeBtn').addEventListener('click', () => { ensureCtx(); hype.open(); });
 
 // ---------------- transport controls ----------------
 $('#playBtn').addEventListener('click', () => { userActivated = true; togglePlay(); });
+$('#stopBtn').addEventListener('click', () => { userActivated = true; stopAll(); });
 $('#prevBtn').addEventListener('click', () => { userActivated = true; next(-1); });
 $('#nextBtn').addEventListener('click', () => { userActivated = true; next(1); });
 $('#bigPlay').addEventListener('click', () => {
@@ -986,8 +1001,8 @@ function applyVolume() {
   volEl.value = Math.round(S.vol * 100); volEl.style.setProperty('--p', (S.muted ? 0 : S.vol * 100) + '%');
   $('#muteBtn').classList.toggle('muted', S.muted || S.vol === 0); $('#muteBtn').setAttribute('aria-label', S.muted ? 'Unmute' : 'Mute');
 }
-volEl.addEventListener('input', () => { S.vol = volEl.value / 100; S.muted = false; LS.set('vol', S.vol); applyVolume(); });
-$('#muteBtn').addEventListener('click', () => { S.muted = !S.muted; applyVolume(); });
+volEl.addEventListener('input', () => { S.vol = volEl.value / 100; S.muted = false; LS.set('vol', S.vol); LS.set('muted', false); applyVolume(); });
+$('#muteBtn').addEventListener('click', () => { S.muted = !S.muted; LS.set('muted', S.muted); applyVolume(); td('volume: ' + (S.muted ? 'muted' : 'unmuted') + ' · level ' + Math.round(S.vol * 100) + ' (saved on this device)'); });
 $('#shuffle').addEventListener('change', (e) => { S.shuffle = e.target.checked; LS.set('shuffle', S.shuffle); buildOrder(current && current.key); invalidateCue(); });
 const xfEl = $('#xfade');
 function applyXf() { xfEl.value = S.xfade; $('#xfOut').textContent = S.xfade + 's'; $('#xfLbl').textContent = S.xfade ? `Crossfade ${S.xfade}s` : 'Crossfade off'; xfEl.style.setProperty('--p', (S.xfade / 12 * 100) + '%'); }
@@ -1019,7 +1034,7 @@ const KEYS = (e) => {
   else if (k === 'ArrowLeft' || k === 'j' || k === 'J') deck && seekTo(deck.el.currentTime - (k === 'ArrowLeft' ? 5 : 10));
   else if (k === 'ArrowUp') { S.vol = Math.min(1, S.vol + .05); S.muted = false; LS.set('vol', S.vol); applyVolume(); }
   else if (k === 'ArrowDown') { S.vol = Math.max(0, S.vol - .05); LS.set('vol', S.vol); applyVolume(); }
-  else if (k === 'm' || k === 'M') { S.muted = !S.muted; applyVolume(); }
+  else if (k === 'm' || k === 'M') { S.muted = !S.muted; LS.set('muted', S.muted); applyVolume(); }
   else if (k === 's' || k === 'S') { $('#shuffle').click(); toast('Shuffle ' + (S.shuffle ? 'on' : 'off')); }
   else if (k === 'r' || k === 'R') $('#repeatBtn').click();
   else if (k === 'f' || k === 'F') toggleFullscreen();

@@ -235,7 +235,10 @@ export function createHype(api) {
   function tick(now) {
     if (!A && isPlaying()) { try { audio(); } catch (e) {} }
     meter(now);
-    if (!S.on || !isPlaying()) { E.fast = E.slow = 0; PL.lastT = 0; return; }
+    // pause keeps the shout-out schedule: the clock stops while paused and resumes where it was (Stop resets it)
+    if (!isPlaying()) { if (!talk.pausedAt) talk.pausedAt = now; E.fast = E.slow = 0; PL.lastT = 0; return; }
+    if (talk.pausedAt) { const sh = now - talk.pausedAt; talk.pausedAt = 0; if (talk.nextPeriodic) talk.nextPeriodic += sh; if (talk.pending) { talk.pending.at += sh; talk.pending.exp += sh; } E.lastRise += sh; if (window.__pfTD) window.__pfTD.log('shouts: resumed after ' + (sh / 1000).toFixed(1) + ' s pause, schedule kept (next in ' + Math.max(0, (talk.nextPeriodic - now) / 1000).toFixed(0) + ' s)'); }
+    if (!S.on) { E.fast = E.slow = 0; PL.lastT = 0; return; }
     if (!talk.nextPeriodic) talk.nextPeriodic = now + period() * 1000 * (.75 + Math.random() * .5);
     // energy rises (drops) — fast vs slow average of the music level
     const lvl = (F.level || 0) * .6 + (F.bass || 0) * .4;
@@ -262,7 +265,7 @@ export function createHype(api) {
   const W = { worker: null, seq: 0, calls: new Map(), files: {} };
   function kWorker() {
     if (W.worker) return W.worker;
-    W.worker = new Worker(new URL('./kokoro-worker.js?v=17', import.meta.url), { type: 'module' });
+    W.worker = new Worker(new URL('./kokoro-worker.js?v=18', import.meta.url), { type: 'module' });
     W.worker.onmessage = (e) => {
       const m = e.data || {};
       if (m.type === 'progress') { W.files[m.file] = [m.loaded, m.total]; const a = Object.values(W.files).reduce((s, x) => [s[0] + x[0], s[1] + x[1]], [0, 0]); if (!K.tts) setStatus(`Downloading the on-device voice… ${Math.round(a[0] / a[1] * 100)}%`); return; }
@@ -425,5 +428,7 @@ export function createHype(api) {
     get talking() { return talk.active; }, set busy(v) { talk.busy = !!v; }, get busy() { return talk.busy; },
     get stats() { return { musicLufs: M.lufs != null ? +M.lufs.toFixed(1) : null, last: M.last, lines: M.lines.slice(), gainDb: +voiceGainDb().toFixed(1), sliderDb: sliderDb(), duckDb: DUCK_DB, underDb: UNDER_DB, lastAt: talk.lastAt, count: talk.count, lastParts: talk.lastParts, used: hypeBag.used, kokoro: K.status }; },
     _resetGap() { talk.lastAt = -1e9; },
+    resetSchedule() { talk.nextPeriodic = 0; talk.pending = null; talk.pausedAt = 0; E.lastRise = 0; },
+    get schedule() { return { nextPeriodic: talk.nextPeriodic, pending: talk.pending, pausedAt: talk.pausedAt }; },
   };
 }
