@@ -1141,17 +1141,5 @@
    "sourceUrl": "https://ccmixter.org/files/OS50/58873"
   }
  ],
- "psychoFingers": [
-  {
-   "id": "pf-gunwalk",
-   "title": "Gunwalk (instrumental)",
-   "artist": "DJ Psycho Fingers",
-   "genre": "DJ Psycho Fingers",
-   "url": "../beats/tracks/gunwalk-instrumental.mp3",
-   "bpm": 96,
-   "grid": 0.36,
-   "license": "© DJ Psycho Fingers — his own beat",
-   "dur": 198
-  }
- ]
+ "psychoFingers": []
 }

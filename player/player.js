@@ -2,14 +2,14 @@
 // Every module URL carries the same ?v= tag as player.js in index.html (and sw.js SHELL), so a deploy can never mix
 // old and new modules from the HTTP cache. Bump all of them together.
 import { saveTrack, listTracks, getTrack, deleteTrack, onMediaChange } from '../shared/media-store.js';
-import { createScene } from './scene.js?v=10';
-import { createViz, THEMES } from './viz.js?v=10';
-import { OUTFITS, OUTFIT_FOR_THEME } from './outfits.js?v=10';
-import { createEQ } from './eq.js?v=10';
-import { createHype } from './hype.js?v=10';
-import { createLadies } from './ladies.js?v=10';
-import { createShout } from './shout.js?v=10';
-import { fmt, hash, isAudioFile, titleFromName, makeCover, makeLabel, readTags, probeDuration, computePeaks } from './util.js?v=10';
+import { createScene } from './scene.js?v=11';
+import { createViz, THEMES } from './viz.js?v=11';
+import { OUTFITS, OUTFIT_FOR_THEME } from './outfits.js?v=11';
+import { createEQ } from './eq.js?v=11';
+import { createHype } from './hype.js?v=11';
+import { createLadies } from './ladies.js?v=11';
+import { createShout } from './shout.js?v=11';
+import { fmt, hash, isAudioFile, titleFromName, makeCover, makeLabel, readTags, probeDuration, computePeaks } from './util.js?v=11';
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -29,7 +29,7 @@ const ANIM_SPEED = { full: 1, quick: 2.2, off: 100 };
 const eq = createEQ({ toast: (m) => toast(m) });
 
 // ---------------- library ----------------
-const DEMO = { key: 'demo:gunwalk', kind: 'demo', title: 'Gunwalk', artist: 'DJ Psycho Fingers', source: 'beats', url: new URL('../beats/tracks/gunwalk-instrumental.mp3', import.meta.url).href, duration: 198, demo: true, createdAt: 0 };
+// (no built-in demo track since Oct 2026: an empty library shows an empty state instead)
 let library = [];          // all items
 let sessionItems = [];     // local files not saved / deep-link URLs
 const objUrls = new Map(); // key -> object URL (audio)
@@ -54,7 +54,7 @@ async function refreshLibrary() {
   try { recs = await listTracks(); } catch (e) { console.warn('[player] library unavailable', e); }
   const stored = recs.map(itemFromRecord);
   const urls = urlItems.map((u) => ({ key: 'url:' + u.id, kind: 'url', id: u.id, url: u.url, title: u.title || 'Stream', artist: u.artist || '', source: 'import', duration: durCache['url:' + u.id] || 0, createdAt: u.addedAt || 0 }));
-  library = [DEMO, ...stored, ...urls, ...sessionItems];
+  library = [...stored, ...urls, ...sessionItems];
   library.forEach((it) => { if (!it.duration && durCache[it.key]) it.duration = durCache[it.key]; });
   renderList();
 }
@@ -398,7 +398,7 @@ function setDuration(item, dur) {
 }
 function togglePlay() {
   ensureCtx();
-  if (!deck) { const it = current || visible()[0] || DEMO; playItem(it); return; }
+  if (!deck) { const it = current || visible()[0] || library[0]; if (!it) { toast('No tracks yet: send a beat here from Beats or the DJ Booth, or add a file / URL.'); return; } playItem(it); return; }
   if (deck.el.paused) { hideBigPlay(); deck.wantPlay = true; deck.el.play().catch((e) => { if (e.name === 'NotAllowedError') { deck.wantPlay = false; showBigPlay('Tap to play'); } }); if (outgoing) outgoing.el.play().catch(() => {}); }
   else pauseAll();
 }
@@ -847,7 +847,6 @@ function addUrl(url, title, artist, { persist = true, play = true } = {}) {
     it = { key: 'url:' + id };
   } else {
     it = { key: 'session:url:' + hash(url), kind: 'url', url, title: title || t.title, artist: artist || t.artist, source: 'import', duration: 0, createdAt: Date.now() };
-    if (url === DEMO.url) return DEMO;
     if (!sessionItems.find((s) => s.key === it.key)) sessionItems.push(it);
   }
   return it.key;
@@ -919,7 +918,9 @@ $('#nextBtn').addEventListener('click', () => { userActivated = true; next(1); }
 $('#bigPlay').addEventListener('click', () => {
   userActivated = true; ensureCtx(); primePool();
   if (deck && !deck.disposed) { hideBigPlay(); ctxStuckSince = 0; if (deck.el.paused) { deck.wantPlay = true; deck.el.play().catch((e) => { if (e.name === 'NotAllowedError') showBigPlay('Tap to play'); }); } return; }
-  playItem(current || visible()[0] || DEMO);
+  const it0 = current || visible()[0] || library[0];
+  if (!it0) { hideBigPlay(); toast('No tracks yet: send a beat here from Beats or the DJ Booth, or add a file / URL.'); return; }
+  playItem(it0);
 });
 function showBigPlay(label) { const b = $('#bigPlay'); if (label) b.querySelector('span').textContent = label; b.hidden = false; }
 function hideBigPlay() { $('#bigPlay').hidden = true; }
@@ -1154,7 +1155,7 @@ async function boot() {
     if (!inTab(start, S.tab)) { S.tab = 'all'; LS.set('tab', 'all'); renderList(); }
     current = start; updateNowPlaying(start); renderList(); buildOrder(start.key);
     showBigPlay(`Play “${start.title}”`);
-  } else { const first = visible()[0] || DEMO; current = first; updateNowPlaying(first); renderList(); showBigPlay('Tap to drop the needle'); }
+  } else { const first = visible()[0] || library[0]; if (first) { current = first; updateNowPlaying(first); renderList(); showBigPlay('Tap to drop the needle'); } else { renderList(); toast('No tracks yet: send a beat here from Beats or the DJ Booth, or add a file / URL.'); } }
   applyQualityMode(); requestAnimationFrame(frameLoop);
   window.__pf = { get deck() { return deck; }, get cued() { return cued; }, get outgoing() { return outgoing; }, get transition() { return transition; }, XF, xfPos, setXf, get slot() { return slot; }, get ctx() { return ctx; }, startTransition, get activeSlot() { return activeSlot; }, eq, hype, ladies, get current() { return current; }, F, scene, playItem, refreshLibrary, get library() { return library; }, next, S, setOutfit, setTheme, Q, setQuality, WD, watchdog, get pendingDeck() { return pendingDeck; }, get liveDecks() { return [...liveDecks]; }, pool, finishTransition };
 }

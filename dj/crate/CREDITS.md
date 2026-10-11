@@ -56,10 +56,6 @@ CC BY-SA tracks: if you publish a remix/edit of the track itself, share it under
 | 46 | Mystro Soul Instumental | mystro |  | Instrumentals | 77.9 | [CC BY 2.5](https://creativecommons.org/licenses/by/2.5/) | [ccMixter](https://ccmixter.org/files/mystro/5843) |
 | 47 | Mystery Maestro | OS50 |  | Instrumentals | 100 | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/) | [ccMixter](https://ccmixter.org/files/OS50/58873) |
 
-## DJ Psycho Fingers crate
-
-- **Gunwalk (instrumental)** — DJ Psycho Fingers. His own beat, served from `beats/tracks/gunwalk-instrumental.mp3` (see `beats/tracks/CREDITS.md`). Not CC-licensed: all rights reserved by the artist.
-
 ## Licence texts
 
 - CC0 1.0 — https://creativecommons.org/publicdomain/zero/1.0/
