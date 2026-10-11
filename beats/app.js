@@ -705,6 +705,7 @@
       if (!bad) return;
       el = document.createElement("button"); el.type = "button"; el.id = "audio-paused"; el.className = "audio-paused";
       el.textContent = "🔇 Sound is paused by your device (a call or another app may be using audio). Tap to resume.";
+      el.title = "Still no sound? Open Sound check (link at the top) and send the report.";
       el.addEventListener("click", function () { resumeCtx(); setTimeout(audioPausedUI, 400); });
       document.body.appendChild(el);
     }
@@ -5018,9 +5019,21 @@
 
   /* stale-build guard: Beats has no service worker, but the tablet can keep an older cached index.html for a while.
      Ask the network for the current page; if it loads a newer app.js than this one, reload once. */
+  /* in-app browsers (WhatsApp / Facebook / Instagram / TikTok webviews) often block sound and the mic: say so up front */
+  (function inAppHint() {
+    var ua = navigator.userAgent, app = /FBAN|FBAV|FB_IAB/.test(ua) ? "Facebook" : /Instagram/.test(ua) ? "Instagram" : /WhatsApp/i.test(ua) ? "WhatsApp" : /TikTok|musical_ly|BytedanceWebview/i.test(ua) ? "TikTok" : /Snapchat/i.test(ua) ? "Snapchat" : /; wv\)/.test(ua) ? "this app" : "";
+    if (!app) return;
+    var show = function () {
+      var el = document.createElement("div"); el.className = "inapp-hint"; el.setAttribute("role", "alert");
+      el.textContent = "You opened Beat inside " + app + "'s built-in browser — sound and the mic often don't work here. Tap ⋮ (or the share icon) → \"Open in Chrome\".";
+      document.body.insertBefore(el, document.body.firstChild);
+    };
+    if (document.body) show(); else document.addEventListener("DOMContentLoaded", show);
+  })();
   (function checkBuild() {
     try {
       var me = document.querySelector('script[src*="app.js?v="]'), mine = me && (me.getAttribute("src").match(/v=([\w.-]+)/) || [])[1];
+      try { if (mine) localStorage.setItem("ipb_build_seen", mine); } catch (e) { /* ignore */ } // read by /beats/check/
       if (!mine || !window.fetch || /[?&]noupdate/.test(location.search)) return;
       fetch(location.pathname + "?build=" + Date.now(), { cache: "no-store" }).then(function (r) { return r.ok ? r.text() : ""; }).then(function (html) {
         var live = (html.match(/app\.js\?v=([\w.-]+)/) || [])[1];

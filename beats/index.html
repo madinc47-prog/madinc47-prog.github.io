@@ -12,8 +12,9 @@
   <meta property="og:url" content="https://madinc47-prog.github.io/beats/">
   <meta property="og:type" content="website">
   <meta name="theme-color" content="#0b0d12">
+  <meta name="color-scheme" content="dark"><!-- the app is already dark: stops Samsung Internet / Chrome "force dark" from re-colouring it -->
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="styles.css?v=20261011z">
+  <link rel="stylesheet" href="styles.css?v=20261011launch">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Island Pin Beats — Free Beat Maker">
   <meta name="twitter:description" content="Make boom-bap, trap, drill, afrobeats, amapiano, house and bouyon beats in your browser. Free, from Dominica.">
@@ -32,6 +33,7 @@
       <button id="btn-stop" class="tbtn" aria-label="Stop pattern">■</button>
       <label class="bpm">BPM <input id="bpm" type="number" min="60" max="200" value="140"></label>
       <span id="audio-state" class="audio-state">Tap any pad to start audio</span>
+      <a href="check/" class="sound-check-link" title="No sound or no mic? Run the Sound check and send us the report">Sound check</a>
       <span id="ref-badge" class="ref-badge" hidden title="You are hearing the reference track. Press R to go back to your beat.">B · REFERENCE</span>
     </div>
   </header>
@@ -626,16 +628,16 @@
     </div>
   </div>
 
-  <footer class="foot">Free · runs in your browser · synthesized drums + CC0 one-shots (<a href="samples/CREDITS.md">credits</a>), no paid APIs · instrumental “Gunwalk” © Emmanuel Griffith / DJ Psycho Fingers (<a href="tracks/CREDITS.md">credits</a>) · <a href="studio/">Studio</a> · <a href="../dj/">DJ booth</a> · <a href="../">IslePin</a></footer>
+  <footer class="foot">Free · runs in your browser · synthesized drums + CC0 one-shots (<a href="samples/CREDITS.md">credits</a>), no paid APIs · instrumental “Gunwalk” © Emmanuel Griffith / DJ Psycho Fingers (<a href="tracks/CREDITS.md">credits</a>) · <a href="studio/">Studio</a> · <a href="../dj/">DJ booth</a> · <a href="check/">Sound check</a> · <a href="../">IslePin</a></footer>
 
-  <script src="humanize.js?v=20261011a"></script>
-  <script src="drums.js?v=20261003u"></script>
-  <script src="keys-instruments.js?v=20261011a"></script>
-  <script src="pianoroll-data.js?v=20261003u"></script>
-  <script src="keys-loops.js?v=20261003u"></script>
-  <script src="pianoroll.js?v=20261003u"></script>
-  <script src="vocal-clean-client.js?v=20261011v"></script>
-  <script src="app.js?v=20261011z"></script>
+  <script src="humanize.js?v=20261011launch"></script>
+  <script src="drums.js?v=20261011launch"></script>
+  <script src="keys-instruments.js?v=20261011launch"></script>
+  <script src="pianoroll-data.js?v=20261011launch"></script>
+  <script src="keys-loops.js?v=20261011launch"></script>
+  <script src="pianoroll.js?v=20261011launch"></script>
+  <script src="vocal-clean-client.js?v=20261011launch"></script>
+  <script src="app.js?v=20261011launch"></script>
   <script type="module" src="../shared/ecosystem-nav.js"></script><!-- Beats | DJ Booth | Player switcher (shared/README.md) -->
 </body>
 </html>
