@@ -2613,7 +2613,11 @@
     bounceNow(barsSel, then, fail);
   }
   /* offline render of the beat (Bounce, WAV / MP3 export, Send to Studio, level checks): same graph + layer chains as live */
-  function renderOffline(barsSel) {
+  /* Offline bounce, scheduled just-in-time: the step voices are created a few seconds ahead of the render position
+     (OfflineAudioContext.suspend), never all at once. A whole song used to create every voice up front, so thousands
+     of waiting nodes were processed every block (2:18 song: ~70 s on a fast PC, minutes on a tablet). */
+  var OFF_WIN = 2; // seconds per scheduling window
+  function renderOffline(barsSel, onProg) {
     var sd = stepDur();
     var A = arrangement();
     var songMode = barsSel === "song";
@@ -2627,14 +2631,23 @@
     G.out.connect(c.destination);
     var reg = [], creg = [];
     if (btActive()) { var bsrc = c.createBufferSource(); bsrc.buffer = bt.buf; bsrc.connect(G.groups.inst); bsrc.start(0); }
-    for (var k = 0; k < total; k++) {
-      // loop bounces ignore the structure so "4 bars" really means the 4-bar loop
-      var info = songMode ? stepInfo(k) : loopInfo(k);
-      if (info.end) break;
-      if (info.fire) secStep(c, G, info, k * sd, reg, creg, k === 0);
+    var k = 0, done = false;
+    function schedUntil(tEnd) {
+      for (; k < total && k * sd < tEnd; k++) {
+        // loop bounces ignore the structure so "4 bars" really means the 4-bar loop
+        var info = songMode ? stepInfo(k) : loopInfo(k);
+        if (info.end) { k = total; break; }
+        if (info.fire) secStep(c, G, info, k * sd, reg, creg, k === 0);
+      }
+      if (k >= total && !done) { done = true; cutChords(creg, total * sd); }
     }
-    cutChords(creg, total * sd);
-    return { songMode: songMode, bars: bars, total: total, sd: sd, promise: c.startRendering() };
+    schedUntil(OFF_WIN + 0.5);
+    var canSuspend = typeof c.suspend === "function";
+    if (!canSuspend) schedUntil(Infinity);
+    else for (var ts = OFF_WIN; ts < dur - 0.05 && ts < total * sd; ts += OFF_WIN) (function (t) {
+      c.suspend(t).then(function () { schedUntil(t + OFF_WIN + 0.5); if (onProg) try { onProg(t / dur); } catch (e) { /* ui */ } c.resume(); });
+    })(ts);
+    return { songMode: songMode, bars: bars, total: total, sd: sd, promise: c.startRendering().then(function (b) { if (onProg) try { onProg(1); } catch (e) { /* ui */ } return b; }) };
   }
   function bounceNow(barsSel, then, fail) {
     var say = function (m) { toast(m); if (fail) fail(new Error(m)); };
@@ -2685,6 +2698,7 @@
         }
         list.innerHTML = "";
         items.forEach(function (it) {
+          if (!(it.blob instanceof Blob)) return; // damaged / half-saved entry: skip instead of breaking the list
           var url = URL.createObjectURL(it.blob);
           vaultUrls.push(url);
           var el = document.createElement("div");
@@ -6248,6 +6262,7 @@
     if (prev === "studio" && name !== "studio") { var w = studioWin(); if (w) w.IPBStudio.pause(); }
     if (name === "studio") { if (playing) stop(); studioEnsure(); }
     if (activeTab === "vault") renderVault();
+    try { document.dispatchEvent(new CustomEvent("ipb-tab", { detail: name })); } catch (e) { /* old browsers */ }
     if (activeTab === "lyrics" && ly.preview) { ly.preview.tops = null; }
     if (activeTab === "mixer") updateLatencyLabel();
     if (activeTab === "piano") pianoShown();
@@ -6544,11 +6559,11 @@
       ctx: function () { return ensureCtx(); },
       stopBeat: function () { if (playing) stop(); if (vpv && vpv.src) voxPrevStop(true); },
       isPlaying: function () { return playing; },
-      renderBeat: function (sel) {
+      renderBeat: function (sel, onProg) {
         return new Promise(function (res, rej) {
           var need = libIds().filter(function (id) { return !LIB.get(id); });
           (need.length ? LIB.want(need, ctx || ensureCtx()) : Promise.resolve()).then(function () { return PK.ready && !PK.ready(pianoInsts()) ? pianoSamplesLoad() : null; }).then(function () {
-            var r = renderOffline(sel || "song");
+            var r = renderOffline(sel || "song", onProg);
             if (r.err) { rej(new Error(r.err)); return; }
             r.promise.then(function (buf) {
               var off = Math.round(GRAPH_LAT * SR), frames = Math.min(Math.round((r.total * r.sd + 0.8) * SR), buf.length - off);
@@ -6557,6 +6572,9 @@
           }, rej);
         });
       },
+      hasVocal: function () { return !!vox.last; }, hasSong: function () { return !!arrangement(); },
+      /* signature of what the Beat mix would contain: changes after an edit → Master offers "Refresh from current song" */
+      songSig: function () { var d = ""; try { d = localStorage.getItem(SESSION_KEY) || ""; var o = JSON.parse(d); delete o.master; delete o.tab; d = JSON.stringify(o); } catch (e) { /* private */ } var h = 0; for (var i = 0; i < d.length; i++) h = (h * 31 + d.charCodeAt(i)) | 0; return h + ":" + d.length + ":" + (vox.last ? vox.last.frames : 0); },
       vocalMix: function () {
         var t = vox.last; if (!t) return Promise.resolve(null);
         return vocalMixFx(t).then(function (mx) { return { L: mx.L, R: mx.R, sr: t.sr, name: "Last vocal take" + (t.title ? " · " + t.title : "") }; });

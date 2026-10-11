@@ -1077,3 +1077,9 @@ body.sec-editing .seq-wrap { outline: 2px solid var(--accent); outline-offset: 3
 .vx-ab.on { background: rgba(250,204,21,.18); border-color: rgba(250,204,21,.75); color: #fef08a; }
 .vx-tight { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem .8rem; }
 .vx-tight input[type=range] { min-width: 120px; height: 44px; }
+
+/* Master: file chooser = a real <label for> on a visually hidden (not display:none) input — opens the picker on Android */
+.vh-file { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); border: 0; opacity: 0; }
+.mst-filebtn { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; cursor: pointer; }
+.mst-prog { width: 220px; height: 12px; accent-color: var(--accent, #22d3ee); }
+#mst-refresh.stale { border-color: rgba(250,204,21,.8); color: #fef08a; }

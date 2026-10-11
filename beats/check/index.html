@@ -63,11 +63,31 @@
 
   <section class="step" id="s-output"><h2>8 · Speaker / headphones and screen <span class="badge">…</span></h2><div class="out"></div><div class="msg"></div></section>
 
+  <section class="step" id="s-storage"><h2>9 · Storage <span class="badge">…</span></h2>
+    <div class="row"><button type="button" id="b-st-refresh">↻ Measure storage</button><button type="button" id="b-st-copy">📋 Copy report</button><button type="button" id="b-st-persist">🛡 Keep Beat data safe</button></div>
+    <pre class="out" id="st-out">Measuring…</pre><div class="msg" id="st-msg"></div></section>
+
   <section class="step" id="s-report"><h2>Report</h2>
     <div class="row"><button type="button" id="b-copy">📋 Copy report</button><button type="button" id="b-share">📤 Share report</button></div>
     <div class="msg" id="copy-msg"></div>
     <pre id="report"></pre></section>
 </main>
-<script src="check.js?v=20261011v"></script>
+<script src="check.js?v=20261011w"></script>
+<script src="../storage.js?v=20261011w"></script>
+<script>
+(function () {
+  var S = window.IPBStorage, out = document.getElementById("st-out"), msg = document.getElementById("st-msg"), badge = document.querySelector("#s-storage .badge"), last = "";
+  function run() {
+    out.textContent = "Measuring…";
+    S.report().then(function (r) { last = S.text(r); out.textContent = last; badge.textContent = S.pct(r.used, r.quota); badge.className = "badge " + (r.quota && r.used / r.quota > 0.8 ? "fail" : "pass");
+      document.getElementById("b-st-persist").textContent = r.persisted ? "🛡 Beat data is kept safe ✓" : "🛡 Keep Beat data safe"; })
+      .catch(function (e) { out.textContent = "Couldn't measure storage here (" + (e && e.message || e) + ")"; });
+  }
+  document.getElementById("b-st-refresh").addEventListener("click", run);
+  document.getElementById("b-st-copy").addEventListener("click", function () { (navigator.clipboard ? navigator.clipboard.writeText(last) : Promise.reject()).then(function () { msg.textContent = "Copied — paste it in the chat."; }, function () { msg.textContent = "Copy didn't work: select the text above and copy it."; }); });
+  document.getElementById("b-st-persist").addEventListener("click", function () { S.persist().then(function (ok) { msg.textContent = ok ? "Done: Chrome will keep your Beat data (it won't clear it to free space)." : "Chrome said not yet. It usually allows it after you add Beat to the home screen or use it more often; your data is still saved."; run(); }); });
+  run();
+})();
+</script>
 </body>
 </html>

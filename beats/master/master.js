@@ -203,23 +203,54 @@
     resetMeters(); measureOut();
   }
   function fmtT(s) { s = Math.max(0, Math.round(s)); return Math.floor(s / 60) + ":" + ("0" + s % 60).slice(-2); }
-  function busy(on, msg) { var el = $("mst-busy"); el.hidden = !on; el.textContent = msg || ""; ["mst-load", "mst-fit", "mst-export"].forEach(function (id) { $(id).disabled = on || (id !== "mst-load" && !src); }); }
+  function prog(f) { var p = $("mst-prog"); if (!p) return; if (f == null) { p.hidden = true; return; } p.hidden = false; p.value = Math.max(0, Math.min(1, f)); }
+  function busy(on, msg) { if (!on) prog(null); var el = $("mst-busy"); el.hidden = !on; el.textContent = msg || ""; ["mst-load", "mst-fit", "mst-export"].forEach(function (id) { $(id).disabled = on || (id !== "mst-load" && !src); }); }
   function decodeBlob(blob) {
     var c = B.ctx(); return blob.arrayBuffer().then(function (ab) { return c.decodeAudioData(ab); }).then(function (b) {
       return { L: b.getChannelData(0).slice(), R: (b.numberOfChannels > 1 ? b.getChannelData(1) : b.getChannelData(0)).slice(), sr: b.sampleRate };
     });
   }
+  /* "Current song (auto)": the song he is working on — the Studio mix when he came from the Studio, else the Beat mix
+     (last vocal take + beat with its FX / levels when there is one, else the full song, else the loop). Rendered once
+     and cached; after an edit the "Refresh from current song" button lights up. Never renders while the preview plays. */
+  var srcKind = null, srcSig = null, loading = false, fromStudio = false;
+  function autoPick() {
+    if (fromStudio) return "studio";
+    if (B.hasVocal && B.hasVocal()) return "vocal";
+    return B.hasSong && B.hasSong() ? "song" : "loop";
+  }
+  function staleUI() {
+    var b = $("mst-refresh"); if (!b) return;
+    var stale = !!src && srcKind !== "file" && srcKind !== "vault" && B.songSig && srcSig !== B.songSig() && srcKind !== "studio";
+    b.hidden = !src || srcKind === "file" || srcKind === "vault"; b.classList.toggle("stale", stale);
+    b.textContent = stale ? "↻ Refresh from current song (edited)" : "↻ Refresh from current song";
+  }
+  function onMasterOpen() {
+    if (loading || prev) { staleUI(); return; }
+    if (!src) { $("mst-src").value = "auto"; loadSource(); return; }
+    staleUI();
+  }
   function loadSource() {
     var v = $("mst-src").value; stopPrev();
     if (v === "file") { $("mst-file").click(); return; }
-    busy(true, "Preparing the source…");
-    var p;
-    if (v === "song" || v === "loop") { B.stopBeat(); p = B.renderBeat(v === "song" ? "song" : (document.getElementById("bounce-bars") || {}).value || "4"); }
+    if (loading) return;
+    var auto = v === "auto"; if (auto) v = autoPick();
+    var title = (B.title && B.title()) || "My song";
+    loading = true; busy(true, auto ? "Loading your current song…" : "Preparing the source…"); prog(0);
+    var p, sig = B.songSig ? B.songSig() : null;
+    var onP = function (f) { prog(f); $("mst-busy").textContent = "Rendering " + title + "… " + Math.round(f * 100) + "%"; };
+    if (v === "song" || v === "loop") { B.stopBeat(); p = B.renderBeat(v === "song" ? "song" : (document.getElementById("bounce-bars") || {}).value || "4", onP).catch(function (e) { if (auto && v === "song") return B.renderBeat("4", onP); throw e; }); }
     else if (v === "vocal") p = B.vocalMix().then(function (r) { if (!r) throw new Error("Record a vocal take first (Record Vocals)."); return r; });
     else if (v === "studio") p = studioMix();
     else if (v.indexOf("vault:") === 0) p = B.vaultGet(v.slice(6)).then(function (it) { if (!it) throw new Error("Not found in the Vault"); return decodeBlob(it.blob).then(function (r) { r.name = it.name; return r; }); });
     else p = Promise.reject(new Error("Pick a source"));
-    p.then(function (r) { busy(false); setSource(r); }).catch(function (e) { busy(false); B.toast((e && e.message) || String(e)); });
+    p.then(function (r) {
+      loading = false; busy(false);
+      var kind = v.indexOf("vault:") === 0 ? "vault" : v;
+      if (kind === "song" || kind === "loop" || kind === "vocal") r.name = "Mastering: " + title + " (Beat mix" + (kind === "vocal" ? " + vocal" : kind === "loop" ? ", loop" : "") + ")";
+      else if (kind === "studio") r.name = "Mastering: " + r.name.replace(/^Studio mix · /, "") + " (Studio mix)";
+      srcKind = kind; srcSig = sig; setSource(r); staleUI();
+    }).catch(function (e) { loading = false; busy(false); B.toast((e && e.message) || String(e)); });
   }
   function studioMix() {
     var w = B.studio();
@@ -266,7 +297,7 @@
       applyLive(); return L;
     };
     var go = function () { return chainLatency(c.sampleRate).then(function () {
-      if (c.audioWorklet && !L.noWorklet) return c.audioWorklet.addModule("master/master-dsp.js?v=20261011v").then(function () { return c.audioWorklet.addModule("master/master-worklet.js?v=20261011v"); }).then(function () {
+      if (c.audioWorklet && !L.noWorklet) return c.audioWorklet.addModule("master/master-dsp.js?v=20261011w").then(function () { return c.audioWorklet.addModule("master/master-worklet.js?v=20261011w"); }).then(function () {
         var w = new AudioWorkletNode(c, "ipb-tplimiter", { numberOfInputs: 1, numberOfOutputs: 1, outputChannelCount: [2] });
         w.port.onmessage = function (e) { L.limGr = e.data.gr; }; L.lim = w; L.limLat = Math.round(0.005 * c.sampleRate) + 8; return after(w);
       });
@@ -502,9 +533,19 @@
   }
   function renderAll() { renderMods(); renderReadouts(); }
   function wire() {
-    $("mst-load").addEventListener("click", loadSource);
-    $("mst-src").addEventListener("focus", fillVault);
-    $("mst-file").addEventListener("change", function () { var f = this.files && this.files[0]; if (!f) return; busy(true, "Decoding " + f.name + "…"); decodeBlob(f).then(function (r) { r.name = f.name; busy(false); setSource(r); }).catch(function () { busy(false); B.toast("Couldn't decode that file."); }); this.value = ""; });
+    $("mst-refresh").addEventListener("click", function () { var v = srcKind === "studio" ? "studio" : "auto"; $("mst-src").value = v; loadSource(); });
+    document.addEventListener("ipb-tab", function (e) { if (e.detail === "master") setTimeout(onMasterOpen, 0); else stopPrev(); }); // deferred: a Studio "Master ↗" asks for the Studio mix in the same tick
+    $("mst-load").addEventListener("click", function () { if ($("mst-src").value === "file") $("mst-file").click(); else loadSource(); }); // synchronous in the tap: the picker is allowed to open
+    // picking a source loads it right away (the Vault list is refreshed when the tab opens, never while the picker is open)
+    $("mst-src").addEventListener("change", function () { if (this.value === "file") { try { $("mst-file").click(); } catch (e) { /* needs the button */ } return; } loadSource(); });
+    $("mst-file-btn").addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); $("mst-file").click(); } });
+    $("mst-file").addEventListener("change", function () {
+      var f = this.files && this.files[0]; this.value = ""; if (!f) return;
+      stopPrev(); busy(true, "Reading " + f.name + " (" + Math.max(1, Math.round(f.size / 1048576)) + " MB)…");
+      setTimeout(function () { busy(true, "Decoding " + f.name + "…"); }, 300);
+      decodeBlob(f).then(function (r) { r.name = "Mastering: " + f.name + " (file)"; busy(false); srcKind = "file"; setSource(r); staleUI(); B.toast("Loaded " + f.name); })
+        .catch(function (e) { busy(false); var ext = (f.name.split(".").pop() || "").toUpperCase(); B.toast("Couldn't open " + f.name + ": this browser can't decode " + (ext || "that format") + " files. Try WAV, MP3, M4A/AAC, FLAC or OGG."); $("mst-src-name").textContent = "Not loaded: " + f.name + " (unsupported format)"; });
+    });
     $("mst-play").addEventListener("click", playPrev);
     document.querySelectorAll("#mst-ab [data-m]").forEach(function (b) { b.addEventListener("click", function () { mode = b.dataset.m; renderReadouts(); applyLive(); }); });
     $("mst-mono").addEventListener("click", function () { mono = !mono; renderReadouts(); applyLive(); });
@@ -523,12 +564,13 @@
     var ps = $("mst-preset"); Object.keys(PRESETS).forEach(function (k) { var o = document.createElement("option"); o.value = k; o.textContent = PRESETS[k].name; ps.insertBefore(o, ps.querySelector('[value="reset"]')); });
     var ts = $("mst-target"); Object.keys(TARGETS).forEach(function (k) { var o = document.createElement("option"); o.value = k; o.textContent = TARGETS[k].name; ts.appendChild(o); });
     // leaving the tab stops the preview
-    document.querySelectorAll(".tab[data-tab]").forEach(function (t) { t.addEventListener("click", function () { if (t.dataset.tab !== "master") stopPrev(); else renderReadouts(); }); });
+    document.querySelectorAll(".tab[data-tab]").forEach(function (t) { t.addEventListener("click", function () { if (t.dataset.tab === "master") { renderReadouts(); fillVault(); } }); });
     renderAll(); fillVault();
-    try { if (new URLSearchParams(location.search).get("src") === "studio") setTimeout(function () { $("mst-src").value = "studio"; loadSource(); }, 600); } catch (e) { /* old browsers */ }
+    try { if (new URLSearchParams(location.search).get("src") === "studio") { fromStudio = true; setTimeout(function () { $("mst-src").value = "studio"; loadSource(); }, 600); } } catch (e) { /* old browsers */ }
+    if (document.querySelector('.tab[data-tab="master"].active')) setTimeout(onMasterOpen, 700);
   }
   wire();
-  window.IPBMaster = { state: function () { return JSON.parse(JSON.stringify(st)); }, setSource: setSource, loadSource: function (v) { $("mst-src").value = v; loadSource(); }, renderChain: renderChain, stats: stats, truePeak: truePeak,
+  window.IPBMaster = { state: function () { return JSON.parse(JSON.stringify(st)); }, setSource: setSource, loadSource: function (v) { if (v === "studio") fromStudio = true; $("mst-src").value = v; loadSource(); }, renderChain: renderChain, stats: stats, truePeak: truePeak,
     source: function () { return src; }, fit: fitTarget, report: function () { return lastReport; }, mode: function () { return mode; }, live: function () { return L; }, outLufs: function () { return outLufs; }, dryMatch: function () { return dryMatch; },
     set: function (o) { st = norm(o); renderAll(); changed(); }, PRESETS: PRESETS, TARGETS: TARGETS, buildChain: buildChain, applyChain: applyChain, defaults: defaults };
 })();
