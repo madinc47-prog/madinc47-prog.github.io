@@ -65,6 +65,15 @@
     var keys = Object.keys(mem).filter(function (k) { return !pinned[k]; }).sort(function (a, b) { return mem[a].last - mem[b].last; });
     while (memBytes() > MAX_DECODED && keys.length) delete mem[keys.shift()];
   }
+  /* silence before the first transient (s): first sample above 5 % of the peak, minus 2 ms; up to 150 ms trimmed */
+  function leadOf(b) {
+    var d = b.getChannelData(0), n = Math.min(d.length, Math.round(b.sampleRate * 0.3)), pk = 0, i;
+    for (i = 0; i < d.length; i++) { var a = d[i] < 0 ? -d[i] : d[i]; if (a > pk) pk = a; }
+    if (!pk) return 0;
+    for (i = 0; i < n; i++) if ((d[i] < 0 ? -d[i] : d[i]) > pk * 0.05) break;
+    var t = (i - Math.round(b.sampleRate * 0.002)) / b.sampleRate;
+    return t > 0.004 && t <= 0.15 ? t : 0;
+  }
   /* load(id, ctx) → Promise<sound>. sound = { it, zones: [{ root, v, buf }] } (presets: zones = []) */
   function load(id, c) {
     if (mem[id]) { mem[id].last = Date.now(); return Promise.resolve(mem[id].snd); }
@@ -74,6 +83,8 @@
       if (!it) throw new Error("Unknown sound " + id);
       var fs = files(it);
       return Promise.all(fs.map(function (rel) { return fetchBytes(rel).then(function (ab) { return decode(c, ab); }); })).then(function (bufs) {
+        var swell = it.k === "loop" || /riser|swell|vinyl|fx/.test((it.s || "") + " " + (it.c || "")) && it.k !== "multi";
+        if (!swell) bufs.forEach(function (b) { b._lead = leadOf(b); }); // hits that start late (MP3 / recorded silence) play on the beat
         var zones = bufs.map(function (b, i) {
           var z = it.k === "multi" ? it.z[i] : null;
           return { root: z ? z[0] : (it.r != null ? it.r : 60), v: z && z.length > 1 ? z[1] : 0, buf: b };

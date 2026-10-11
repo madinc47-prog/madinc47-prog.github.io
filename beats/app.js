@@ -73,7 +73,7 @@
     }, 0);
   }
   function note(line, bad) {
-    ALL.push(line); if (ALL.length > 400) ALL.shift();
+    ALL.push(line); if (ALL.length > 4000) ALL.shift();
     if (!list) return;
     LOG.push([line, bad || /^⚠/.test(line)]); if (LOG.length > 8) LOG.shift();
     list.innerHTML = ""; LOG.forEach(function (l) { var li = document.createElement("li"); li.textContent = l[0]; if (l[1]) li.className = "bad"; list.appendChild(li); });
@@ -82,6 +82,36 @@
   window.addEventListener("error", function (e) { note("⚠ JS error: " + (e.message || e) + " @" + (e.lineno || "")); });
   window.addEventListener("unhandledrejection", function (e) { note("⚠ promise error: " + (e.reason && e.reason.message || e.reason)); });
   if (document.body) build(); else document.addEventListener("DOMContentLoaded", build);
+  /* sample trigger log: every sample start (source, tab, lead vs its scheduled time, ready / fallback, voices) + a 2 s
+     audio summary (render capacity / underruns where Chrome reports them). Problem triggers are shown in red. */
+  var AC = null, win = { n: 0, late: 0, worst: null, vmax: 0, flags: 0 }, lastBy = {}, rcv = null, pb0 = null;
+  function tabName() { var t = document.querySelector(".tab.active"); return t ? t.dataset.tab : "?"; }
+  window.__ipbTD = {
+    setCtx: function (c) {
+      AC = c;
+      try { if (c.renderCapacity) { c.renderCapacity.addEventListener("update", function (e) { rcv = { avg: e.averageLoad, peak: e.peakLoad, under: e.underrunRatio }; }); c.renderCapacity.start({ updateInterval: 1 }); } } catch (x) { /* not in this Chrome */ }
+      note("audio context " + c.sampleRate + " Hz, base latency " + Math.round((c.baseLatency || 0) * 1000) + " ms" + (c.renderCapacity ? ", render capacity on" : "") + (c.playbackStats ? ", playback stats on" : ""));
+    },
+    trig: function (o) {
+      if (!AC) return;
+      var now = AC.currentTime, lead = Math.round((o.when - now) * 1000), k = o.src + "#" + (o.pad == null ? "" : o.pad);
+      var dbl = lastBy[k] != null && Math.abs(o.when - lastBy[k]) < 0.025 && o.kind !== "glide"; lastBy[k] = o.when;
+      var bad = lead < 0 || o.fallback || o.ready === false || dbl || (o.voices || 0) > 24;
+      win.n++; if (lead < 0) win.late++; if (win.worst == null || lead < win.worst) win.worst = lead; win.vmax = Math.max(win.vmax, o.voices || 0); if (bad) win.flags++;
+      var line = "♪ " + (o.kind || "hit") + " " + o.src + (o.pad != null ? " pad" + (o.pad + 1) : "") + " tab=" + tabName() + " lead " + lead + "ms" + (lead < 0 ? " LATE" : "") +
+        (o.ready === false ? " NOT-READY(" + (o.why || "decoding") + ")" : "") + (o.fallback ? " FALLBACK(" + o.fallback + ")" : "") + (dbl ? " DOUBLE-TRIGGER" : "") +
+        " voices " + (o.voices || 0) + (o.rate && Math.abs(o.rate - 1) > 0.001 ? " rate " + o.rate.toFixed(3) : "") + (o.dur ? " len " + o.dur.toFixed(2) + "s" : "") + (o.off ? " trim " + Math.round(o.off * 1000) + "ms" : "");
+      if (bad) note(line, true); else { ALL.push(line); if (ALL.length > 4000) ALL.shift(); }
+    }
+  };
+  setInterval(function () {
+    if (!AC || !win.n) return;
+    var pb = "";
+    try { var ps = AC.playbackStats; if (ps) { var u = ps.underrunEvents, d = ps.underrunDuration; if (pb0) pb = " underruns +" + (u - pb0.u) + " (" + Math.round((d - pb0.d) * 1000) + "ms)"; pb0 = { u: u, d: d }; } } catch (x) { /* n/a */ }
+    var rc = rcv ? " load avg " + Math.round(rcv.avg * 100) + "% peak " + Math.round(rcv.peak * 100) + "% underrun " + (rcv.under * 100).toFixed(1) + "%" : "";
+    note("audio 2s: " + win.n + " triggers, late " + win.late + ", min lead " + win.worst + "ms, max voices " + win.vmax + (win.flags ? ", " + win.flags + " flagged" : "") + rc + pb, win.late > 0 || (rcv && rcv.under > 0));
+    win = { n: 0, late: 0, worst: null, vmax: 0, flags: 0 };
+  }, 2000);
 })();
 /* Island Pin Beats — Web Audio beat maker. Drums: synthesis + a few small CC0 one-shots (samples/CREDITS.md). No paid APIs. */
 (function () {
@@ -977,6 +1007,7 @@
     try { ctx = new AC({ latencyHint: "interactive" }); } catch (e) { ctx = new AC(); }
     ctx.addEventListener ? ctx.addEventListener("statechange", onCtxState) : (ctx.onstatechange = onCtxState);
     LG = makeGraph(ctx, true);
+    if (window.__ipbTD) window.__ipbTD.setCtx(ctx);
     master = LG.out;
     masterAnalyser = ctx.createAnalyser();
     masterAnalyser.fftSize = 2048;
@@ -1058,6 +1089,7 @@
       if (it.k === "loop") { var lp = loopPlay(it, buf); buf = lp.buf; lrate = lp.rate; }
     }
     if (!buf) return;
+    var TD = c === ctx && window.__ipbTD, tdSrc = TD ? (ls ? "lib:" + ls.it.id : customBuf[i] ? "custom:pad" : "kit:" + kitId(S.kit) + "/" + (def.name || def.id || i)) : "";
     var rate = lrate * Math.pow(2, ((cfg.tune || 0) + (o.semi || 0) + ((o.cents || 0) + (cfg.fine || 0)) / 100) / 12);
     var k, v;
     if (def.ck) {
@@ -1070,6 +1102,7 @@
             pr.setValueAtTime(v.rate, when);
             pr.exponentialRampToValueAtTime(rate, when + (def.glide || 0.07));
             v.rate = rate;
+            if (TD) TD.trig({ kind: "glide", src: tdSrc, pad: i, when: when, voices: reg.length, rate: rate });
             return;
           }
         }
@@ -1086,6 +1119,12 @@
         }
       }
     }
+    if (ls && (ls.it.k === "loop" || buf.duration / rate > 1.5)) { // a library loop / long sound on a row re-triggers itself (no pile-up of overlapping copies)
+      for (k = reg.length - 1; k >= 0; k--) {
+        v = reg[k];
+        if (v.pad === i && v.start < when && v.end > when) { try { v.g.gain.cancelScheduledValues(when); v.g.gain.setTargetAtTime(0, when, 0.01); v.src.stop(when + 0.08); } catch (e) { /* stopped */ } reg.splice(k, 1); }
+      }
+    }
     var vel = o.vel == null ? 0.8 : o.vel, amp = Math.pow(vel / 0.8, 1.5);
     if (ls && cfg.sg) amp *= dbGain(cfg.sg); // library sound matched to the kit sound it replaced (set on Use)
     var src = c.createBufferSource();
@@ -1098,16 +1137,20 @@
       var tf = c.createBiquadFilter(); tf.type = "lowpass"; tf.frequency.value = o.lp; tf.Q.value = 0.5;
       src.connect(tf); head = tf;
     }
-    var dur = buf.duration / rate, end = when + dur;
+    var off = buf._lead || 0; // library files with silence before the hit start on the hit (see library.js)
+    var dur = (buf.duration - off) / rate, end = when + dur;
     if (cfg.decay < 0.995) {
       var hold = dur * cfg.decay * 0.35, tau = dur * cfg.decay * 0.12 + 0.003;
       g.gain.setValueAtTime(amp, when + hold);
       g.gain.setTargetAtTime(0, when + hold, tau);
       end = Math.min(end, when + hold + tau * 8);
+    } else if (ls && dur > 0.03) { // library loops / one-shots that end without a fade: 6 ms fade so the cut never clicks
+      g.gain.setValueAtTime(amp, end - 0.006); g.gain.linearRampToValueAtTime(0, end);
     }
     if (head === src) src.connect(g); else head.connect(g);
     g.connect(stripsFor(G)[i].inp);
-    src.start(when);
+    src.start(when, off);
+    if (TD) TD.trig({ src: tdSrc, pad: i, when: when, voices: reg.length + 1, rate: rate, dur: dur, off: off, ready: lp ? lp.ready : true, why: lp && !lp.ready ? "time-stretch not ready, speed change" : "", fallback: cfg.src && !ls ? "library sound not loaded, kit sound" : "" });
     if (end < when + dur) src.stop(end);
     var voice = { pad: i, src: src, g: g, start: when, end: end, rate: rate, ck: def.ck };
     reg.push(voice);
@@ -1746,8 +1789,10 @@
     g.gain.setValueAtTime(0, when); g.gain.linearRampToValueAtTime(amp, when + 0.003);
     var rel = it.sus ? 0.1 : 0.16, off = when + Math.max(0.04, dur);
     g.gain.setValueAtTime(amp, off); g.gain.setTargetAtTime(0, off, rel / 3);
-    src.connect(g); g.connect(dest); src.start(when);
-    var end = Math.min(when + z.buf.duration / r, off + rel * 3);
+    var lead = z.buf._lead || 0;
+    src.connect(g); g.connect(dest); src.start(when, lead);
+    var end = Math.min(when + (z.buf.duration - lead) / r, off + rel * 3);
+    if (c === ctx && window.__ipbTD) window.__ipbTD.trig({ kind: "note", src: "lib:" + it.id, when: when, rate: r, dur: end - when, off: lead });
     src.stop(end + 0.05);
     return { lib: 1, end: end, stop: function (t) {
       try { t = Math.max(t, when); g.gain.cancelScheduledValues(t); g.gain.setTargetAtTime(0, t, 0.02); src.stop(t + 0.15); } catch (e) { /* already stopped */ } } };
@@ -1967,6 +2012,7 @@
         var z = snd.zones[0], src = ctx.createBufferSource(), g = ctx.createGain(), len = (it.bars || 2) * 4 * 60 / S.bpm, lpp = loopPlay(it, z.buf);
         src.buffer = lpp.buf; src.playbackRate.value = lpp.rate; g.gain.value = 1; src.connect(g); g.connect(dest);
         src.start(when); src.stop(when + len + 0.05);
+        if (window.__ipbTD) window.__ipbTD.trig({ kind: "preview-loop", src: "lib:" + it.id, when: when, rate: lpp.rate, dur: len, ready: lpp.ready, why: lpp.ready ? "" : "time-stretch not ready, speed change" });
         v = { stop: function (t) { try { g.gain.setTargetAtTime(0, Math.max(t, when), 0.02); src.stop(Math.max(t, when) + 0.1); } catch (e) { /* ignore */ } } };
       } else if (T.kind === "drum") {
         var d = kitDef(T.kit).pads[T.pad], base = d.tuned && d.p && d.p.note ? d.p.note : (it.r != null ? it.r : 60);
@@ -6144,7 +6190,7 @@
     if (!klPrev) return;
     var t = ctx ? ctx.currentTime : 0;
     klPrev.voices.forEach(function (v) { v.stop(t); });
-    clearTimeout(klPrev.timer);
+    clearTimeout(klPrev.timer); clearTimeout(klPrev.feedT);
     klPrev = null;
     klRefreshCards();
   }
@@ -6166,7 +6212,7 @@
     var p = klBuild(id), sd = stepDur(), tick = sd / PD.STEP, L = p.bars * PD.TPBAR, passes = Math.max(1, Math.round(4 / p.bars));
     var t0 = ctx.currentTime + 0.08, synced = false;
     if (playing && drumsOn() && matchCfg().sync) { var barK = Math.ceil(curK / STEPS) * STEPS; t0 = nextTime + (barK - curK) * sd; synced = true; }
-    var voices = [], dest = pvDest(KL_NORM);
+    var voices = [], dest = pvDest(KL_NORM), evs = [];
     if (!dest) return;
     if (PK.setTempo) PK.setTempo(S.bpm);
     if (PK.setFeel) PK.setFeel(S.feel);
@@ -6174,13 +6220,24 @@
       feelNotes(p.notes.map(function (n) {
         var s16 = Math.floor(n.s / PD.STEP), sw = (n.s % PD.STEP === 0 && s16 % 2 === 1) ? sd * (S.swing / 100) : 0;
         return { n: n, t: t0 + (r * L + n.s) * tick + sw };
-      }), r + 1, p.inst).forEach(function (f) {
-        var n = f.n;
-        voices.push(PK.play(ctx, dest, n.p, Math.max(0, f.t), n.l * tick, f.v, n.i || p.inst, PD.gainLin(p), n.i ? null : p.tone));
-      });
+      }), r + 1, p.inst).forEach(function (f) { evs.push(f); });
     }
+    evs.sort(function (a, b) { return a.t - b.t; });
     var end = t0 + passes * L * tick;
-    klPrev = { id: id, t0: t0, end: end, synced: synced, voices: voices, notes: p.notes.length * passes };
+    klPrev = { id: id, t0: t0, end: end, synced: synced, voices: voices, notes: evs.length };
+    // notes are created just in time (0.35 s ahead), not all at once: no CPU spike on the tablet while the beat plays
+    var P0 = klPrev, ei = 0, feed = function () {
+      if (klPrev !== P0) return;
+      var lim = ctx.currentTime + 0.35;
+      while (ei < evs.length && evs[ei].t < lim) {
+        var f = evs[ei++], n = f.n, at = Math.max(ctx.currentTime + 0.005, f.t);
+        voices.push(PK.play(ctx, dest, n.p, at, n.l * tick, f.v, n.i || p.inst, PD.gainLin(p), n.i ? null : p.tone));
+        if (window.__ipbTD) window.__ipbTD.trig({ kind: "keys-loop", src: "keysloop:" + id, when: f.t, voices: voices.length, ready: true });
+      }
+      if (voices.length > 64) voices.splice(0, voices.length - 64);
+      if (ei < evs.length) P0.feedT = setTimeout(feed, 60);
+    };
+    feed();
     klPrev.timer = setTimeout(function () { if (klPrev && klPrev.id === id) { klPrev = null; klRefreshCards(); } }, (end - ctx.currentTime) * 1000 + 400);
     klRefreshCards();
     var Lp = KL.BY_ID[id];
