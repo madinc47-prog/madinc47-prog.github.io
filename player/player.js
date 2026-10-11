@@ -2,17 +2,17 @@
 // Every module URL carries the same ?v= tag as player.js in index.html (and sw.js SHELL), so a deploy can never mix
 // old and new modules from the HTTP cache. Bump all of them together.
 import { saveTrack, listTracks, getTrack, deleteTrack, onMediaChange } from '../shared/media-store.js';
-import { createScene } from './scene.js?v=16';
-import { createViz, THEMES } from './viz.js?v=16';
-import { OUTFITS, OUTFIT_FOR_THEME } from './outfits.js?v=16';
-import { createEQ } from './eq.js?v=16';
-import { createHype } from './hype.js?v=16';
-import { createLadies } from './ladies.js?v=16';
-import { createShout } from './shout.js?v=16';
-import { initPhoto } from './photo.js?v=16';
-import { initRec } from './rec.js?v=16';
-import { td, TD } from './td.js?v=16';
-import { fmt, hash, isAudioFile, titleFromName, makeCover, makeLabel, readTags, probeDuration, probeMedia, computePeaks, notMusicReason } from './util.js?v=16';
+import { createScene } from './scene.js?v=17';
+import { createViz, THEMES } from './viz.js?v=17';
+import { OUTFITS, OUTFIT_FOR_THEME } from './outfits.js?v=17';
+import { createEQ } from './eq.js?v=17';
+import { createHype } from './hype.js?v=17';
+import { createLadies } from './ladies.js?v=17';
+import { createShout } from './shout.js?v=17';
+import { initPhoto } from './photo.js?v=17';
+import { initRec } from './rec.js?v=17';
+import { td, TD } from './td.js?v=17';
+import { fmt, hash, isAudioFile, titleFromName, makeCover, makeLabel, readTags, probeDuration, probeMedia, computePeaks, notMusicReason } from './util.js?v=17';
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];

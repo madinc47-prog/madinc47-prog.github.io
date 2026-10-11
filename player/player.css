@@ -356,3 +356,6 @@ body.lite .chip{background:rgba(14,10,30,.85)}
 .rec-time{font:700 13px/1 ui-monospace,monospace;color:#ff6b7a;margin-left:4px;min-width:3.2em}
 @keyframes recblink{50%{opacity:.25}}
 @media (prefers-reduced-motion:reduce){.rec-btn.on .dot{animation:none}}
+
+/* face photo: the drawn eyes/brows/beard/mouth hide under it (cap + ears stay) */
+.has-photo .stockface{display:none}

@@ -1,6 +1,6 @@
 // Psycho Fingers Player — DJ booth scene (original layered SVG art, IK arms, choreography)
 // Two turntables (Deck A / Deck B) with a mixer + crossfader in the middle; the DJ stands behind the mixer.
-import { applyOutfit } from './outfits.js?v=16';
+import { applyOutfit } from './outfits.js?v=17';
 const NS = 'http://www.w3.org/2000/svg';
 const D2R = Math.PI / 180;
 const ease = {
@@ -173,6 +173,7 @@ const svgMarkup = `
       <ellipse cx="-57" cy="4" rx="9" ry="15" fill="#4a2c19"/><ellipse cx="57" cy="4" rx="9" ry="15" fill="#4a2c19"/>
       <path d="M0,-75 C35,-75 58,-50 58,-10 C58,25 50,52 30,66 C18,74 -18,74 -30,66 C-50,52 -58,25 -58,-10 C-58,-50 -35,-75 0,-75Z" fill="url(#skin)"/>
       <path d="M-59,-32 C-61,-18 -60,-6 -57,2 L-50,4 C-52,-8 -52,-20 -49,-32Z M59,-32 C61,-18 60,-6 57,2 L50,4 C52,-8 52,-20 49,-32Z" fill="#110b09"/>
+      <g class="stockface"><!-- drawn face: hidden under a user face photo -->
       <ellipse cx="-30" cy="14" rx="10" ry="6" fill="#8a5a3d" opacity=".18"/><ellipse cx="30" cy="14" rx="10" ry="6" fill="#8a5a3d" opacity=".18"/>
       <path d="M-58,-2 C-57,30 -48,60 -28,74 C-14,84 14,84 28,74 C48,60 57,30 58,-2 C52,10 46,22 34,27 C22,31 -22,31 -34,27 C-46,22 -52,10 -58,-2Z" fill="#141010"/>
       <path d="M-58,-2 C-52,10 -46,22 -34,27 C-28,29 -24,30 -20,30" fill="none" stroke="#2a1d17" stroke-width="2" opacity=".6"/>
@@ -189,7 +190,8 @@ const svgMarkup = `
         <path d="M-32,1 C-26,-4 -18,-4 -12,0 L-12,1.6 C-18,-1.2 -26,-1.2 -32,2.4Z M32,1 C26,-4 18,-4 12,0 L12,1.6 C18,-1.2 26,-1.2 32,2.4Z" fill="#160c07"/>
       </g>
       <path d="M-35,-11 C-28,-17 -17,-17 -9,-12 L-10,-8 C-18,-12 -27,-12 -34,-7Z M35,-11 C28,-17 17,-17 9,-12 L10,-8 C18,-12 27,-12 34,-7Z" fill="#0f0907"/>
-      <g id="photoFace" style="display:none"><defs><radialGradient id="faceFeather"><stop offset=".62" stop-color="#fff"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient><mask id="faceMask" maskContentUnits="userSpaceOnUse"><ellipse cx="0" cy="20" rx="47" ry="52" fill="url(#faceFeather)"/></mask></defs>
+      </g>
+      <g id="photoFace" style="display:none"><defs><radialGradient id="faceFeather"><stop offset=".86" stop-color="#fff"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient><mask id="faceMask" maskContentUnits="userSpaceOnUse"><ellipse cx="0" cy="20" rx="47" ry="52" fill="url(#faceFeather)"/></mask></defs>
         <image id="photoImg" href="" x="-52" y="-32" width="104" height="104" mask="url(#faceMask)" preserveAspectRatio="xMidYMid slice"/></g>
       <g data-ov="hair" style="display:none"><path d="M-58,-14 C-62,-60 -34,-80 0,-80 C34,-80 62,-60 58,-14 C54,-36 40,-50 0,-52 C-40,-50 -54,-36 -58,-14Z" fill="#120c0a"/><path d="M-50,-40 C-30,-56 30,-56 50,-40" fill="none" stroke="#2a1d17" stroke-width="1.5" opacity=".6"/></g>
       <g data-ov="shades" style="display:none"><path d="M-36,-6 L-6,-6 C-6,8 -10,14 -22,14 C-34,14 -37,6 -36,-6Z M36,-6 L6,-6 C6,8 10,14 22,14 C34,14 37,6 36,-6Z" fill="#07080b" stroke="#c9ccd4" stroke-width="1.6"/><path d="M-6,-3 C-3,-6 3,-6 6,-3 M-36,-5 L-56,-8 M36,-5 L56,-8" stroke="#c9ccd4" stroke-width="2" fill="none"/><path d="M-30,-3 L-20,-3 M14,-3 L26,-3" stroke="#fff" stroke-opacity=".35" stroke-width="2"/></g>
@@ -755,7 +757,7 @@ export function createScene(container) {
     // head turns toward the active deck; body leans a little that way
     st.turn += ((st.active === 'A' ? -1 : 1) - st.turn) * Math.min(1, dt * 3);
     if (!st.leanHold) st.leanT = st.turn * 22;
-    st.leanV += ((st.leanT - st.lean) * 60 - st.leanV * 14) * dt; st.lean += st.leanV * dt;
+    st.leanV += ((st.leanT - st.lean) * 40 - st.leanV * 13) * dt; // softer, ~critically damped body lean (no lurch) st.lean += st.leanV * dt;
     // head nod (damped spring)
     st.nodV += (-st.nod * 60 - st.nodV * 9) * dt; st.nod += st.nodV * dt * 6;
     const nod = Math.max(-3, Math.min(12, st.nod)) * .5 + (playing ? 0 : Math.sin(t * 1.3) * .8);
@@ -857,7 +859,6 @@ export function createScene(container) {
     svg, st, frame, anchors, loadRecord, cueRecord, dropNeedle, liftNeedle, needleRedrop, cancel, tween, flush, snapRecord,
     setQuality(level) { st.quality = level; },
     /** debug: current dance move / force one (tests) */
-    dance() { return { move: dn.move, phase: dn.phase, tier: dn.tier }; },
     forceMove(m) { if (MOVES[m]) { dn.move = m; dn.moveUntil = dn.phase + 8; } },
     /** debug: arm reach per side (stretch = shoulder→hand distance / max reach) */
     armDebug() { const o = {}; ['L', 'R'].forEach((s) => { const S = shoulder(s, st.bounce || 0), h = st.hands[s]; o[s] = { d: Math.round(Math.hypot(h.x - S.x, h.y - S.y)), reach: G.upper + G.fore, hand: [Math.round(h.x), Math.round(h.y)], sh: [Math.round(S.x), Math.round(S.y)] }; }); o.move = dn.move; o.talk = st.talkPose || null; o.mixing = !!st.mixing; return o; },

@@ -110,7 +110,7 @@ export function initPhoto({ scene, toast = () => {}, td = () => {} }) {
       // after the stretch, nudge the mid-tones toward a neutral/warm skin balance (grey-world on the face circle)
       const mean = [0, 1, 2].map((ch) => { let s = 0; for (let v = 0; v < 256; v++) s += hist[ch][v] * Math.max(0, Math.min(255, (v - lo[ch]) * 255 / (hi[ch] - lo[ch]))); return s / n; });
       const avg = (mean[0] + mean[1] + mean[2]) / 3, warm = [1.12, 1, .86], gain = [0, 1, 2].map((ch) => Math.max(.7, Math.min(1.4, avg * warm[ch] / Math.max(1, mean[ch]))));
-      const lut = [0, 1, 2].map((ch) => { const t = new Uint8ClampedArray(256); for (let v = 0; v < 256; v++) t[v] = v * .15 + .85 * ((v - lo[ch]) * 255 / (hi[ch] - lo[ch])) * gain[ch]; return t; });
+      const lut = [0, 1, 2].map((ch) => { const t = new Uint8ClampedArray(256); for (let v = 0; v < 256; v++) { let o = v * .15 + .85 * ((v - lo[ch]) * 255 / (hi[ch] - lo[ch])) * gain[ch]; if (o > 190) o = 190 + (o - 190) * .35; t[v] = o; } return t; }); // soft knee: no glassy blown-out highlights
       for (let i = 0; i < a.length; i += 4) { a[i] = lut[0][a[i]]; a[i + 1] = lut[1][a[i + 1]]; a[i + 2] = lut[2][a[i + 2]]; }
       x.putImageData(d, 0, 0); return lo.join('/') + '–' + hi.join('/');
     } catch (e) { return 'skipped'; }
