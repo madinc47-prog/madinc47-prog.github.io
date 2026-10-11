@@ -984,8 +984,12 @@
         el.innerHTML =
           '<div class="item-top"><strong></strong><span></span></div><audio controls preload="none"></audio>' +
           '<div class="item-actions"><button class="btn small" data-a="wav">Download WAV</button>' +
+          (t.rawBlob ? '<button class="btn small ghost" data-a="raw">Raw take WAV</button>' : '') +
           '<button class="btn small ghost" data-a="del">Delete</button></div>';
-        el.querySelector("strong").textContent = t.name;
+        el.querySelector("strong").textContent = t.name + (t.pro ? " · pro vocal" : "");
+        if (t.rawBlob) el.querySelector('[data-a="raw"]').addEventListener("click", function () {
+          blobToWav(t.rawBlob).then(function (w) { downloadBlob(w, safeName(t.name) + "_raw.wav"); }).catch(function () { toast("Could not convert take."); });
+        });
         el.querySelector(".item-top span").textContent = fmtTime(t.duration);
         el.querySelector("audio").src = url;
         el.querySelector('[data-a="wav"]').addEventListener("click", function () {
@@ -1008,14 +1012,27 @@
     if (takePlayer) { takePlayer.pause(); takePlayer = null; }
     $("btn-take").classList.remove("rec-on"); $("btn-take").disabled = false;
     $("btn-take-stop").disabled = true;
+    var pro = proOn();
     s.stop().then(function (blob) {
-      return decodeBlob(blob).then(function (ab) { return ab.duration; }).catch(function () { return 0; }).then(function (dur) {
+      // Pro vocal (shared/vocal-chain.js): the RAW recording → condenser EQ, leveler + compressor, de-esser, gentle gate,
+      // limiter. The take keeps both: blob = pro vocal WAV, rawBlob = exactly what the mic recorded.
+      return decodeBlob(blob).then(function (ab) {
+        if (!pro) return { dur: ab.duration };
+        return window.VocalChain.render(ab.getChannelData(0), ab.sampleRate, { profile: "builtin" }).then(function (y) {
+          return { dur: ab.duration, pro: wavFromChannels([y], ab.sampleRate) };
+        }, function () { return { dur: ab.duration }; });
+      }).catch(function () { return { dur: 0 }; }).then(function (r) {
         var n = (draft ? draft.project.name : "Project") + " take " + new Date().toLocaleTimeString();
-        return put("takes", { id: uid("take"), projectId: current.id, name: n, blob: blob, type: blob.type, duration: dur, created: Date.now() });
+        var rec = { id: uid("take"), projectId: current.id, name: n, blob: r.pro || blob, type: (r.pro || blob).type, duration: r.dur, created: Date.now() };
+        if (r.pro) { rec.rawBlob = blob; rec.pro = true; }
+        return put("takes", rec).then(function () { return !!r.pro; });
       });
-    }).then(renderTakes).then(function () { toast("Take saved"); });
+    }).then(function (didPro) { return renderTakes().then(function () { toast(didPro ? "Take saved · Pro vocal applied (raw take kept)" : "Take saved"); }); });
   }
+  function proOn() { return !!window.VocalChain && window.VocalChain.enabled(); }
   function wireTakes() {
+    var pv = $("take-pro");
+    if (pv) { pv.checked = proOn(); pv.disabled = !window.VocalChain; pv.addEventListener("change", function () { window.VocalChain.setEnabled(pv.checked); toast(pv.checked ? "Pro vocal on for takes (raw take kept)" : "Pro vocal off: takes saved as recorded"); }); }
     $("btn-take").addEventListener("click", function () {
       if (!draft || takeSession) { if (!draft) toast("Generate a draft first."); return; }
       startMic(null).then(function (s) {
@@ -1045,7 +1062,8 @@
       "  guide_melody.wav    syllable-timed synth guide for your lyrics (if lyrics were given)",
       "  lyrics.txt          your lyrics",
       "  voice_bank/         your voice clips as mono 44.1 kHz WAV (training data)",
-      "  takes/              guide vocals you recorded over the draft",
+      "  takes/              guide vocals you recorded over the draft (Pro vocal: EQ, compression, de-esser, gate)",
+      "  takes/raw/          the same takes exactly as the mic recorded them",
       "  project.json        settings (re-open by typing them into Isle Voice)",
       "",
       "HONEST NOTE",
@@ -1084,6 +1102,7 @@
             return pr.then(function () {
               return blobToWav(t.blob).then(blobU8).then(function (u) {
                 files.push({ name: "takes/take_" + String(i + 1).padStart(2, "0") + ".wav", data: u });
+                if (t.rawBlob) return blobToWav(t.rawBlob).then(blobU8).then(function (r) { files.push({ name: "takes/raw/take_" + String(i + 1).padStart(2, "0") + "_raw.wav", data: r }); });
               }).catch(function () {});
             });
           }, Promise.resolve());
