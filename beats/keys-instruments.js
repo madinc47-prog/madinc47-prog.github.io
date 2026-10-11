@@ -77,6 +77,10 @@
   ];
   var DEFAULT_PRESET = "bounce26";
   var TEMPO = 120;
+  /* Feel (humanize.js): 0 = Off (voices exactly as designed). While a note is built, CUR holds its articulation. */
+  var FEEL_A = 0, CUR = null;
+  function setFeel(mode) { var F = window.IPBFeel; FEEL_A = F ? F.amt(mode) : 0; return FEEL_A; }
+  function fh(a, b, c) { var F = window.IPBFeel; return F ? F.hash(a, b, c) : 0; }
   function setTempo(b) { b = +b; if (isFinite(b) && b > 0) TEMPO = clamp(b, 40, 260); return TEMPO; }
 
   /* per-context caches (PeriodicWaves, curves, noise and plucked-string tables can't be shared between contexts) */
@@ -142,6 +146,7 @@
     var o = c.createOscillator();
     if (per) o.setPeriodicWave(per); else o.type = type;
     o.frequency.setValueAtTime(freq, t);
+    if (CUR && CUR.ens) det = (det || 0) + fh(Math.round(t * 997), Math.round(freq), v.nodes.length) * CUR.ens; // ensemble: players never quite agree
     if (det) o.detune.setValueAtTime(det, t);
     o.connect(target || v.out);
     o.start(t);
@@ -169,9 +174,17 @@
   }
   /* ADSR on v.out: peak at `a`, decays toward `sus` with time-constant `dk`, release `rel` after note end */
   function env(v, t, dur, peak, a, sus, dk, rel) {
+    if (CUR) { // Feel: soft notes swell in (bow / breath), hard ones bite; natural release tails
+      if (CUR.sw) a += CUR.sw * Math.pow(1 - CUR.vel, 1.3) * Math.min(FEEL_A, 1.3);
+      if (CUR.rel) rel *= 1 + (CUR.rel - 1) * Math.min(FEEL_A, 1.2);
+    }
     var g = v.out.gain;
     g.setValueAtTime(0, t);
     g.linearRampToValueAtTime(peak, t + a);
+    if (CUR && CUR.pno && sus < 0.01 && dur > a + dk * 0.8) { // struck string: fast "prompt" decay, then a long, quiet aftersound while the key is held
+      g.setTargetAtTime(peak * 0.22, t + a, dk * 0.55);
+      g.setTargetAtTime(peak * sus, t + a + dk * 1.2, dk * 2.6);
+    } else
     g.setTargetAtTime(peak * sus, t + a, dk);
     var off = t + Math.max(a + 0.005, dur);
     g.setTargetAtTime(0, off, rel / 4);
@@ -603,7 +616,14 @@
     var id = migrate(instId) || DEFAULT, fn = VOICES[id], def = BY_ID[id] || {}, o = toneOf(id, tone);
     if (gain != null && gain !== 1 && isFinite(gain)) { var g = c.createGain(); g.gain.value = clamp(gain, 0, 8); g.connect(dest); dest = g; }
     if (!def.dr && o.drive > 0.02) dest = driveStage(c, dest, o.drive, 0.22);
-    return fn(c, dest, clamp(Math.round(midi), 0, 127), Math.max(0, when), Math.max(0.02, dur || 0.25), clamp(vel == null ? 0.8 : +vel, 0.05, 1), o);
+    var vv = clamp(vel == null ? 0.8 : +vel, 0.05, 1), F = window.IPBFeel, ar = FEEL_A && F ? F.art(id) : null;
+    if (ar && ar.vt) { // velocity → tone: a soft pick / soft blow is darker, not just quieter
+      var fc = F.cutoff(vv, "keys");
+      if (fc) { var tl = c.createBiquadFilter(); tl.type = "lowpass"; tl.frequency.value = fc; tl.Q.value = 0.5; tl.connect(dest); dest = tl; }
+    }
+    CUR = ar ? { pno: ar.pno || 0, sw: ar.sw || 0, rel: ar.rel || 0, ens: (ar.ens || 0) * Math.min(FEEL_A, 1.3), vel: vv } : null;
+    try { return fn(c, dest, clamp(Math.round(midi), 0, 127), Math.max(0, when), Math.max(0.02, dur || 0.25), vv, o); }
+    finally { CUR = null; }
   }
   function presetOf(inst, tone) {
     var o = toneOf(inst, tone);
@@ -614,7 +634,7 @@
     return "";
   }
   window.IPBKeys = { INSTRUMENTS: INSTRUMENTS, BY_ID: BY_ID, PRESETS: PRESETS, DEFAULT: DEFAULT, DEFAULT_PRESET: DEFAULT_PRESET, LEGACY: LEGACY,
-    play: play, migrate: migrate, toneOf: toneOf, presetOf: presetOf, setTempo: setTempo, tempo: function () { return TEMPO; },
+    play: play, migrate: migrate, toneOf: toneOf, presetOf: presetOf, setTempo: setTempo, setFeel: setFeel, tempo: function () { return TEMPO; },
     has: function (id) { return !!VOICES[migrate(id)]; },
     /* kept for API compatibility: every instrument is synthesized now, nothing to fetch */
     load: function () { return Promise.resolve(true); }, ready: function () { return true; }, isSampled: function () { return false; } };

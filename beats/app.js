@@ -662,7 +662,7 @@
       if (idx !== -1) reg.splice(idx, 1);
     };
   }
-  function feelUI() { var fe = $("feel"); if (fe) fe.value = S.feel; }
+  function feelUI() { var fe = $("feel"); if (fe) fe.value = S.feel; if (PK.setFeel) PK.setFeel(S.feel); }
   function triggerPad(i, when, vel) {
     if (!ensureCtx()) return;
     var hv = FEEL.liveDrum(S.feel, kitDef(S.kit), padDef(i), i, vel == null ? TOOL_VEL[S.tool] : vel); // tone + variation, never delayed
@@ -870,7 +870,7 @@
     pluck: { a: 0.003, peak: 0.24, sus: 0.0001, dec: 1.0, rel: 0.2 },
     bell: { a: 0.002, peak: 0.24, sus: 0.0001, dec: 2.4, rel: 0.6 }
   };
-  function synthNote(c, dest, midi, t, dur, type) {
+  function synthNote(c, dest, midi, t, dur, type, vs) { // vs = Feel level scale (null = Off, old sound)
     var f = mf(midi), env = SYNTH[type] || SYNTH.pad;
     var out = c.createGain(), oscs = [];
     out.gain.setValueAtTime(0.0001, t);
@@ -897,8 +897,10 @@
       lp.type = "lowpass"; lp.frequency.value = 1300; lp.Q.value = 0.7; lp.connect(out);
       osc("sawtooth", f, 0.5, -9, lp); osc("sawtooth", f, 0.5, 9, lp); osc("sine", f / 2, 0.4, 0, lp);
     }
-    out.gain.exponentialRampToValueAtTime(env.peak, t + env.a);
-    out.gain.exponentialRampToValueAtTime(env.sus, t + env.a + env.dec);
+    var pk = vs ? env.peak * vs : env.peak, su = vs ? env.sus * vs : env.sus;
+    var at = vs && type === "pad" ? env.a * 2.5 : env.a; // Feel: chord pad swells in like a section, not a switch
+    out.gain.exponentialRampToValueAtTime(pk, t + at);
+    out.gain.exponentialRampToValueAtTime(su, t + at + env.dec);
     out.gain.setTargetAtTime(0.0001, t + dur, env.rel / 4);
     oscs.forEach(function (o) { o.stop(t + dur + env.rel + 0.3); });
     return { out: out, oscs: oscs, t: t };
@@ -919,8 +921,10 @@
     var ch = CHORDS[ci];
     if (!ch) return; // "—" = rest
     var dur = barSec() * Math.max(1, S.chordTrack.bars) * 2 + 0.5; // cut earlier by the next chord / stop
-    QUAL[ch.q].forEach(function (iv) {
-      reg.push(synthNote(c, dest, 48 + ch.r + iv, t, dur, S.chordTrack.sound));
+    var cn = QUAL[ch.q].map(function (iv) { return { p: 48 + ch.r + iv, t: t, v: 0.8 }; });
+    FEEL.chord(S.feel, cn, Math.round(t * 1000), FEEL.style(kitDef(S.kit)));
+    cn.forEach(function (n) {
+      reg.push(synthNote(c, dest, n.p, n.t, dur - (n.t - t), S.chordTrack.sound, S.feel === "off" ? null : n.v / 0.8));
     });
   }
 
@@ -4129,6 +4133,17 @@
    */
   var pianoEd = null, pianoLib = null, pianoSeen = false;
   function pianoStepOf(info) { var P16 = pianoPat().bars * STEPS; return (((info.m16 || 0) % P16) + P16) % P16; }
+  /* Feel for melodic notes: notes starting on the same tick are rolled like a player's chord (top voice louder),
+     single notes get a few ms / a few % of life. Returns [{ n, t, v }] in the input order. */
+  function feelNotes(list, seedBase, defInst) {
+    var out = list.map(function (x) { return { n: x.n, t: x.t, v: x.n.v == null ? 0.8 : x.n.v, p: x.n.p, mono: !((PK.BY_ID[PK.migrate(x.n.i || defInst) || ""] || {}).poly) }; });
+    if (S.feel === "off") return out;
+    var by = {};
+    out.forEach(function (o) { (by[o.n.s] = by[o.n.s] || []).push(o); });
+    var st = FEEL.style(kitDef(S.kit));
+    Object.keys(by).forEach(function (k) { FEEL.chord(S.feel, by[k], seedBase * 977 + (+k), st); });
+    return out;
+  }
   function schedulePiano(c, G, info, t, len) {
     var p = pianoPat();
     if (!p.notes.length) return;
@@ -4137,9 +4152,11 @@
     var sw = s16 % 2 === 1 ? len * (S.swing / 100) : 0;
     var ns = PD.notesStarting(p, t0, t0 + PD.STEP), gl = PD.gainLin(p);
     if (PK.setTempo) PK.setTempo(S.bpm); // tempo-synced voices (sidechain pad, arp)
-    for (var i = 0; i < ns.length; i++) {
-      var n = ns[i];
-      G.preg.push(PK.play(c, G.groups.piano, n.p, t + (n.s - t0) * tickSec + (n.s === t0 ? sw : 0), n.l * tickSec, n.v, n.i || p.inst, gl, n.i ? null : p.tone));
+    if (PK.setFeel) PK.setFeel(S.feel);
+    var fn = feelNotes(ns.map(function (n) { return { n: n, t: t + (n.s - t0) * tickSec + (n.s === t0 ? sw : 0) }; }), info.k, p.inst);
+    for (var i = 0; i < fn.length; i++) {
+      var n = fn[i].n;
+      G.preg.push(PK.play(c, G.groups.piano, n.p, Math.max(0, fn[i].t), n.l * tickSec, fn[i].v, n.i || p.inst, gl, n.i ? null : p.tone));
     }
     if (G.preg.length > 96) G.preg = G.preg.filter(function (v) { return v.end > c.currentTime; });
   }
@@ -4550,10 +4567,14 @@
     if (playing && drumsOn()) { var barK = Math.ceil(curK / STEPS) * STEPS; t0 = nextTime + (barK - curK) * sd; synced = true; }
     var voices = [], dest = LG.groups.piano;
     if (PK.setTempo) PK.setTempo(S.bpm);
+    if (PK.setFeel) PK.setFeel(S.feel);
     for (var r = 0; r < passes; r++) {
-      p.notes.forEach(function (n) {
+      feelNotes(p.notes.map(function (n) {
         var s16 = Math.floor(n.s / PD.STEP), sw = (n.s % PD.STEP === 0 && s16 % 2 === 1) ? sd * (S.swing / 100) : 0;
-        voices.push(PK.play(ctx, dest, n.p, t0 + (r * L + n.s) * tick + sw, n.l * tick, n.v, n.i || p.inst, PD.gainLin(p), n.i ? null : p.tone));
+        return { n: n, t: t0 + (r * L + n.s) * tick + sw };
+      }), r + 1, p.inst).forEach(function (f) {
+        var n = f.n;
+        voices.push(PK.play(ctx, dest, n.p, Math.max(0, f.t), n.l * tick, f.v, n.i || p.inst, PD.gainLin(p), n.i ? null : p.tone));
       });
     }
     var end = t0 + passes * L * tick;

@@ -111,7 +111,7 @@
   /* per-instrument articulation for the synth voices (used by keys-instruments.js):
      sw = attack swell by softness (s), rel = release × , vt = add velocity→tone low-pass, ens = ensemble drift cents */
   var ART = {
-    grand: { rel: 1.6, vt: 0 }, trappiano: { rel: 1.5 }, feltpiano: { rel: 1.5 }, lofipiano: { rel: 1.4 }, rhodes: { rel: 1.4, vt: 1 }, lofi: { rel: 1.3 },
+    grand: { rel: 1.6, pno: 1 }, trappiano: { rel: 1.5, pno: 1 }, feltpiano: { rel: 1.5, pno: 1 }, lofipiano: { rel: 1.4, pno: 1 }, rhodes: { rel: 1.4, vt: 1, pno: 1 }, lofi: { rel: 1.3, pno: 1 },
     strings: { sw: 0.45, rel: 1.3, ens: 4, vt: 1 }, pad: { sw: 0.35, rel: 1.2, ens: 3 }, sidepad: { sw: 0.2, ens: 3 },
     horn: { sw: 0.06, vt: 1, rel: 1.2 }, whine: { sw: 0.05, rel: 1.2 }, lead: { sw: 0.05, vt: 1 }, trapflute: { sw: 0.06, rel: 1.15 },
     trappluck: { vt: 1 }, gtrpluck: { vt: 1, rel: 1.3 }, pluck: { vt: 1, rel: 1.2 }, arp: { vt: 1 }, dbell: { rel: 1.2 }, bell: { rel: 1.2 },
