@@ -167,11 +167,11 @@
   <div id="recset-sheet" class="st-sheet" hidden role="dialog" aria-modal="true" aria-label="Recording setup">
     <div class="st-panel narrow">
       <div class="kb-head"><span class="label">Recording setup</span><button id="recset-close" class="btn small ghost" type="button">Close</button></div>
-      <p class="st-warn">🎧 <b>Headphones give the cleanest takes</b> (wired is best; Bluetooth adds a lot of delay). No headphones? Speaker mode records with the phone's echo-cancel on and the 🧹 Clean take button removes most of the beat that leaks into the mic.</p>
+      <p class="st-warn">🎧 <b>Headphones give the cleanest takes</b> (wired is best; Bluetooth adds a lot of delay). No headphones? Speaker mode saves the take exactly as recorded (nothing is cleaned automatically). If you want, the optional 🧹 Clean take button removes most of the beat that leaks into the mic.</p>
       <div class="rs-hp">
         <span class="hp-chip" id="rs-hpchip">🔈 Speaker mode</span>
         <label class="chk"><input type="checkbox" id="rs-hpon"> I'm on headphones</label>
-        <label class="chk"><input type="checkbox" id="rs-autoclean" checked> Clean speaker-mode takes automatically</label>
+        <label class="chk" hidden><input type="checkbox" id="rs-autoclean"> Clean speaker-mode takes automatically</label>
       </div>
       <div class="ex-grid">
         <label>Count-in before the take <select id="rs-count"><option value="0">Off</option><option value="1">1 bar</option><option value="2">2 bars</option></select></label>
@@ -229,10 +229,10 @@
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
   <script src="core.js?v=20261003u"></script>
-  <script src="audio.js?v=20261011a"></script>
+  <script src="audio.js?v=20261011b"></script>
   <script src="wave.js?v=20261003u"></script>
   <script src="../vocal-clean-client.js?v=20261003u"></script>
-  <script src="ui.js?v=20261011a"></script>
+  <script src="ui.js?v=20261011b"></script>
   <script>/* Beats | DJ Booth | Player switcher on the stand-alone Studio page (inside the Beats tab, Beats shows it) */
     if (!/[?&]embed=1/.test(location.search)) { var nav = document.createElement("script"); nav.type = "module"; nav.src = "../../shared/ecosystem-nav.js?mode=pill&pos=bl"; document.body.appendChild(nav); }
   </script>
