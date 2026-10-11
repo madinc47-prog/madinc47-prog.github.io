@@ -2,17 +2,18 @@
 // Every module URL carries the same ?v= tag as player.js in index.html (and sw.js SHELL), so a deploy can never mix
 // old and new modules from the HTTP cache. Bump all of them together.
 import { saveTrack, listTracks, getTrack, deleteTrack, onMediaChange } from '../shared/media-store.js';
-import { createScene } from './scene.js?v=21';
-import { createViz, THEMES } from './viz.js?v=21';
-import { OUTFITS, OUTFIT_FOR_THEME } from './outfits.js?v=21';
-import { createEQ } from './eq.js?v=21';
-import { createHype } from './hype.js?v=21';
-import { createLadies } from './ladies.js?v=21';
-import { createShout } from './shout.js?v=21';
-import { initPhoto } from './photo.js?v=21';
-import { initRec } from './rec.js?v=21';
-import { td, TD } from './td.js?v=21';
-import { fmt, hash, isAudioFile, titleFromName, makeCover, makeLabel, readTags, probeDuration, probeMedia, computePeaks, notMusicReason } from './util.js?v=21';
+import { createScene } from './scene.js?v=22';
+import { createViz, THEMES } from './viz.js?v=22';
+import { OUTFITS, OUTFIT_FOR_THEME } from './outfits.js?v=22';
+import { createEQ } from './eq.js?v=22';
+import { createHype } from './hype.js?v=22';
+import { createLadies } from './ladies.js?v=22';
+import { createShout } from './shout.js?v=22';
+import { initPhoto } from './photo.js?v=22';
+import { initRec } from './rec.js?v=22';
+import { createIsle } from './isle.js?v=22';
+import { td, TD } from './td.js?v=22';
+import { fmt, hash, isAudioFile, titleFromName, makeCover, makeLabel, readTags, probeDuration, probeMedia, computePeaks, notMusicReason } from './util.js?v=22';
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -628,6 +629,7 @@ const viz = createViz($('#viz'));
 const hype = createHype({
   getCtx: ensureCtx, getTap: () => postMix, getOut: () => (ensureCtx(), preVol), getDuck: () => duck, scene, toast, LS, F,
   isPlaying: () => !!(deck && !deck.el.paused), onDuck: () => allDecks().forEach((d) => d.applyVol()),
+  getPos: () => (deck ? { t: deck.el.currentTime || 0, dur: seekDur() } : null),
 });
 window.__pfOnTransition = (info) => hype.onTransition(info);
 window.__pfDuckGain = () => (duck ? +duck.gain.value.toFixed(3) : null);
@@ -640,6 +642,10 @@ const ladies = createLadies({
 window.__pfBeforeTransition = (rem, xf) => ladies.before(rem, xf);
 // place shout-outs during normal playback + per-visitor town detection
 shout = createShout({ hype, ladies, LS, toast });
+// island shout-outs (parishes + towns, pre-rendered) take the place slot first; the town logic is the fallback
+const isle = createIsle({ hype, LS, td, toast });
+hype.setPlace(async () => (await isle.parts()) || (await shout.parts()));
+window.__pfIsle = isle;
 window.__pfShout = shout;
 const wave = $('#wave'), wg = wave.getContext('2d');
 
@@ -1270,7 +1276,7 @@ async function boot() {
   } else { const first = visible()[0] || library[0]; if (first) { current = first; updateNowPlaying(first); renderList(); showBigPlay('Tap to drop the needle'); } else { renderList(); toast('No tracks yet: send a beat here from Beats or the DJ Booth, or add a file / URL.'); } }
   try { initPhoto({ scene, toast, td }); } catch (e) { console.warn('[player] photo', e); }
   // recording tap: decks after crossfader/EQ/duck + effects/shout-outs, before the volume knob (master)
-  try { initRec({ td, toast, getTap: () => { ensureCtx(); return { ctx, node: preVol }; } }); } catch (e) { console.warn('[player] rec', e); }
+  try { window.__pfRec = initRec({ td, toast, getTap: () => { ensureCtx(); return { ctx, node: preVol }; } }); } catch (e) { console.warn('[player] rec', e); }
   if (TD) td('player ' + (document.querySelector('script[src*="player.js"]') || {}).src + ' · ' + innerWidth + 'x' + innerHeight);
   applyQualityMode(); requestAnimationFrame(frameLoop);
   window.__pf = { get deck() { return deck; }, get cued() { return cued; }, get outgoing() { return outgoing; }, get transition() { return transition; }, XF, xfPos, setXf, get slot() { return slot; }, get ctx() { return ctx; }, startTransition, get activeSlot() { return activeSlot; }, eq, hype, ladies, get current() { return current; }, F, scene, playItem, refreshLibrary, get library() { return library; }, next, S, setOutfit, setTheme, Q, setQuality, WD, watchdog, get pendingDeck() { return pendingDeck; }, get liveDecks() { return [...liveDecks]; }, pool, finishTransition };

@@ -372,3 +372,20 @@ body.lite .chip{background:rgba(14,10,30,.85)}
 .trk{grid-template-columns:22px 52px minmax(0,1fr) auto auto 32px;gap:8px}
 .trk .grip{order:-1}
 @media (max-width:480px){.trk{grid-template-columns:20px 40px minmax(0,1fr) auto auto 26px;gap:6px}.trk .th{width:40px;height:40px}.trk .dur{font-size:12px}}
+
+/* island shout-outs */
+.hy-isle-h small{opacity:.7;margin-left:6px}
+.hy-isle-modes{display:flex;flex-wrap:wrap;gap:4px 14px;margin:6px 0;font-size:13px}
+.hy-isle-tools{display:flex;align-items:center;gap:10px;font-size:12px;opacity:.9;margin-bottom:4px}
+.hy-isle-tools #isleTest{margin-left:auto}
+.hy-isle-list{max-height:240px;overflow:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px;padding-right:4px}
+.hy-isle-list.dim{opacity:.55}
+.isle-g{border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:4px 8px 6px;margin:0;font-size:12.5px}
+.isle-g legend{font-weight:800;font-size:12.5px;padding:0 4px}
+.isle-p{display:flex;align-items:center;gap:5px;padding:2px 0}
+
+/* mixes list */
+.rec-list{list-style:none;margin:6px 0;padding:0;max-height:50vh;overflow:auto}
+.rec-list li{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.08)}
+.rec-list .rm{min-width:0}.rec-list .rm b{display:block;font-size:13px;overflow-wrap:anywhere}.rec-list .rm small{opacity:.75;font-size:11.5px}
+.rec-list .ra{display:flex;gap:4px;flex:none}
