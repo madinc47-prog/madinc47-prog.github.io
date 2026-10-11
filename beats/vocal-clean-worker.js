@@ -3,7 +3,7 @@
  * suppression) → 70 Hz high-pass → RNNoise (Xiph RNNoise, BSD-3-Clause; WASM build by Jitsi, Apache-2.0,
  * vendor/rnnoise) → voice-activity gate driven by RNNoise's own VAD.
  * Input must be 48 kHz (the page resamples if the AudioContext runs at another rate). */
-import "./vocal-clean-dsp.js?v=20261003u"; // bump together with the ?v= in index.html
+import "./vocal-clean-dsp.js?v=20261011r"; // bump together with the ?v= in index.html
 const D = self.IPBVocalCleanDSP;
 // two RNNoise builds from @jitsi/rnnoise-wasm 0.2.1: "v2" = RNNoise 0.2 model (rnnoise-sync.js, WASM inlined, ~1.9 MB, ~1.3 MB gzip; default — measured better),
 // "v1" = RNNoise 0.1 model (rnnoise.js + rnnoise.wasm, 124 KB). Loaded on first use only.
@@ -61,14 +61,14 @@ self.onmessage = async (ev) => {
     if (cv && o.hpf !== false) { D.highpass(cv.voice, sr, 70); D.highpass(cv.noise, sr, 70); if (cv.bleed) D.highpass(cv.bleed, sr, 70); }
     prog("denoise", 0);
     let t0 = performance.now(), vad = null;
-    if (o.denoise !== false && sr === 48000) {
+    if ((o.denoise !== false || (o.gate !== false && o.gate != null)) && sr === 48000) { // the gate needs RNNoise's voice detection even when noise reduction is off
       const mod = await rnnReady;
       const r = rnnoise(mod, x, RNN_LAG[rnnUsed], (p) => prog("denoise", p));
-      if (cv) { const c = D.transferGains(x, r.out, [cv.voice, cv.noise, cv.bleed || new Float32Array(x.length)]); cv.voice = c[0]; cv.noise = c[1]; cv.bleed = c[2]; }
+      if (cv && o.denoise !== false) { const c = D.transferGains(x, r.out, [cv.voice, cv.noise, cv.bleed || new Float32Array(x.length)]); cv.voice = c[0]; cv.noise = c[1]; cv.bleed = c[2]; }
       // blend a little of the pre-RNNoise signal back in where speech is detected: keeps consonants and breaths natural
       const mix = o.rnnMix != null ? o.rnnMix : 1;
-      if (mix < 1) for (let i = 0; i < x.length; i++) x[i] = mix * r.out[i] + (1 - mix) * x[i]; else x = r.out;
-      vad = r.vad; info.rnnoise = rnnUsed === "v1" ? "0.1" : "0.2";
+      if (o.denoise === false) { /* VAD only (gate) */ } else if (mix < 1) for (let i = 0; i < x.length; i++) x[i] = mix * r.out[i] + (1 - mix) * x[i]; else x = r.out;
+      vad = r.vad; info.rnnoise = o.denoise === false ? false : rnnUsed === "v1" ? "0.1" : "0.2";
     } else info.rnnoise = false;
     info.denoiseMs = Math.round(performance.now() - t0);
     prog("gate", 0);

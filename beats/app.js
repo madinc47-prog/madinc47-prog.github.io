@@ -86,6 +86,7 @@
 /* Island Pin Beats — Web Audio beat maker. Drums: synthesis + a few small CC0 one-shots (samples/CREDITS.md). No paid APIs. */
 (function () {
   "use strict";
+  if (window.IPB_FRESH_MODE) return; // /beats/?fresh=1: the Start-fresh dialog runs instead (fresh.js); nothing opens the saved data
 
   var SR = 44100;
   var STEPS = 16;          // steps per bar (16ths)
@@ -2821,6 +2822,9 @@
   }
   /* ---------------- Vocal channel: Pan, Wide, auto level match, effects (manual, non-destructive) ---------------- */
   var VXFX = [
+    { k: "bleed", name: "Remove beat bleed", p: [], tip: "Takes out the beat your mic picked up, using the exact beat that was playing. Runs after the take; the raw take is kept." },
+    { k: "nr", name: "Noise reduction", p: [], tip: "Removes steady room noise / hiss (RNNoise, on this device)." },
+    { k: "gate", name: "Gate", p: [], tip: "Mutes the gaps between your lines (voice detection)." },
     { k: "lowcut", name: "Low cut", p: [["f", "Freq", 40, 300, 5, "Hz"]] },
     { k: "eq", name: "EQ · 3-band", p: [["low", "Low", -12, 12, 0.5, "dB"], ["mid", "Mid", -12, 12, 0.5, "dB"], ["midF", "Mid freq", 300, 6000, 50, "Hz"], ["high", "High", -12, 12, 0.5, "dB"]] },
     { k: "comp", name: "Compressor", p: [["amt", "Amount", 0, 1, 0.01, "%"]] },
@@ -2842,6 +2846,8 @@
     if (!S.vox.fx) S.vox.fx = FXC.defaults();
     var d = document.createElement("details"); d.id = "vx-fx"; d.className = "vx-fx";
     d.innerHTML = '<summary><strong>Vocal level, pan &amp; effects</strong> <small class="sub">manual · the raw take is never changed · applied to exports, Send to Player / DJ / Studio</small></summary>' +
+      '<div class="vx-row"><label>Vocal presets <select id="vx-preset" aria-label="Vocal presets"></select></label>' +
+      '<small class="sub">Nothing is applied until you pick one. Recording itself is always raw.</small></div>' +
       '<div class="vx-row">' +
       '<label class="vx-pan">Pan <input type="range" class="js-vx-pan" min="-100" max="100" step="5" aria-label="Vocal pan"> <span class="mono js-vx-panval">C</span>' +
       '<button type="button" class="btn small ghost" id="vx-center">Center</button></label>' +
@@ -2862,6 +2868,7 @@
       VXFX.forEach(function (sec) {
         var st = S.vox.fx[sec.k], b = document.createElement("div"); b.className = "vx-blk" + (st.on ? " on" : ""); b.dataset.k = sec.k;
         b.innerHTML = '<div class="vx-h"><span>' + sec.name + '</span><button type="button" class="vx-sw' + (st.on ? " on" : "") + '" aria-pressed="' + st.on + '" aria-label="' + sec.name + ' on/off">' + (st.on ? "ON" : "OFF") + "</button></div>";
+        if (sec.tip) { var tp = document.createElement("small"); tp.className = "vx-tip"; tp.textContent = sec.tip; b.appendChild(tp); }
         b.querySelector(".vx-sw").addEventListener("click", function () { st.on = !st.on; render(); vxChanged(); });
         sec.p.forEach(function (p) {
           var lab = document.createElement("label"); lab.className = "vx-p";
@@ -2908,6 +2915,48 @@
     $("vx-reexp").addEventListener("click", function () { exportVocalMix(false); });
     $("vx-alloff").addEventListener("click", function () { Object.keys(S.vox.fx).forEach(function (k) { if (S.vox.fx[k]) S.vox.fx[k].on = false; }); render(); vxChanged(); });
     offUI(); vxPanUI();
+    var ps = $("vx-preset");
+    function fillPresets() {
+      var mine = vxMine();
+      ps.innerHTML = '<option value="">Vocal presets…</option><optgroup label="Built in">' + Object.keys(VX_PRESETS).map(function (k) { return '<option value="b:' + k + '">' + escapeHtml(VX_PRESETS[k].name) + "</option>"; }).join("") + "</optgroup>" +
+        (Object.keys(mine).length ? '<optgroup label="My presets">' + Object.keys(mine).map(function (k) { return '<option value="m:' + escapeHtml(k) + '">' + escapeHtml(k) + "</option>"; }).join("") + "</optgroup>" : "") +
+        '<optgroup label="Manage"><option value="save">Save current settings as my preset…</option>' + (Object.keys(mine).length ? '<option value="del">Delete one of my presets…</option>' : "") + "</optgroup>";
+    }
+    fillPresets();
+    ps.addEventListener("change", function () {
+      var v = ps.value; ps.value = ""; if (!v) return;
+      var mine = vxMine();
+      if (v === "save") {
+        var nm = (prompt("Name for this vocal preset:", "My vocal") || "").trim().slice(0, 40); if (!nm) return;
+        mine[nm] = { fx: JSON.parse(JSON.stringify(S.vox.fx)), pan: S.vox.pan, wide: S.vox.wide }; vxMine(mine); fillPresets(); toast("Saved preset “" + nm + "”"); return;
+      }
+      if (v === "del") {
+        var dn = (prompt("Delete which preset? (" + Object.keys(mine).join(", ") + ")", Object.keys(mine)[0]) || "").trim();
+        if (mine[dn]) { delete mine[dn]; vxMine(mine); fillPresets(); toast("Deleted “" + dn + "”"); } return;
+      }
+      var pr = v.indexOf("b:") === 0 ? VX_PRESETS[v.slice(2)] : mine[v.slice(2)]; if (!pr) return;
+      var base = FXC.defaults();
+      Object.keys(pr.fx || {}).forEach(function (k) { if (base[k]) Object.assign(base[k], pr.fx[k]); });
+      S.vox.fx = FXC.norm(base);
+      if (pr.pan != null) S.vox.pan = pr.pan;
+      if (pr.wide != null) S.vox.wide = !!pr.wide;
+      $("vx-wide").checked = !!S.vox.wide; vxPanUI(); render(); vxChanged();
+      toast("Vocal preset: " + (pr.name || v.slice(2)) + (vox.last ? " — tap “Export last take again” to hear it in the mix" : ""));
+    });
+  }
+  /* built-in vocal presets: only applied when picked (everything starts OFF) */
+  var VX_PRESETS = {
+    rap: { name: "Clean Rap Vocal", pan: 0, wide: false, fx: { lowcut: { on: true, f: 100 }, eq: { on: true, low: -2, mid: 2, midF: 3000, high: 2.5 }, comp: { on: true, amt: 0.55 }, deess: { on: true, amt: 0.5 }, sat: { on: true, amt: 0.2 }, reverb: { on: true, type: "room", decay: 0.8, pre: 0.01, mix: 0.08 } } },
+    radio: { name: "Radio / phone voice", pan: 0, wide: false, fx: { lowcut: { on: true, f: 300 }, eq: { on: true, low: -8, mid: 6, midF: 1800, high: -8 }, comp: { on: true, amt: 0.7 }, sat: { on: true, amt: 0.55 } } },
+    adlib: { name: "Ad-lib Wide", pan: 0, wide: true, fx: { lowcut: { on: true, f: 150 }, eq: { on: true, low: -4, mid: 0, midF: 2000, high: 3 }, comp: { on: true, amt: 0.5 }, deess: { on: true, amt: 0.4 }, chorus: { on: true, mix: 0.45 }, delay: { on: true, div: "1/8d", pp: true, fb: 0.35, mix: 0.25 }, reverb: { on: true, type: "hall", decay: 2.4, pre: 0.03, mix: 0.2 } } },
+    singing: { name: "Smooth Singing", pan: 0, wide: false, fx: { lowcut: { on: true, f: 90 }, eq: { on: true, low: -1, mid: 1, midF: 2500, high: 3 }, comp: { on: true, amt: 0.45 }, deess: { on: true, amt: 0.5 }, delay: { on: true, div: "1/4", pp: false, fb: 0.25, mix: 0.12 }, reverb: { on: true, type: "plate", decay: 1.8, pre: 0.02, mix: 0.18 } } },
+    speaker: { name: "Speaker take cleanup (beat bleed + noise)", fx: { bleed: { on: true }, nr: { on: true }, gate: { on: false }, lowcut: { on: true, f: 90 } } }
+  };
+  function vxMine(set) {
+    try {
+      if (set) { localStorage.setItem("ipb_vx_presets", JSON.stringify(set)); return set; }
+      var o = JSON.parse(localStorage.getItem("ipb_vx_presets") || "{}"); return o && typeof o === "object" ? o : {};
+    } catch (e) { return {}; }
   }
   var meterBuf = new Float32Array(512);
   function peak(an) {
@@ -3066,7 +3115,33 @@
     } else { vox.inMax = 0; vox.liveT0 = 0; vox.silentWarned = false; }
   }
   var MIC_SILENT = "Your mic is sending silence. Close any call or app using the mic (voice calls, WhatsApp, recorders), check Microphone access is ON in quick settings, then try again.";
-  function micWantsProcessing() { return false; } // takes are always RAW: no echo-cancel, noise suppression or auto-gain
+  /* "No headphones — voice only" (manual, OFF by default, remembered on this device, shared with the Studio):
+     ON = the browser's echo-cancel + noise suppression on the mic (auto-gain stays off) and "Remove beat bleed" on the
+     take afterwards; the unprocessed take is kept too. OFF = fully raw (nothing applied). */
+  var VO_KEY = "ipb_voiceonly";
+  function voiceOnly() { try { return localStorage.getItem(VO_KEY) === "1"; } catch (e) { return false; } }
+  function setVoiceOnly(v) { try { localStorage.setItem(VO_KEY, v ? "1" : "0"); } catch (e) { /* ignore */ } voUI(); }
+  function voUI() {
+    var on = voiceOnly();
+    document.querySelectorAll(".js-voiceonly").forEach(function (b) { b.classList.toggle("on", on); b.setAttribute("aria-pressed", String(on)); b.querySelector(".vo-state").textContent = on ? "ON" : "OFF"; });
+  }
+  function voButtons() {
+    document.querySelectorAll(".js-vox").forEach(function (v) {
+      if (v.parentNode.querySelector(".js-voiceonly")) return;
+      var b = document.createElement("button"); b.type = "button"; b.className = "btn vo-btn js-voiceonly";
+      b.title = "For recording without headphones: your tablet mic records just your voice (browser echo-cancel + noise suppression, then Remove beat bleed). The raw take is kept. Off = fully raw.";
+      b.innerHTML = '<span class="vo-l">No headphones — voice only</span> <span class="vo-state">OFF</span><small class="vo-hint">For recording without headphones</small>';
+      b.addEventListener("click", function () {
+        if (vox.state !== "idle") { toast("Change this between takes."); return; }
+        setVoiceOnly(!voiceOnly()); if (vox.stream) closeMic();
+        toast(voiceOnly() ? "Voice only ON: tablet mic, beat rejected, raw take kept" : "Voice only OFF: fully raw takes");
+      });
+      v.insertAdjacentElement("afterend", b);
+    });
+    voUI();
+    window.addEventListener("storage", function (e) { if (e.key === VO_KEY) voUI(); });
+  }
+  function micWantsProcessing() { return voiceOnly(); } // OFF (default): RAW — no echo-cancel, noise suppression or auto-gain
   function openMic() {
     if (!window.isSecureContext || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       return Promise.reject({ name: "Unsupported" });
@@ -3078,7 +3153,10 @@
     // every mode (headphones and speaker): the RAW mic, exactly as captured. No browser / phone echo canceller, noise
     // suppression or auto gain, and nothing is applied after the take; 🧹 Clean last take is manual.
     var RAW = { echoCancellation: false, noiseSuppression: false, autoGainControl: false };
-    return md.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: 1 } })
+    var want = proc ? { echoCancellation: true, noiseSuppression: true, autoGainControl: false, channelCount: 1 } // voice only (manual)
+      : { echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: 1 };
+    if (proc) RAW = { echoCancellation: true, noiseSuppression: true, autoGainControl: false };
+    return md.getUserMedia({ audio: want })
       .catch(function (e) {
         if (e && (e.name === "OverconstrainedError" || e.name === "TypeError")) return md.getUserMedia({ audio: RAW });
         throw e;
@@ -3165,6 +3243,7 @@
     if (vox.check) stopMicCheck();
     if (vc.busy) { toast("Still cleaning the last take — one moment."); return; }
     vox.takeMode = hpMode();
+    vox.voTake = voiceOnly();
     vox.state = "arming"; setVoxButtons();
     setVoxStatus("Requesting microphone…");
     openMic().then(function () {
@@ -3247,7 +3326,16 @@
     vox.last = { L: L, R: R, V: V, frames: frames, sr: sr, title: btActive() ? bt.title : song ? song.title : "", mode: vox.takeMode || "hp", clean: null, lat: null,
       mic: vox.micSettings || null, spk: vox.takeMode === "spk" ? spkBeatGain() : 1 };
     applyMixer();
-    exportVocalMix(true); // the take is kept as recorded; the mix gets only the vocal channel settings (pan / FX / auto match)
+    if (vox.voTake) { // voice only: keep the raw take (Vault) and add a copy with the beat bleed removed
+      var tk = vox.last; tk.voiceOnly = true;
+      exportVocalMix(true, "raw");
+      setVoxStatus("Voice only: removing beat bleed from the take…");
+      vcRun(tk.V, tk.L, tk.R, tk.sr, { aec: true, denoise: false, gate: false, hpf: false }).then(function (m) {
+        if (vox.last !== tk) return;
+        tk.clean = m.out; tk.info = m.info; tk.voInfo = m.info;
+        exportVocalMix(true, "clean");
+      }).catch(function (e) { setVoxStatus("Couldn't remove the beat bleed here (" + (e && e.message || e) + "). The raw take is saved.", true); });
+    } else exportVocalMix(true); // the take is kept as recorded; the mix gets only the vocal channel settings (pan / FX / auto match)
     renderLastTake();
   }
   function vocalPeak(V) {
@@ -3273,11 +3361,27 @@
   /* the vocal as it sits in the mix: shifted for latency, then (non-destructively) Pan, Wide, the vocal effects and the
      auto level match. The take itself (t.V / t.clean) is never modified. Resolves to { L, R, V, sh, autoDb } */
   var VOC_FADER0 = 0.9; // the default Vocal fader = "as matched"; moving it changes the level on top of the match
+  /* manual take cleanup (Remove beat bleed / Noise reduction / Gate): computed on the device from the raw take and the
+     beat that was playing, cached per take + setting. Never replaces t.V. */
+  function vocalPre(t, V) {
+    var f = FXC.norm(S.vox.fx), b = f.bleed.on, nr = f.nr.on, g = f.gate.on;
+    if (!b && !nr && !g) return Promise.resolve(V);
+    var key = (V === t.clean ? "c" : "r") + (b ? "B" : "") + (nr ? "N" : "") + (g ? "G" : "");
+    t.pre = t.pre || {};
+    if (t.pre[key]) return Promise.resolve(t.pre[key]);
+    setVoxStatus("Processing the take on this device (" + [b && "beat bleed", nr && "noise", g && "gate"].filter(Boolean).join(" + ") + ")…");
+    return vcRun(V, t.L, t.R, t.sr, { aec: b, denoise: nr, gate: g, hpf: false }).then(function (m) {
+      t.pre[key] = m.out; t.preInfo = m.info; return m.out;
+    }).catch(function (e) { toast("Cleanup isn't available in this browser (" + (e && e.message || e) + ") — using the raw take."); return V; });
+  }
   function vocalMixFx(t, which) {
     var useClean = which === "clean" || (which == null && t.clean);
-    var V = useClean && t.clean ? t.clean : t.V, sh = takeShift(t), n = t.frames, vs = new Float32Array(n);
+    var V0 = useClean && t.clean ? t.clean : t.V, sh = takeShift(t), n = t.frames, vs = new Float32Array(n), V = V0;
+    return vocalPre(t, V0).then(function (Vp) {
+    V = Vp;
     for (var i = 0; i < n; i++) { var j = i + sh; vs[i] = j >= 0 && j < n ? V[j] : 0; }
-    return FXC.renderMono(vs, t.sr, { fx: S.vox.fx, pan: S.vox.pan, wide: S.vox.wide, bpm: S.bpm }).then(function (pr) {
+    return FXC.renderMono(vs, t.sr, { fx: S.vox.fx, pan: S.vox.pan, wide: S.vox.wide, bpm: S.bpm });
+    }).then(function (pr) {
       var ad = vocalAutoDb(t, pr), vg = S.vox.auto ? mixGain("vocal") / VOC_FADER0 * Math.pow(10, ad / 20) : mixGain("vocal");
       var outL = new Float32Array(n), outR = new Float32Array(n), a = pr[0], b = pr[1];
       for (var k = 0; k < n; k++) { outL[k] = t.L[k] + a[k] * vg; outR[k] = t.R[k] + b[k] * vg; }
@@ -3309,7 +3413,7 @@
   }
   function exportVocalMixDone(t, mx, first, which, clean) {
     var n = t.frames;
-    var name = "Vocal take" + (t.clean ? (clean ? (t.pro ? (t.mode === "spk" ? " (cleaned, pro vocal)" : " (pro vocal)") : " (cleaned)") : " (raw" + (t.mode === "spk" ? ", speaker)" : ")")) : "") + (t.title ? " · " + t.title : "");
+    var name = "Vocal take" + (t.voiceOnly ? (clean ? " (voice only)" : " (raw)") : t.clean ? (clean ? (t.pro ? (t.mode === "spk" ? " (cleaned, pro vocal)" : " (pro vocal)") : " (cleaned)") : " (raw" + (t.mode === "spk" ? ", speaker)" : ")")) : "") + (t.title ? " · " + t.title : "");
     saveToVault(encodeWav(mx.L, mx.R, n, t.sr), n / t.sr, first ? name : name + " (re-mix)");
     if (S.vox.dry && first) {
       var dry = new Float32Array(n);
@@ -6067,7 +6171,7 @@
     buildPads();
     buildChords();
     buildPiano();
-    buildMixer(); buildVxFx();
+    buildMixer(); buildVxFx(); voButtons();
     wire();
     renderChordLoopUI();
     renderTimelines();

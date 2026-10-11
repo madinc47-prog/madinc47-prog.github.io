@@ -398,7 +398,8 @@
     info.delayMs = est.ok ? est.delay / sr * 1000 : null; info.driftPpm = est.ok ? est.drift * 1e6 : null; info.bleedFound = !!est.ok;
     info.alignMs = Date.now() - t0;
     var e = mic, y = null, cv = comps ? { voice: comps.voice, noise: comps.noise, bleed: comps.bleed } : null;
-    if (est.ok) {
+    if (o.aec === false) info.bleedSkipped = true; // manual presets: "Remove beat bleed" off → leave the beat alone
+    if (est.ok && o.aec !== false) {
       // stereo reference only if the beat really differs left / right (e.g. panned drum-machine pads on a tablet)
       var side = 0, mid = 0;
       if (R) for (i = 0; i < n; i += 7) { var l = L[i] || 0, r = R[i] || 0; side += (l - r) * (l - r); mid += (l + r) * (l + r); }

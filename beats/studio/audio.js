@@ -193,7 +193,7 @@
   function countLeft() { return E.playing && E.ctx && E.ctx.currentTime < E.countEnd ? E.countEnd - E.ctx.currentTime : 0; }
   // opts.speaker: no headphones (only remembered on the take; the mic is opened raw either way)
   function startRecord(P, from, pre, opts) {
-    var spk = !!(opts && opts.speaker);
+    var spk = !!(opts && opts.speaker), vo = !!(opts && opts.voiceOnly);
     var armed = P.tracks.filter(function (t) { return t.arm; });
     if (!armed.length) return Promise.reject(new Error("Arm a track first (press R on a track)."));
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return Promise.reject(new Error("This browser cannot record from a microphone."));
@@ -202,13 +202,15 @@
       // RAW takes in every mode: no browser / phone echo-cancel, noise suppression or auto-gain (the take is saved exactly
       // as the mic captured it; 🧹 Clean take is manual)
       var RAW = { echoCancellation: false, noiseSuppression: false, autoGainControl: false };
-      return navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: 1 } })
+      // "No headphones — voice only" (manual toggle): browser echo-cancel + noise suppression on, auto-gain still off
+      if (vo) RAW = { echoCancellation: true, noiseSuppression: true, autoGainControl: false };
+      return navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: vo, noiseSuppression: vo, autoGainControl: false, channelCount: 1 } })
         .catch(function (e) { if (e && (e.name === "OverconstrainedError" || e.name === "TypeError")) return navigator.mediaDevices.getUserMedia({ audio: RAW }); throw e; });
     }).then(function (stream) {
       var mic = {}; try { mic = stream.getAudioTracks()[0].getSettings() || {}; } catch (e) { /* ignore */ }
       try { var st = stream.getAudioTracks()[0].getSettings(); E.inLat = st && typeof st.latency === "number" && st.latency < 0.5 ? st.latency : 0; } catch (e) { E.inLat = 0; }
       var c = E.ctx, src = c.createMediaStreamSource(stream), node = new AudioWorkletNode(c, "ipb-rec", { numberOfInputs: 1, numberOfOutputs: 0 });
-      var R = { stream: stream, src: src, node: node, chunks: [], chunks2: [], t: [], armed: armed.map(function (t) { return t.id; }), from: from, an: c.createAnalyser(), speaker: spk, mic: { echoCancellation: !!mic.echoCancellation, noiseSuppression: !!mic.noiseSuppression, autoGainControl: !!mic.autoGainControl } };
+      var R = { voiceOnly: vo, stream: stream, src: src, node: node, chunks: [], chunks2: [], t: [], armed: armed.map(function (t) { return t.id; }), from: from, an: c.createAnalyser(), speaker: spk, mic: { echoCancellation: !!mic.echoCancellation, noiseSuppression: !!mic.noiseSuppression, autoGainControl: !!mic.autoGainControl } };
       R.an.fftSize = 1024; src.connect(R.an);
       R.t0 = performance.now(); R.max = 0; R.lost = null;
       var mtr = stream.getAudioTracks()[0];
@@ -251,7 +253,7 @@
         var cut = 0;
         if (startTl < R.from) { cut = Math.round((R.from - startTl) * c.sampleRate); startTl = R.from; }
         var data = all.subarray(Math.min(cut, all.length - 1));
-        res({ data: new Float32Array(data), start: startTl, armed: R.armed, sr: c.sampleRate, latency: lat, speaker: R.speaker, mic: R.mic });
+        res({ voiceOnly: R.voiceOnly, data: new Float32Array(data), start: startTl, armed: R.armed, sr: c.sampleRate, latency: lat, speaker: R.speaker, mic: R.mic });
       }, 120);
     });
   }

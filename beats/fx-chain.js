@@ -15,6 +15,8 @@
   };
   function defaults() {
     return {
+      // take cleanup (Beats vocal channel): processed after the take on the device, the raw take is kept
+      bleed: { on: false }, nr: { on: false }, gate: { on: false },
       lowcut: { on: false, f: 90 },
       eq: { on: false, low: 0, mid: 0, midF: 2500, high: 0 },
       comp: { on: false, amt: 0.4 },

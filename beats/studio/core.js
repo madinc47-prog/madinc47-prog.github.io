@@ -10,6 +10,7 @@
 
   function defaultFx() {
     return {
+      bleed: { on: false }, nr: { on: false }, // manual take cleanup: processed per clip after you turn it on; raw kept (clip.orig)
       gate: { on: false, thr: -50, rel: 0.12 },
       lowcut: { on: false, f: 90 },
       eq: { on: false, low: 0, mid: 0, midF: 1200, high: 0 },

@@ -14,8 +14,8 @@
   <meta name="twitter:card" content="summary">
   <script src="/shared/share.js" defer data-title="Island Pin Studio — Free Multitrack Recorder" data-text="Record vocals over your beat, edit, mix and export free in your browser." data-position="inline" data-target=".topbar .brand" data-compact="700"></script>
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="../styles.css?v=20261011p">
-  <link rel="stylesheet" href="studio.css?v=20261011p">
+  <link rel="stylesheet" href="../styles.css?v=20261011r">
+  <link rel="stylesheet" href="studio.css?v=20261011r">
 </head>
 <body class="studio">
   <header class="topbar st-top">
@@ -41,6 +41,7 @@
     <button id="t-play" class="tbtn play" type="button" title="Play / pause (Space)">▶</button>
     <button id="t-stop" class="tbtn" type="button" title="Stop">■</button>
     <button id="t-rec" class="tbtn rec" type="button" title="Record onto armed tracks while the others play (R). Arm a track with its R button first.">●</button>
+    <button id="t-vo" class="vo-btn" type="button" aria-pressed="false" title="For recording without headphones: the tablet mic records just your voice (browser echo-cancel + noise suppression, then Remove beat bleed). The raw take is kept. Off = fully raw."><span class="vo-l">No headphones — voice only</span> <span class="vo-state">OFF</span><small class="vo-hint">For recording without headphones</small></button>
     <span class="sep"></span>
     <button id="t-loop" class="btn small tog" type="button" title="Loop the region marked in the ruler (L). Drag in the ruler to set it.">⟲ Loop</button>
     <button id="t-metro" class="btn small tog" type="button" title="Metronome click on every beat (M)">♩ Click</button>
@@ -232,12 +233,12 @@
   </div>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
-  <script src="core.js?v=20261011p"></script>
-  <script src="../fx-chain.js?v=20261011p"></script>
-  <script src="audio.js?v=20261011p"></script>
-  <script src="wave.js?v=20261011p"></script>
-  <script src="../vocal-clean-client.js?v=20261011p"></script>
-  <script src="ui.js?v=20261011p"></script>
+  <script src="core.js?v=20261011r"></script>
+  <script src="../fx-chain.js?v=20261011r"></script>
+  <script src="audio.js?v=20261011r"></script>
+  <script src="wave.js?v=20261011r"></script>
+  <script src="../vocal-clean-client.js?v=20261011r"></script>
+  <script src="ui.js?v=20261011r"></script>
   <script>/* Beats | DJ Booth | Player switcher on the stand-alone Studio page (inside the Beats tab, Beats shows it) */
     if (!/[?&]embed=1/.test(location.search)) { var nav = document.createElement("script"); nav.type = "module"; nav.src = "../../shared/ecosystem-nav.js?mode=pill&pos=bl"; document.body.appendChild(nav); }
   </script>

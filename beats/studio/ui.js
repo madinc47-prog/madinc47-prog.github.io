@@ -315,7 +315,7 @@
       hpWarned = true;
       toast((spk ? "🔈 Speaker mode: the take is saved exactly as recorded (tap 🧹 Clean take afterwards if you want). Headphones sound best. " : "🎧 Headphones mode. ") + (bars ? "Count-in: " + bars + " bar" + (bars > 1 ? "s" : "") + "." : ""), 3600);
     }
-    E.startRecord(P, from, pre, { speaker: spk }).then(function () {
+    E.startRecord(P, from, pre, { speaker: spk, voiceOnly: voiceOnly() }).then(function () {
       $("t-rec").classList.add("on"); $("t-play").classList.add("on"); $("t-in").hidden = false;
       playFrom = from;
       recClips = armed.map(function (tr) {
@@ -360,6 +360,11 @@
       playhead = playFrom;
       changed();
       if (silent) { toast(name + " was saved, but it is silent. " + MIC_SILENT, 9000); return; }
+      if (res.voiceOnly) { // voice only: Remove beat bleed on the new take (the raw take stays as the clip's original)
+        toast(name + " recorded — voice only: removing the beat bleed…");
+        cleanClip(made[0].id, { opts: { aec: true, denoise: false, gate: false, hpf: false } });
+        return;
+      }
       toast(name + " recorded (" + buf.duration.toFixed(1) + "s). " + (res.speaker ? "Press 🧹 Clean take to remove the speaker bleed. " : "") + "Double-click it to edit.");
     });
   }
@@ -743,6 +748,8 @@
 
   /* ---------------- FX sheet ---------------- */
   var FXS = [
+    { k: "bleed", name: "Remove beat bleed", desc: "takes the other tracks out of the mic · raw kept", p: [] },
+    { k: "nr", name: "Noise reduction", desc: "room noise / hiss (RNNoise) · raw kept", p: [] },
     { k: "gate", name: "Noise Gate", desc: "mutes hiss between phrases", p: [["thr", "Threshold", -80, -10, 1, "dB"], ["rel", "Release", 0.02, 1, 0.01, "s"]] },
     { k: "lowcut", name: "Low cut", desc: "removes rumble / mic thumps", p: [["f", "Freq", 40, 300, 5, "Hz"]] },
     { k: "eq", name: "EQ · 3-band", desc: "shape the tone", p: [["low", "Low 120Hz", -15, 15, 0.5, "dB"], ["mid", "Mid", -15, 15, 0.5, "dB"], ["midF", "Mid freq", 200, 6000, 10, "Hz"], ["high", "High 8kHz", -15, 15, 0.5, "dB"]] },
@@ -764,12 +771,15 @@
   function fmtP(v, u) { return u === "%" ? Math.round(v * 100) + "%" : u === "s" ? (v < 0.1 ? (v * 1000).toFixed(0) + "ms" : v.toFixed(2) + "s") : u === "Hz" ? (v >= 1000 ? (v / 1000).toFixed(1) + "k" : Math.round(v)) : u === ":1" ? v.toFixed(1) + ":1" : (v > 0 ? "+" : "") + (+v).toFixed(1); }
   function openFx(id) {
     fxTrack = id; var tr = trackById(id); if (!tr) return;
-    $("fx-track").textContent = (P.tracks.indexOf(tr) + 1) + " · " + tr.name; $("fx-preset").value = "";
+    $("fx-track").textContent = (P.tracks.indexOf(tr) + 1) + " · " + tr.name; fillFxPresets(); $("fx-preset").value = "";
     var B = $("fx-body"); B.innerHTML = "";
     FXS.forEach(function (sec) {
       var st = tr.fx[sec.k], box = document.createElement("div"); box.className = "fxs" + (st.on ? " on" : ""); box.dataset.k = sec.k;
       box.innerHTML = '<h4><span>' + sec.name + ' <small>' + sec.desc + '</small></span><button type="button" class="sw' + (st.on ? " on" : "") + '" title="Turn ' + sec.name + ' on / off" aria-pressed="' + st.on + '"></button></h4>';
-      box.querySelector(".sw").addEventListener("click", function () { S.pushUndo(P, sec.name); st.on = !st.on; openFx(id); changed(null, true); renderHeads(); });
+      box.querySelector(".sw").addEventListener("click", function () {
+        S.pushUndo(P, sec.name); st.on = !st.on; openFx(id); changed(null, true); renderHeads();
+        if (sec.k === "bleed" || sec.k === "nr") trackClean(tr);
+      });
       sec.p.forEach(function (p) {
         var lab = document.createElement("label");
         if (p[2] === "bool") {
@@ -798,10 +808,46 @@
     });
     $("fx-sheet").hidden = false;
   }
+  /* Remove beat bleed / Noise reduction on a track: every clip goes back to its raw take, then (if either is on) is
+     re-processed with just those options. Turning both off = the raw takes again. */
+  /* "No headphones — voice only": shared with Beats (same device setting) */
+  var VO_KEY = "ipb_voiceonly";
+  function voiceOnly() { try { return localStorage.getItem(VO_KEY) === "1"; } catch (e) { return false; } }
+  function voUI() { var b = $("t-vo"); if (!b) return; var on = voiceOnly(); b.classList.toggle("on", on); b.setAttribute("aria-pressed", String(on)); b.querySelector(".vo-state").textContent = on ? "ON" : "OFF"; }
+  function trackClean(tr) {
+    var b = tr.fx.bleed && tr.fx.bleed.on, nr = tr.fx.nr && tr.fx.nr.on;
+    var clips = P.clips.filter(function (c) { return c.track === tr.id; });
+    clips.forEach(function (c) { if (c.orig) { c.src = c.orig.src; c.offset = c.orig.offset; c.dur = c.orig.dur; delete c.orig; delete c.clean; delete c.pro; } });
+    changed("raw takes");
+    if (!b && !nr) { if (clips.length) toast(tr.name + ": raw takes"); return Promise.resolve(); }
+    if (!clips.length) { toast("Turned on for " + tr.name + " — it applies to clips on this track (record or import one)."); return Promise.resolve(); }
+    var ids = clips.map(function (c) { return c.id; }), chain = Promise.resolve();
+    ids.forEach(function (cid) { chain = chain.then(function () { return cleanClip(cid, { opts: { aec: !!b, denoise: !!nr, gate: false, hpf: false } }); }); });
+    return chain;
+  }
+  function fxMine(set) {
+    try { if (set) { localStorage.setItem("ipbs_fx_presets", JSON.stringify(set)); return set; } var o = JSON.parse(localStorage.getItem("ipbs_fx_presets") || "{}"); return o && typeof o === "object" ? o : {}; } catch (e) { return {}; }
+  }
+  function fillFxPresets() {
+    var sel = $("fx-preset"), mine = fxMine(), names = { vocal: "Vocal: clean & present", rap: "Vocal: rap upfront", adlib: "Ad-lib: wide & echoey", beat: "Beat: glue & punch", off: "All off" };
+    sel.innerHTML = '<option value="">Preset…</option><optgroup label="Built in">' + Object.keys(names).map(function (k) { return '<option value="' + k + '">' + names[k] + "</option>"; }).join("") + "</optgroup>" +
+      (Object.keys(mine).length ? '<optgroup label="My presets">' + Object.keys(mine).map(function (k) { var e = k.replace(/[&<>"]/g, ""); return '<option value="m:' + e + '">' + e + "</option>"; }).join("") + "</optgroup>" : "") +
+      '<optgroup label="Manage"><option value="save">Save this track\'s effects as my preset…</option>' + (Object.keys(mine).length ? '<option value="del">Delete one of my presets…</option>' : "") + "</optgroup>";
+  }
   function applyPreset(name) {
-    var tr = trackById(fxTrack), pr = PRESETS[name]; if (!tr || !pr) return;
+    var tr = trackById(fxTrack), mine = fxMine();
+    if (!tr) return;
+    if (name === "save") {
+      var nm = (prompt("Name for this effects preset:", "My vocal") || "").replace(/[&<>"]/g, "").trim().slice(0, 40); if (!nm) { $("fx-preset").value = ""; return; }
+      var fx = JSON.parse(JSON.stringify(tr.fx)); delete fx.bleed; delete fx.nr; mine[nm] = fx; fxMine(mine); fillFxPresets(); toast("Saved preset “" + nm + "”"); return;
+    }
+    if (name === "del") {
+      var dn = (prompt("Delete which preset? (" + Object.keys(mine).join(", ") + ")", Object.keys(mine)[0]) || "").trim();
+      if (mine[dn]) { delete mine[dn]; fxMine(mine); toast("Deleted “" + dn + "”"); } fillFxPresets(); return;
+    }
+    var pr = name.indexOf("m:") === 0 ? mine[name.slice(2)] : PRESETS[name]; if (!pr) return;
     S.pushUndo(P, "FX preset");
-    Object.keys(pr).forEach(function (k) { Object.assign(tr.fx[k], pr[k]); });
+    Object.keys(pr).forEach(function (k) { if (tr.fx[k] && k !== "bleed" && k !== "nr") Object.assign(tr.fx[k], pr[k]); });
     openFx(fxTrack); changed(null, true); renderHeads();
     toast("Preset applied to " + tr.name);
   }
@@ -936,6 +982,13 @@
     $("t-stop").addEventListener("click", stopAll);
     $("t-home").addEventListener("click", function () { setPlayhead(P.loop.on ? P.loop.start : 0); $("lanes-wrap").scrollLeft = 0; });
     $("t-rec").addEventListener("click", record);
+    $("t-vo").addEventListener("click", function () {
+      if (E.recording) { toast("Change this between takes."); return; }
+      try { localStorage.setItem(VO_KEY, voiceOnly() ? "0" : "1"); } catch (e) { /* ignore */ }
+      voUI(); toast(voiceOnly() ? "Voice only ON: tablet mic, beat rejected, raw take kept" : "Voice only OFF: fully raw takes");
+    });
+    window.addEventListener("storage", function (e) { if (e.key === VO_KEY) voUI(); });
+    voUI();
     $("t-loop").addEventListener("click", function () {
       S.pushUndo(P, "loop");
       if (!P.loop.on && P.loop.end - P.loop.start < 0.05) { P.loop.start = 0; P.loop.end = 16 * beat(); }
