@@ -70,7 +70,10 @@ export function initPhoto({ scene, toast = () => {}, td = () => {} }) {
     const R = W * .46;
     g.save(); g.fillStyle = 'rgba(5,4,12,.66)'; g.beginPath(); g.rect(0, 0, W, H); g.arc(W / 2, H / 2, R, 0, Math.PI * 2, true); g.fill('evenodd'); g.restore();
     g.strokeStyle = 'rgba(255,255,255,.75)'; g.lineWidth = 2; g.setLineDash([6, 5]); g.beginPath(); g.arc(W / 2, H / 2, R, 0, Math.PI * 2); g.stroke(); g.setLineDash([]);
-    g.fillStyle = 'rgba(255,255,255,.8)'; g.font = `${Math.round(W / 22)}px system-ui,sans-serif`; g.textAlign = 'center'; g.fillText('your face in the circle', W / 2, H * .035 + W / 22);
+    // the DJ's cap brim covers the top ~12 % of the circle: put your own cap/hat brim above this line, eyebrows/glasses just below
+    const by = H * .125; g.strokeStyle = 'rgba(255,214,90,.85)'; g.lineWidth = 2; g.setLineDash([3, 4]); g.beginPath(); g.moveTo(W * .2, by); g.lineTo(W * .8, by); g.stroke(); g.setLineDash([]);
+    g.fillStyle = 'rgba(255,214,90,.95)'; g.font = `${Math.round(W / 26)}px system-ui,sans-serif`; g.textAlign = 'center'; g.fillText('DJ cap brim — your eyebrows just below', W / 2, by - W / 60);
+    g.fillStyle = 'rgba(255,255,255,.8)'; g.font = `${Math.round(W / 24)}px system-ui,sans-serif`; g.fillText('your face in the circle, chin at the bottom', W / 2, H - W / 40);
   }
   // drag (mouse / touch / pen) + pinch with two fingers
   const pts = new Map(); let pinch0 = 0, z0 = 1;
@@ -106,13 +109,18 @@ export function initPhoto({ scene, toast = () => {}, td = () => {} }) {
       const hist = [new Uint32Array(256), new Uint32Array(256), new Uint32Array(256)]; let n = 0;
       for (let y = 0; y < H; y += 2) for (let xx = 0; xx < W; xx += 2) { if ((xx - W / 2) ** 2 + (y - H / 2) ** 2 > R2) continue; const i = (y * W + xx) * 4; hist[0][a[i]]++; hist[1][a[i + 1]]++; hist[2][a[i + 2]]++; n++; }
       const pct = (h, q) => { let s = 0; for (let v = 0; v < 256; v++) { s += h[v]; if (s >= n * q) return v; } return 255; };
-      const lo = hist.map((h) => pct(h, .02)), hi = hist.map((h) => Math.max(pct(h, .98), pct(h, .02) + 40));
-      // after the stretch, nudge the mid-tones toward a neutral/warm skin balance (grey-world on the face circle)
-      const mean = [0, 1, 2].map((ch) => { let s = 0; for (let v = 0; v < 256; v++) s += hist[ch][v] * Math.max(0, Math.min(255, (v - lo[ch]) * 255 / (hi[ch] - lo[ch]))); return s / n; });
-      const avg = (mean[0] + mean[1] + mean[2]) / 3, warm = [1.12, 1, .86], gain = [0, 1, 2].map((ch) => Math.max(.7, Math.min(1.4, avg * warm[ch] / Math.max(1, mean[ch]))));
-      const lut = [0, 1, 2].map((ch) => { const t = new Uint8ClampedArray(256); for (let v = 0; v < 256; v++) { let o = v * .15 + .85 * ((v - lo[ch]) * 255 / (hi[ch] - lo[ch])) * gain[ch]; if (o > 190) o = 190 + (o - 190) * .35; t[v] = o; } return t; }); // soft knee: no glassy blown-out highlights
+      const lo0 = hist.map((h) => pct(h, .02)), hi0 = hist.map((h) => pct(h, .98));
+      // same stretch on every channel (keeps skin colour — a per-channel stretch turned grey stubble blue), and only as much as needed
+      const L = Math.min(...lo0), Hh = Math.max(...hi0), span = Math.max(60, Hh - L), amt = span < 170 ? Math.min(1, (190 - span) / 90) : 0;
+      const lo = L * amt, hi = 255 - (255 - Hh) * amt;
+      const mean = [0, 1, 2].map((ch) => { let s = 0; for (let v = 0; v < 256; v++) s += hist[ch][v] * v; return s / n; });
+      // colour cast: only when the face is clearly bluer/greener than skin ever is (b > r or g > r), pull it back toward warm
+      const cast = Math.max(0, (mean[2] - mean[0]) / 255, (mean[1] - mean[0]) / 255), gain = cast > .01 ? [1 + Math.min(.25, cast * 1.6), 1, 1 - Math.min(.2, cast * 1.4)] : [1, 1, 1];
+      const lut = [0, 1, 2].map((ch) => { const t = new Uint8ClampedArray(256); for (let v = 0; v < 256; v++) { let o = ((v - lo) * 255 / Math.max(40, hi - lo)) * gain[ch]; if (o > 205) o = 205 + (o - 205) * .45; t[v] = o; } return t; });
+      td('photo: levels span ' + span + ' → stretch ' + amt.toFixed(2) + ' · cast ' + cast.toFixed(3) + ' · gains ' + gain.map((x) => x.toFixed(2)).join('/'));
+      const lo2 = [lo, lo, lo], hi2 = [hi, hi, hi];
       for (let i = 0; i < a.length; i += 4) { a[i] = lut[0][a[i]]; a[i + 1] = lut[1][a[i + 1]]; a[i + 2] = lut[2][a[i + 2]]; }
-      x.putImageData(d, 0, 0); return lo.join('/') + '–' + hi.join('/');
+      x.putImageData(d, 0, 0); return lo2.map(Math.round).join('/') + '–' + hi2.map(Math.round).join('/');
     } catch (e) { return 'skipped'; }
   }
   // test/debug hook (headless previews): set the crop exactly
