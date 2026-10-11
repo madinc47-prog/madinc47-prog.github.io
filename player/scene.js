@@ -1,6 +1,6 @@
 // Psycho Fingers Player — DJ booth scene (original layered SVG art, IK arms, choreography)
 // Two turntables (Deck A / Deck B) with a mixer + crossfader in the middle; the DJ stands behind the mixer.
-import { applyOutfit } from './outfits.js?v=15';
+import { applyOutfit } from './outfits.js?v=16';
 const NS = 'http://www.w3.org/2000/svg';
 const D2R = Math.PI / 180;
 const ease = {
@@ -556,6 +556,9 @@ export function createScene(container) {
   const shoulder = (side, dy) => { const P = rotP(G.sh[side].x, G.sh[side].y, st.bodyRot || 0); return { x: P.x + DJX + st.lean + (st.bodyX || 0), y: P.y + dy + (st.shY ? st.shY[side] : 0) }; };
   function drawArm(side, bodyDy) {
     const h = st.hands[side]; const S = shoulder(side, bodyDy);
+    { const dx = h.x - S.x, dy = h.y - S.y, d = Math.hypot(dx, dy), max = (G.upper + G.fore) * .96; // reach: lean the shoulder in
+      const ex = Math.max(0, d - max); h.reachEx = (h.reachEx || 0) + (Math.min(80, ex) - (h.reachEx || 0)) * .25;
+      if (h.reachEx > .5 && d > 1) { S.x += dx / d * h.reachEx; S.y += dy / d * h.reachEx * .6; } }
     const { E, W } = ik(S, h, side);
     const g = el.arms[side];
     const ang = Math.atan2(W.y - E.y, W.x - E.x);
@@ -572,7 +575,9 @@ export function createScene(container) {
     p.hi.setAttribute('d', `M${f1(S.x + o1.x)},${f1(S.y + o1.y)} L${f1(E.x + o1.x)},${f1(E.y + o1.y)} L${f1(Wc.x + o2.x)},${f1(Wc.y + o2.y)}`);
     const r1 = off(ua, -21), r2 = off(ang, -18);
     p.rim.setAttribute('d', `M${f1(S.x + r1.x)},${f1(S.y + r1.y)} L${f1(E.x + r1.x)},${f1(E.y + r1.y)} L${f1(Wc.x + r2.x)},${f1(Wc.y + r2.y)}`);
-    p.hand.setAttribute('transform', `translate(${f1(W.x)},${f1(W.y)}) rotate(${f1(ang / D2R)})`);
+    let ha = ang; if (W.y > 470) { let dv = Math.PI / 2 - ang; while (dv > Math.PI) dv -= 2 * Math.PI; while (dv < -Math.PI) dv += 2 * Math.PI; ha = ang + Math.max(-.6, Math.min(.6, dv * .45)); }
+    h.ha = h.ha == null ? ha : h.ha + (ha - h.ha) * .3; // eased wrist, no snapping
+    p.hand.setAttribute('transform', `translate(${f1(W.x)},${f1(W.y)}) rotate(${f1(h.ha / D2R)})`);
   }
 
   // key hand spots (scene coords)
@@ -590,14 +595,14 @@ export function createScene(container) {
   };
   // natural club DJ: nod + weight shift most of the time, a shoulder bob / headphone cue when it gets busier; the big
   // gestures (hand in the air, chest pump, scratch flourish) stay out of the rotation (they looked robotic on loop)
-  const POOL = [['nod', 'sway'], ['nod', 'sway', 'bounce', 'cue'], ['sway', 'bounce', 'cue', 'rock']];
+  const POOL = [['nod', 'sway'], ['nod', 'sway', 'bounce', 'cue', 'nod', 'scratch'], ['sway', 'bounce', 'cue', 'rock', 'scratch']];
   const rmq = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
   const dn = { phase: 0, bpm: 0, lastBeat: 0, move: 'nod', moveUntil: 16, eFast: 0, eSlow: 0, tier: 0, dropAt: -99, amp: 0, reduced: !!(rmq && rmq.matches), body: { bx: 0, by: 0, rot: 0, shL: 0, shR: 0, nod: 0, tilt: 0, cupL: 0, cupR: 0 } };
   if (rmq && rmq.addEventListener) rmq.addEventListener('change', (e) => { dn.reduced = e.matches; if (dn.reduced && MOVES[dn.move].tier > 0) pickMove(); });
   function pickMove(force) {
     const pool = dn.reduced ? POOL[0] : POOL[force != null ? force : dn.tier];
     let m; do { m = pool[(Math.random() * pool.length) | 0]; } while (pool.length > 1 && m === dn.move);
-    dn.move = m; const bars = 4 + ((Math.random() * 5) | 0); // 4–8 bars
+    dn.move = m; const bars = m === 'scratch' ? 1 + ((Math.random() * 2) | 0) : 4 + ((Math.random() * 5) | 0); // 4–8 bars (scratch: a 1–2 bar flourish)
     dn.moveUntil = Math.ceil((dn.phase + .01) / 4) * 4 + bars * 4;
   }
   function danceClock(dt, now, a, playing) {
@@ -647,7 +652,8 @@ export function createScene(container) {
   /** Hand targets while performing (no choreography running). Returns [L, R]. */
   function poseTargets(t, p, playing) {
     const A = st.active === 'A';
-    if (!playing) return [{ x: 452, y: 548 + Math.sin(t * 1.2) * 3 }, { x: 748, y: 548 + Math.cos(t * 1.1) * 3 }];
+    if (!playing) { const pa = SPOT.platA(), pb = SPOT.platB(), sw0 = Math.sin(t * .9) * 2.5, sw1 = Math.cos(t * .8) * 2.5;
+      return A ? [{ x: pa.x + sw0, y: pa.y + 4 + sw1 }, { x: SPOT.mix.x + 14 + sw1, y: SPOT.mix.y + 6 + sw0 }] : [{ x: SPOT.mix.x - 14 + sw1, y: SPOT.mix.y + 6 + sw0 }, { x: pb.x + sw0, y: pb.y + 4 + sw1 }]; }
     const b = dn.phase, f = b - Math.floor(b), hit = Math.pow(.5 + .5 * Math.cos(2 * Math.PI * Math.min(1, f * 1.15)), 2), sw = Math.sin(Math.PI * b), amp = dn.reduced ? .35 : 1;
     const plat = A ? SPOT.platA() : SPOT.platB();
     const deckHand = { x: plat.x + Math.sin(Math.PI * b / 2) * 4 * amp, y: plat.y + hit * 3 * amp };
@@ -662,7 +668,8 @@ export function createScene(container) {
     switch (dn.move) {
       case 'handup': { const side = A ? 'R' : 'L'; return pair(deckHand, { x: sx(side) + (side === 'L' ? -112 : 112) + sw * 18 * amp, y: 92 + hit * 16 }); }
       case 'cue': { const side = A ? 'R' : 'L'; return pair(deckHand, { x: 470 + DJX + st.lean + dn.body.bx + (side === 'L' ? -74 : 74), y: 196 + dn.body.by }); }
-      case 'scratch': { const s16 = Math.sin(Math.PI * 2 * b * 2); return pair({ x: plat.x + s16 * 18 * amp, y: plat.y + Math.cos(Math.PI * 2 * b * 2) * 4 }, { x: xfH.x + (Math.floor(b * 4) % 2 ? 10 : -10) * amp, y: xfH.y }); }
+      case 'scratch': { const e8 = (b * 2) % 1, stroke = Math.sin(Math.PI * 2 * e8) * (.5 - .5 * Math.cos(Math.PI * 2 * e8)); const fl = (b * 4) % 1, flick = fl < .5 ? fl * 2 : 2 - fl * 2, ff = flick * flick * (3 - 2 * flick);
+        return pair({ x: plat.x + stroke * 11 * amp, y: plat.y - 18 + stroke * 2 }, { x: xfH.x + (ff - .5) * 14 * amp, y: xfH.y + 1 }); }
       case 'pump': { const bar = b % 4, down = bar < 1 ? Math.exp(-bar * 5) : 0; return pair(deckHand, { x: SPOT.mix.x + (A ? 30 : -30), y: 440 - 70 * down * amp }); }
       case 'bounce': return pair(deckHand, { x: mixHand.x, y: mixHand.y + Math.abs(Math.sin(Math.PI * b * 2)) * -8 * amp });
       default: return pair(deckHand, mixHand);
@@ -674,7 +681,7 @@ export function createScene(container) {
     let free;
     if (tp === 'heart') free = { x: 470 + DJX + st.lean + dn.body.bx + 40, y: 336 + dn.body.by + Math.sin(t * 2.2) * 2 }; // hand on the heart (his left side)
     else if (tp === 'up') free = { x: sx + (side === 'L' ? -108 : 108) + Math.sin(t * 6) * 10, y: 92 };
-    else free = { x: sx + (side === 'L' ? -170 : 170), y: 236 + Math.sin(t * 5) * 6 }; // point at the crowd
+    else free = { x: sx + (side === 'L' ? -150 : 150), y: 300 + Math.sin(t * 2.4) * 4 }; // point at the crowd (chest height, never across the face)
     return A ? [deckHand, free] : [free, deckHand];
   }
 
@@ -743,7 +750,7 @@ export function createScene(container) {
       D.spin += (D.spinTarget - D.spin) * Math.min(1, dt * spinRate * 2.2);
       if (Math.abs(D.spinTarget - D.spin) < .002) D.spin = D.spinTarget;
       D.rot = (D.rot + dt * 200 * D.spin * (D.rate || 1)) % 360;
-      D.scr = d === st.active && dn.move === 'scratch' && playing && !st.busy && !st.mixing ? Math.sin(Math.PI * 2 * dn.phase * 2) * 22 * dn.amp : (D.scr || 0) * .8;
+      D.scr = d === st.active && dn.move === 'scratch' && playing && !st.busy && !st.mixing ? (() => { const e8 = (dn.phase * 2) % 1; return Math.sin(Math.PI * 2 * e8) * (.5 - .5 * Math.cos(Math.PI * 2 * e8)) * 16 * dn.amp; })() : (D.scr || 0) * .8;
     });
     // head turns toward the active deck; body leans a little that way
     st.turn += ((st.active === 'A' ? -1 : 1) - st.turn) * Math.min(1, dt * 3);
@@ -771,8 +778,8 @@ export function createScene(container) {
     const pose = st.busy ? poseTargets(t, pulse, false) : poseTargets(t, pulse, playing);
     ['L', 'R'].forEach((s, i) => {
       const h = st.hands[s];
-      if (h.mode === 'anim' && h.follow) { const p = h.follow(); h.x = p.x; h.y = p.y; h.vx = h.vy = 0; }
-      else { const T = pose[i]; const k = 70, c = 15; h.vx += ((T.x - h.x) * k - h.vx * c) * dt; h.vy += ((T.y - h.y) * k - h.vy * c) * dt; h.x += h.vx * dt; h.y += h.vy * dt; }
+      if (h.mode === 'anim' && h.follow) { const p = h.follow(), kf = Math.min(1, dt * 30), jump = Math.hypot(p.x - h.x, p.y - h.y); if (jump > 60) { h.x += (p.x - h.x) * kf; h.y += (p.y - h.y) * kf; } else { h.x = p.x; h.y = p.y; } h.vx = h.vy = 0; }
+      else { const T = pose[i]; const k = 70, c = 17; h.vx += ((T.x - h.x) * k - h.vx * c) * dt; h.vy += ((T.y - h.y) * k - h.vy * c) * dt; h.x += h.vx * dt; h.y += h.vy * dt; }
       drawArm(s, st.bounce);
     });
     // decks: render
@@ -849,6 +856,11 @@ export function createScene(container) {
   return {
     svg, st, frame, anchors, loadRecord, cueRecord, dropNeedle, liftNeedle, needleRedrop, cancel, tween, flush, snapRecord,
     setQuality(level) { st.quality = level; },
+    /** debug: current dance move / force one (tests) */
+    dance() { return { move: dn.move, phase: dn.phase, tier: dn.tier }; },
+    forceMove(m) { if (MOVES[m]) { dn.move = m; dn.moveUntil = dn.phase + 8; } },
+    /** debug: arm reach per side (stretch = shoulder→hand distance / max reach) */
+    armDebug() { const o = {}; ['L', 'R'].forEach((s) => { const S = shoulder(s, st.bounce || 0), h = st.hands[s]; o[s] = { d: Math.round(Math.hypot(h.x - S.x, h.y - S.y)), reach: G.upper + G.fore, hand: [Math.round(h.x), Math.round(h.y)], sh: [Math.round(S.x), Math.round(S.y)] }; }); o.move = dn.move; o.talk = st.talkPose || null; o.mixing = !!st.mixing; return o; },
     /** own photo on the DJ's face (data/object URL) or null for the drawn face */
     setPhoto(url) { const pf = svg.querySelector('#photoFace'), im = svg.querySelector('#photoImg'); if (!pf || !im) return; if (url) { im.setAttribute('href', url); pf.style.display = ''; } else { pf.style.display = 'none'; im.setAttribute('href', ''); } svg.classList.toggle('has-photo', !!url); },
     setOutfit(id) { return applyOutfit(svg, id); },
