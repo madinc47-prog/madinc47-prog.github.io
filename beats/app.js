@@ -695,10 +695,28 @@
     var t0 = hits[0].t, base = ctx.currentTime + 0.01;
     hits.forEach(function (h) { var hv = feelHit(h.i, h.vel); playPadInto(ctx, LG, h.i, base + (h.t - t0) / 1000, liveVoices, { vel: hv.vel, cents: hv.cents, lp: hv.lp }); });
   }
-  function onCtxState() { if (ctx && ctx.state === "running") flushHits(); }
+  function onCtxState() { if (ctx && ctx.state === "running") flushHits(); audioPausedUI(); }
+  /* visible "sound is paused" bar: a call / another app can suspend or interrupt the AudioContext with no error */
+  var audioTapped = false;
+  function audioPausedUI() {
+    var bad = !!(ctx && audioTapped && ctx.state !== "running" && ctx.state !== "closed");
+    var el = $("audio-paused");
+    if (!el) {
+      if (!bad) return;
+      el = document.createElement("button"); el.type = "button"; el.id = "audio-paused"; el.className = "audio-paused";
+      el.textContent = "🔇 Sound is paused by your device (a call or another app may be using audio). Tap to resume.";
+      el.addEventListener("click", function () { resumeCtx(); setTimeout(audioPausedUI, 400); });
+      document.body.appendChild(el);
+    }
+    el.hidden = !bad;
+    var st = $("audio-state");
+    if (st && ctx) { st.textContent = bad ? "Sound paused — tap to resume" : "Audio on"; st.classList.toggle("on", !bad); }
+  }
   function unlockAudio() {
     var c = ensureCtx(); if (!c) return;
     resumeCtx();
+    if (!audioTapped) { audioTapped = true; }
+    setTimeout(audioPausedUI, 600); // still not running after the tap → say so
     if (!audioUnlocked) { // older iOS also wants a sound started inside the gesture
       try { var b = c.createBuffer(1, 1, c.sampleRate), s0 = c.createBufferSource(); s0.buffer = b; s0.connect(c.destination); s0.start(0); audioUnlocked = true; } catch (e) { /* ignore */ }
     }
@@ -1430,153 +1448,16 @@
     return out;
   }
   function padKey(kit, i) { return "k2:" + kit + ":" + i; }
-  /* one-time: pads swapped on the old Trap / Drill / Phonk kits follow their sound to the new layout */
-  function migratePads() {
-    try { if (localStorage.getItem("ipb_pads_v2")) return Promise.resolve(); } catch (e) { return Promise.resolve(); }
-    return idb("pads", "readonly", function (st) { return st.getAll(); }).then(function (rows) {
-      var puts = [];
-      (rows || []).forEach(function (r) {
-        var m = /^(trap|drill|phonk)_(\d+)$/.exec(r.key || "");
-        if (!m) return;
-        var L = D.LEGACY[m[1]], t = L && L.map[+m[2]];
-        if (t) puts.push({ key: padKey(L.kit, t[0]), name: r.name, data: r.data });
-      });
-      if (!puts.length) return null;
-      return idb("pads", "readwrite", function (st) { puts.forEach(function (x) { st.put(x); }); return null; });
-    }).then(function () {
-      try { localStorage.setItem("ipb_pads_v2", "1"); } catch (e) { /* ignore */ }
-    }).catch(function () { /* no IDB */ });
-  }
-  function loadCustomPads(kit) {
-    var pre = "k2:" + kit + ":";
-    return idb("pads", "readonly", function (st) { return st.getAll(); }).then(function (rows) {
-      var mine = (rows || []).filter(function (r) { return String(r.key).indexOf(pre) === 0; });
-      return Promise.all(mine.map(function (r) {
-        var i = +r.key.slice(pre.length);
-        return decode(r.data.slice(0)).then(function (buf) { return { i: i, buf: r.lib ? trimLead(buf) : buf, name: r.name }; }).catch(function () { return null; });
-      })).then(function (list) { return list.filter(Boolean); });
-    }).catch(function () { return []; });
-  }
-  function onPadFile(file) {
-    if (!file) return;
-    if (file.size > 15 * 1024 * 1024) { toast("File too large (max 15 MB)."); return; }
-    var i = S.sel, kit = S.kit;
-    file.arrayBuffer().then(function (ab) {
-      return setPadSample(i, kit, file.name.replace(/\.[^.]+$/, ""), ab, false);
-    }).catch(function (e) {
-      toast("Could not load that audio file. Try WAV or MP3.");
-      console.error(e);
-    });
-  }
-  /* put audio bytes on pad i of kit (file upload or library pick); saved in IndexedDB so it survives a reload */
-  function setPadSample(i, kit, name, ab, trim) {
-    var keep = ab.slice(0);
-    return decode(ab).then(function (buf) {
-      if (kit !== S.kit) return;
-      customBuf[i] = trim ? trimLead(buf) : buf;
-      customName[i] = name;
-      refreshPads(); repaintSeq();
-      toast("Pad " + (i + 1) + " → " + name);
-      triggerPad(i);
-      return idb("pads", "readwrite", function (st) {
-        return st.put({ key: padKey(kit, i), name: name, data: keep, lib: !!trim });
-      }).catch(function () { toast("Sample loaded (not saved — storage blocked)."); });
-    });
-  }
-
-  /* ---------------- Sample library (CC0 hip-hop one-shots, samples/lib) — per-pad swap ---------------- */
-  var LIB = { cat: "auto", q: "", loading: null, prevSrc: null, prevId: null };
-  var LIB_FOR_GROUP = { drums: null, bass: "808", hats: "hat", perc: "perc", keys: "melodic" };
-  function libIndex() {
-    if (window.IPBLib) return Promise.resolve(window.IPBLib);
-    if (!LIB.loading) LIB.loading = new Promise(function (res, rej) {
-      var sc = document.createElement("script");
-      sc.src = "samples/lib/index.js?v=1";
-      sc.onload = function () { window.IPBLib ? res(window.IPBLib) : rej(new Error("no index")); };
-      sc.onerror = function () { LIB.loading = null; rej(new Error("Library index unavailable")); };
-      document.head.appendChild(sc);
-    });
-    return LIB.loading;
-  }
-  function libGuessCat() {
-    var d = padDef(S.sel), n = (d.n || "").toLowerCase();
-    var map = [["808", "808"], ["sub", "808"], ["kick", "kick"], ["snare", "snare"], ["clap", "clap"], ["snap", "snap"], ["rim", "rim"],
-      ["open", "ohat"], ["roll", "hat"], ["hat", "hat"], ["crash", "cym"], ["china", "cym"], ["ride", "cym"], ["cymbal", "cym"], ["tom", "tom"],
-      ["shaker", "perc"], ["maraca", "perc"], ["cowbell", "perc"], ["perc", "perc"], ["scratch", "scratch"], ["vinyl", "vinyl"], ["crackle", "vinyl"],
-      ["vox", "vox"], ["vocal", "vox"], ["shout", "vox"], ["hey", "vox"], ["riser", "fx"], ["drop", "fx"], ["fx", "fx"], ["stab", "melodic"], ["bell", "melodic"]];
-    for (var k = 0; k < map.length; k++) if (n.indexOf(map[k][0]) !== -1) return map[k][1];
-    return LIB_FOR_GROUP[d.g] || "kick";
-  }
-  function openLib(open) {
-    var el = $("lib-sheet");
-    if (open === false) { el.hidden = true; libStopPreview(); return; }
-    el.hidden = false;
-    $("lib-pad").textContent = "Pad " + (S.sel + 1) + " · " + padDef(S.sel).n;
-    $("lib-list").innerHTML = '<p class="kb-note">Loading library…</p>';
-    libIndex().then(function () {
-      if (LIB.cat === "auto" || LIB.cat === "pad") LIB.cat = libGuessCat();
-      renderLib();
-      $("lib-q").focus({ preventScroll: true });
-    }).catch(function (e) { $("lib-list").innerHTML = '<p class="kb-note">Could not load the sample library (' + e.message + ').</p>'; });
-  }
-  function renderLib() {
-    var L = window.IPBLib; if (!L) return;
-    var cats = $("lib-cats"), list = $("lib-list"), q = LIB.q.trim().toLowerCase();
-    cats.innerHTML = "";
-    [{ id: "all", name: "All" }].concat(L.CATS).forEach(function (c) {
-      var n = c.id === "all" ? L.ITEMS.length : L.ITEMS.filter(function (it) { return it.c === c.id; }).length;
-      var b = document.createElement("button");
-      b.type = "button"; b.className = "kb-cat" + (LIB.cat === c.id && !q ? " on" : ""); b.textContent = c.name + " · " + n; b.dataset.cat = c.id;
-      b.addEventListener("click", function () { LIB.cat = c.id; LIB.q = ""; $("lib-q").value = ""; renderLib(); });
-      cats.appendChild(b);
-    });
-    var items = L.ITEMS.filter(function (it) {
-      if (LIB.cat !== "all" && it.c !== LIB.cat && !q) return false;
-      return !q || (it.n + " " + it.by + " " + it.c + " " + (it.k || "")).toLowerCase().indexOf(q) !== -1;
-    });
-    list.innerHTML = "";
-    if (!items.length) { list.innerHTML = '<p class="kb-note">No sounds match.</p>'; return; }
-    items.forEach(function (it) {
-      var row = document.createElement("div");
-      row.className = "lib-row" + (LIB.prevId === it.f ? " previewing" : ""); row.dataset.f = it.f;
-      row.innerHTML = '<button type="button" class="lib-play" title="Preview">▶</button><span class="lib-info"><strong></strong><small></small></span><button type="button" class="btn small lib-use">Use</button>';
-      row.querySelector("strong").textContent = it.n;
-      row.querySelector("small").textContent = (it.by === "IPB Original" ? "IPB Original" : "by " + it.by) + " · " + it.d.toFixed(2) + "s" + (it.k ? " · " + it.k : "");
-      row.querySelector(".lib-play").addEventListener("click", function () { libPreview(it); });
-      row.querySelector(".lib-info").addEventListener("click", function () { libPreview(it); });
-      row.querySelector(".lib-use").addEventListener("click", function () { libUse(it); });
-      list.appendChild(row);
-    });
-  }
-  function libStopPreview() {
-    if (LIB.prevSrc) { try { LIB.prevSrc.stop(); } catch (e) { /* ended */ } LIB.prevSrc = null; }
-    LIB.prevId = null;
-    document.querySelectorAll(".lib-row.previewing").forEach(function (r) { r.classList.remove("previewing"); });
-  }
-  function libPreview(it) {
-    if (!ensureCtx()) return;
-    var same = LIB.prevId === it.f;
-    libStopPreview();
-    if (same) return;
-    LIB.prevId = it.f;
-    var row = document.querySelector('.lib-row[data-f="' + it.f + '"]'); if (row) row.classList.add("previewing");
-    fetchSample("lib/" + it.f).then(function (buf) {
-      if (!buf) { if (LIB.prevId === it.f) { libStopPreview(); toast("Could not load “" + it.n + "” — check your connection and try again."); } return; }
-      if (LIB.prevId !== it.f) return;
-      resumeCtx();
-      var src = ctx.createBufferSource(), g = ctx.createGain();
-      src.buffer = buf; g.gain.value = 0.6; src.connect(g); g.connect(master);
-      src.onended = function () { if (LIB.prevSrc === src) libStopPreview(); };
-      LIB.prevSrc = src; src.start();
-    });
-  }
-  function libUse(it) {
-    var i = S.sel, kit = S.kit;
-    libStopPreview();
-    fetchBytes("samples/lib/" + it.f)
-      .then(function (ab) { return setPadSample(i, kit, it.n, ab, true); })
-      .then(function () { openLib(false); })
-      .catch(function (e) { toast("Could not load " + it.n + " (" + e.message + ")"); });
+  function migratePads() { return Promise.resolve(); } // swapped pads no longer exist (see loadCustomPads)
+  /* user / library samples on pads were removed (Oct 2026): every pad plays its kit's own sound. Old swapped-pad rows
+     in IndexedDB are cleared once so nothing stale is ever loaded. */
+  function loadCustomPads() {
+    try {
+      if (localStorage.getItem("ipb_pads_cleared_v1") !== "1") {
+        idb("pads", "readwrite", function (st) { return st.clear(); }).then(function () { try { localStorage.setItem("ipb_pads_cleared_v1", "1"); } catch (e) { /* ignore */ } }).catch(function () {});
+      }
+    } catch (e) { /* ignore */ }
+    return Promise.resolve([]);
   }
   function resetPad(i) {
     customBuf[i] = null; customName[i] = null;
@@ -4877,16 +4758,7 @@
       S.pattern[p].fill(0); S.vel[p].fill(0.8); S.note[p].fill(0); S.slide[p].fill(0);
       repaintSeq(); saveSession();
     });
-    $("pad-file").addEventListener("change", function (e) {
-      onPadFile(e.target.files[0]);
-      e.target.value = "";
-    });
     $("btn-pad-reset").addEventListener("click", function () { resetPad(S.sel); });
-    $("btn-pad-lib").addEventListener("click", function () { LIB.cat = "pad"; openLib(true); });
-    $("lib-close").addEventListener("click", function () { openLib(false); });
-    $("lib-sheet").addEventListener("click", function (e) { if (e.target === $("lib-sheet")) openLib(false); });
-    $("lib-q").addEventListener("input", function (e) { LIB.q = e.target.value; renderLib(); });
-    document.addEventListener("keydown", function (e) { if (e.key === "Escape" && !$("lib-sheet").hidden) openLib(false); });
     PE.forEach(function (pe) {
       var el = $("pad-" + pe.id);
       el.addEventListener("input", function () {
@@ -5110,7 +4982,6 @@
       };
     },
     kits: function () { return D.KITS.map(function (k) { return k.id; }); },
-    lib: function () { return { open: !$("lib-sheet").hidden, cat: LIB.cat, q: LIB.q, prev: LIB.prevId, rows: document.querySelectorAll(".lib-row").length, items: window.IPBLib ? window.IPBLib.ITEMS.length : 0, names: customName.slice() }; },
     backing: function () {
       return { id: bt.id, title: bt.title, loading: bt.loading, dur: bt.buf ? bt.buf.duration : 0, sr: bt.buf ? bt.buf.sampleRate : 0, bpm: bt.bpm,
         layer: bt.layer, drumsOn: drumsOn(), playing: !!bt.src, pos: btPos(), bpmNow: S.bpm, recLength: $("rec-length").value,
@@ -5145,6 +5016,24 @@
     detect: hpDetect
   };
 
+  /* stale-build guard: Beats has no service worker, but the tablet can keep an older cached index.html for a while.
+     Ask the network for the current page; if it loads a newer app.js than this one, reload once. */
+  (function checkBuild() {
+    try {
+      var me = document.querySelector('script[src*="app.js?v="]'), mine = me && (me.getAttribute("src").match(/v=([\w.-]+)/) || [])[1];
+      if (!mine || !window.fetch || /[?&]noupdate/.test(location.search)) return;
+      fetch(location.pathname + "?build=" + Date.now(), { cache: "no-store" }).then(function (r) { return r.ok ? r.text() : ""; }).then(function (html) {
+        var live = (html.match(/app\.js\?v=([\w.-]+)/) || [])[1];
+        if (!live || live === mine) return;
+        var key = "ipb_reloaded_for";
+        if (sessionStorage.getItem(key) === live) return; // one reload per new build
+        sessionStorage.setItem(key, live);
+        if (rec && rec.on) return; // never interrupt a recording
+        toast("Updated, reloading…");
+        setTimeout(function () { location.reload(); }, 900);
+      }).catch(function () {});
+    } catch (e) { /* ignore */ }
+  })();
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
   else init();
 })();

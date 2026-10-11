@@ -13,7 +13,7 @@
   <meta property="og:type" content="website">
   <meta name="theme-color" content="#0b0d12">
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="styles.css?v=20261011x">
+  <link rel="stylesheet" href="styles.css?v=20261011z">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Island Pin Beats — Free Beat Maker">
   <meta name="twitter:description" content="Make boom-bap, trap, drill, afrobeats, amapiano, house and bouyon beats in your browser. Free, from Dominica.">
@@ -67,7 +67,7 @@
         <div class="kb-head"><span class="label">Drum kits · 18 genres</span><button id="kb-close" class="btn small ghost" type="button">Close</button></div>
         <div id="kb-cats" class="kb-cats" role="group" aria-label="Genre"></div>
         <div id="kb-grid" class="kb-grid"></div>
-        <p class="kb-note">Picking a kit swaps the sounds and its swing. On an empty pattern it also loads the kit's starter groove and tempo. Your pattern and swapped samples stay.</p>
+        <p class="kb-note">Picking a kit swaps the sounds and its swing. On an empty pattern it also loads the kit's starter groove and tempo. Your pattern stays.</p>
       </div>
 
       <div class="kitbar keysbar">
@@ -240,10 +240,6 @@
               <label class="pe-k"><span>Nudge</span><input type="range" id="pad-nudge" min="-30" max="30" step="1" value="0"><output id="pad-nudge-val">0 ms</output></label>
             </div>
             <div class="pad-edit-actions">
-              <label class="btn small file-btn">Swap sample
-                <input type="file" id="pad-file" accept="audio/*" hidden>
-              </label>
-              <button id="btn-pad-lib" class="btn small" type="button" title="Pick a free CC0 hip-hop sample for this pad: 808s, kicks, snares, claps, hats, vocals, scratches, FX">Sample library</button>
               <button id="btn-pad-reset" class="btn small ghost" type="button">Reset pad</button>
             </div>
           </div>
@@ -586,15 +582,6 @@
     </section>
   </main>
 
-  <div id="lib-sheet" class="lib-sheet" hidden role="dialog" aria-modal="true" aria-label="Sample library">
-    <div class="lib-panel">
-      <div class="kb-head"><span class="label">Sample library · <span id="lib-pad">Pad</span></span><button id="lib-close" class="btn small ghost" type="button">Close</button></div>
-      <input id="lib-q" class="lib-q" type="search" placeholder="Search: 808, snare, hey, scratch, riser…" aria-label="Search samples">
-      <div id="lib-cats" class="kb-cats" role="group" aria-label="Sample type"></div>
-      <div id="lib-list" class="lib-list"></div>
-      <p class="kb-note">Tap a sound to hear it, then press <b>Use</b> to put it on the selected pad (pitch, decay, level and the rest still apply). These are free CC0 sounds: real recordings from Freesound creators plus IPB Originals made for this app. Use them in any track, including ones you sell. Credits: <a href="samples/lib/CREDITS.md" target="_blank" rel="noopener">samples/lib/CREDITS.md</a>.</p>
-    </div>
-  </div>
   <div id="prompter" class="prompter" hidden role="dialog" aria-label="Teleprompter">
     <div class="pr-top">
       <div class="pr-titles"><strong id="pr-title">Teleprompter</strong><span id="pr-pos" class="mono">Bar 1</span></div>
@@ -648,8 +635,7 @@
   <script src="keys-loops.js?v=20261003u"></script>
   <script src="pianoroll.js?v=20261003u"></script>
   <script src="vocal-clean-client.js?v=20261011v"></script>
-  <script src="app.js?v=20261011y"></script>
-  <script type="module" src="user-samples.js?v=1"></script>
+  <script src="app.js?v=20261011z"></script>
   <script type="module" src="../shared/ecosystem-nav.js"></script><!-- Beats | DJ Booth | Player switcher (shared/README.md) -->
 </body>
 </html>

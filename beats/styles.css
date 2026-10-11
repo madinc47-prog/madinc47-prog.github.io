@@ -845,3 +845,6 @@ main:has(> #tab-studio.active) { max-width: none; }
 .vox-meter.hot em { color: #ef4444; }
 .rec-bar .vox-meter { order: 6; }
 body.bt-on .rec-bar .vox-meter { display: none; }
+
+.audio-paused { position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); z-index: 9999; max-width: min(92vw, 560px); padding: .8rem 1rem; border-radius: 12px; border: 1px solid #f59e0b; background: #1f1600; color: #fde68a; font-weight: 600; font-size: .95rem; box-shadow: 0 8px 30px rgba(0,0,0,.5); cursor: pointer; }
+.audio-paused[hidden] { display: none; }
