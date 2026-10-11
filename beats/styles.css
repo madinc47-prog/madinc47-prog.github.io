@@ -277,7 +277,7 @@ main { padding: 1rem; max-width: 1200px; margin: 0 auto; }
   margin-top: 1rem; display: flex; flex-wrap: wrap; align-items: center; gap: .6rem;
   background: var(--bg2); border: 1px solid var(--line); border-radius: var(--radius); padding: .6rem .75rem; font-size: .8rem; color: var(--muted);
 }
-.cl-slots { display: flex; gap: .3rem; }
+.cl-slots { display: flex; flex-wrap: wrap; gap: .3rem; max-width: 100%; }
 .cl-slots select { font-weight: 700; min-width: 64px; }
 .cl-slot.now { border-color: var(--accent2); background: #2a2445; }
 .chordloop.off .cl-slots, .chordloop.off label:not(.chk:first-of-type) { opacity: .55; }
@@ -848,3 +848,6 @@ body.bt-on .rec-bar .vox-meter { display: none; }
 
 .audio-paused { position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); z-index: 9999; max-width: min(92vw, 560px); padding: .8rem 1rem; border-radius: 12px; border: 1px solid #f59e0b; background: #1f1600; color: #fde68a; font-weight: 600; font-size: .95rem; box-shadow: 0 8px 30px rgba(0,0,0,.5); cursor: pointer; }
 .audio-paused[hidden] { display: none; }
+
+.sound-check-link { display: inline-block; padding: .55rem .35rem; min-height: 40px; box-sizing: border-box; font-size: .8rem; color: var(--muted, #9aa6bd); text-decoration: underline; white-space: nowrap; }
+.inapp-hint { background: #78350f; color: #fde68a; padding: .7rem 1rem; font-weight: 600; font-size: .95rem; text-align: center; }

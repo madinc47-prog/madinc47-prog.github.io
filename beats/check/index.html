@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark light">
+<title>Sound check · Island Pin Beats</title>
+<link rel="icon" href="data:,">
+<style>
+  :root { color-scheme: dark; --bg: #0b0f17; --card: #141a26; --line: #263044; --txt: #e8edf7; --mut: #9aa6bd; --ok: #22c55e; --bad: #ef4444; --warn: #f59e0b; --acc: #22d3ee; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--txt); font: 17px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 760px; margin: 0 auto; padding: 16px 14px 60px; }
+  h1 { font-size: 1.5rem; margin: 6px 0 4px; } h1 a { color: var(--acc); font-size: 1rem; font-weight: 600; text-decoration: none; margin-left: 8px; }
+  p.sub { color: var(--mut); margin: 0 0 14px; }
+  .step { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px; margin: 12px 0; }
+  .step h2 { font-size: 1.1rem; margin: 0 0 8px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .badge { font-size: .8rem; font-weight: 800; padding: 3px 9px; border-radius: 999px; background: #334155; color: #cbd5e1; letter-spacing: .04em; }
+  .badge.PASS { background: #14532d; color: #bbf7d0; } .badge.FAIL { background: #7f1d1d; color: #fecaca; } .badge.WARN { background: #78350f; color: #fde68a; }
+  .row { display: flex; flex-wrap: wrap; gap: 10px; margin: 8px 0; }
+  button { font: inherit; font-weight: 700; min-height: 52px; padding: 10px 18px; border-radius: 12px; border: 1px solid #3b4a66; background: #1e293b; color: var(--txt); cursor: pointer; touch-action: manipulation; }
+  button.big { background: #0e7490; border-color: #22d3ee; width: 100%; font-size: 1.1rem; }
+  button.yes { background: #14532d; border-color: #22c55e; } button.no { background: #7f1d1d; border-color: #ef4444; }
+  button:disabled { opacity: .5; }
+  .out { color: var(--mut); font-size: .92rem; white-space: pre-wrap; word-break: break-word; margin: 6px 0 0; }
+  .msg { margin: 8px 0 0; font-weight: 600; } .msg.bad { color: #fca5a5; } .msg.ok { color: #86efac; } .msg.warn { color: #fde68a; }
+  .meter { height: 18px; border-radius: 9px; background: #0f172a; overflow: hidden; border: 1px solid var(--line); margin-top: 8px; }
+  .meter i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, #22c55e 0 70%, #facc15 85%, #ef4444); }
+  pre#report { background: #020617; border: 1px solid var(--line); border-radius: 10px; padding: 12px; font-size: .8rem; white-space: pre-wrap; word-break: break-all; max-height: 380px; overflow: auto; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Sound check <a href="../">← back to Beat</a></h1>
+  <p class="sub">Go down the page and tap each big button. Every step shows PASS or FAIL. At the end, tap <b>Copy report</b> or <b>Share report</b> and paste it in the chat. Nothing is sent anywhere unless you share it.</p>
+
+  <section class="step" id="s-device"><h2>1 · Phone and browser <span class="badge">…</span></h2><div class="out"></div><div class="msg"></div></section>
+
+  <section class="step" id="s-version"><h2>2 · Beat version and old copies <span class="badge">…</span></h2><div class="out"></div><div class="msg"></div>
+    <div class="row"><button type="button" id="b-clear">Clear old copy and reload</button></div></section>
+
+  <section class="step" id="s-audio"><h2>3 · Start sound <span class="badge">…</span></h2>
+    <button type="button" class="big" id="b-audio">▶ Tap to start sound</button><div class="out"></div><div class="msg"></div></section>
+
+  <section class="step" id="s-beep"><h2>4 · Test beep (Web Audio, what the pads use) <span class="badge">…</span></h2>
+    <button type="button" class="big" id="b-beep">🔊 Play test beep</button>
+    <div class="row ask" hidden><span style="align-self:center">Did you hear the beep?</span><button type="button" class="yes" data-a="yes">Yes</button><button type="button" class="no" data-a="no">No</button></div>
+    <div class="out"></div><div class="msg"></div></section>
+
+  <section class="step" id="s-html"><h2>5 · Test sound (normal audio player) <span class="badge">…</span></h2>
+    <button type="button" class="big" id="b-html">🔊 Play test sound</button>
+    <div class="row ask" hidden><span style="align-self:center">Did you hear it?</span><button type="button" class="yes" data-a="yes">Yes</button><button type="button" class="no" data-a="no">No</button></div>
+    <div class="out"></div><div class="msg"></div></section>
+
+  <section class="step" id="s-sample"><h2>6 · Real drum sound from a kit <span class="badge">…</span></h2>
+    <button type="button" class="big" id="b-sample">🥁 Load and play a kick drum</button>
+    <div class="row ask" hidden><span style="align-self:center">Did you hear the kick?</span><button type="button" class="yes" data-a="yes">Yes</button><button type="button" class="no" data-a="no">No</button></div>
+    <div class="out"></div><div class="msg"></div></section>
+
+  <section class="step" id="s-mic"><h2>7 · Microphone <span class="badge">…</span></h2>
+    <button type="button" class="big" id="b-mic">🎙 Test the mic (talk for 5 seconds)</button>
+    <div class="meter"><i id="mic-bar"></i></div><div class="out"></div><div class="msg"></div></section>
+
+  <section class="step" id="s-output"><h2>8 · Speaker / headphones and screen <span class="badge">…</span></h2><div class="out"></div><div class="msg"></div></section>
+
+  <section class="step" id="s-report"><h2>Report</h2>
+    <div class="row"><button type="button" id="b-copy">📋 Copy report</button><button type="button" id="b-share">📤 Share report</button></div>
+    <div class="msg" id="copy-msg"></div>
+    <pre id="report"></pre></section>
+</main>
+<script src="check.js?v=20261011a"></script>
+</body>
+</html>
