@@ -1,6 +1,6 @@
 // Psycho Fingers Player — DJ booth scene (original layered SVG art, IK arms, choreography)
 // Two turntables (Deck A / Deck B) with a mixer + crossfader in the middle; the DJ stands behind the mixer.
-import { applyOutfit } from './outfits.js?v=11';
+import { applyOutfit } from './outfits.js?v=12';
 const NS = 'http://www.w3.org/2000/svg';
 const D2R = Math.PI / 180;
 const ease = {
@@ -28,12 +28,14 @@ const deckSvg = (d) => `<g id="deck${d}" class="deck" transform="translate(${DEC
     <path d="M352,418 L748,418 L772,586 L328,586 Z" fill="url(#plinth)" stroke="#3a3c46" stroke-width="1.5"/>
     <path d="M328,586 L772,586 L772,602 L328,602 Z" fill="#0d0e12"/>
     <path d="M330,586 L770,586" stroke="#4a4d58" stroke-width="1"/>
+    <g class="t-hw" transform="rotate(180 545 500)"><!-- deck hardware faces the DJ behind the booth: start/stop at his front-left, pitch fader on his right, tonearm at the back right (from the crowd: near-left) -->
     <rect x="352" y="560" width="34" height="14" rx="3" fill="#22242b" stroke="#454854"/>
     <rect class="t-startBtn" x="355" y="563" width="28" height="8" rx="2" fill="var(--c2)" opacity=".25"/>
     <circle cx="400" cy="567" r="4" fill="#3a3d47"/><circle cx="414" cy="567" r="4" fill="#3a3d47"/>
     <rect x="722" y="470" width="10" height="92" rx="4" fill="#0c0d10" stroke="#3a3d47"/>
     <rect class="t-pitchCap" x="715" y="508" width="24" height="12" rx="2" fill="url(#metal)"/>
     <circle cx="372" cy="436" r="8" fill="#1b1c22" stroke="#4a4d58"/><circle class="t-targetLight" cx="372" cy="436" r="3" fill="var(--c3)" opacity=".5"/>
+    </g>
     <g class="t-neon" transform="translate(545,500)">
       <ellipse rx="190" ry="72" fill="none" stroke="var(--c1)" stroke-width="14" opacity=".08" class="neonGlow"/>
       <ellipse rx="190" ry="72" fill="none" stroke="var(--c1)" stroke-width="7" opacity=".18" class="neonGlow"/>
@@ -62,7 +64,8 @@ const deckSvg = (d) => `<g id="deck${d}" class="deck" transform="translate(${DEC
       </g>
       <circle r="5" fill="url(#metal)"/>
     </g>
-    <!-- tonearm -->
+    <!-- tonearm (turned with the hardware, see .t-hw) -->
+    <g class="t-hw2" transform="translate(20,-8) rotate(180 545 500)">
     <circle cx="742" cy="440" r="22" fill="#1f2026" stroke="#4a4d58" stroke-width="2"/>
     <circle cx="742" cy="440" r="14" fill="url(#metal)"/>
     <ellipse class="t-needleShadow" cx="0" cy="0" rx="10" ry="4" fill="#000" opacity=".4"/>
@@ -73,6 +76,7 @@ const deckSvg = (d) => `<g id="deck${d}" class="deck" transform="translate(${DEC
         <path d="M0,-8 L0,104 L-14,122" fill="none" stroke="#fff" stroke-width="1.2" stroke-linecap="round" opacity=".4"/>
         <g transform="translate(-16,126) rotate(30)"><rect x="-10" y="-5" width="24" height="16" rx="3" fill="#202128" stroke="#5c5f6a"/><rect x="-6" y="-2" width="14" height="6" rx="1" fill="var(--c3)" opacity=".85"/><path d="M14,0 L24,-4" stroke="url(#metal)" stroke-width="3" stroke-linecap="round"/></g>
       </g>
+    </g>
     </g>
     <text class="deck-letter" x="550" y="598" text-anchor="middle" font-family="system-ui,sans-serif" font-weight="900" font-size="14" letter-spacing="4" fill="#4a4d58">DECK ${d}</text>
   </g>`;
@@ -279,13 +283,13 @@ const svgMarkup = `
   <g id="armL"><path class="a-up-o" fill="none" stroke="#111214" stroke-width="54" stroke-linecap="round"/><path class="a-fo-o" fill="none" stroke="#111214" stroke-width="46" stroke-linecap="round"/>
     <path class="a-up" fill="none" stroke="#2e3033" stroke-width="48" stroke-linecap="round"/><path class="a-fo" fill="none" stroke="#2a2c2f" stroke-width="40" stroke-linecap="round"/>
     <path class="a-hi" fill="none" stroke="#4b4e54" stroke-width="5" stroke-linecap="round" opacity=".7"/><path class="a-rim" fill="none" stroke="var(--c1)" stroke-width="3" stroke-linecap="round" opacity=".4"/>
-    <g class="hand"><path class="cuff" d="M-16,-19 L2,-19 L2,19 L-16,19 Z" fill="url(#ribs)" stroke="#111214" stroke-width="2"/><use href="#hand" transform="scale(1,-1)"/></g></g>
+    <g class="hand"><path class="cuff" d="M-16,-19 L2,-19 L2,19 L-16,19 Z" fill="url(#ribs)" stroke="#111214" stroke-width="2"/><use href="#hand"/></g></g>
   <g id="armR"><path class="a-up-o" fill="none" stroke="#111214" stroke-width="54" stroke-linecap="round"/><path class="a-fo-o" fill="none" stroke="#111214" stroke-width="46" stroke-linecap="round"/>
     <path class="a-up" fill="none" stroke="#2e3033" stroke-width="48" stroke-linecap="round"/><path class="a-fo" fill="none" stroke="#2a2c2f" stroke-width="40" stroke-linecap="round"/>
     <path class="a-hi" fill="none" stroke="#4b4e54" stroke-width="5" stroke-linecap="round" opacity=".7"/><path class="a-rim" fill="none" stroke="var(--c2)" stroke-width="3" stroke-linecap="round" opacity=".4"/>
     <g class="hand"><path class="cuff" d="M-16,-19 L2,-19 L2,19 L-16,19 Z" fill="url(#ribs)" stroke="#111214" stroke-width="2"/>
       <g class="o-watch"><rect x="1" y="-17" width="9" height="34" rx="3" fill="#0d0d10"/><circle cx="5.5" cy="0" r="8.5" fill="url(#gold)" stroke="#5c430b" stroke-width="1.2"/><circle cx="5.5" cy="0" r="5.6" fill="#101216"/><path d="M5.5,0 L5.5,-4 M5.5,0 L8.5,1" stroke="#e2b23a" stroke-width="1"/></g>
-      <use href="#hand"/></g></g>
+      <use href="#hand" transform="scale(1,-1)"/></g></g>
 </g>
 <g id="bubble" opacity="0" style="pointer-events:none">
   <g id="bubbleIn">
@@ -385,7 +389,8 @@ export function createScene(container) {
     const a = angle * D2R; const L = G.arm.len - 2;
     return { x: G.arm.x - Math.sin(a) * L - Math.cos(a) * 18, y: G.arm.y + Math.cos(a) * L - Math.sin(a) * 18 - lift * 8 };
   }
-  function armTip(d, angle = st.decks[d].arm, lift = st.decks[d].lift) { const t = armTipLocal(angle, lift); return toS(d, t.x, t.y); }
+  // the tonearm art sits in .t-hw2 (turned 180° about the platter centre 545,500, then nudged 20,-8 so the base sits on the plinth): local → deck coords
+  function armTip(d, angle = st.decks[d].arm, lift = st.decks[d].lift) { const t = armTipLocal(angle, lift); return toS(d, 1110 - t.x, 992 - t.y); }
   const armHand = (d) => (d === 'A' ? 'L' : 'R'); // hand that works each deck's tonearm
   function moveHand(side, x, y, dur, fn) {
     const h = st.hands[side]; const p = { x: h.x, y: h.y }; h.mode = 'anim'; h.follow = () => p; h.vx = h.vy = 0;
@@ -581,7 +586,9 @@ export function createScene(container) {
     bounce: { name: 'Shoulder bounce', tier: 1 }, rock: { name: 'Lean-back rock', tier: 1 }, cue: { name: 'Headphone cue', tier: 1 }, pump: { name: 'Chest pump', tier: 1 },
     handup: { name: 'Hand in the air', tier: 2 }, scratch: { name: 'Scratch flourish', tier: 2 },
   };
-  const POOL = [['nod', 'sway'], ['bounce', 'sway', 'rock', 'cue', 'pump'], ['handup', 'pump', 'scratch', 'bounce', 'rock']];
+  // natural club DJ: nod + weight shift most of the time, a shoulder bob / headphone cue when it gets busier; the big
+  // gestures (hand in the air, chest pump, scratch flourish) stay out of the rotation (they looked robotic on loop)
+  const POOL = [['nod', 'sway'], ['nod', 'sway', 'bounce', 'cue'], ['sway', 'bounce', 'cue', 'rock']];
   const rmq = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
   const dn = { phase: 0, bpm: 0, lastBeat: 0, move: 'nod', moveUntil: 16, eFast: 0, eSlow: 0, tier: 0, dropAt: -99, amp: 0, reduced: !!(rmq && rmq.matches), body: { bx: 0, by: 0, rot: 0, shL: 0, shR: 0, nod: 0, tilt: 0, cupL: 0, cupR: 0 } };
   if (rmq && rmq.addEventListener) rmq.addEventListener('change', (e) => { dn.reduced = e.matches; if (dn.reduced && MOVES[dn.move].tier > 0) pickMove(); });
@@ -608,7 +615,7 @@ export function createScene(container) {
     const tier = dn.eSlow > .42 ? 2 : dn.eSlow > .2 ? 1 : 0;
     if (tier !== dn.tier) dn.tier = tier;
     const isDrop = dn.eFast > dn.eSlow * 1.45 + .08 && dn.eFast > .35 && dn.phase - dn.dropAt > 32;
-    if (isDrop) { dn.dropAt = dn.phase; if (!dn.reduced) { dn.move = Math.random() < .6 ? 'handup' : 'scratch'; dn.moveUntil = Math.ceil(dn.phase / 4) * 4 + 16; } }
+    if (isDrop) { dn.dropAt = dn.phase; if (!dn.reduced) { dn.move = Math.random() < .5 ? 'bounce' : 'cue'; dn.moveUntil = Math.ceil(dn.phase / 4) * 4 + 16; } }
     if (playing && dn.phase >= dn.moveUntil) pickMove();
     // a move outside the current tier is swapped at the next bar line
     if (dn.reduced && MOVES[dn.move].tier > 0) pickMove();
@@ -616,31 +623,35 @@ export function createScene(container) {
     dn.amp += ((playing ? (dn.reduced ? .35 : 1) : 0) - dn.amp) * Math.min(1, dt * 3);
   }
   function danceBody(t) {
-    const b = dn.phase, f = b - Math.floor(b), hit = Math.exp(-f * 7), bar = b % 4, down = bar < 1 ? Math.exp(-(bar) * 5) : 0;
+    // smooth beat curves (no spikes): `hit` = an eased dip that lands ON the beat (head down, knees give a little) and
+    // comes back up in between; `sw` = weight shift from foot to foot over two beats
+    const b = dn.phase, f = b - Math.floor(b), hit = Math.pow(.5 + .5 * Math.cos(2 * Math.PI * Math.min(1, f * 1.15)), 2), bar = b % 4, down = bar < 1 ? .5 + .5 * Math.cos(Math.PI * Math.min(1, bar * 1.5)) : 0;
     const sw = Math.sin(Math.PI * b), A = dn.amp * (st.busy ? .4 : 1), m = dn.move;
     const o = { bx: 0, by: 0, rot: 0, shL: 0, shR: 0, nod: 0, tilt: 0, cupL: 0, cupR: 0 };
-    o.nod = 5 * hit; o.by = 1.5 * hit; // every move keeps a small nod on the beat
-    if (m === 'nod') { o.nod = 9 * hit; o.by = 2 * hit; }
-    else if (m === 'sway') { o.bx = 14 * sw; o.rot = 2.2 * sw; o.tilt = -3 * sw; o.by = 3 * Math.abs(Math.cos(Math.PI * b)); o.nod = 4 * hit; }
-    else if (m === 'bounce') { const u = Math.abs(Math.sin(Math.PI * b * 2)); o.shL = o.shR = -9 * u; o.by = 6 * hit; o.nod = 6 * hit; }
-    else if (m === 'rock') { o.rot = -(3 + 4 * hit) * (st.active === 'A' ? -1 : 1) * .6; o.by = -2 - 3 * hit; o.nod = -3 + 8 * hit; o.tilt = 4 * hit; }
+    o.nod = 4 * hit; o.by = 1.5 * hit; o.bx = 3 * sw; o.rot = .6 * sw; // every move keeps a small nod + weight shift
+    if (m === 'nod') { o.nod = 6 * hit; o.by = 2 * hit; }
+    else if (m === 'sway') { o.bx = 7 * sw; o.rot = 1.2 * sw; o.tilt = -1.5 * sw; o.by = 2 * hit; o.nod = 4 * hit; }
+    else if (m === 'bounce') { o.shL = o.shR = -4 * hit; o.by = 3 * hit; o.nod = 5 * hit; }
+    else if (m === 'rock') { o.rot = -(1.5 + 1.5 * hit) * (st.active === 'A' ? -1 : 1); o.by = -1 - 1.5 * hit; o.nod = -1 + 5 * hit; o.tilt = 2 * hit; }
     else if (m === 'pump') { o.by = -9 * down + 3 * hit; o.shL = o.shR = -6 * down; o.nod = 10 * down + 4 * hit; }
-    else if (m === 'cue') { const free = st.active === 'A' ? 'R' : 'L'; if (free === 'L') o.cupL = 1; else o.cupR = 1; o.tilt = free === 'L' ? -7 : 7; o.nod = 6 * hit; o.by = 2 * hit; }
+    else if (m === 'cue') { const free = st.active === 'A' ? 'R' : 'L'; if (free === 'L') o.cupL = 1; else o.cupR = 1; o.tilt = free === 'L' ? -5 : 5; o.nod = 4 * hit; o.by = 1.5 * hit; }
     else if (m === 'handup') { o.by = 5 * hit; o.bx = 6 * sw; o.nod = 8 * hit; o.shL = st.active === 'A' ? 0 : -8; o.shR = st.active === 'A' ? -8 : 0; }
     else if (m === 'scratch') { o.nod = 7 * hit; o.by = 3 * hit; o.rot = 1.5 * Math.sin(Math.PI * b * 2); }
     for (const k in o) o[k] *= (k === 'cupL' || k === 'cupR') ? (dn.amp > .2 ? 1 : 0) : A;
     // smooth everything so move changes blend
-    const B = dn.body; for (const k in o) B[k] += (o[k] - B[k]) * .25;
+    const B = dn.body; for (const k in o) B[k] += (o[k] - B[k]) * .14; // eased blend between moves
     return B;
   }
   /** Hand targets while performing (no choreography running). Returns [L, R]. */
   function poseTargets(t, p, playing) {
     const A = st.active === 'A';
     if (!playing) return [{ x: 452, y: 548 + Math.sin(t * 1.2) * 3 }, { x: 748, y: 548 + Math.cos(t * 1.1) * 3 }];
-    const b = dn.phase, f = b - Math.floor(b), hit = Math.exp(-f * 7), sw = Math.sin(Math.PI * b), amp = dn.reduced ? .35 : 1;
+    const b = dn.phase, f = b - Math.floor(b), hit = Math.pow(.5 + .5 * Math.cos(2 * Math.PI * Math.min(1, f * 1.15)), 2), sw = Math.sin(Math.PI * b), amp = dn.reduced ? .35 : 1;
     const plat = A ? SPOT.platA() : SPOT.platB();
-    const deckHand = { x: plat.x + Math.sin(Math.PI * b / 2) * 6 * amp, y: plat.y + hit * 5 * amp };
-    const mixHand = { x: SPOT.mix.x + (A ? 12 : -12) + Math.sin(Math.PI * b / 4) * 6 * amp, y: SPOT.mix.y + hit * 5 * amp };
+    const deckHand = { x: plat.x + Math.sin(Math.PI * b / 2) * 4 * amp, y: plat.y + hit * 3 * amp };
+    // free hand: rests on the mixer, and every 2 bars eases over to a knob / the far EQ and back (a real DJ's "reach")
+    const ph = (b % 8) / 8, reach = ph > .75 ? Math.sin((ph - .75) / .25 * Math.PI) : 0, rs = reach * reach * (3 - 2 * reach);
+    const mixHand = { x: SPOT.mix.x + (A ? 12 : -12) + (A ? 18 : -18) * rs * amp, y: SPOT.mix.y + hit * 3 * amp - 22 * rs * amp };
     const xfH = SPOT.xfader();
     const sx = (side) => G.sh[side].x + DJX + st.lean + dn.body.bx;
     const pair = (deck, free) => (A ? [deck, free] : [free, deck]);
@@ -721,7 +732,7 @@ export function createScene(container) {
       if (k >= 1) { tweens.delete(tw); tw.resolve(); }
     }
     const t = now / 1000; const pulse = a.pulse || 0; const playing = !!a.playing;
-    if (a.beat) { st.beats++; st.nodV += (2.6 + pulse * 1.5) * (dn.reduced ? .4 : 1); }
+    if (a.beat) { st.beats++; st.nodV += (1.1 + pulse * .6) * (dn.reduced ? .3 : 1); } // soft kick: the smooth beat curve does most of the nod
     danceClock(dt, now, a, playing); st.mixing = !!a.mixing;
     // decks: spin
     ['A', 'B'].forEach((d) => {
@@ -744,7 +755,8 @@ export function createScene(container) {
     el.eyes.setAttribute('transform', st.blink > 0 ? 'translate(0,2) scale(1,.15) translate(0,-2)' : '');
     el.pupils.forEach((p) => p.setAttribute('transform', `translate(${f1(st.turn * 2.4)},0)`));
     const B = danceBody(t);
-    st.bounce = (playing ? pulse * 2 : Math.sin(t * 1.3) * 1.2) + B.by;
+    st.pulseS = (st.pulseS || 0) + ((playing ? pulse : 0) - (st.pulseS || 0)) * Math.min(1, dt * 10); // eased: no per-kick jolt
+    st.bounce = (playing ? st.pulseS * .9 : Math.sin(t * 1.3) * 1.2) + B.by;
     st.bodyRot = B.rot; st.bodyX = B.bx; st.shY = { L: B.shL, R: B.shR };
     el.dj.setAttribute('transform', `translate(${f1(DJX + st.lean + B.bx)},0)`);
     el.body.setAttribute('transform', `translate(0,${f1(st.bounce)}) rotate(${f1(B.rot)} 470 470)`);
