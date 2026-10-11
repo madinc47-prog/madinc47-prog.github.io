@@ -203,13 +203,21 @@
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return Promise.reject(new Error("This browser cannot record from a microphone."));
     return ensure().then(function () {
       if (!E.hasWorklet) throw new Error("Recording needs AudioWorklet support (use an up-to-date browser).");
-      return navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: spk, noiseSuppression: spk, autoGainControl: spk, channelCount: 1 } });
+      return navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: spk, noiseSuppression: spk, autoGainControl: spk, channelCount: 1 } })
+        .catch(function (e) { if (e && (e.name === "OverconstrainedError" || e.name === "TypeError")) return navigator.mediaDevices.getUserMedia({ audio: true }); throw e; });
     }).then(function (stream) {
       var mic = {}; try { mic = stream.getAudioTracks()[0].getSettings() || {}; } catch (e) { /* ignore */ }
       try { var st = stream.getAudioTracks()[0].getSettings(); E.inLat = st && typeof st.latency === "number" && st.latency < 0.5 ? st.latency : 0; } catch (e) { E.inLat = 0; }
       var c = E.ctx, src = c.createMediaStreamSource(stream), node = new AudioWorkletNode(c, "ipb-rec", { numberOfInputs: 1, numberOfOutputs: 0 });
       var R = { stream: stream, src: src, node: node, chunks: [], t: [], armed: armed.map(function (t) { return t.id; }), from: from, an: c.createAnalyser(), speaker: spk, mic: { echoCancellation: !!mic.echoCancellation, noiseSuppression: !!mic.noiseSuppression, autoGainControl: !!mic.autoGainControl } };
       R.an.fftSize = 1024; src.connect(R.an);
+      R.t0 = performance.now(); R.max = 0; R.lost = null;
+      var mtr = stream.getAudioTracks()[0];
+      if (mtr) { // Android gives the mic to an active call / privacy toggle off → muted or silent stream, no error
+        mtr.addEventListener("ended", function () { R.lost = "ended"; });
+        mtr.addEventListener("mute", function () { R.lost = "mute"; });
+        if (mtr.muted) R.lost = "mute";
+      }
       node.port.onmessage = function (e) { if (e.data.ch) { R.chunks.push(e.data.ch[0]); R.t.push(e.data.t); } };
       src.connect(node);
       E.rec = R; E.recording = true;

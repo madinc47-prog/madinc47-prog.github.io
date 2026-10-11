@@ -289,7 +289,7 @@
   E.onTick = function (pos) {
     var cl = E.countLeft(), ci = $("countin");
     if (cl > 0) { ci.hidden = false; ci.textContent = String(Math.ceil(cl / beat() - 1e-3)); }
-    else if (!ci.hidden) { ci.hidden = true; if (E.recording) toast("● Recording on " + P.tracks.filter(function (t) { return t.arm; }).map(function (t) { return t.name; }).join(", ") + ". Press ■ or ● to stop."); }
+    else if (!ci.hidden) { ci.hidden = true; if (E.recording && !(E.rec && E.rec.warned)) toast("● Recording on " + P.tracks.filter(function (t) { return t.arm; }).map(function (t) { return t.name; }).join(", ") + ". Press ■ or ● to stop."); }
     playhead = pos;
     $("playhead").style.left = (pos * pps) + "px";
     $("t-time").textContent = fmtTime(pos);
@@ -302,11 +302,11 @@
     if (E.recording) { finishRecord(); return; }
     if (E.playing) pause();
     var armed = P.tracks.filter(function (t) { return t.arm; });
-    if (!armed.length) {
-      var t = trackById(selTrack) || P.tracks[1] || P.tracks[0];
-      t.arm = true; render();
-      toast("Armed " + t.name + " for recording. Press ● again to start.");
-      return;
+    if (!armed.length) { // nothing armed: arm the selected track (never the beat track unless it's the only one) and record right away
+      var bid = beatTrackId(), t = trackById(selTrack);
+      if (!t || (t.id === bid && P.tracks.length > 1)) t = P.tracks.filter(function (x) { return x.id !== bid; })[0] || P.tracks[0];
+      t.arm = true; selTrack = t.id; render();
+      armed = [t];
     }
     var from = playhead, bars = P.countIn == null ? 1 : P.countIn, pre = bars * 4 * beat();
     var spk = speakerMode();
@@ -325,14 +325,30 @@
         return { el: el, start: from };
       });
       if (!pre) toast("Recording on " + armed.map(function (t) { return t.name; }).join(", ") + ". Press ■ or ● to stop.");
-    }).catch(function (e) { toast(e && e.name === "NotAllowedError" ? "Microphone blocked. Allow the mic in your browser's site settings." : (e.message || String(e)), 4200); });
+    }).catch(function (e) {
+      var n = e && e.name;
+      toast(n === "NotAllowedError" || n === "SecurityError" ? "Microphone is blocked. Allow the microphone: tap the lock icon by the address bar > Permissions > Microphone > Allow, then press ● again."
+        : n === "NotFoundError" || n === "OverconstrainedError" ? "No microphone found. Plug in a mic or headset (or check the mic isn't turned off in Android settings) and try again."
+        : n === "NotReadableError" ? "The mic is busy or blocked by the system (another app may be using it)."
+        : "Could not start recording: " + ((e && e.message) || String(e)), 7000);
+    });
+  }
+  var MIC_SILENT = "Your mic is sending silence. Close any call or app using the mic (voice calls, WhatsApp, recorders), check Microphone access is ON in quick settings, then try again.";
+  function micWatch(lvl) { // 1.5 s of digital silence, or the system muted / took the mic → say so (once per take)
+    var R = E.rec; if (!R || R.warned) return;
+    R.max = Math.max(R.max || 0, lvl);
+    var why = R.lost === "ended" ? "The microphone was disconnected or taken by another app (a call?). Close it and press ● again."
+      : R.lost === "mute" || (performance.now() - R.t0 > 1500 && R.max < 0.00005) ? MIC_SILENT : null;
+    if (why) { R.warned = true; toast(why, 9000); }
   }
   function finishRecord() {
     E.stopRecord().then(function (res) {
       $("countin").hidden = true;
       $("t-rec").classList.remove("on"); $("t-in").hidden = true; uiStopped();
       recClips.forEach(function (r) { r.el.remove(); }); recClips = [];
-      if (!res || res.data.length < res.sr * 0.1) { toast("Nothing recorded."); return; }
+      if (!res || res.data.length < res.sr * 0.1) { toast("Nothing recorded — the mic sent no audio. Check the microphone is allowed (lock icon by the address bar > Permissions > Microphone) and try again.", 7000); return; }
+      var pkIn = 0; for (var q = 0; q < res.data.length; q += 8) { var aq = Math.abs(res.data[q]); if (aq > pkIn) pkIn = aq; }
+      var silent = pkIn < 0.001;
       S.pushUndo(P, "record");
       var buf = S.bufFrom([res.data], res.sr), name = "Take " + (takeN++), id = S.addSource(buf, name), made = [];
       lastTake = { start: res.start, latencyMs: Math.round(res.latency * 1000), dur: buf.duration };
@@ -343,6 +359,7 @@
       selClip = made[0].id; selTrack = made[0].track;
       playhead = playFrom;
       changed();
+      if (silent) { toast(name + " was saved, but it is silent. " + MIC_SILENT, 9000); return; }
       if (res.speaker && P.autoClean !== false && window.IPBVocalCleanClient) { cleanClip(made[0].id, { auto: true, mic: res.mic }); return; }
       toast(name + " recorded (" + buf.duration.toFixed(1) + "s). " + (res.speaker ? "Press 🧹 Clean take to remove the speaker bleed. " : "") + "Double-click it to edit.");
     });
@@ -727,7 +744,7 @@
     if (!E.ctx) return;
     var m = E.meters(), pct = function (v) { var d = 20 * Math.log10(Math.max(v, 1e-5)); return Math.max(0, Math.min(100, (d + 60) / 60 * 100)); };
     $("t-meter").style.width = pct(m.master) + "%";
-    if (E.recording) $("t-in").querySelector("i").style.width = pct(E.inputLevel()) + "%";
+    if (E.recording) { var il = E.inputLevel(); $("t-in").querySelector("i").style.width = pct(il) + "%"; micWatch(il); }
     if (view === "multi") document.querySelectorAll(".trk").forEach(function (t) { t.querySelector(".tm i").style.height = pct(m.tracks[t.dataset.id] || 0) + "%"; });
     if (view === "mixer") document.querySelectorAll(".strip").forEach(function (s) { var v = s.classList.contains("master") ? m.master : (m.tracks[s.dataset.id] || 0); s.querySelector(".meter i").style.height = pct(v) + "%"; });
   }
