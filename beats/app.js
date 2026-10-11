@@ -3120,7 +3120,7 @@
      take afterwards; the unprocessed take is kept too. OFF = fully raw (nothing applied). */
   var VO_KEY = "ipb_voiceonly";
   function voiceOnly() { try { return localStorage.getItem(VO_KEY) === "1"; } catch (e) { return false; } }
-  function setVoiceOnly(v) { try { localStorage.setItem(VO_KEY, v ? "1" : "0"); } catch (e) { /* ignore */ } voUI(); }
+  function setVoiceOnly(v) { try { localStorage.setItem(VO_KEY, v ? "1" : "0"); } catch (e) { /* ignore */ } voUI(); if (typeof applyMixer === "function") applyMixer(); }
   function voUI() {
     var on = voiceOnly();
     document.querySelectorAll(".js-voiceonly").forEach(function (b) { b.classList.toggle("on", on); b.setAttribute("aria-pressed", String(on)); b.querySelector(".vo-state").textContent = on ? "ON" : "OFF"; });
@@ -3422,7 +3422,7 @@
     }
     if (which === "raw") return;
     var quiet = vocalPeak(t.V) < 0.003;
-    setVoxStatus("Saved " + fmtTime(n / t.sr) + " vocal + " + (btActive() ? "instrumental" : "beat") + " mix to Vault" + (clean ? (t.mode === "spk" ? " (cleaned: no speaker beat, no room noise" + (t.pro ? ", pro vocal)" : ")") : " (pro vocal)") : "") + (quiet ? " — warning: the mic signal was almost silent" : ""), quiet);
+    setVoxStatus("Saved " + fmtTime(n / t.sr) + " vocal + " + (btActive() ? "instrumental" : "beat") + " mix to Vault" + (clean ? (t.voiceOnly ? " (voice only: beat bleed removed)" : t.mode === "spk" ? " (cleaned: no speaker beat, no room noise" + (t.pro ? ", pro vocal)" : ")") : " (pro vocal)") : "") + (quiet ? " — warning: the mic signal was almost silent" : ""), quiet);
     if (first) sendOffer(clean ? "Cleaned copy of the vocal take saved to Vault." : "Vocal take saved to Vault (beat + vocal WAV).", function (dest) { sendVocal(dest); });
   }
   function sendVocal(dest) {
@@ -3522,7 +3522,8 @@
   var HP_KEY = "ipb_hp_mode_v1";
   var hp = { pref: "auto", detected: false, label: "", labels: false };
   try { var hpv = localStorage.getItem(HP_KEY); if (hpv === "hp" || hpv === "spk") hp.pref = hpv; } catch (e) { /* ignore */ }
-  function hpMode() { return hp.pref === "hp" ? "hp" : hp.pref === "spk" ? "spk" : hp.detected ? "hp" : "spk"; }
+  // single manual control: "No headphones — voice only" ON = speaker behaviour (beat level, no monitoring); OFF = headphones. Nothing auto-detected.
+  function hpMode() { return voiceOnly() ? "spk" : "hp"; }
   function hpIsHeadphones(label) { return window.IPBVocalCleanClient ? window.IPBVocalCleanClient.isHeadphones(label) : false; }
   function hpDetect() {
     var md = navigator.mediaDevices;
@@ -3535,10 +3536,8 @@
       var defOut = outs.filter(function (d) { return d.deviceId === "default"; })[0] || (outs.length === 1 ? outs[0] : null);
       if (defOut) { if (hpIsHeadphones(defOut.label)) found = defOut.label; }       // desktop: the default output says it
       else ins.forEach(function (d) { if (!found && hpIsHeadphones(d.label)) found = d.label; }); // Android: a headset mic is listed only while connected
-      var was = hpMode();
-      hp.detected = !!found; hp.label = found;
+      hp.detected = !!found; hp.label = found; // informational only (shown in the debug hook); never changes the mode
       hpUI();
-      if (was !== hpMode()) applyMixer();
     }).catch(function () { hpUI(); });
   }
   function spkBeatGain() { return Math.max(0.1, Math.min(1, S.vox.spk / 100)) * (S.vox.guide ? 0.3 : 1); }
@@ -6148,7 +6147,7 @@
     $("vox-nudge").value = S.vox.nudge;
     $("vox-monitor").addEventListener("change", function (e) {
       S.vox.monitor = e.target.checked; applyMixer(); saveSession(); hpUI();
-      if (S.vox.monitor) toast(hpMode() === "hp" ? "🎧 Monitoring on — headphones only. On a speaker the mic would howl (feedback)." : "Monitoring only plays through headphones — it stays silent in speaker mode so it can't feed back.", 4200);
+      if (S.vox.monitor) toast(hpMode() === "hp" ? "🎧 Monitoring on — headphones only. On a speaker the mic would howl (feedback)." : "Monitoring stays silent while No headphones — voice only is ON (the mic would howl).", 4200);
     });
     $("vox-dry").addEventListener("change", function (e) { S.vox.dry = e.target.checked; saveSession(); });
     $("vox-nudge").addEventListener("change", function (e) {

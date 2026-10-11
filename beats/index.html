@@ -14,7 +14,7 @@
   <meta name="theme-color" content="#0b0d12">
   <meta name="color-scheme" content="dark"><!-- the app is already dark: stops Samsung Internet / Chrome "force dark" from re-colouring it -->
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="styles.css?v=20261011r">
+  <link rel="stylesheet" href="styles.css?v=20261011s">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Island Pin Beats — Free Beat Maker">
   <meta name="twitter:description" content="Make boom-bap, trap, drill, afrobeats, amapiano, house and bouyon beats in your browser. Free, from Dominica.">
@@ -149,7 +149,6 @@
             <button type="button" class="btn small" id="bt-play" title="Play / pause (Space)">▶ Play</button>
             <label class="chk" title="Play your drum pattern (and chord loop) on top of the instrumental"><input type="checkbox" id="bt-layer"> Layer drum machine</label>
             <label class="bt-lvl">Level <input type="range" id="bt-level" min="0" max="100" value="85" aria-label="Instrumental level"> <output id="bt-level-val" class="mono">85%</output></label>
-            <span class="hp-wrap"><span class="hp-chip js-hp-chip" role="status">🔈 Speaker mode · take saved as recorded</span><label class="chk hp-tog"><input type="checkbox" class="js-hp-toggle"> I'm on headphones</label><a href="#" class="hp-auto js-hp-auto" hidden title="Go back to automatic headphone detection">auto</a></span>
           </div>
           <div class="vox-status js-vox-status" role="status"></div>
           <p class="bt-note" id="bt-note"></p>
@@ -186,7 +185,6 @@
           <button type="button" class="btn rec vox js-vox">🎙 Record Vocals</button>
         </div>
         <span id="rec-status" class="rec-status">Ready</span>
-        <span class="hp-wrap"><span class="hp-chip js-hp-chip" role="status">🔈 Speaker mode · take saved as recorded</span><label class="chk hp-tog"><input type="checkbox" class="js-hp-toggle"> I'm on headphones</label><a href="#" class="hp-auto js-hp-auto" hidden title="Go back to automatic headphone detection">auto</a></span>
         <div class="vox-status js-vox-status" role="status">Record Vocals: 1-bar count-in, then the beat plays and your mic records. Every take is saved exactly as recorded — no automatic processing.</div>
       </div>
 
@@ -416,7 +414,6 @@
         <div class="ly-actions">
           <button type="button" class="btn js-open-prompter primary">Teleprompter</button>
           <button type="button" class="btn rec vox js-vox">🎙 Record Vocals</button>
-          <span class="hp-wrap"><span class="hp-chip js-hp-chip" role="status">🔈 Speaker mode · take saved as recorded</span><label class="chk hp-tog"><input type="checkbox" class="js-hp-toggle"> I'm on headphones</label><a href="#" class="hp-auto js-hp-auto" hidden title="Go back to automatic headphone detection">auto</a></span>
         </div>
       </div>
       <div class="ly-bar">
@@ -523,15 +520,14 @@
         <div class="vox-opts">
           <button type="button" id="vox-check" class="btn small">Mic check</button>
           <label class="chk" title="Headphones only: on a speaker the mic would feed back. Stays silent in speaker mode."><input type="checkbox" id="vox-monitor"> Hear mic while recording (headphones only ⚠)</label>
-          <span class="hp-wrap"><span class="hp-chip js-hp-chip" role="status">🔈 Speaker mode · take saved as recorded</span><label class="chk hp-tog"><input type="checkbox" class="js-hp-toggle"> I'm on headphones</label><a href="#" class="hp-auto js-hp-auto" hidden title="Go back to automatic headphone detection">auto</a></span>
           <label class="chk"><input type="checkbox" id="vox-dry"> Also save dry vocal WAV</label>
           <label>Latency comp <span id="vox-lat" class="mono">auto</span> + nudge
             <input type="number" id="vox-nudge" min="-300" max="300" step="5" value="0" aria-label="Vocal timing nudge in ms"> ms
           </label>
         </div>
         <div class="vox-spk">
-          <strong>Speaker mode <small>(no headphones)</small></strong>
-          <p class="sub">The beat plays out loud so you can perform to it. Your take is saved exactly as the mic recorded it (no echo-cancel, noise suppression, auto-gain or other processing). If the speaker beat leaked into the mic, you can tap 🧹 Clean last take afterwards: it subtracts the beat and room noise and saves a cleaned copy next to your raw take. Keep the phone volume moderate.</p>
+          <strong>No headphones — voice only <small>(settings for that toggle)</small></strong>
+          <p class="sub">While <b>No headphones — voice only</b> is ON the beat plays out loud: set how loud it plays during a take here (quieter = less bleed). Monitoring stays off then (the mic would howl). OFF = headphones: everything is recorded fully raw. 🧹 Clean last take is always manual.</p>
           <div class="vox-opts">
             <label class="bt-lvl">Speaker beat level <input type="range" id="vox-spk" min="10" max="100" value="80" aria-label="Beat level on the speaker during a take"> <output id="vox-spk-val" class="mono">80%</output></label>
             <label class="chk" title="Plays the beat much quieter (−10 dB) during the take: just enough to follow. Cleanest result."><input type="checkbox" id="vox-guide"> Low guide level</label>
@@ -648,18 +644,18 @@
 
   <footer class="foot">Free · runs in your browser · synthesized drums + CC0 one-shots (<a href="samples/CREDITS.md">credits</a>), no paid APIs · <a href="studio/">Studio</a> · <a href="../dj/">DJ booth</a> · <a href="check/">Sound check</a> · <a href="../">IslePin</a></footer>
 
-  <script src="fresh.js?v=20261011r"></script>
-  <script src="humanize.js?v=20261011r"></script>
-  <script src="layers.js?v=20261011r"></script>
-  <script src="library.js?v=20261011r"></script>
-  <script src="drums.js?v=20261011r"></script>
-  <script src="keys-instruments.js?v=20261011r"></script>
-  <script src="pianoroll-data.js?v=20261011r"></script>
-  <script src="keys-loops.js?v=20261011r"></script>
-  <script src="pianoroll.js?v=20261011r"></script>
-  <script src="fx-chain.js?v=20261011r"></script>
-  <script src="vocal-clean-client.js?v=20261011r"></script>
-  <script src="app.js?v=20261011r"></script>
+  <script src="fresh.js?v=20261011s"></script>
+  <script src="humanize.js?v=20261011s"></script>
+  <script src="layers.js?v=20261011s"></script>
+  <script src="library.js?v=20261011s"></script>
+  <script src="drums.js?v=20261011s"></script>
+  <script src="keys-instruments.js?v=20261011s"></script>
+  <script src="pianoroll-data.js?v=20261011s"></script>
+  <script src="keys-loops.js?v=20261011s"></script>
+  <script src="pianoroll.js?v=20261011s"></script>
+  <script src="fx-chain.js?v=20261011s"></script>
+  <script src="vocal-clean-client.js?v=20261011s"></script>
+  <script src="app.js?v=20261011s"></script>
   <script type="module" src="../shared/ecosystem-nav.js"></script><!-- Beats | DJ Booth | Player switcher (shared/README.md) -->
 </body>
 </html>
