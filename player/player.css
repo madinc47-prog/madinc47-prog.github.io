@@ -359,3 +359,16 @@ body.lite .chip{background:rgba(14,10,30,.85)}
 
 /* face photo: the drawn eyes/brows/beard/mouth hide under it (cap + ears stay) */
 .has-photo .stockface{display:none}
+
+/* queue: reorder + remove */
+.trk .qbtns{display:inline-flex;gap:2px;flex:none}
+.trk .qbtns button{width:26px;height:26px;border:0;border-radius:6px;background:rgba(255,255,255,.06);color:#cfc8ee;font-size:11px;line-height:1;padding:0;cursor:pointer}
+.trk .qbtns button:hover,.trk .qbtns button:focus-visible{background:rgba(255,255,255,.16);color:#fff}
+.trk .qbtns .qrm{color:#ff8a96}
+.trk .grip{flex:none;width:22px;text-align:center;color:#8f88b8;font-weight:900;letter-spacing:-2px;cursor:grab;touch-action:none;user-select:none;padding:8px 0}
+.trk.dragging{opacity:.85;background:rgba(255,255,255,.1);box-shadow:0 6px 18px rgba(0,0,0,.45);position:relative;z-index:2}
+.trk.current{outline:1.5px solid color-mix(in srgb,var(--c1) 70%,transparent);outline-offset:-1.5px}
+@media (max-width:420px){.trk .qbtns button{width:24px}}
+.trk{grid-template-columns:22px 52px minmax(0,1fr) auto auto 32px;gap:8px}
+.trk .grip{order:-1}
+@media (max-width:480px){.trk{grid-template-columns:20px 40px minmax(0,1fr) auto auto 26px;gap:6px}.trk .th{width:40px;height:40px}.trk .dur{font-size:12px}}

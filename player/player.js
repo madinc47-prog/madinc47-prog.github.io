@@ -2,17 +2,17 @@
 // Every module URL carries the same ?v= tag as player.js in index.html (and sw.js SHELL), so a deploy can never mix
 // old and new modules from the HTTP cache. Bump all of them together.
 import { saveTrack, listTracks, getTrack, deleteTrack, onMediaChange } from '../shared/media-store.js';
-import { createScene } from './scene.js?v=18';
-import { createViz, THEMES } from './viz.js?v=18';
-import { OUTFITS, OUTFIT_FOR_THEME } from './outfits.js?v=18';
-import { createEQ } from './eq.js?v=18';
-import { createHype } from './hype.js?v=18';
-import { createLadies } from './ladies.js?v=18';
-import { createShout } from './shout.js?v=18';
-import { initPhoto } from './photo.js?v=18';
-import { initRec } from './rec.js?v=18';
-import { td, TD } from './td.js?v=18';
-import { fmt, hash, isAudioFile, titleFromName, makeCover, makeLabel, readTags, probeDuration, probeMedia, computePeaks, notMusicReason } from './util.js?v=18';
+import { createScene } from './scene.js?v=19';
+import { createViz, THEMES } from './viz.js?v=19';
+import { OUTFITS, OUTFIT_FOR_THEME } from './outfits.js?v=19';
+import { createEQ } from './eq.js?v=19';
+import { createHype } from './hype.js?v=19';
+import { createLadies } from './ladies.js?v=19';
+import { createShout } from './shout.js?v=19';
+import { initPhoto } from './photo.js?v=19';
+import { initRec } from './rec.js?v=19';
+import { td, TD } from './td.js?v=19';
+import { fmt, hash, isAudioFile, titleFromName, makeCover, makeLabel, readTags, probeDuration, probeMedia, computePeaks, notMusicReason } from './util.js?v=19';
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -69,7 +69,20 @@ function inTab(it, tab) {
   if (tab === 'dj') return it.source === 'dj';
   return it.source === 'import' || it.source === 'player' || it.kind === 'url' || it.kind === 'session';
 }
-const visible = () => library.filter((it) => inTab(it, S.tab));
+// queue order: the user's drag / up-down order (saved on this device); new tracks not in it yet come first
+let userOrder = LS.get('order', []);
+let queueOut = new Set(LS.get('queueOut', [])); // taken out of the queue (not deleted)
+const visible = () => { const pos = new Map(userOrder.map((k, i) => [k, i])); const v = library.filter((it) => inTab(it, S.tab) && !queueOut.has(it.key)); return v.map((it, i) => [it, pos.has(it.key) ? 1e6 + pos.get(it.key) : i]).sort((a, b) => a[1] - b[1]).map((x) => x[0]); };
+function saveOrder(keys, why) {
+  const set = new Set(keys); userOrder = [...keys, ...userOrder.filter((k) => !set.has(k))]; LS.set('order', userOrder);
+  if (!S.shuffle) { buildOrder(current && current.key); } invalidateCue && invalidateCue();
+  td('queue: ' + why + ' · ' + keys.length + ' in order');
+}
+function removeFromQueue(it) {
+  queueOut.add(it.key); LS.set('queueOut', [...queueOut]); queueOrder = queueOrder.filter((k) => k !== it.key); invalidateCue(); renderList();
+  td('queue: removed ' + it.title + ' (kept in My Tracks)');
+  toast(`Removed “${it.title}” from the queue`, { label: 'Undo', fn: () => { queueOut.delete(it.key); LS.set('queueOut', [...queueOut]); buildOrder(current && current.key); renderList(); td('queue: undo remove ' + it.title); } });
+}
 const byKey = (k) => library.find((it) => it.key === k);
 
 async function urlFor(it) {
@@ -742,6 +755,8 @@ function renderList() {
     const li = document.createElement('li'); li.className = 'trk'; li.dataset.key = it.key; li.tabIndex = 0; li.setAttribute('role', 'button');
     li.innerHTML = `<span class="th"><img alt="" loading="lazy"><span class="eqmini"><i></i><i></i><i></i></span></span>
       <span class="meta"><b></b><small></small></span><span class="dur"></span>
+      <span class="qbtns"><button class="qup" aria-label="Move up" title="Move up">▲</button><button class="qdn" aria-label="Move down" title="Move down">▼</button><button class="qrm" aria-label="Remove from queue" title="Remove from queue">✕</button></span>
+      <span class="grip" aria-hidden="true" title="Drag to reorder">⋮⋮</span>
       <button class="more" aria-label="Track options" title="Options"><svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg></button>`;
     li.querySelector('img').src = coverOf(it);
     li.querySelector('b').textContent = it.title;
@@ -749,13 +764,38 @@ function renderList() {
     li.querySelector('.dur').textContent = it.duration ? fmt(it.duration) : '';
     if (S.liked.has(it.key)) li.classList.add('liked');
     ladies.decorateRow(li, it);
-    li.addEventListener('click', (e) => { if (e.target.closest('.more')) return; userActivated = true; buildOrder(it.key); playItem(it); });
+    li.querySelector('.qup').addEventListener('click', (e) => { e.stopPropagation(); moveRow(it.key, -1); });
+    li.querySelector('.qdn').addEventListener('click', (e) => { e.stopPropagation(); moveRow(it.key, 1); });
+    li.querySelector('.qrm').addEventListener('click', (e) => { e.stopPropagation(); removeFromQueue(it); });
+    li.querySelector('.grip').addEventListener('pointerdown', (e) => startDrag(e, li));
+    li.addEventListener('click', (e) => { if (e.target.closest('.more') || e.target.closest('.qbtns') || e.target.closest('.grip')) return; userActivated = true; buildOrder(it.key); playItem(it); });
     li.addEventListener('keydown', (e) => { if (e.key === 'Enter') { buildOrder(it.key); playItem(it); } });
     li.querySelector('.more').addEventListener('click', (e) => { e.stopPropagation(); openItemMenu(it, e.currentTarget); });
     frag.appendChild(li);
   });
   ul.appendChild(frag);
   renderListPlaying(); renderFoot(); renderTabs();
+}
+function listKeys() { return $$('#list .trk').map((li) => li.dataset.key); }
+function moveRow(key, dir) {
+  const keys = listKeys(), i = keys.indexOf(key), j = i + dir; if (i < 0 || j < 0 || j >= keys.length) return;
+  [keys[i], keys[j]] = [keys[j], keys[i]]; saveOrder(keys, (dir < 0 ? 'moved up ' : 'moved down ') + (byKey(key) || {}).title); renderList();
+  const li = $(`[data-key="${CSS.escape(key)}"] .${dir < 0 ? 'qup' : 'qdn'}`); li && li.focus({ preventScroll: true });
+}
+// drag to reorder (mouse, pen and touch: the grip has touch-action:none so Android Chrome doesn't scroll instead)
+function startDrag(e, li) {
+  e.preventDefault(); e.stopPropagation(); const ul = $('#list'); const grip = e.currentTarget; try { grip.setPointerCapture(e.pointerId); } catch (er) {}
+  li.classList.add('dragging'); let lastY = e.clientY, moved = false; const sc = ul.closest('.list-wrap') || ul.parentElement;
+  const move = (ev) => {
+    lastY = ev.clientY; const others = [...ul.querySelectorAll('.trk:not(.dragging)')];
+    const after = others.find((o) => { const r = o.getBoundingClientRect(); return ev.clientY < r.top + r.height / 2; });
+    if (after) { if (after.previousElementSibling !== li) { ul.insertBefore(li, after); moved = true; } } else if (ul.lastElementChild !== li) { ul.appendChild(li); moved = true; }
+    const r = sc.getBoundingClientRect(); if (ev.clientY < r.top + 30) sc.scrollTop -= 12; else if (ev.clientY > r.bottom - 30) sc.scrollTop += 12;
+  };
+  // listen on window: moving the row in the DOM drops pointer capture, so the grip itself may never see pointerup
+  const id = e.pointerId, mv = (ev) => { if (ev.pointerId === id) { ev.preventDefault(); move(ev); } };
+  const up = (ev) => { if (ev.pointerId !== id) return; removeEventListener('pointermove', mv); removeEventListener('pointerup', up); removeEventListener('pointercancel', up); li.classList.remove('dragging'); if (moved) { saveOrder(listKeys(), 'dragged ' + (byKey(li.dataset.key) || {}).title); renderList(); } };
+  addEventListener('pointermove', mv, { passive: false }); addEventListener('pointerup', up); addEventListener('pointercancel', up);
 }
 function renderListPlaying() {
   const playing = !!(deck && !deck.el.paused);
