@@ -172,3 +172,4 @@ body.embed .st-standalone { display: none; }
 #clean-sheet { inset: auto 1rem 4.2rem auto; background: none; padding: 0; pointer-events: none; z-index: 85; }
 #clean-sheet .st-panel { pointer-events: auto; width: min(460px, calc(100vw - 2rem)); border-color: rgba(52, 211, 153, .45); }
 @media (max-width: 640px) { #clean-sheet { inset: auto .5rem 4rem .5rem; } #clean-sheet .st-panel { width: 100%; } }
+.mini.wide.on { background: #a78bfa; color: #111; border-color: #a78bfa; }

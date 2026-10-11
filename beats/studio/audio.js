@@ -28,6 +28,9 @@
     T.dly = c.createDelay(4); T.fb = c.createGain(); T.dlyMix = c.createGain(); T.dlyLp = c.createBiquadFilter(); T.dlyLp.type = "lowpass"; T.dlyLp.frequency.value = 5000;
     T.rev = c.createConvolver(); T.revMix = c.createGain(); T.revSize = 0;
     T.pan = c.createStereoPanner();
+    // Wide (per track, off by default): a 12 ms copy added left / subtracted right → wider in stereo, cancels in mono
+    T.wd = c.createDelay(0.05); T.wd.delayTime.value = 0.012; T.wl = c.createGain(); T.wr = c.createGain(); T.wl.gain.value = 0; T.wr.gain.value = 0;
+    T.wpl = c.createStereoPanner(); T.wpr = c.createStereoPanner(); T.wpl.pan.value = -1; T.wpr.pan.value = 1;
     T.fader = c.createGain();
     T.meter = c.createAnalyser(); T.meter.fftSize = 1024;
     T.input.connect(T.gate); T.gate.connect(T.low); T.low.connect(T.mid); T.mid.connect(T.high); T.high.connect(T.comp); T.comp.connect(T.makeup); T.makeup.connect(T.post);
@@ -35,6 +38,7 @@
     T.post.connect(T.dly); T.dly.connect(T.dlyLp); T.dlyLp.connect(T.fb); T.fb.connect(T.dly); T.dlyLp.connect(T.dlyMix); T.dlyMix.connect(T.pan);
     T.post.connect(T.rev); T.rev.connect(T.revMix); T.revMix.connect(T.pan);
     T.pan.connect(T.fader); T.fader.connect(T.meter); T.fader.connect(out);
+    T.post.connect(T.wd); T.wd.connect(T.wl); T.wd.connect(T.wr); T.wl.connect(T.wpl); T.wr.connect(T.wpr); T.wpl.connect(T.fader); T.wpr.connect(T.fader);
     return T;
   }
   function applyFx(c, T, tr, P, solo) {
@@ -50,6 +54,7 @@
     if (f.reverb.on && T.revSize !== f.reverb.size) { T.rev.buffer = impulse(c, f.reverb.size); T.revSize = f.reverb.size; }
     set(T.revMix.gain, f.reverb.on ? f.reverb.mix : 0);
     set(T.pan.pan, tr.pan);
+    set(T.wl.gain, tr.wide ? 0.32 : 0); set(T.wr.gain, tr.wide ? -0.32 : 0);
     var audible = !tr.mute && (!solo || tr.solo);
     set(T.fader.gain, audible ? db(tr.vol) : 0);
   }
@@ -211,7 +216,7 @@
       var mic = {}; try { mic = stream.getAudioTracks()[0].getSettings() || {}; } catch (e) { /* ignore */ }
       try { var st = stream.getAudioTracks()[0].getSettings(); E.inLat = st && typeof st.latency === "number" && st.latency < 0.5 ? st.latency : 0; } catch (e) { E.inLat = 0; }
       var c = E.ctx, src = c.createMediaStreamSource(stream), node = new AudioWorkletNode(c, "ipb-rec", { numberOfInputs: 1, numberOfOutputs: 0 });
-      var R = { stream: stream, src: src, node: node, chunks: [], t: [], armed: armed.map(function (t) { return t.id; }), from: from, an: c.createAnalyser(), speaker: spk, mic: { echoCancellation: !!mic.echoCancellation, noiseSuppression: !!mic.noiseSuppression, autoGainControl: !!mic.autoGainControl } };
+      var R = { stream: stream, src: src, node: node, chunks: [], chunks2: [], t: [], armed: armed.map(function (t) { return t.id; }), from: from, an: c.createAnalyser(), speaker: spk, mic: { echoCancellation: !!mic.echoCancellation, noiseSuppression: !!mic.noiseSuppression, autoGainControl: !!mic.autoGainControl } };
       R.an.fftSize = 1024; src.connect(R.an);
       R.t0 = performance.now(); R.max = 0; R.lost = null;
       var mtr = stream.getAudioTracks()[0];
@@ -220,7 +225,8 @@
         mtr.addEventListener("mute", function () { R.lost = "mute"; });
         if (mtr.muted) R.lost = "mute";
       }
-      node.port.onmessage = function (e) { if (e.data.ch) { R.chunks.push(e.data.ch[0]); R.t.push(e.data.t); } };
+      // keep EVERY mic channel: some tablets open the built-in mic as stereo with the voice in one side only
+      node.port.onmessage = function (e) { if (e.data.ch) { R.chunks.push(e.data.ch[0]); R.chunks2.push(e.data.ch[1] || null); R.t.push(e.data.t); } };
       src.connect(node);
       E.rec = R; E.recording = true;
       return play(P, from, pre).then(function (when) {
@@ -242,6 +248,11 @@
         if (!R.chunks.length) { res(null); return; }
         var c = E.ctx, n = R.chunks.reduce(function (a, b) { return a + b.length; }, 0), all = new Float32Array(n), o = 0;
         R.chunks.forEach(function (ch) { all.set(ch, o); o += ch.length; });
+        if (R.chunks2.some(Boolean) && window.IPBFx) { // stereo stream: keep the live side (dead / near-silent other side) or sum both to mono
+          var all2 = new Float32Array(n), o2 = 0;
+          R.chunks2.forEach(function (ch, k) { var len = R.chunks[k].length; if (ch) all2.set(ch.subarray(0, len), o2); o2 += len; });
+          all = window.IPBFx.smartMono([all, all2]);
+        }
         // align: first captured frame's context time vs. when playback of `from` started, minus round-trip latency
         var firstT = R.t[0], lat = latency();
         var startTl = R.from + (firstT - R.when) - lat;

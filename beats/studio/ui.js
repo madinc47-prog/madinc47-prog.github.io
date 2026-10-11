@@ -703,7 +703,7 @@
       d.innerHTML = '<span class="snum">' + (i + 1) + '</span><span class="sname"></span><button class="mini fx" title="Effects">FX</button>' +
         '<input type="range" class="pan" min="-1" max="1" step="0.05" title="Pan"><span class="dbv pv"></span>' +
         '<div class="fadwrap"><input type="range" class="fader" min="-60" max="6" step="0.5" title="Level (dB) · double-click for 0 dB"><span class="meter"><i></i></span></div>' +
-        '<span class="dbv vv"></span><div class="btns"><button class="mini arm" title="Record arm">R</button><button class="mini mute" title="Mute">M</button><button class="mini solo" title="Solo">S</button></div>';
+        '<span class="dbv vv"></span><div class="btns"><button class="mini arm" title="Record arm">R</button><button class="mini mute" title="Mute">M</button><button class="mini solo" title="Solo">S</button><button class="mini wide" title="Wide: subtle stereo double (mono-safe). Off = the track stays exactly where Pan puts it.">W</button></div>';
       d.querySelector(".sname").textContent = tr.name; d.querySelector(".sname").title = tr.name;
       var f = d.querySelector(".fader"), vv = d.querySelector(".vv"), pn = d.querySelector(".pan"), pv = d.querySelector(".pv");
       f.value = tr.vol; vv.textContent = (tr.vol > 0 ? "+" : "") + tr.vol.toFixed(1) + " dB"; pn.value = tr.pan; pv.textContent = panTxt(tr.pan);
@@ -712,7 +712,7 @@
       f.addEventListener("dblclick", function () { S.pushUndo(P, "volume"); tr.vol = 0; changed(); });
       pn.addEventListener("input", function () { begin("pan"); tr.pan = +pn.value; pv.textContent = panTxt(tr.pan); E.ctx && E.syncGraph(P); });
       pn.addEventListener("change", function () { end(); changed(null, true); });
-      ["arm", "mute", "solo"].forEach(function (k) {
+      ["arm", "mute", "solo", "wide"].forEach(function (k) {
         var b = d.querySelector("." + k); b.classList.toggle("on", !!tr[k]);
         b.addEventListener("click", function () { S.pushUndo(P, k); tr[k] = !tr[k]; changed(); });
       });

@@ -31,6 +31,12 @@
   var sources = {};
   function addSource(buf, name, id) {
     id = id || uid("s");
+    // a stereo take / import with one dead side (built-in tablet mic recorded as stereo, voice left only) → mono, so it
+    // plays centred. Real stereo (beats, mixes) is untouched.
+    if (buf && buf.numberOfChannels === 2 && window.IPBFx) {
+      var fix = window.IPBFx.deadChannelFix([buf.getChannelData(0), buf.getChannelData(1)]);
+      if (fix) buf = bufFrom(fix, buf.sampleRate);
+    }
     sources[id] = { id: id, name: name || "Audio", buf: buf };
     return id;
   }
