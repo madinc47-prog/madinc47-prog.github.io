@@ -359,6 +359,10 @@ body.lite .chip{background:rgba(14,10,30,.85)}
 
 /* face photo: the drawn eyes/brows/beard/mouth hide under it (cap + ears stay) */
 .has-photo .stockface{display:none}
+/* with a face photo on, the photo covers the cartoon face: the plain head sits under it whichever DJ is picked */
+.has-photo .dj-emm{display:none!important}.has-photo .dj-psycho{display:inline!important}
+.dj-pick{appearance:none;-webkit-appearance:none;background:rgba(255,255,255,.06);color:inherit;border:1px solid rgba(255,255,255,.14);border-radius:999px;padding:6px 26px 6px 12px;font:inherit;font-size:.86rem;cursor:pointer;background-image:linear-gradient(45deg,transparent 50%,currentColor 50%),linear-gradient(135deg,currentColor 50%,transparent 50%);background-position:calc(100% - 14px) 52%,calc(100% - 9px) 52%;background-size:5px 5px;background-repeat:no-repeat}
+.dj-pick option{color:#111}
 
 /* queue: reorder + remove */
 .trk .qbtns{display:inline-flex;gap:2px;flex:none}

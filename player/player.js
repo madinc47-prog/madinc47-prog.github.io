@@ -2,18 +2,18 @@
 // Every module URL carries the same ?v= tag as player.js in index.html (and sw.js SHELL), so a deploy can never mix
 // old and new modules from the HTTP cache. Bump all of them together.
 import { saveTrack, listTracks, getTrack, deleteTrack, onMediaChange } from '../shared/media-store.js';
-import { createScene } from './scene.js?v=23';
-import { createViz, THEMES } from './viz.js?v=23';
-import { OUTFITS, OUTFIT_FOR_THEME } from './outfits.js?v=23';
-import { createEQ } from './eq.js?v=23';
-import { createHype } from './hype.js?v=23';
-import { createLadies } from './ladies.js?v=23';
-import { createShout } from './shout.js?v=23';
-import { initPhoto } from './photo.js?v=23';
-import { initRec } from './rec.js?v=23';
-import { createIsle } from './isle.js?v=23';
-import { td, TD } from './td.js?v=23';
-import { fmt, hash, isAudioFile, titleFromName, makeCover, makeLabel, readTags, probeDuration, probeMedia, computePeaks, notMusicReason } from './util.js?v=23';
+import { createScene } from './scene.js?v=24';
+import { createViz, THEMES } from './viz.js?v=24';
+import { OUTFITS, OUTFIT_FOR_THEME } from './outfits.js?v=24';
+import { createEQ } from './eq.js?v=24';
+import { createHype } from './hype.js?v=24';
+import { createLadies } from './ladies.js?v=24';
+import { createShout } from './shout.js?v=24';
+import { initPhoto } from './photo.js?v=24';
+import { initRec } from './rec.js?v=24';
+import { createIsle } from './isle.js?v=24';
+import { td, TD } from './td.js?v=24';
+import { fmt, hash, isAudioFile, titleFromName, makeCover, makeLabel, readTags, probeDuration, probeMedia, computePeaks, notMusicReason } from './util.js?v=24';
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -1275,6 +1275,11 @@ async function boot() {
     showBigPlay(`Play “${start.title}”`);
   } else { const first = visible()[0] || library[0]; if (first) { current = first; updateNowPlaying(first); renderList(); showBigPlay('Tap to drop the needle'); } else { renderList(); toast('No tracks yet: send a beat here from Beats or the DJ Booth, or add a file / URL.'); } }
   try { initPhoto({ scene, toast, td }); } catch (e) { console.warn('[player] photo', e); }
+  // DJ picker: the stock Psycho Fingers DJ (default) or the cartoon Emmanuel DJ; saved on this device
+  try {
+    const dp = document.getElementById('djPick'); const v0 = scene.setDJ(LS.get('djVariant', 'psycho')); dp.value = v0; td('dj: ' + v0 + (LS.get('djVariant', null) ? ' (saved choice)' : ' (default)'));
+    dp.addEventListener('change', () => { const v = scene.setDJ(dp.value); LS.set('djVariant', v); td('dj: picked ' + v); toast(v === 'emmanuel' ? 'DJ Emmanuel on the decks' : 'DJ Psycho Fingers on the decks'); });
+  } catch (e) { console.warn('[player] dj pick', e); }
   // recording tap: decks after crossfader/EQ/duck + effects/shout-outs, before the volume knob (master)
   try { window.__pfRec = initRec({ td, toast, getTap: () => { ensureCtx(); return { ctx, node: preVol }; } }); } catch (e) { console.warn('[player] rec', e); }
   if (TD) td('player ' + (document.querySelector('script[src*="player.js"]') || {}).src + ' · ' + innerWidth + 'x' + innerHeight);
