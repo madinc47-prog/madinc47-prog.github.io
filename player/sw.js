@@ -2,8 +2,8 @@
 // v9: network-first for the app files (the old stale-while-revalidate served last version's code first, mixing
 // old and new files after an update), versioned module URLs, fresh install fetches, and a one-time reload of
 // pages still running the old code when upgrading from v8 or older.
-const VERSION = 'pf-player-v27';
-const V = '?v=27';
+const VERSION = 'pf-player-v28';
+const V = '?v=28';
 const SHELL = [
   './', './index.html', './player.css' + V, './player.js' + V, './scene.js' + V, './outfits.js' + V, './eq.js' + V, './hype.js' + V,
   './ladies.js' + V, './shout.js' + V, './viz.js' + V, './util.js' + V, './photo.js' + V, './td.js' + V, './rec.js' + V, './isle.js' + V, './pop.js' + V, './dates.js' + V, './kokoro-worker.js' + V,

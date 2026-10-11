@@ -2,20 +2,20 @@
 // Every module URL carries the same ?v= tag as player.js in index.html (and sw.js SHELL), so a deploy can never mix
 // old and new modules from the HTTP cache. Bump all of them together.
 import { saveTrack, listTracks, getTrack, deleteTrack, onMediaChange } from '../shared/media-store.js';
-import { createScene } from './scene.js?v=27';
-import { createViz, THEMES } from './viz.js?v=27';
-import { OUTFITS, OUTFIT_FOR_THEME } from './outfits.js?v=27';
-import { createEQ } from './eq.js?v=27';
-import { createHype } from './hype.js?v=27';
-import { createLadies } from './ladies.js?v=27';
-import { createShout } from './shout.js?v=27';
-import { initPhoto } from './photo.js?v=27';
-import { initRec } from './rec.js?v=27';
-import { createIsle } from './isle.js?v=27';
-import { createPop } from './pop.js?v=27';
-import { createDates } from './dates.js?v=27';
-import { td, TD } from './td.js?v=27';
-import { fmt, hash, isAudioFile, titleFromName, makeCover, makeLabel, readTags, probeDuration, probeMedia, computePeaks, notMusicReason } from './util.js?v=27';
+import { createScene } from './scene.js?v=28';
+import { createViz, THEMES } from './viz.js?v=28';
+import { OUTFITS, OUTFIT_FOR_THEME } from './outfits.js?v=28';
+import { createEQ } from './eq.js?v=28';
+import { createHype } from './hype.js?v=28';
+import { createLadies } from './ladies.js?v=28';
+import { createShout } from './shout.js?v=28';
+import { initPhoto } from './photo.js?v=28';
+import { initRec } from './rec.js?v=28';
+import { createIsle } from './isle.js?v=28';
+import { createPop } from './pop.js?v=28';
+import { createDates } from './dates.js?v=28';
+import { td, TD } from './td.js?v=28';
+import { fmt, hash, isAudioFile, titleFromName, makeCover, makeLabel, readTags, probeDuration, probeMedia, computePeaks, notMusicReason } from './util.js?v=28';
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -1287,8 +1287,10 @@ async function boot() {
   } else { const first = visible()[0] || library[0]; if (first) { current = first; updateNowPlaying(first); renderList(); showBigPlay('Tap to drop the needle'); } else { renderList(); toast('No tracks yet: send a beat here from Beats or the DJ Booth, or add a file / URL.'); } }
   try { initPhoto({ scene, toast, td }); } catch (e) { console.warn('[player] photo', e); }
   // DJ picker: the stock Psycho Fingers DJ (default) or the cartoon Emmanuel DJ; saved on this device
+  // DEFAULT_DJ: who is on the decks before anyone picks ('psycho' = stock DJ Psycho Fingers, 'emmanuel' = cartoon Emmanuel)
+  const DEFAULT_DJ = 'psycho';
   try {
-    const dp = document.getElementById('djPick'); const v0 = scene.setDJ(LS.get('djVariant', 'psycho')); dp.value = v0; td('dj: ' + v0 + (LS.get('djVariant', null) ? ' (saved choice)' : ' (default)'));
+    const dp = document.getElementById('djPick'); const v0 = scene.setDJ(LS.get('djVariant', DEFAULT_DJ)); dp.value = v0; td('dj: ' + v0 + (LS.get('djVariant', null) ? ' (saved choice)' : ' (default)'));
     dp.addEventListener('change', () => { const v = scene.setDJ(dp.value); LS.set('djVariant', v); td('dj: picked ' + v); toast(v === 'emmanuel' ? 'DJ Emmanuel on the decks' : 'DJ Psycho Fingers on the decks'); });
   } catch (e) { console.warn('[player] dj pick', e); }
   // recording tap: decks after crossfader/EQ/duck + effects/shout-outs, before the volume knob (master)
