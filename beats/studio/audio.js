@@ -194,8 +194,7 @@
   }
   function latency() { return E.P && E.P.latencyMs != null ? E.P.latencyMs / 1000 : autoLatency(); }
   function countLeft() { return E.playing && E.ctx && E.ctx.currentTime < E.countEnd ? E.countEnd - E.ctx.currentTime : 0; }
-  // opts.speaker: no headphones → let the browser's echo-cancel / noise-suppression / auto-gain help (the take can be
-  // cleaned further afterwards with "Clean take"); with headphones keep the mic signal untouched
+  // opts.speaker: no headphones (only remembered on the take; the mic is opened raw either way)
   function startRecord(P, from, pre, opts) {
     var spk = !!(opts && opts.speaker);
     var armed = P.tracks.filter(function (t) { return t.arm; });
@@ -203,8 +202,11 @@
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return Promise.reject(new Error("This browser cannot record from a microphone."));
     return ensure().then(function () {
       if (!E.hasWorklet) throw new Error("Recording needs AudioWorklet support (use an up-to-date browser).");
-      return navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: spk, noiseSuppression: spk, autoGainControl: spk, channelCount: 1 } })
-        .catch(function (e) { if (e && (e.name === "OverconstrainedError" || e.name === "TypeError")) return navigator.mediaDevices.getUserMedia({ audio: true }); throw e; });
+      // RAW takes in every mode: no browser / phone echo-cancel, noise suppression or auto-gain (the take is saved exactly
+      // as the mic captured it; 🧹 Clean take is manual)
+      var RAW = { echoCancellation: false, noiseSuppression: false, autoGainControl: false };
+      return navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: 1 } })
+        .catch(function (e) { if (e && (e.name === "OverconstrainedError" || e.name === "TypeError")) return navigator.mediaDevices.getUserMedia({ audio: RAW }); throw e; });
     }).then(function (stream) {
       var mic = {}; try { mic = stream.getAudioTracks()[0].getSettings() || {}; } catch (e) { /* ignore */ }
       try { var st = stream.getAudioTracks()[0].getSettings(); E.inLat = st && typeof st.latency === "number" && st.latency < 0.5 ? st.latency : 0; } catch (e) { E.inLat = 0; }

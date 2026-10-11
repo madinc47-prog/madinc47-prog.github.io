@@ -313,7 +313,7 @@
     E.stopBuffer(); if (!CL.busy) $("clean-sheet").hidden = true;
     if (!hpWarned) {
       hpWarned = true;
-      toast((spk ? "🔈 Speaker mode: echo-cancel is on and the take gets cleaned after you stop. Headphones still sound best. " : "🎧 Headphones mode. ") + (bars ? "Count-in: " + bars + " bar" + (bars > 1 ? "s" : "") + "." : ""), 3600);
+      toast((spk ? "🔈 Speaker mode: the take is saved exactly as recorded (tap 🧹 Clean take afterwards if you want). Headphones sound best. " : "🎧 Headphones mode. ") + (bars ? "Count-in: " + bars + " bar" + (bars > 1 ? "s" : "") + "." : ""), 3600);
     }
     E.startRecord(P, from, pre, { speaker: spk }).then(function () {
       $("t-rec").classList.add("on"); $("t-play").classList.add("on"); $("t-in").hidden = false;
@@ -360,53 +360,18 @@
       playhead = playFrom;
       changed();
       if (silent) { toast(name + " was saved, but it is silent. " + MIC_SILENT, 9000); return; }
-      if (res.speaker && P.autoClean !== false && window.IPBVocalCleanClient) { cleanClip(made[0].id, { auto: true, mic: res.mic }); return; }
-      if (proOn()) { proClip(made[0].id); return; }
       toast(name + " recorded (" + buf.duration.toFixed(1) + "s). " + (res.speaker ? "Press 🧹 Clean take to remove the speaker bleed. " : "") + "Double-click it to edit.");
     });
   }
 
-  /* ---------------- Pro vocal (shared/vocal-chain.js): built-in mic → condenser-style vocal, automatic ----------------
-   * Runs on the RAW recording right after the take (or after Clean take in speaker mode). Non-destructive: the raw take
-   * stays as the clip's original (⟲ Original / Undo). */
-  function proOn() { return !!window.VocalChain && window.VocalChain.enabled(); }
-  function proBuf(buf) { // mono-sum → chain → AudioBuffer
-    var sr = buf.sampleRate, n = buf.length, x = new Float32Array(n);
-    for (var ch = 0; ch < buf.numberOfChannels; ch++) { var d = buf.getChannelData(ch); for (var i = 0; i < n; i++) x[i] += d[i] / buf.numberOfChannels; }
-    return window.VocalChain.render(x, sr, { profile: "builtin" }).then(function (y) { return S.bufFrom([y], sr); });
-  }
-  function proClip(id) {
-    var c = clipById(id); if (!c || c.pro) return Promise.resolve(null);
-    var raw = clClipBuf(c); if (!raw) return Promise.resolve(null);
-    return proBuf(raw).then(function (nb) {
-      var c2 = clipById(id); if (!c2 || c2.pro) return null;
-      S.pushUndo(P, "pro vocal");
-      var nid = S.addSource(nb, c2.name + " (pro vocal)");
-      P.clips.forEach(function (k) {
-        if (k !== c2 && !(k.src === c2.src && Math.abs(k.offset - c2.offset) < 1e-6 && Math.abs(k.dur - c2.dur) < 1e-6)) return;
-        if (!k.orig) k.orig = { src: k.src, offset: k.offset, dur: k.dur }; // the raw take stays in the project
-        k.src = nid; k.offset = 0; k.dur = nb.duration; k.pro = true;
-      });
-      if (view === "wave" && waveClip === c2.id) loadWave(c2, true);
-      changed("pro vocal");
-      toast(c2.name + " recorded · Pro vocal applied (EQ, compression, de-esser, gate). ⟲ Original or Undo gives the raw take.", 3600);
-      return c2;
-    }).catch(function (e) { toast("Recorded. Pro vocal isn't available here (" + (e && e.message || e) + ") — raw take kept.", 4200); return null; });
-  }
-
-  /* ---------------- headphones / speaker mode + "Clean take" (shared cleaner: ../vocal-clean-client.js) ---------------- */
-  var hp = { found: false, label: "", manual: null };
-  try { var hm = localStorage.getItem("ipbs_hp"); hp.manual = hm === "1" ? true : hm === "0" ? false : null; } catch (e) { /* ignore */ }
   function onHeadphones() { return hp.manual != null ? hp.manual : hp.found; }
   function speakerMode() { return !onHeadphones(); }
   function hpUI() {
     var chip = $("rs-hpchip"); if (!chip) return;
     var on = onHeadphones();
     chip.className = "hp-chip " + (on ? "hp" : "spk");
-    chip.textContent = on ? "🎧 Headphones" + (hp.manual ? " (you said so)" : hp.label ? ": " + hp.label : "") : "🔈 Speaker mode" + (hp.manual === false ? " (you said so)" : "") + " · echo-cancel + Clean take";
+    chip.textContent = on ? "🎧 Headphones" + (hp.manual ? " (you said so)" : hp.label ? ": " + hp.label : "") : "🔈 Speaker mode" + (hp.manual === false ? " (you said so)" : "") + " · take saved as recorded";
     $("rs-hpon").checked = on;
-    $("rs-autoclean").checked = P ? P.autoClean !== false : true;
-    $("rs-autoclean").disabled = on;
   }
   function hpDetect() {
     var C = window.IPBVocalCleanClient; if (!C) return Promise.resolve();
@@ -451,9 +416,8 @@
     if (!c) { toast("Select a recorded clip first, then press 🧹 Clean take."); return Promise.resolve(null); }
     if (CL.busy) { toast("Already cleaning a take…"); return Promise.resolve(null); }
     if (c.clean) { toast(c.name + " is already cleaned. ⟲ Original (Waveform Edit) or Undo brings back the raw take."); return Promise.resolve(null); }
-    var raw = c.pro && c.orig ? clClipBuf({ src: c.orig.src, offset: c.orig.offset, dur: c.orig.dur }) : clClipBuf(c); // clean the RAW take, not the processed one
+    var raw = clClipBuf(c);
     if (!raw) return Promise.resolve(null);
-    var pro = proOn();
     if (raw.duration > 600) { toast("Clean take works on clips up to 10 minutes. Split it first."); return Promise.resolve(null); }
     if (E.playing) pause();
     E.stopBuffer();
@@ -468,16 +432,13 @@
       mic.set(mono, pad);
       if (ref) { var rl = ref[0], rr = ref[1], m = Math.min(n, rl.length); L.set(rl.subarray(0, m)); R.set(rr.subarray(0, m)); }
       var co = {}; for (var k in (o.opts || {})) co[k] = o.opts[k];
-      if (pro) { co.hpf = false; co.gate = false; } // the Pro vocal chain follows with its own high-pass and gate: one chain
       return C.run(mic, L, ref ? R : null, sr, co, function (stage, p) {
         $("cl-bar").style.width = Math.max(2, Math.round(p * 100)) + "%";
         $("cl-step").textContent = (CL_STEPS[stage] || "Working…") + " " + Math.round(p * 100) + "%";
       }).then(function (r) { return { r: r, pad: pad, hadRef: !!ref }; });
     }).then(function (x) {
       var cb = S.bufFrom([new Float32Array(x.r.out.subarray(x.pad, x.pad + mono.length))], sr);
-      if (!pro) { x.nb = cb; return x; }
-      $("cl-step").textContent = "Pro vocal: EQ, compression, de-esser…";
-      return proBuf(cb).then(function (b) { x.nb = b; x.pro = true; return x; }, function () { x.nb = cb; return x; });
+      x.nb = cb; return x;
     }).then(function (x) {
       var info = x.r.info;
       info.wallMs = Math.round(performance.now() - T0);
@@ -496,18 +457,18 @@
       CL.clean = nb; CL.busy = false; CL.last = { info: info, clip: c2.id, hadRef: x.hadRef };
       if (view === "wave" && waveClip === c2.id) loadWave(c2, true);
       changed("clean take");
-      $("cl-title").textContent = x.pro ? "Take cleaned + Pro vocal ✓" : "Take cleaned ✓";
+      $("cl-title").textContent = "Take cleaned ✓";
       var parts = [];
       if (!x.hadRef) parts.push("No other tracks playing: noise cleanup only");
       else if (info.bleedFound) parts.push("Beat found in the mic" + (info.latencyErrMs != null ? " (timing off by " + info.latencyErrMs + " ms)" : "") + " and removed");
-      else parts.push("No beat bleed found (headphones, echo-cancel or a quiet speaker): noise cleanup only");
+      else parts.push("No beat bleed found (headphones or a quiet speaker): noise cleanup only");
       if (info.floorInDb != null) parts.push("between lines: " + Math.round(info.floorInDb) + " → " + Math.round(info.floorOutDb) + " dBFS (−" + Math.round(info.floorInDb - info.floorOutDb) + " dB)");
       parts.push("noise removal " + (info.rnnoise ? "RNNoise " + info.rnnoise : "off") + (info.voicedPct != null ? " · voice in " + info.voicedPct + "% of take" : ""));
       parts.push("done in " + (info.wallMs / 1000).toFixed(1) + " s");
       if (o.mic) parts.push("browser echo-cancel " + (o.mic.echoCancellation ? "on" : "off"));
       $("cl-stats").textContent = parts.join(" · ");
       clSetAB("clean"); clSheet("done");
-      toast((o.auto ? "Speaker-mode take cleaned" : c2.name + " cleaned") + ". Compare A/B, or Undo for the raw take.", 3600);
+      toast((c2.name + " cleaned") + ". Compare A/B, or Undo for the raw take.", 3600);
       return CL.last;
     }).catch(function (e) {
       CL.busy = false; $("clean-sheet").hidden = true;
@@ -1038,9 +999,6 @@
       try { if (hp.manual == null) localStorage.removeItem("ipbs_hp"); else localStorage.setItem("ipbs_hp", hp.manual ? "1" : "0"); } catch (e) { /* ignore */ }
       hpUI();
     });
-    $("rs-autoclean").addEventListener("change", function () { P.autoClean = $("rs-autoclean").checked; changed(null, true); });
-    var pv = $("rs-pro");
-    if (pv) { pv.checked = proOn(); pv.disabled = !window.VocalChain; pv.addEventListener("change", function () { window.VocalChain.setEnabled(pv.checked); toast(pv.checked ? "Pro vocal on: new takes get condenser EQ, compression, de-esser and a gentle gate (raw take kept)." : "Pro vocal off: takes stay as recorded."); }); }
     if (navigator.mediaDevices && navigator.mediaDevices.addEventListener) navigator.mediaDevices.addEventListener("devicechange", function () { hpDetect(); });
     hpDetect();
     $("btn-clean").addEventListener("click", function () { cleanClip(selClip); });
