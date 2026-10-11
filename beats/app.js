@@ -48,7 +48,21 @@
     var p = e.changedTouches && e.changedTouches[0] ? e.changedTouches[0] : e, x = Math.round(p.clientX || 0), y = Math.round(p.clientY || 0);
     var now = performance.now(), extra = "";
     if (e.type === "pointerdown") { if (!clicked && lastDown) note("⚠ previous tap got NO click"); lastDown = now; clicked = false; }
-    if (e.type === "click") { clicked = true; extra = lastDown ? " +" + Math.round(now - lastDown) + "ms" : ""; }
+    if (e.type === "click") {
+      clicked = true; extra = lastDown ? " +" + Math.round(now - lastDown) + "ms" : "";
+      var t1 = window.IPBBeats && IPBBeats.audioDebug ? IPBBeats.audioDebug().t : null;
+      setTimeout(function () { // where does the sound die? context state, clock moving, gains, peak level 300 ms later
+        try {
+          var A = window.IPBBeats && IPBBeats.audioDebug ? IPBBeats.audioDebug() : null;
+          if (!A) return;
+          if (!A.state) { note("  audio: " + A.ctx, false); return; }
+          var gs = Object.keys(A.groups).map(function (k) { var x = A.groups[k]; return k + " " + x.v + (x.pk ? "/" + x.pk : ""); }).join(", ");
+          var bad = A.state !== "running" || A.t === t1 || A.fader === 0 || A.masterMix === 0 || A.spk === 0;
+          note("  audio: " + A.state + " " + A.sr + "Hz clock " + (A.t === t1 ? "STUCK " : "") + A.t + "s master " + A.masterMix + " fader " + A.fader + " spk " + A.spk +
+            " PEAK " + A.peak + (A.playing ? " playing" : "") + (A.preview ? " preview" : "") + " | mix: " + gs, bad);
+        } catch (x) { note("  audio: debug error " + x.message, true); }
+      }, 300);
+    }
     dot(x, y, /down|start/.test(e.type) ? "down" : e.type === "click" ? "click" : "up");
     var under = document.elementFromPoint(x, y), tgt = e.target;
     // read defaultPrevented after the page's own handlers ran
@@ -4985,6 +4999,14 @@
           return { n: arr.length, dur: +arr[0].duration.toFixed(3), peak: +pk.toFixed(4), eqFrac: +(eq / Math.max(1, nz)).toFixed(3), sum: sum };
         })
       };
+    },
+    audioDebug: function () { // read by ?tapdebug=1
+      if (!ctx) return { ctx: "none yet" };
+      var g = {};
+      GROUPS.forEach(function (x) { var n = groupNodes[x.id]; g[x.id] = { v: +mixGain(x.id).toFixed(2), pk: n && n.an ? +peak(n.an).toFixed(3) : null }; });
+      return { state: ctx.state, sr: ctx.sampleRate, t: +ctx.currentTime.toFixed(2), base: ctx.baseLatency, out: ctx.outputLatency, fader: +LG.fader.gain.value.toFixed(2), masterMix: +mixGain("master").toFixed(2),
+        beatMon: beatMon ? +beatMon.gain.value.toFixed(2) : null, spk: spkGain ? +spkGain.gain.value.toFixed(2) : null, peak: masterAnalyser ? +peak(masterAnalyser).toFixed(3) : null,
+        playing: playing, preview: !!klPrev, groups: g, sink: ctx.sinkId === undefined ? "" : String(ctx.sinkId) };
     },
     kits: function () { return D.KITS.map(function (k) { return k.id; }); },
     backing: function () {
