@@ -13,7 +13,7 @@ export function hash(str) {
   return h >>> 0;
 }
 
-const AUDIO_EXT = /\.(mp3|m4a|aac|wav|wave|ogg|oga|opus|flac|webm|weba|mp4|aif|aiff|caf)$/i;
+const AUDIO_EXT = /\.(mp3|m4a|aac|wav|wave|ogg|oga|opus|flac|webm|weba|mp4|aif|aiff|caf|amr|3gp|3ga|awb)$/i;
 export const isAudioFile = (f) => (f.type && /^audio\//.test(f.type)) || AUDIO_EXT.test(f.name || '') || (f.type === 'video/mp4' || f.type === 'video/webm');
 
 export function titleFromName(name = '') {
@@ -172,4 +172,19 @@ export async function computePeaks(arrayBuffer, bins = 800) {
   }
   if (max > 0) for (let b = 0; b < bins; b++) peaks[b] /= max;
   return { peaks, duration: ab.duration };
+}
+
+// ---- music-only filter (Oct 2026: the playlist holds only real songs longer than 2:00) ----
+export const MIN_SONG = 120; // seconds; a track must be LONGER than this
+const VOICE_NAME = /(^|[\/\s_-])(PTT-\d|AUD-\d|VN[-_]\d|REC[-_ ]?\d|Voice|Recording|Rec[ _]\d|WhatsApp Audio|New Recording|Audio_\d|voice[ _-]?(note|memo|message))/i;
+const VOICE_EXT = /\.(amr|3gp|3ga|awb|opus)$/i;
+/** null if it looks like a song, else a short reason. dur in seconds (0/NaN = unknown), size in bytes. */
+export function notMusicReason({ name = '', title = '', dur = 0, size = 0 }) {
+  const n = name || title || '';
+  if (VOICE_NAME.test(n) || VOICE_NAME.test(title || '')) return 'voice note / recording (name)';
+  const known = Number.isFinite(dur) && dur > 0;
+  if (VOICE_EXT.test(n) && (!known || !size || size * 8 / dur < 48000)) return 'voice-memo format (' + n.split('.').pop().toLowerCase() + ')';
+  if (known && dur <= MIN_SONG) return '2:00 or shorter (' + fmt(dur) + ')';
+  if (known && size && size * 8 / dur < 40000) return 'low-bitrate speech recording (' + Math.round(size * 8 / dur / 1000) + ' kbps)';
+  return null;
 }

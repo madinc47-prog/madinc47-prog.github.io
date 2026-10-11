@@ -18,7 +18,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
-  <link rel="stylesheet" href="player.css?v=14">
+  <link rel="stylesheet" href="player.css?v=15">
 </head>
 <body data-theme="club">
   <canvas id="viz" aria-hidden="true"></canvas>
@@ -33,8 +33,9 @@
         <a href="../beats/" class="chip"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h3l2-6 4 12 3-9 2 3h4"/></svg>Open in Beats</a>
         <a href="../dj/" class="chip"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.5"/></svg>Open DJ Booth</a>
         <span class="add-wrap"><button id="addBtn" class="add-btn" type="button" title="Add music: pick as many songs as you like (any length) — or drop files / folders onto the player"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add music</button><button id="addFolder" class="add-folder" type="button" hidden title="Add every song in a folder (and its subfolders)">or a folder</button></span>
+        <button id="recBtn" class="rec-btn" type="button" aria-pressed="false" title="Record the mix (everything the Player plays, shout-outs included)"><i class="dot" aria-hidden="true"></i><span>Rec</span></button><span id="recTime" class="rec-time" hidden>0:00</span>
         <button id="photoBtn" class="chip photo" type="button" title="Put your own face on the DJ (stays on this device)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg><span>Use your photo</span></button>
-        <button id="photoReset" class="chip" type="button" hidden title="Back to the default DJ face">Reset photo</button>
+        <button id="photoReset" class="chip" type="button" hidden title="Back to the default DJ face">Reset face</button>
         <button id="installBtn" class="chip gold" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>Install</button>
       </nav>
     </header>
@@ -139,6 +140,15 @@
     <button role="menuitem" data-act="remove" class="danger">Remove from My Tracks</button>
   </div>
 
+  <dialog id="skipDlg" class="dlg skip-dlg">
+    <form method="dialog">
+      <h3>Only songs go in the playlist</h3>
+      <p class="skip-sum"></p>
+      <ul class="skip-list"></ul>
+      <p class="fine">Left out: voice notes and recordings (e.g. PTT-, AUD-, Voice, Recording; .amr/.3gp/.opus memos; low-bitrate speech) and anything 2:00 or shorter. Use “Add anyway” if one is really a song.</p>
+      <div class="dlg-actions"><button value="ok" class="btn">OK</button></div>
+    </form>
+  </dialog>
   <dialog id="urlDlg" class="dlg">
     <form method="dialog">
       <h3>Add from URL</h3>
@@ -151,11 +161,11 @@
   </dialog>
   <dialog id="photoDlg" class="dlg photo-dlg">
     <form method="dialog">
-      <h2>Your photo on the DJ</h2>
-      <p class="photo-hint">Drag to move · pinch or use the slider to zoom. Put your face in the oval. The photo stays on this device.</p>
-      <canvas id="photoCv" width="464" height="600" aria-label="Photo crop preview"></canvas>
+      <h2>Your face on the DJ</h2>
+      <p class="photo-hint">A selfie is enough — just your face. Drag to move · pinch or use the slider to zoom so your face fills the circle. Only your face goes on the DJ; his outfit, hands and moves stay the same. The photo stays on this device.</p>
+      <canvas id="photoCv" width="440" height="440" aria-label="Photo crop preview"></canvas>
       <label class="photo-zoom">Zoom <input id="photoZoom" type="range" min="1" max="5" step="0.01" value="1"></label>
-      <div class="dlg-actions"><button type="submit" value="cancel" class="btn ghost">Cancel</button><button type="submit" value="ok" class="btn">Use this photo</button></div>
+      <div class="dlg-actions"><button type="submit" value="cancel" class="btn ghost">Cancel</button><button type="submit" value="ok" class="btn">Use my face</button></div>
     </form>
   </dialog>
   <dialog id="helpDlg" class="dlg">
@@ -177,6 +187,6 @@
   <input type="file" id="photoIn" accept="image/*" hidden>
 
   <script type="module" src="../shared/ecosystem-nav.js"></script>
-  <script type="module" src="player.js?v=14"></script>
+  <script type="module" src="player.js?v=15"></script>
 </body>
 </html>

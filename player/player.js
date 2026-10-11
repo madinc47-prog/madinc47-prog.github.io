@@ -2,16 +2,17 @@
 // Every module URL carries the same ?v= tag as player.js in index.html (and sw.js SHELL), so a deploy can never mix
 // old and new modules from the HTTP cache. Bump all of them together.
 import { saveTrack, listTracks, getTrack, deleteTrack, onMediaChange } from '../shared/media-store.js';
-import { createScene } from './scene.js?v=14';
-import { createViz, THEMES } from './viz.js?v=14';
-import { OUTFITS, OUTFIT_FOR_THEME } from './outfits.js?v=14';
-import { createEQ } from './eq.js?v=14';
-import { createHype } from './hype.js?v=14';
-import { createLadies } from './ladies.js?v=14';
-import { createShout } from './shout.js?v=14';
-import { initPhoto } from './photo.js?v=14';
-import { td, TD } from './td.js?v=14';
-import { fmt, hash, isAudioFile, titleFromName, makeCover, makeLabel, readTags, probeDuration, probeMedia, computePeaks } from './util.js?v=14';
+import { createScene } from './scene.js?v=15';
+import { createViz, THEMES } from './viz.js?v=15';
+import { OUTFITS, OUTFIT_FOR_THEME } from './outfits.js?v=15';
+import { createEQ } from './eq.js?v=15';
+import { createHype } from './hype.js?v=15';
+import { createLadies } from './ladies.js?v=15';
+import { createShout } from './shout.js?v=15';
+import { initPhoto } from './photo.js?v=15';
+import { initRec } from './rec.js?v=15';
+import { td, TD } from './td.js?v=15';
+import { fmt, hash, isAudioFile, titleFromName, makeCover, makeLabel, readTags, probeDuration, probeMedia, computePeaks, notMusicReason } from './util.js?v=15';
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -56,9 +57,11 @@ async function refreshLibrary() {
   try { recs = await listTracks(); } catch (e) { console.warn('[player] library unavailable', e); }
   const stored = recs.map(itemFromRecord);
   const urls = urlItems.map((u) => ({ key: 'url:' + u.id, kind: 'url', id: u.id, url: u.url, title: u.title || 'Stream', artist: u.artist || '', source: 'import', duration: durCache['url:' + u.id] || 0, createdAt: u.addedAt || 0 }));
-  library = [...stored, ...urls, ...sessionItems];
+  const hid = new Set(LS.get('hiddenShort', []));
+  library = [...stored.filter((it) => !hid.has(it.key)), ...urls, ...sessionItems];
   library.forEach((it) => { if (!it.duration && durCache[it.key]) it.duration = durCache[it.key]; });
   renderList();
+  if (!musicFilterRan) setTimeout(() => filterStoredOnce().catch((e) => td('library: music-only check failed ' + (e && e.message))), 600);
 }
 function inTab(it, tab) {
   if (tab === 'all') return true;
@@ -85,7 +88,7 @@ async function blobFor(it) {
 
 // ---------------- audio engine ----------------
 // deck A / deck B → per-deck fade gain → crossfader slot gain (equal-power) → mix bus → master EQ → duck → volume → analyser → out
-let ctx = null, master, analyser, sfxBus, freq, tdata, prevFreq, mixBus, duck, postMix;
+let ctx = null, master, preVol, analyser, sfxBus, freq, tdata, prevFreq, mixBus, duck, postMix;
 const slot = { A: null, B: null };
 function ensureCtx() {
   if (!ctx) {
@@ -96,12 +99,13 @@ function ensureCtx() {
     master = ctx.createGain(); master.gain.value = S.muted ? 0 : S.vol;
     analyser = ctx.createAnalyser(); analyser.fftSize = 2048; analyser.smoothingTimeConstant = 0.5;
     master.connect(analyser); analyser.connect(ctx.destination);
-    duck = ctx.createGain(); duck.connect(master);
+    preVol = ctx.createGain(); preVol.connect(master); // everything before the volume knob (the recorder taps here)
+    duck = ctx.createGain(); duck.connect(preVol);
     mixBus = ctx.createGain(); postMix = eq.attach(ctx, mixBus); // master EQ sits after the crossfader
     postMix.connect(duck);
     ['A', 'B'].forEach((s) => { slot[s] = ctx.createGain(); slot[s].connect(mixBus); });
     applyXfGains(0);
-    sfxBus = ctx.createGain(); sfxBus.gain.value = 0.55; sfxBus.connect(master);
+    sfxBus = ctx.createGain(); sfxBus.gain.value = 0.55; sfxBus.connect(preVol);
     freq = new Uint8Array(analyser.frequencyBinCount); prevFreq = new Uint8Array(analyser.frequencyBinCount); tdata = new Uint8Array(analyser.fftSize);
   }
   if (ctx.state !== 'running' && ctx.state !== 'closed') ctx.resume().catch(() => {}); // 'suspended' or iOS 'interrupted'
@@ -595,7 +599,7 @@ const scene = createScene($('#sceneWrap'));
 const viz = createViz($('#viz'));
 // hype talk: voice bus after the EQ (not ducked), music ducked via the duck gain
 const hype = createHype({
-  getCtx: ensureCtx, getTap: () => postMix, getOut: () => master, getDuck: () => duck, scene, toast, LS, F,
+  getCtx: ensureCtx, getTap: () => postMix, getOut: () => (ensureCtx(), preVol), getDuck: () => duck, scene, toast, LS, F,
   isPlaying: () => !!(deck && !deck.el.paused), onDuck: () => allDecks().forEach((d) => d.applyVol()),
 });
 window.__pfOnTransition = (info) => hype.onTransition(info);
@@ -814,8 +818,8 @@ $('#mainMenu').addEventListener('click', (e) => {
 $('#fileIn').addEventListener('change', (e) => { importFiles([...e.target.files]); e.target.value = ''; });
 $('#dirIn').addEventListener('change', (e) => { importFiles([...e.target.files]); e.target.value = ''; });
 let persistAsked = false;
-async function importFiles(files) {
-  const all = files.length;
+async function importFiles(files, { force = false } = {}) {
+  const all = files.length; const skipped = [];
   files = files.filter(isAudioFile).sort((a, b) => (a.webkitRelativePath || a.name).localeCompare(b.webkitRelativePath || b.name, undefined, { numeric: true }));
   td('add music: ' + all + ' picked, ' + files.length + ' audio');
   if (!files.length) { toast(all ? 'None of those are audio files' : 'No audio files found'); return; }
@@ -832,10 +836,12 @@ async function importFiles(files) {
     if (!pm.ok) { bad.push(f.name); td('add music: cannot read ' + f.name + ' (' + (f.type || 'no type') + ', ' + Math.round(f.size / 1024) + ' KB)'); continue; }
     const fromName = titleFromName(f.name);
     const title = tags.title || fromName.title, artist = tags.artist || fromName.artist, duration = pm.dur;
+    const why = force ? null : notMusicReason({ name: f.name, title: tags.title || '', dur: duration, size: f.size });
+    if (why) { skipped.push({ file: f, why, dur: duration }); td('add music: skipped ' + f.name + ' · ' + why); continue; }
     td('add music: ' + f.name + ' · ' + (duration ? fmt(duration) : 'length unknown yet') + ' · ' + (f.size / 1048576).toFixed(1) + ' MB');
     let key = null;
     if (S.saveImports) {
-      try { const id = await saveTrack({ title, artist, source: 'import', blob: f, mime: f.type || 'audio/mpeg', duration, artwork: tags.picture }); key = 'store:' + id; saved++; }
+      try { const id = await saveTrack({ title, artist, source: 'import', blob: f, mime: f.type || 'audio/mpeg', duration, artwork: tags.picture }); key = 'store:' + id; saved++; if (force) { const k = new Set(LS.get('keepShort', [])); k.add(key); LS.set('keepShort', [...k]); } }
       catch (err) { console.warn('[player] save failed, keeping in session', err); }
     }
     if (!key) {
@@ -850,9 +856,38 @@ async function importFiles(files) {
   await refreshLibrary(); setStatus('');
   const okN = saved + session, msg = okN ? (saved ? `Added ${saved} track${saved > 1 ? 's' : ''} to My Tracks${session ? ` (${session} for this session only)` : ''}` : `Added ${session} track${session > 1 ? 's' : ''} for this session`) : 'Nothing added';
   toast(bad.length ? `${msg}. ${bad.length} file${bad.length > 1 ? 's' : ''} couldn't be read: ${bad.slice(0, 4).join(', ')}${bad.length > 4 ? ` +${bad.length - 4} more` : ''}` : msg);
-  td('add music: done · ' + saved + ' saved, ' + session + ' session, ' + bad.length + ' unreadable');
+  td('add music: done · ' + saved + ' saved, ' + session + ' session, ' + skipped.length + ' skipped (not songs / 2:00 or shorter), ' + bad.length + ' unreadable');
+  if (skipped.length || bad.length) showSkipped({ added: okN, skipped, bad });
   if (S.tab !== 'all' && S.tab !== 'import') { S.tab = 'import'; LS.set('tab', S.tab); renderList(); }
   if (first && (!deck || deck.el.paused)) { const it = byKey(first); if (it) { buildOrder(it.key); playItem(it); } }
+}
+// summary of what Add music left out, with a small "Add anyway" per file
+function showSkipped({ added = 0, skipped = [], bad = [], hidden = [] }) {
+  const d = $('#skipDlg'), ul = d.querySelector('.skip-list'); ul.innerHTML = '';
+  d.querySelector('.skip-sum').textContent = (hidden.length ? `Hidden from the playlist: ${hidden.length} clip${hidden.length > 1 ? 's' : ''} that aren't songs or are 2:00 or shorter. ` : `Added ${added} song${added === 1 ? '' : 's'}. `) + (skipped.length ? `Skipped ${skipped.length} (only songs longer than 2:00 go in the playlist). ` : '') + (bad.length ? `${bad.length} couldn't be read.` : '');
+  const row = (name, why, fn) => { const li = document.createElement('li'); const t = document.createElement('span'); t.innerHTML = '<b></b> <small></small>'; t.querySelector('b').textContent = name; t.querySelector('small').textContent = '— ' + why; li.appendChild(t); if (fn) { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn ghost small'; b.textContent = 'Add anyway'; b.onclick = async () => { b.disabled = true; b.textContent = 'Adding…'; await fn(); b.textContent = 'Added'; }; li.appendChild(b); } ul.appendChild(li); };
+  skipped.forEach((s) => row(s.file.name, s.why, async () => { td('add music: add anyway ' + s.file.name); await importFiles([s.file], { force: true }); }));
+  hidden.forEach((it) => row(it.title, it.why, async () => { const h = new Set(LS.get('hiddenShort', [])); h.delete(it.key); LS.set('hiddenShort', [...h]); const ok = new Set(LS.get('keepShort', [])); ok.add(it.key); LS.set('keepShort', [...ok]); td('library: add anyway ' + it.title); await refreshLibrary(); }));
+  bad.forEach((n) => row(n, "couldn't be read", null));
+  if (!d.open) d.showModal();
+}
+// once per stored track: hide clips that aren't songs (voice notes, samples, stingers, shout-outs, loops) or are
+// 2:00 or shorter. Nothing is deleted — "Add anyway" brings one back. Unknown lengths are measured from the file.
+let musicFilterRan = false;
+async function filterStoredOnce() {
+  if (musicFilterRan) return; musicFilterRan = true;
+  const checked = new Set(LS.get('musicChecked', [])), hidden = new Set(LS.get('hiddenShort', [])), keep = new Set(LS.get('keepShort', []));
+  const newly = [];
+  for (const it of library.filter((x) => x.kind === 'store' && !checked.has(x.key) && !keep.has(x.key))) {
+    let dur = it.duration;
+    if (!(dur > 0)) { try { const u = await urlFor(it); const pm = await probeMedia(u, 8000); dur = pm.dur || 0; if (dur) { it.duration = dur; durCache[it.key] = dur; } } catch (e) { /* unreadable: leave it */ } }
+    const why = notMusicReason({ title: it.title, dur, size: it.size });
+    checked.add(it.key);
+    if (why) { hidden.add(it.key); newly.push({ key: it.key, title: it.title, why }); td('library: hid ' + it.title + ' · ' + why); }
+  }
+  LS.set('musicChecked', [...checked]); LS.set('hiddenShort', [...hidden]); LS.set('durs', durCache);
+  td('library: music-only check · ' + checked.size + ' checked, ' + hidden.size + ' hidden');
+  if (newly.length) { await refreshLibrary(); toast(newly.length > 1 ? `Hid ${newly.length} clips that aren't songs or are 2:00 or shorter` : `Hid 1 clip that isn't a song or is 2:00 or shorter`, { label: 'See list', fn: () => showSkipped({ hidden: newly }) }); }
 }
 function addUrl(url, title, artist, { persist = true, play = true } = {}) {
   try { url = new URL(url, location.href).href; } catch (e) { toast('That URL looks invalid'); return null; }
@@ -1176,6 +1211,8 @@ async function boot() {
     showBigPlay(`Play “${start.title}”`);
   } else { const first = visible()[0] || library[0]; if (first) { current = first; updateNowPlaying(first); renderList(); showBigPlay('Tap to drop the needle'); } else { renderList(); toast('No tracks yet: send a beat here from Beats or the DJ Booth, or add a file / URL.'); } }
   try { initPhoto({ scene, toast, td }); } catch (e) { console.warn('[player] photo', e); }
+  // recording tap: decks after crossfader/EQ/duck + effects/shout-outs, before the volume knob (master)
+  try { initRec({ td, toast, getTap: () => { ensureCtx(); return { ctx, node: preVol }; } }); } catch (e) { console.warn('[player] rec', e); }
   if (TD) td('player ' + (document.querySelector('script[src*="player.js"]') || {}).src + ' · ' + innerWidth + 'x' + innerHeight);
   applyQualityMode(); requestAnimationFrame(frameLoop);
   window.__pf = { get deck() { return deck; }, get cued() { return cued; }, get outgoing() { return outgoing; }, get transition() { return transition; }, XF, xfPos, setXf, get slot() { return slot; }, get ctx() { return ctx; }, startTransition, get activeSlot() { return activeSlot; }, eq, hype, ladies, get current() { return current; }, F, scene, playItem, refreshLibrary, get library() { return library; }, next, S, setOutfit, setTheme, Q, setQuality, WD, watchdog, get pendingDeck() { return pendingDeck; }, get liveDecks() { return [...liveDecks]; }, pool, finishTransition };

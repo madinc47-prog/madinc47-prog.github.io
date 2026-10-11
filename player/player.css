@@ -274,8 +274,10 @@ body[data-theme=minimal] .switch input:checked+.track .knob{background:#111}
 /* ---------- desktop layout (matches the mockup) ---------- */
 @media (min-width:900px) and (min-height:560px){
   body{height:100dvh;overflow:hidden}
-  .app{display:grid;grid-template-columns:1fr var(--panel-w);grid-template-rows:1fr auto;grid-template-areas:"stage panel" "transport transport"}
-  .top{position:absolute;left:0;top:0;z-index:4;padding:18px 22px}
+  .app{display:grid;grid-template-columns:1fr var(--panel-w);grid-template-rows:auto 1fr auto;grid-template-areas:"top panel" "stage panel" "transport transport"}
+  /* header sits ABOVE the stage (it used to float over it and covered the DJ's face on wide screens) */
+  .top{grid-area:top;position:relative;z-index:4;padding:12px 22px 4px;display:flex;flex-wrap:wrap;align-items:flex-start;gap:6px 18px}
+  .top .links{margin-top:0}
   .brand h1{font-size:clamp(32px,3.4vw,46px)}
   .links{margin-top:4px}
   .stage{grid-area:stage;aspect-ratio:auto;max-height:none;height:auto;min-height:0;margin:0}
@@ -289,7 +291,7 @@ body[data-theme=minimal] .switch input:checked+.track .knob{background:#111}
   .extra{justify-content:flex-end;flex-wrap:nowrap}
   #wave{height:50px}
   body.vis-only .panel,body.vis-only .transport,body.vis-only .top .links{display:none}
-  body.vis-only .app{grid-template-columns:1fr;grid-template-areas:"stage" "stage"}
+  body.vis-only .app{grid-template-columns:1fr;grid-template-areas:"top" "stage" "stage"}
 }
 @media (min-width:1500px){:root{--panel-w:400px}}
 @media (min-width:900px) and (max-width:1360px) and (min-height:560px){
@@ -334,8 +336,23 @@ body.lite .chip{background:rgba(14,10,30,.85)}
 
 /* Use your photo */
 .chip.photo{border-color:color-mix(in srgb,var(--c2) 70%,transparent);background:linear-gradient(180deg,rgba(40,20,70,.75),rgba(20,10,40,.75));color:#fff}
-.photo-dlg canvas{display:block;width:min(70vw,232px);height:auto;aspect-ratio:232/300;margin:8px auto;border-radius:12px;background:#0b0914;touch-action:none;cursor:grab}
+.photo-dlg canvas{display:block;width:min(70vw,260px);height:auto;aspect-ratio:1/1;margin:8px auto;border-radius:12px;background:#0b0914;touch-action:none;cursor:grab}
 .photo-hint{font-size:13px;opacity:.8;margin:4px 0}
 .photo-zoom{display:flex;align-items:center;gap:8px;font-size:13px;justify-content:center}
 .photo-zoom input{width:min(60vw,220px)}
 .chip[hidden],.add-folder[hidden]{display:none!important}
+
+/* music-only summary */
+.skip-list{list-style:none;margin:6px 0;padding:0;max-height:46vh;overflow:auto}
+.skip-list li{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.08);font-size:13px}
+.skip-list li span{min-width:0;overflow-wrap:anywhere}
+.skip-list small{opacity:.75}
+.btn.small{padding:4px 10px;font-size:12px;white-space:nowrap}
+
+/* Record */
+.rec-btn{display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 12px;margin-left:6px;border-radius:18px;border:1.5px solid #ff3b4e;background:rgba(255,59,78,.12);color:#fff;font:700 13px/1 system-ui,sans-serif;letter-spacing:.04em;text-transform:uppercase;cursor:pointer;flex:none}
+.rec-btn .dot{width:10px;height:10px;border-radius:50%;background:#ff3b4e;box-shadow:0 0 6px #ff3b4e}
+.rec-btn.on{background:#ff3b4e}.rec-btn.on .dot{background:#fff;border-radius:2px;animation:recblink 1s steps(2) infinite}
+.rec-time{font:700 13px/1 ui-monospace,monospace;color:#ff6b7a;margin-left:4px;min-width:3.2em}
+@keyframes recblink{50%{opacity:.25}}
+@media (prefers-reduced-motion:reduce){.rec-btn.on .dot{animation:none}}
