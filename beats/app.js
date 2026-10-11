@@ -5047,7 +5047,10 @@
         sessionStorage.setItem(key, live);
         if (rec && rec.on) return; // never interrupt a recording
         toast("Updated, reloading…");
-        setTimeout(function () { location.reload(); }, 900);
+        setTimeout(function () { // a new URL (keeps ?tapdebug=1 etc.) so a stale HTTP-cached page can't be served again on reload
+          var q = new URLSearchParams(location.search); q.set("_v", live);
+          location.replace(location.pathname + "?" + q.toString() + location.hash);
+        }, 900);
       }).catch(function () {});
     } catch (e) { /* ignore */ }
   })();
