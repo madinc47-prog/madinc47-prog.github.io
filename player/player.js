@@ -2,16 +2,16 @@
 // Every module URL carries the same ?v= tag as player.js in index.html (and sw.js SHELL), so a deploy can never mix
 // old and new modules from the HTTP cache. Bump all of them together.
 import { saveTrack, listTracks, getTrack, deleteTrack, onMediaChange } from '../shared/media-store.js';
-import { createScene } from './scene.js?v=13';
-import { createViz, THEMES } from './viz.js?v=13';
-import { OUTFITS, OUTFIT_FOR_THEME } from './outfits.js?v=13';
-import { createEQ } from './eq.js?v=13';
-import { createHype } from './hype.js?v=13';
-import { createLadies } from './ladies.js?v=13';
-import { createShout } from './shout.js?v=13';
-import { initPhoto } from './photo.js?v=13';
-import { td, TD } from './td.js?v=13';
-import { fmt, hash, isAudioFile, titleFromName, makeCover, makeLabel, readTags, probeDuration, computePeaks } from './util.js?v=13';
+import { createScene } from './scene.js?v=14';
+import { createViz, THEMES } from './viz.js?v=14';
+import { OUTFITS, OUTFIT_FOR_THEME } from './outfits.js?v=14';
+import { createEQ } from './eq.js?v=14';
+import { createHype } from './hype.js?v=14';
+import { createLadies } from './ladies.js?v=14';
+import { createShout } from './shout.js?v=14';
+import { initPhoto } from './photo.js?v=14';
+import { td, TD } from './td.js?v=14';
+import { fmt, hash, isAudioFile, titleFromName, makeCover, makeLabel, readTags, probeDuration, probeMedia, computePeaks } from './util.js?v=14';
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -444,7 +444,8 @@ const NEEDLE_SECS = .75;
 function transitionLead() { const sp = animSpeed(); return sp >= 50 ? .05 : NEEDLE_SECS / sp + .15; }
 function checkAutoAdvance() {
   if (!deck || deck.el.paused || S.repeat === 'one' || transition || pendingDeck) return;
-  const el = deck.el, dur = el.duration; if (!Number.isFinite(dur) || dur < 8) return;
+  const el = deck.el, dur = Math.max(el.duration || 0, deck.item.trueDur || 0); if (!Number.isFinite(dur) || dur < 8) return;
+  if (deck.item.trueDur && el.duration < deck.item.trueDur - 2 && !deck._durNote) { deck._durNote = 1; td('length: browser says ' + fmt(el.duration) + ' but the file is ' + fmt(deck.item.trueDur) + ' — playing to the real end'); }
   const rem = (dur - el.currentTime) / (el.playbackRate || 1), xf = Math.min(S.xfade, Math.max(0, dur / 3));
   if (window.__pfBeforeTransition && window.__pfBeforeTransition(rem, xf)) return; // e.g. the "for the ladies" intro
   if (!cued) { if (rem < xf + 12 && !cueTimer) scheduleCue(0); return; }
@@ -666,7 +667,8 @@ async function loadPeaks(it) {
     if (it.size > 80e6) return;
     const blob = await blobFor(it); if (!blob || blob.size > 80e6) return;
     const { peaks, duration } = await computePeaks(await blob.arrayBuffer(), 900);
-    peaksCache.set(it.key, peaks); if (!it.duration) setDuration(it, duration);
+    peaksCache.set(it.key, peaks); it.trueDur = duration; if (!it.duration || Math.abs(it.duration - duration) > 2) setDuration(it, duration);
+    td('length: ' + it.title + ' decoded ' + fmt(duration));
     if (current && current.key === it.key) drawWave();
   } catch (e) { /* remote without CORS or undecodable: procedural waveform */ }
 }
@@ -784,7 +786,10 @@ itemMenu.addEventListener('click', async (e) => {
 });
 
 // header menus
-$('#addBtn').addEventListener('click', (e) => placeMenu($('#addMenu'), e.currentTarget));
+// one button adds music: the system picker opens straight away (multiple files, any length / format the browser plays);
+// "or a folder" (desktop browsers that can pick folders) and drag & drop of files / folders do the same import
+$('#addBtn').addEventListener('click', () => { td('add music: picker opened'); $('#fileIn').click(); });
+{ const di = $('#dirIn'), mobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent); if ('webkitdirectory' in di && !mobile) { $('#addFolder').hidden = false; $('#addFolder').addEventListener('click', () => { td('add music: folder picker opened'); di.click(); }); } }
 $('#menuBtn').addEventListener('click', (e) => { syncMenu(); placeMenu($('#mainMenu'), e.currentTarget); });
 function syncMenu() {
   $('#optSave').setAttribute('aria-checked', S.saveImports); $('#optSave .chk').textContent = S.saveImports ? '✓' : '';
@@ -810,15 +815,24 @@ $('#fileIn').addEventListener('change', (e) => { importFiles([...e.target.files]
 $('#dirIn').addEventListener('change', (e) => { importFiles([...e.target.files]); e.target.value = ''; });
 let persistAsked = false;
 async function importFiles(files) {
+  const all = files.length;
   files = files.filter(isAudioFile).sort((a, b) => (a.webkitRelativePath || a.name).localeCompare(b.webkitRelativePath || b.name, undefined, { numeric: true }));
-  if (!files.length) { toast('No audio files found'); return; }
+  td('add music: ' + all + ' picked, ' + files.length + ' audio');
+  if (!files.length) { toast(all ? 'None of those are audio files' : 'No audio files found'); return; }
   if (S.saveImports && !persistAsked && navigator.storage && navigator.storage.persist) { persistAsked = true; navigator.storage.persist().catch(() => {}); }
-  setStatus(`Adding ${files.length} track${files.length > 1 ? 's' : ''}…`);
-  let first = null, saved = 0, session = 0;
-  for (const f of files) {
-    const tags = await readTags(f); const fromName = titleFromName(f.name);
-    const title = tags.title || fromName.title, artist = tags.artist || fromName.artist;
-    const tmp = URL.createObjectURL(f); const duration = await probeDuration(tmp); URL.revokeObjectURL(tmp);
+  let first = null, saved = 0, session = 0, n = 0; const bad = [];
+  // no count / size / length limit: songs are kept as files (IndexedDB blobs) and stream from object URLs when played,
+  // nothing is decoded into memory here. Tags + length are read 4 files at a time.
+  const N = files.length, info = new Array(N); let next = 0;
+  const reader = async () => { while (next < N) { const i = next++, f = files[i]; const tags = await readTags(f).catch(() => ({})); const tmp = URL.createObjectURL(f); const pm = await probeMedia(tmp, 12000); URL.revokeObjectURL(tmp); info[i] = { tags, pm }; } };
+  const readers = Promise.all([reader(), reader(), reader(), reader()]);
+  for (let i = 0; i < N; i++) {
+    while (!info[i]) { setStatus(`Adding ${i + 1} of ${N}…`); await new Promise((r) => setTimeout(r, 40)); }
+    const f = files[i], { tags, pm } = info[i]; n = i + 1; setStatus(`Adding ${n} of ${N}…`);
+    if (!pm.ok) { bad.push(f.name); td('add music: cannot read ' + f.name + ' (' + (f.type || 'no type') + ', ' + Math.round(f.size / 1024) + ' KB)'); continue; }
+    const fromName = titleFromName(f.name);
+    const title = tags.title || fromName.title, artist = tags.artist || fromName.artist, duration = pm.dur;
+    td('add music: ' + f.name + ' · ' + (duration ? fmt(duration) : 'length unknown yet') + ' · ' + (f.size / 1048576).toFixed(1) + ' MB');
     let key = null;
     if (S.saveImports) {
       try { const id = await saveTrack({ title, artist, source: 'import', blob: f, mime: f.type || 'audio/mpeg', duration, artwork: tags.picture }); key = 'store:' + id; saved++; }
@@ -832,8 +846,11 @@ async function importFiles(files) {
     }
     if (!first) first = key;
   }
+  await readers;
   await refreshLibrary(); setStatus('');
-  toast(saved ? `Added ${saved} track${saved > 1 ? 's' : ''} to My Tracks${session ? ` (${session} for this session only)` : ''}` : `Added ${session} track${session > 1 ? 's' : ''} for this session`);
+  const okN = saved + session, msg = okN ? (saved ? `Added ${saved} track${saved > 1 ? 's' : ''} to My Tracks${session ? ` (${session} for this session only)` : ''}` : `Added ${session} track${session > 1 ? 's' : ''} for this session`) : 'Nothing added';
+  toast(bad.length ? `${msg}. ${bad.length} file${bad.length > 1 ? 's' : ''} couldn't be read: ${bad.slice(0, 4).join(', ')}${bad.length > 4 ? ` +${bad.length - 4} more` : ''}` : msg);
+  td('add music: done · ' + saved + ' saved, ' + session + ' session, ' + bad.length + ' unreadable');
   if (S.tab !== 'all' && S.tab !== 'import') { S.tab = 'import'; LS.set('tab', S.tab); renderList(); }
   if (first && (!deck || deck.el.paused)) { const it = byKey(first); if (it) { buildOrder(it.key); playItem(it); } }
 }
@@ -878,7 +895,7 @@ window.addEventListener('drop', async (e) => {
     };
     for (const en of entries) await walk(en);
   } else files = [...dt.files];
-  if (files.length) { importFiles(files); return; }
+  if (files.length) { td('add music: dropped ' + files.length + ' file(s)'); importFiles(files); return; }
   const url = dt.getData('text/uri-list') || dt.getData('text/plain');
   if (url && /^https?:/.test(url.trim())) { const key = addUrl(url.trim().split('\n')[0]); if (key) { await refreshLibrary(); const it = byKey(key); it && playItem(it); } }
 });

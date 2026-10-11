@@ -143,12 +143,14 @@ export async function readTags(blob) {
 }
 
 /** Duration via a throwaway <audio> (cheap, no decode). */
-export function probeDuration(url) {
+export function probeDuration(url) { return probeMedia(url).then((r) => r.dur); }
+/** { dur, ok }: ok = false when the browser says it cannot play the file (a timeout counts as ok: slow, not broken). */
+export function probeMedia(url, ms = 8000) {
   return new Promise((res) => {
     const a = new Audio(); a.preload = 'metadata'; let done = false;
-    const fin = (v) => { if (done) return; done = true; a.removeAttribute('src'); a.load(); res(v); };
-    a.onloadedmetadata = () => fin(Number.isFinite(a.duration) ? a.duration : 0);
-    a.onerror = () => fin(0); setTimeout(() => fin(0), 8000); a.src = url;
+    const fin = (v, ok) => { if (done) return; done = true; a.removeAttribute('src'); a.load(); res({ dur: v, ok }); };
+    a.onloadedmetadata = () => fin(Number.isFinite(a.duration) ? a.duration : 0, true);
+    a.onerror = () => fin(0, false); setTimeout(() => fin(0, true), ms); a.src = url;
   });
 }
 

@@ -55,6 +55,10 @@ body:not(.playing) .eqicon i,body:not(.playing) .mini-eq i,body:not(.playing) .a
 .panel{border-radius:18px;margin:10px 12px;display:flex;flex-direction:column;min-height:0;overflow:hidden}
 .panel-head{display:flex;align-items:center;gap:6px;padding:14px 12px 6px 18px}
 .panel-head h2{margin:0;font-size:20px;font-weight:750;flex:1;letter-spacing:-.01em}
+.add-wrap{display:inline-flex;align-items:center;gap:4px}
+.add-btn{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 13px;border-radius:999px;border:0;font-weight:750;font-size:14px;color:#1d1300;background:linear-gradient(180deg,var(--gold1),var(--gold2));cursor:pointer}
+.add-btn svg{width:16px;height:16px;stroke:currentColor;stroke-width:2.6;fill:none}
+.add-folder{border:0;background:none;color:#cfc8ff;font-size:12px;text-decoration:underline;cursor:pointer;padding:4px}
 .mini-eq{display:inline-flex;align-items:flex-end;gap:2px;height:18px;margin-right:6px}
 .mini-eq i{width:3px;height:40%;border-radius:1px;background:linear-gradient(0deg,var(--c3),var(--c2));animation:eq .9s ease-in-out infinite}
 .mini-eq i:nth-child(2n){animation-delay:-.4s}.mini-eq i:nth-child(3n){animation-delay:-.2s}.mini-eq i:nth-child(5){animation-delay:-.65s}
@@ -334,3 +338,4 @@ body.lite .chip{background:rgba(14,10,30,.85)}
 .photo-hint{font-size:13px;opacity:.8;margin:4px 0}
 .photo-zoom{display:flex;align-items:center;gap:8px;font-size:13px;justify-content:center}
 .photo-zoom input{width:min(60vw,220px)}
+.chip[hidden],.add-folder[hidden]{display:none!important}
