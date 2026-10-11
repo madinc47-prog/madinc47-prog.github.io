@@ -818,7 +818,8 @@
       key: NOTE[key] + (minor ? " minor" : " major"),
       prog: prog.map(chordName).join(" – "),
       roman: prog.map(function (ch) { return (minor ? ROMAN_MIN : ROMAN_MAJ)[ch[0]] || "?"; }).join("–"),
-      bpm: bpm, bars: bars, seconds: len, guideNotes: notes.length
+      bpm: bpm, bars: bars, seconds: len, guideNotes: notes.length,
+      keyNum: key, minor: minor, progRaw: prog
     };
     return Promise.all([c.startRendering(), guideP]).then(function (r) {
       normalize(r[0], 0.89);
@@ -1151,4 +1152,10 @@
 
   // exposed for automated tests only (no UI effect)
   window.__isleVoice = { makeZip: makeZip, wavFromChannels: wavFromChannels, syllables: syllables, renderDraft: renderDraft };
+  // shared with make.js (the one-button "Make my song" flow)
+  window.IsleVoiceCore = {
+    SR: SR, GENRES: GENRES, renderDraft: renderDraft, wavFromChannels: wavFromChannels, bufferToWav: bufferToWav,
+    decodeBlob: decodeBlob, makeZip: makeZip, buildBankFiles: buildBankFiles, getAll: getAll, downloadBlob: downloadBlob,
+    blobU8: blobU8, textU8: textU8, safeName: safeName, fmtTime: fmtTime, toast: toast, startMic: startMic, uid: uid
+  };
 })();
