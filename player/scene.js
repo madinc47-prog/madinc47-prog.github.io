@@ -1,6 +1,6 @@
 // Psycho Fingers Player — DJ booth scene (original layered SVG art, IK arms, choreography)
 // Two turntables (Deck A / Deck B) with a mixer + crossfader in the middle; the DJ stands behind the mixer.
-import { applyOutfit } from './outfits.js?v=25';
+import { applyOutfit } from './outfits.js?v=26';
 const NS = 'http://www.w3.org/2000/svg';
 const D2R = Math.PI / 180;
 const ease = {
@@ -807,7 +807,8 @@ export function createScene(container) {
       const spinRate = D.spinTarget > D.spin ? 1.8 : 1.1;
       D.spin += (D.spinTarget - D.spin) * Math.min(1, dt * spinRate * 2.2);
       if (Math.abs(D.spinTarget - D.spin) < .002) D.spin = D.spinTarget;
-      D.rot = (D.rot + dt * 200 * D.spin * (D.rate || 1)) % 360;
+      const rw = st.rew && now < st.rew.until && d === st.active ? st.rew : null; // rewind: hand drags the record backwards
+      D.rot = rw ? (D.rot - dt * 200 * rw.speed * (1 - Math.pow((now - rw.start) / (rw.until - rw.start), 3) * .6) + 720) % 360 : (D.rot + dt * 200 * D.spin * (D.rate || 1)) % 360;
       D.scr = d === st.active && dn.move === 'scratch' && playing && !st.busy && !st.mixing ? (() => { const e8 = (dn.phase * 2) % 1; return Math.sin(Math.PI * 2 * e8) * (.5 - .5 * Math.cos(Math.PI * 2 * e8)) * 16 * dn.amp; })() : (D.scr || 0) * .8;
     });
     // head turns toward the active deck; body leans a little that way
@@ -834,6 +835,7 @@ export function createScene(container) {
     drawSpeech(now, dt, 470 + DJX + st.lean + B.bx + st.turn * 6, 175 + st.bounce + (neck.y - 262) + hn * .55);
     // hands
     const pose = st.busy ? poseTargets(t, pulse, false) : poseTargets(t, pulse, playing);
+    if (st.rew && now < st.rew.until) { const A = st.active === 'A', pl = A ? SPOT.platA() : SPOT.platB(), ph = -(now - st.rew.start) / 1000 * 2.2 * Math.PI * Math.min(1, (now - st.rew.start) / 180); pose[A ? 0 : 1] = { x: pl.x + Math.cos(ph + 1.2) * 15, y: pl.y + 2 + Math.sin(ph + 1.2) * 5.5 }; }
     ['L', 'R'].forEach((s, i) => {
       const h = st.hands[s];
       if (h.mode === 'anim' && h.follow) { const p = h.follow(), kf = Math.min(1, dt * 30), jump = Math.hypot(p.x - h.x, p.y - h.y); if (jump > 60) { h.x += (p.x - h.x) * kf; h.y += (p.y - h.y) * kf; } else { h.x = p.x; h.y = p.y; } h.vx = h.vy = 0; }
@@ -930,6 +932,9 @@ export function createScene(container) {
       return v;
     },
     get dj() { return st.dj || 'psycho'; },
+    /** popularity rewind: platter spins backwards with the hand on the record for ms */
+    rewind(ms = 1100, speed = 4.5) { const n = performance.now(); st.rew = { start: n, until: n + ms, speed }; },
+    get rewinding() { return !!(st.rew && performance.now() < st.rew.until); },
     setPhoto(url) { const pf = svg.querySelector('#photoFace'), im = svg.querySelector('#photoImg'); if (!pf || !im) return; if (url) { im.setAttribute('href', url); pf.style.display = ''; } else { pf.style.display = 'none'; im.setAttribute('href', ''); } svg.classList.toggle('has-photo', !!url); },
     setOutfit(id) { return applyOutfit(svg, id); },
     setXfader(v) { st.xf = Math.max(0, Math.min(1, v)); },
@@ -938,7 +943,7 @@ export function createScene(container) {
     setProgress(d, p) { st.decks[d].progress = Math.max(0, Math.min(1, p || 0)); },
     setPlaying(d, on) { const D = st.decks[d]; D.spinTarget = on && D.visible && D.lift === 0 ? 1 : 0; },
     setInstant(v) { st.instant = !!v; if (v) flush(); },
-    get dance() { return { move: dn.move, name: MOVES[dn.move].name, phase: dn.phase, bpm: dn.bpm, tier: dn.tier, energy: dn.eSlow, reduced: dn.reduced, amp: dn.amp }; },
+    get dance() { return { move: dn.move, name: MOVES[dn.move].name, phase: dn.phase, bpm: dn.bpm, dropAt: dn.dropAt || 0, tier: dn.tier, energy: dn.eSlow, reduced: dn.reduced, amp: dn.amp }; },
     setDance(m) { if (MOVES[m]) { dn.move = m; dn.moveUntil = dn.phase + 32; } },
     setReducedMotion(v) { dn.reduced = !!v; if (dn.reduced && MOVES[dn.move].tier > 0) pickMove(); },
     get busy() { return st.busy; },

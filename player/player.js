@@ -2,18 +2,19 @@
 // Every module URL carries the same ?v= tag as player.js in index.html (and sw.js SHELL), so a deploy can never mix
 // old and new modules from the HTTP cache. Bump all of them together.
 import { saveTrack, listTracks, getTrack, deleteTrack, onMediaChange } from '../shared/media-store.js';
-import { createScene } from './scene.js?v=25';
-import { createViz, THEMES } from './viz.js?v=25';
-import { OUTFITS, OUTFIT_FOR_THEME } from './outfits.js?v=25';
-import { createEQ } from './eq.js?v=25';
-import { createHype } from './hype.js?v=25';
-import { createLadies } from './ladies.js?v=25';
-import { createShout } from './shout.js?v=25';
-import { initPhoto } from './photo.js?v=25';
-import { initRec } from './rec.js?v=25';
-import { createIsle } from './isle.js?v=25';
-import { td, TD } from './td.js?v=25';
-import { fmt, hash, isAudioFile, titleFromName, makeCover, makeLabel, readTags, probeDuration, probeMedia, computePeaks, notMusicReason } from './util.js?v=25';
+import { createScene } from './scene.js?v=26';
+import { createViz, THEMES } from './viz.js?v=26';
+import { OUTFITS, OUTFIT_FOR_THEME } from './outfits.js?v=26';
+import { createEQ } from './eq.js?v=26';
+import { createHype } from './hype.js?v=26';
+import { createLadies } from './ladies.js?v=26';
+import { createShout } from './shout.js?v=26';
+import { initPhoto } from './photo.js?v=26';
+import { initRec } from './rec.js?v=26';
+import { createIsle } from './isle.js?v=26';
+import { createPop } from './pop.js?v=26';
+import { td, TD } from './td.js?v=26';
+import { fmt, hash, isAudioFile, titleFromName, makeCover, makeLabel, readTags, probeDuration, probeMedia, computePeaks, notMusicReason } from './util.js?v=26';
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -380,7 +381,7 @@ async function playItem(item, { fromUser = true } = {}) {
     startDeck(d, my);
     if (old) setTimeout(() => { if (!old.disposed && old !== deck) stopDeck(old); }, (mix + .25) * 1000);
     scheduleCue(old ? mix + 2.5 : 3);
-    hype.onTrackStart(item); if (shout) shout.detect();
+    hype.onTrackStart(item); if (shout) shout.detect(); pop.onTrackStart(item, d);
     syncPlayUI();
   }, (reuse ? .8 : 3.4) / sp + 1.2);
   if (reuse) await scene.dropNeedle({ deck: d.slot, speed: animSpeed(), onDrop });
@@ -644,6 +645,11 @@ window.__pfBeforeTransition = (rem, xf) => ladies.before(rem, xf);
 shout = createShout({ hype, ladies, LS, toast });
 // island shout-outs (parishes + towns, pre-rendered) take the place slot first; the town logic is the fallback
 const isle = createIsle({ hype, LS, td, toast });
+// popularity rewind (Deezer rank / iTunes / plays here) — real backspin from the mix, hand on the platter, "pull up!"
+const pop = createPop({ td, LS, toast, hype, scene, getCtx: ensureCtx, getOut: () => (ensureCtx(), preVol), getTap: () => (ensureCtx(), preVol), getDeck: () => deck, getBpm: () => scene.dance.bpm });
+window.__pfPop = pop;
+window.addEventListener('pf-pop', (e) => { const li = document.querySelector(`#list li[data-key="${CSS.escape(e.detail.key)}"]`); if (li) popTag(li, e.detail.label, e.detail.tier); });
+function popTag(li, label, tier) { let t = li.querySelector('.pop-tag'); if (!t) { t = document.createElement('small'); t.className = 'pop-tag'; li.querySelector('.meta').appendChild(t); } t.textContent = label; t.dataset.tier = tier || ''; t.title = 'Music-service popularity score (not a chart position). High/huge songs get a rewind.'; }
 hype.setPlace(async () => (await isle.parts()) || (await shout.parts()));
 window.__pfIsle = isle;
 window.__pfShout = shout;
@@ -773,6 +779,7 @@ function renderList() {
     li.querySelector('.dur').textContent = it.duration ? fmt(it.duration) : '';
     if (S.liked.has(it.key)) li.classList.add('liked');
     ladies.decorateRow(li, it);
+    if (it.pop) popTag(li, pop.label(it.pop), it.pop.tier);
     li.querySelector('.qup').addEventListener('click', (e) => { e.stopPropagation(); moveRow(it.key, -1); });
     li.querySelector('.qdn').addEventListener('click', (e) => { e.stopPropagation(); moveRow(it.key, 1); });
     li.querySelector('.qrm').addEventListener('click', (e) => { e.stopPropagation(); removeFromQueue(it); });
@@ -1245,6 +1252,7 @@ function loop(now, L, drawViz) {
   F.mixing = !!(transition || (outgoing && outgoing.playing));
   scene.frame(now, F);
   hype.tick(now); ladies.learn(now, current, F, deck);
+  { const dd = scene.dance; pop.tick({ phrase8: !!dd.bpm && dd.phase % 32 < .5, drop: dd.dropAt > 0 && dd.phase - dd.dropAt < 1 }); }
   if (now - lastUi > (Q.level >= 2 ? 250 : 120)) {
     lastUi = now;
     if (deck && seekPreview == null) { $('#tCur').textContent = fmt(deck.el.currentTime); drawWave(); }
