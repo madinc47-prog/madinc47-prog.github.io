@@ -364,6 +364,9 @@
     });
   }
 
+  /* ---------------- headphones / speaker mode + "Clean take" (shared cleaner: ../vocal-clean-client.js) ---------------- */
+  var hp = { found: false, label: "", manual: null };
+  try { var hm = localStorage.getItem("ipbs_hp"); hp.manual = hm === "1" ? true : hm === "0" ? false : null; } catch (e) { /* ignore */ }
   function onHeadphones() { return hp.manual != null ? hp.manual : hp.found; }
   function speakerMode() { return !onHeadphones(); }
   function hpUI() {
