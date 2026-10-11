@@ -216,12 +216,27 @@
      Some tablets / phones open the built-in mic as 2 channels with the voice in only one of them. Pick the live
      channel when the other is (near) silent; if both carry signal, sum them to mono. No other processing. */
   function rms(a) { var s = 0, n = a.length, st = n > 400000 ? 3 : 1, k = 0; for (var i = 0; i < n; i += st) { s += a[i] * a[i]; k++; } return Math.sqrt(s / Math.max(1, k)); }
+  /* one-sided stereo (a tablet mic opened as stereo: voice on one side, silence or just hiss on the other)?
+     → 0 / 1 = the live channel, -1 = real stereo. Relative test: the quiet side ≥ 20 dB below the loud one, or ≥ 10 dB
+     below and uncorrelated with it (hiss, not the same music). Returns -2 when both sides are silent. */
+  function liveSide(a, b) {
+    var ra = rms(a), rb = rms(b), hi = Math.max(ra, rb), lo = Math.min(ra, rb), best = ra >= rb ? 0 : 1;
+    if (hi < 1e-5) return -2;
+    if (lo < 1e-5 || lo < hi * 0.1) return best;
+    if (lo < hi * 0.316) {
+      var n = Math.min(a.length, b.length), st = n > 400000 ? 3 : 1, sab = 0, saa = 0, sbb = 0;
+      for (var i = 0; i < n; i += st) { sab += a[i] * b[i]; saa += a[i] * a[i]; sbb += b[i] * b[i]; }
+      var corr = sab / Math.sqrt(saa * sbb + 1e-20);
+      if (Math.abs(corr) < 0.2) return best;
+    }
+    return -1;
+  }
   function smartMono(chs) {
     chs = (chs || []).filter(Boolean);
     if (!chs.length) return new Float32Array(0);
     if (chs.length === 1) return chs[0];
-    var r = chs.map(rms), best = r[0] >= r[1] ? 0 : 1, other = 1 - best;
-    if (r[other] < 1e-5 || r[other] < r[best] * 0.06) return chs[best]; // dead / near-silent channel (≤ −24 dB): use the live one
+    var side = liveSide(chs[0], chs[1]);
+    if (side >= 0) return chs[side]; // one live side (other dead / hiss, ≥ 20 dB down): use the live one, it plays in both ears
     var n = Math.min(chs[0].length, chs[1].length), o = new Float32Array(n), a = chs[0], b = chs[1];
     for (var i = 0; i < n; i++) o[i] = 0.5 * (a[i] + b[i]);
     return o;
@@ -229,10 +244,8 @@
   /* an imported / older stereo buffer with one dead channel → [live channel] (null if it's real stereo) */
   function deadChannelFix(chs) {
     if (!chs || chs.length !== 2) return null;
-    var r0 = rms(chs[0]), r1 = rms(chs[1]), hi = Math.max(r0, r1), lo = Math.min(r0, r1);
-    if (hi < 1e-5) return null;
-    if (lo < 1e-5 || lo < hi * 0.02) return [r0 >= r1 ? chs[0] : chs[1]]; // ≤ −34 dB on one side: a one-sided mic, not a stereo mix
-    return null;
+    var side = liveSide(chs[0], chs[1]);
+    return side >= 0 ? [chs[side]] : null; // one-sided mic (see liveSide), not a stereo mix
   }
 
   /* ---------- offline render of one mono part through pan + wide + effects (Beats vocal take) ---------- */
@@ -302,6 +315,6 @@
   }
 
   window.IPBFx = { defaults: defaults, norm: norm, anyOn: anyOn, build: build, apply: apply, Buses: Buses, wideNode: wideNode, impulse: impulse,
-    smartMono: smartMono, deadChannelFix: deadChannelFix, renderMono: renderMono, REVERBS: REVERBS, DIV: DIV, compParams: compParams, rms: rms,
+    smartMono: smartMono, deadChannelFix: deadChannelFix, liveSide: liveSide, renderMono: renderMono, REVERBS: REVERBS, DIV: DIV, compParams: compParams, rms: rms,
     lufs: lufs, kFilter: kFilter, blocks: blocks, gated: gated, AUTO: AUTO, autoGainDb: autoGainDb };
 })();

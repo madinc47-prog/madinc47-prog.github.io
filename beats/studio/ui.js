@@ -1262,6 +1262,8 @@
       if (!P.clips.length) { out.push({ level: "tip", text: "The project is empty. In Beats, Bounce your beat and tap “Send to Studio” (it lands on Track 1), then arm a vocal track (R) and press ● to record." }); return out; }
       var voc = P.tracks.filter(function (t) { return t.id !== bt && has(t); });
       if (!voc.length) out.push({ level: "tip", text: "Only the beat is in the project. Arm a vocal track (tap its ● or press R) and press ● Record." });
+      var side = voc.filter(function (t) { return Math.abs(+t.pan || 0) >= 0.5; });
+      if (side.length) out.push({ level: "warn", text: side.map(function (t) { return t.name + " (pan " + (t.pan < 0 ? "L" : "R") + Math.round(Math.abs(t.pan) * 100) + ")"; }).join(", ") + ": panned to one side, so the vocal sits in one ear.", fix: { label: "Centre them", run: function () { S.pushUndo(P, "centre pan"); side.forEach(function (t) { t.pan = 0; }); changed(null); return "Centred " + side.length + " track" + (side.length > 1 ? "s" : ""); } } });
       var off = voc.filter(function (t) { return !t.auto; });
       if (off.length) out.push({ level: "warn", text: off.map(function (t) { return t.name; }).join(", ") + ": not level-matched to the beat (AUTO off), so the vocal can end up buried or too loud.", fix: { label: "Turn AUTO match on", run: function () { S.pushUndo(P, "auto match"); off.forEach(function (t) { t.auto = true; }); changed(null, true); return "AUTO match on for " + off.length + " track" + (off.length > 1 ? "s" : ""); } } });
       var muted = P.tracks.filter(function (t) { return t.mute && has(t); });

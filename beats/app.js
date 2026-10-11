@@ -87,6 +87,7 @@
   var AC = null, win = { n: 0, late: 0, worst: null, vmax: 0, flags: 0 }, lastBy = {}, rcv = null, pb0 = null;
   function tabName() { var t = document.querySelector(".tab.active"); return t ? t.dataset.tab : "?"; }
   window.__ipbTD = {
+    all: function () { return ALL.slice(); }, log: function (l, bad) { note(l, bad); },
     setCtx: function (c) {
       AC = c;
       try { if (c.renderCapacity) { c.renderCapacity.addEventListener("update", function (e) { rcv = { avg: e.averageLoad, peak: e.peakLoad, under: e.underrunRatio }; }); c.renderCapacity.start({ updateInterval: 1 }); } } catch (x) { /* not in this Chrome */ }
@@ -94,11 +95,11 @@
     },
     trig: function (o) {
       if (!AC) return;
-      var now = AC.currentTime, lead = Math.round((o.when - now) * 1000), k = o.src + "#" + (o.pad == null ? "" : o.pad);
+      var now = AC.currentTime, lead = Math.round((o.when - now) * 1000), k = o.src + "#" + (o.pad == null ? "" : o.pad) + (o.note == null ? "" : "n" + o.note);
       var dbl = lastBy[k] != null && Math.abs(o.when - lastBy[k]) < 0.025 && o.kind !== "glide"; lastBy[k] = o.when;
       var bad = lead < 0 || o.fallback || o.ready === false || dbl || (o.voices || 0) > 24;
       win.n++; if (lead < 0) win.late++; if (win.worst == null || lead < win.worst) win.worst = lead; win.vmax = Math.max(win.vmax, o.voices || 0); if (bad) win.flags++;
-      var line = "♪ " + (o.kind || "hit") + " " + o.src + (o.pad != null ? " pad" + (o.pad + 1) : "") + " tab=" + tabName() + " lead " + lead + "ms" + (lead < 0 ? " LATE" : "") +
+      var line = "♪ " + (o.kind || "hit") + " " + o.src + (o.pad != null ? " pad" + (o.pad + 1) : "") + (o.note != null ? " note " + o.note : "") + " tab=" + tabName() + " lead " + lead + "ms" + (lead < 0 ? " LATE" : "") +
         (o.ready === false ? " NOT-READY(" + (o.why || "decoding") + ")" : "") + (o.fallback ? " FALLBACK(" + o.fallback + ")" : "") + (dbl ? " DOUBLE-TRIGGER" : "") +
         " voices " + (o.voices || 0) + (o.rate && Math.abs(o.rate - 1) > 0.001 ? " rate " + o.rate.toFixed(3) : "") + (o.dur ? " len " + o.dur.toFixed(2) + "s" : "") + (o.off ? " trim " + Math.round(o.off * 1000) + "ms" : "");
       if (bad) note(line, true); else { ALL.push(line); if (ALL.length > 4000) ALL.shift(); }
@@ -1382,6 +1383,7 @@
     setNowColumn(-1);
     if (ctx) cutChords(chordLive, ctx.currentTime);
     if (ctx && LG) { LG.preg.forEach(function (v) { v.stop(ctx.currentTime); }); LG.preg = []; }
+    klStopPreview(); // ■ stops a keys-loop preview too (it used to run on for its 4 bars)
     if (pianoPending) { S.piano.slot = pianoPending; pianoPending = null; pianoUI(true, true); saveSession(); } // queued piano pattern: switch now
     btStop();
     S.cueBar = keepCue ? Math.max(0, Math.floor(pos / STEPS)) : 0;
@@ -5808,8 +5810,9 @@
       var tn = lc ? lc.tune + lc.fine / 100 : 0, nt = Math.max(0, fn[i].t + (lc ? lc.nudge / 1000 : 0)), nd = n.l * tickSec;
       if (lc && lc.decay < 0.995) dest = melDecay(c, dest, nt, nd, lc.decay);
       G.preg.push(melPlay(c, dest, n.p + tn, nt, nd * (lc ? lc.decay : 1), fn[i].v, inst, gl, n.i ? null : p.tone, lc));
+      if (c === ctx && window.__ipbTD) window.__ipbTD.trig({ kind: "piano", src: "piano:" + S.piano.slot, note: inst + " " + n.p, when: nt, voices: G.preg.filter(function (v) { return v && v.end > c.currentTime; }).length, ready: true });
     }
-    if (G.preg.length > 96) G.preg = G.preg.filter(function (v) { return v.end > c.currentTime; });
+    if (G.preg.length > 32) G.preg = G.preg.filter(function (v) { return v && v.end > c.currentTime; });
   }
   function pianoPlayTick() {
     if (!playing || !ctx) return -1;
@@ -6197,14 +6200,15 @@
   }
   function klStopPreview() {
     if (!klPrev) return;
-    var t = ctx ? ctx.currentTime : 0;
-    klPrev.voices.forEach(function (v) { v.stop(t); });
-    clearTimeout(klPrev.timer); clearTimeout(klPrev.feedT);
-    klPrev = null;
+    var P = klPrev, t = ctx ? ctx.currentTime : 0;
+    klPrev = null; P.dead = true; // the feed loop checks this first: nothing more is scheduled
+    clearTimeout(P.timer); clearTimeout(P.feedT);
+    P.voices.forEach(function (v) { if (v && v.stop) v.stop(t); }); // every scheduled voice, started or not: 12 ms fade, then stopped
+    P.voices.length = 0;
     klRefreshCards();
   }
   /* one pass of the loop (repeated up to 4 bars), in the song key at the song BPM + swing */
-  var klLoading = null;
+  var klLoading = null, KL_VOICES = 16;
   function klPreview(id) {
     if (klPrev && klPrev.id === id) { klStopPreview(); return; }
     klStopPreview();
@@ -6235,16 +6239,22 @@
     var end = t0 + passes * L * tick;
     klPrev = { id: id, t0: t0, end: end, synced: synced, voices: voices, notes: evs.length };
     // notes are created just in time (0.35 s ahead), not all at once: no CPU spike on the tablet while the beat plays
-    var P0 = klPrev, ei = 0, feed = function () {
-      if (klPrev !== P0) return;
-      var lim = ctx.currentTime + 0.35;
+    // one feed loop per preview with a cursor (ei): each note is scheduled exactly once; identical notes (same pitch and time) are skipped;
+    // finished voices leave the list; above KL_VOICES the oldest sounding voice is released (steal) so a pad can't pile up
+    var P0 = klPrev, ei = 0, seen = {}, feed = function () {
+      if (P0.dead || klPrev !== P0) return;
+      clearTimeout(P0.feedT);
+      var now = ctx.currentTime, lim = now + 0.35;
+      for (var vi = voices.length - 1; vi >= 0; vi--) if (!voices[vi] || voices[vi].end <= now) voices.splice(vi, 1);
       while (ei < evs.length && evs[ei].t < lim) {
-        var f = evs[ei++], n = f.n, at = Math.max(ctx.currentTime + 0.005, f.t);
-        voices.push(PK.play(ctx, dest, n.p, at, n.l * tick, f.v, n.i || p.inst, PD.gainLin(p), n.i ? null : p.tone));
-        if (window.__ipbTD) window.__ipbTD.trig({ kind: "keys-loop", src: "keysloop:" + id, when: f.t, voices: voices.length, ready: true });
+        var f = evs[ei++], n = f.n, at = Math.max(ctx.currentTime + 0.005, f.t), key = (n.i || "") + ":" + n.p + "@" + Math.round(f.t * 200);
+        if (seen[key]) continue; seen[key] = 1;
+        while (voices.length >= KL_VOICES) { var old = voices.shift(); if (old && old.stop) old.stop(Math.max(now, at - 0.02)); }
+        var v = PK.play(ctx, dest, n.p, at, n.l * tick, f.v, n.i || p.inst, PD.gainLin(p), n.i ? null : p.tone);
+        if (v) voices.push(v);
+        if (window.__ipbTD) window.__ipbTD.trig({ kind: "keys-loop", src: "keysloop:" + id, note: (n.i || p.inst) + " " + n.p, when: f.t, voices: voices.length, ready: true });
       }
-      if (voices.length > 64) voices.splice(0, voices.length - 64);
-      if (ei < evs.length) P0.feedT = setTimeout(feed, 60);
+      if (ei < evs.length || voices.length) P0.feedT = setTimeout(feed, 60);
     };
     feed();
     klPrev.timer = setTimeout(function () { if (klPrev && klPrev.id === id) { klPrev = null; klRefreshCards(); } }, (end - ctx.currentTime) * 1000 + 400);
@@ -6366,6 +6376,7 @@
     if (!document.querySelector('.tab[data-tab="' + name + '"]')) return;
     var prev = activeTab;
     activeTab = name;
+    if (prev !== name && klPrev) klStopPreview(); // a keys-loop preview never keeps playing on another tab
     document.querySelectorAll(".tab[data-tab]").forEach(function (x) {
       var on = x.dataset.tab === name;
       x.classList.toggle("active", on);

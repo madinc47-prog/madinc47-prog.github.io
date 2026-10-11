@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Regenerate beats/sw.js (offline app cache). Run from the repo root after adding / removing app files or bumping the version:
-   python3 beats/tools/gen-sw.py 20261011aa"""
+   python3 beats/tools/gen-sw.py 20261011ab"""
 import os, re, sys, json
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # beats/
 ver = sys.argv[1] if len(sys.argv) > 1 else re.search(r'app\.js\?v=([0-9a-z]+)', open(os.path.join(ROOT, 'index.html')).read()).group(1)

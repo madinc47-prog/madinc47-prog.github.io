@@ -163,6 +163,7 @@
   }
   function tick() {
     if (!E.playing) return;
+    if (TD) { try { tdTick(); } catch (e) { /* debug only */ } }
     var c = E.ctx, P = E.P, now = c.currentTime, last = E.passes[E.passes.length - 1];
     var loopOn = P.loop.on && P.loop.end - P.loop.start > 0.05 && !E.recording;
     var passEndCtx = last.when + (last.until - last.from);
@@ -206,8 +207,43 @@
       return when;
     });
   }
+  /* ?tapdebug=1 (here or on the Beats page around it): every 2 s of playback, the L / R level of the Studio output and of
+     each playing track, plus each track's pan and its clips' source form (mono / L-only→mono / stereo) → the tap log */
+  var TD = (function () { try { return /[?&]tapdebug/.test(location.search) || /[?&]tapdebug/.test(parent.location.search); } catch (e) { return /[?&]tapdebug/.test(location.search); } })();
+  function tdLog(line, bad) {
+    try { if (parent !== window && parent.__ipbTD && parent.__ipbTD.log) { parent.__ipbTD.log(line, bad); return; } } catch (e) { /* cross-origin */ }
+    if (window.__ipbTD && window.__ipbTD.log) { window.__ipbTD.log(line, bad); return; }
+    (window.__ipbStudioTD = window.__ipbStudioTD || []).push(line); console.log(line);
+  }
+  function lrTap(c, node) { // splitter → two analysers (debug only)
+    var sp = c.createChannelSplitter(2), l = c.createAnalyser(), r = c.createAnalyser(); l.fftSize = r.fftSize = 2048;
+    node.connect(sp); sp.connect(l, 0); sp.connect(r, 1); return { l: l, r: r, sl: 0, sr: 0, n: 0 };
+  }
+  function lrSample(T) { var a = new Float32Array(2048), s = 0, i; T.l.getFloatTimeDomainData(a); for (i = 0; i < a.length; i++) s += a[i] * a[i]; T.sl += s; s = 0; T.r.getFloatTimeDomainData(a); for (i = 0; i < a.length; i++) s += a[i] * a[i]; T.sr += s; T.n++; }
+  function lrDb(x, n) { return n ? 10 * Math.log10(x / (n * 2048) + 1e-12) : -120; }
+  function tdTick() {
+    if (!TD || !E.ctx || !E.playing) return;
+    var c = E.ctx, P = E.P; if (!P) return;
+    if (!E.lrM) E.lrM = lrTap(c, E.master.out);
+    lrSample(E.lrM);
+    P.tracks.forEach(function (tr) { var T = E.tracks[tr.id]; if (!T) return; if (!T.lr) T.lr = lrTap(c, T.fader); lrSample(T.lr); });
+    var now = performance.now(); if (E.lrT && now - E.lrT < 2000) return; var first = !E.lrT; E.lrT = now; if (first) return;
+    var M = E.lrM, L = lrDb(M.sl, M.n), R = lrDb(M.sr, M.n), parts = [];
+    P.tracks.forEach(function (tr) {
+      var T = E.tracks[tr.id]; if (!T || !T.lr || !T.lr.n) return;
+      var l = lrDb(T.lr.sl, T.lr.n), r = lrDb(T.lr.sr, T.lr.n); T.lr.sl = T.lr.sr = T.lr.n = 0;
+      if (Math.max(l, r) < -70) return;
+      var forms = {}; P.clips.forEach(function (cl) { if (cl.track === tr.id && S.sources[cl.src]) forms[S.sources[cl.src].form || "?"] = 1; });
+      parts.push(tr.name + " L " + l.toFixed(1) + " R " + r.toFixed(1) + " (" + (l - r >= 0 ? "+" : "") + (l - r).toFixed(1) + " dB) pan " + (+tr.pan || 0).toFixed(2) + (tr.wide ? " wide" : "") + " src " + Object.keys(forms).join("/"));
+    });
+    M.sl = M.sr = M.n = 0;
+    if (!parts.length && Math.max(L, R) < -90) return; // nothing playing yet (empty project / count-in)
+    var off = Math.abs(L - R) > 6 && Math.max(L, R) > -60;
+    tdLog("studio L/R 2s: out L " + L.toFixed(1) + " dB R " + R.toFixed(1) + " dB (balance " + (L - R >= 0 ? "+" : "") + (L - R).toFixed(1) + " dB" + (off ? " ONE-SIDED" : "") + ") · " + (parts.join(" · ") || "no track audio"), off);
+  }
   function stop(natural) {
     if (E.timer) { clearInterval(E.timer); E.timer = null; }
+    E.lrT = 0;
     E.passes.forEach(function (p) { p.srcs.forEach(function (s) { try { s.stop(); } catch (e) { /* ended */ } }); });
     E.passes = [];
     var was = E.playing; E.playing = false;
@@ -275,8 +311,10 @@
         if (R.chunks2.some(Boolean) && window.IPBFx) { // stereo stream: keep the live side (dead / near-silent other side) or sum both to mono
           var all2 = new Float32Array(n), o2 = 0;
           R.chunks2.forEach(function (ch, k) { var len = R.chunks[k].length; if (ch) all2.set(ch.subarray(0, len), o2); o2 += len; });
+          var side = window.IPBFx.liveSide(all, all2), rl = window.IPBFx.rms(all), rr = window.IPBFx.rms(all2);
+          if (TD) tdLog("studio take: stereo mic stream, L " + (20 * Math.log10(rl + 1e-9)).toFixed(1) + " dB R " + (20 * Math.log10(rr + 1e-9)).toFixed(1) + " dB → " + (side === 0 ? "left side only, saved mono (both ears)" : side === 1 ? "right side only, saved mono (both ears)" : "both sides live, summed to mono"));
           all = window.IPBFx.smartMono([all, all2]);
-        }
+        } else if (TD) tdLog("studio take: mono mic stream, saved mono (both ears)");
         // align: first captured frame's context time vs. when playback of `from` started, minus round-trip latency
         var firstT = R.t[0], lat = latency();
         var startTl = R.from + (firstT - R.when) - lat;

@@ -107,11 +107,13 @@
     id = id || uid("s");
     // a stereo take / import with one dead side (built-in tablet mic recorded as stereo, voice left only) → mono, so it
     // plays centred. Real stereo (beats, mixes) is untouched.
+    var was = buf ? buf.numberOfChannels : 0, side = -1;
     if (buf && buf.numberOfChannels === 2 && window.IPBFx) {
-      var fix = window.IPBFx.deadChannelFix([buf.getChannelData(0), buf.getChannelData(1)]);
-      if (fix) buf = bufFrom(fix, buf.sampleRate);
+      side = window.IPBFx.liveSide(buf.getChannelData(0), buf.getChannelData(1));
+      if (side >= 0) buf = bufFrom([buf.getChannelData(side)], buf.sampleRate);
     }
-    sources[id] = { id: id, name: name || "Audio", buf: buf };
+    // a 3+ channel file: keep the first two (Web Audio would down-mix it anyway)
+    sources[id] = { id: id, name: name || "Audio", buf: buf, form: was === 1 ? "mono" : side >= 0 ? (side ? "R-only→mono" : "L-only→mono") : was === 2 ? "stereo" : was + "ch" };
     return id;
   }
   function makeBuffer(chs, len, sr) {
