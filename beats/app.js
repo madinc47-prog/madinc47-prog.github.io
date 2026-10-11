@@ -104,6 +104,7 @@
   var D = window.IPBDrums;            // kit library + offline pad renderer (drums.js)
   var PD = window.IPBPianoData;       // piano-roll pattern format + library (pianoroll-data.js)
   var PK = window.IPBKeys;            // melodic instruments (keys-instruments.js)
+  var FXC = window.IPBFx;             // shared track effects, channel fix, loudness (fx-chain.js)
   var FEEL = window.IPBFeel;          // Feel engine: velocity tone, micro-timing, variation (humanize.js)
   var LIB = window.IPBLibrary;        // instrument library + Swap (library.js, library/manifest.json)
   var LY = window.IPBLayers;          // tweakable layers: per-layer knobs + one shared chain per layer (layers.js)
@@ -183,7 +184,8 @@
     lyricSong: "streets", // song shown in Lyrics / Teleprompter
     bpl: "auto",          // teleprompter bars per line ("auto" = fit song sections)
     prSize: 1,
-    vox: { nudge: 0, monitor: false, dry: false, clean: true, aec: true, raw: true, spk: 80, guide: false },
+    vox: { nudge: 0, monitor: false, dry: false, clean: true, aec: true, raw: true, spk: 80, guide: false,
+      pan: 0, wide: false, fx: null, auto: true, autoOff: 1 }, // vocal channel: pan, Wide, effects (manual, non-destructive), auto level match
     tool: "hit", lane: "vel", page: 0,
     piano: { slot: "A", slots: { A: PD.empty(), B: PD.empty(), C: PD.empty(), D: PD.empty() } }, // piano-roll pattern slots
     songKey: null,        // song key 0–11 for the keys loop bank (null = the first loaded loop sets it)
@@ -332,6 +334,11 @@
         if (typeof d.vox.raw === "boolean") S.vox.raw = d.vox.raw;
         if (typeof d.vox.guide === "boolean") S.vox.guide = d.vox.guide;
         if (isFinite(+d.vox.spk) && d.vox.spk != null) S.vox.spk = clamp(Math.round(+d.vox.spk), 10, 100);
+        S.vox.pan = clamp(+d.vox.pan || 0, -1, 1);
+        S.vox.wide = !!d.vox.wide;
+        S.vox.fx = d.vox.fx ? FXC.norm(d.vox.fx) : null;                      // older sessions: every effect off
+        S.vox.auto = typeof d.vox.auto === "boolean" ? d.vox.auto : false;     // older sessions: auto match off
+        S.vox.autoOff = isFinite(+d.vox.autoOff) && d.vox.autoOff != null ? clamp(+d.vox.autoOff, -12, 12) : 1;
       }
       return true;
     } catch (e) { return false; }
@@ -885,6 +892,7 @@
     GROUPS.forEach(function (g) { groupNodes[g.id].gain.gain.setTargetAtTime(mixGain(g.id), t, 0.01); });
     LG.fader.gain.setTargetAtTime(mixGain("master"), t, 0.01);
     if (vocalFader) vocalFader.gain.setTargetAtTime(mixGain("vocal"), t, 0.01);
+    if (vocalPan && vocalPan.pan) vocalPan.pan.setTargetAtTime(S.vox.pan || 0, t, 0.01);
     // mic monitoring only on headphones: through a speaker it would feed back and end up in the take
     if (monitorGain) monitorGain.gain.setTargetAtTime(S.vox.monitor && hpMode() === "hp" ? 1 : 0, t, 0.01);
     if (spkGain) spkGain.gain.setTargetAtTime(vox.state !== "idle" && vox.takeMode === "spk" ? spkBeatGain() : 1, t, 0.02);
@@ -2316,7 +2324,8 @@
    *   0/1 = master bus L/R (the beat, exactly what ● Record always captured)
    *   2   = raw mic (only used by Record Vocals; silent otherwise)
    */
-  var rec = { on: false, mode: "beat", L: [], R: [], V: [], frames: 0, limit: 0, startedPattern: false, t0: 0, tick: null };
+  var rec = { on: false, mode: "beat", L: [], R: [], V: [], V2: [], frames: 0, limit: 0, startedPattern: false, t0: 0, tick: null };
+  var micSplit = null, vocalPan = null;
   var recNode = null, vocalBus = null, vocalFader = null, vocalAnalyser = null, vocalInAn = null, monitorGain = null;
   function setupRecorder() {
     var stereo = ctx.createGain(); // force stereo so a mono master lands in both L and R
@@ -2324,12 +2333,16 @@
     master.connect(stereo);
     var split = ctx.createChannelSplitter(2);
     stereo.connect(split);
-    var mergeN = ctx.createChannelMerger(3);
+    var mergeN = ctx.createChannelMerger(4);
     split.connect(mergeN, 0, 0);
     split.connect(mergeN, 1, 1);
     vocalBus = ctx.createGain(); // mic → mono
     vocalBus.channelCount = 1; vocalBus.channelCountMode = "explicit"; vocalBus.channelInterpretation = "speakers";
-    vocalBus.connect(mergeN, 0, 2);
+    // the take records BOTH mic channels (2 and 3): some tablets open the built-in mic as stereo with the voice in one
+    // side only. finishVocal() keeps the live channel (or sums both), so every take is mono and centred.
+    micSplit = ctx.createChannelSplitter(2);
+    micSplit.connect(mergeN, 0, 2);
+    micSplit.connect(mergeN, 1, 3);
     vocalFader = ctx.createGain();
     vocalAnalyser = ctx.createAnalyser();
     vocalAnalyser.fftSize = 512;
@@ -2339,10 +2352,12 @@
     monitorGain = ctx.createGain();
     monitorGain.gain.value = 0;
     vocalBus.connect(vocalFader);
-    vocalFader.connect(vocalAnalyser);
+    vocalPan = ctx.createStereoPanner ? ctx.createStereoPanner() : ctx.createGain(); // vocal Pan also moves the monitor
+    vocalFader.connect(vocalPan);
+    vocalPan.connect(vocalAnalyser);
     vocalAnalyser.connect(monitorGain);
     monitorGain.connect(ctx.destination); // monitor bypasses master so it is never double-recorded
-    recNode = ctx.createScriptProcessor(4096, 3, 1);
+    recNode = ctx.createScriptProcessor(4096, 4, 1);
     mergeN.connect(recNode);
     var z = ctx.createGain();
     z.gain.value = 0;
@@ -2356,7 +2371,10 @@
       var r = ib.numberOfChannels > 1 ? ib.getChannelData(1) : l;
       rec.L.push(new Float32Array(l));
       rec.R.push(new Float32Array(r));
-      if (rec.mode === "vocal") rec.V.push(ib.numberOfChannels > 2 ? new Float32Array(ib.getChannelData(2)) : new Float32Array(l.length));
+      if (rec.mode === "vocal") {
+        rec.V.push(ib.numberOfChannels > 2 ? new Float32Array(ib.getChannelData(2)) : new Float32Array(l.length));
+        rec.V2.push(ib.numberOfChannels > 3 ? new Float32Array(ib.getChannelData(3)) : new Float32Array(l.length));
+      }
       rec.frames += l.length;
       if (rec.limit && rec.frames >= rec.limit) {
         rec.on = false;
@@ -2378,7 +2396,7 @@
     if (!ensureCtx() || rec.on || vox.state !== "idle") return;
     var secs = recLengthSecs();
     rec.mode = "beat";
-    rec.L = []; rec.R = []; rec.V = []; rec.frames = 0;
+    rec.L = []; rec.R = []; rec.V = []; rec.V2 = []; rec.frames = 0;
     rec.limit = secs ? Math.round(secs * ctx.sampleRate) : Math.round(600 * ctx.sampleRate);
     rec.on = true;
     rec.t0 = Date.now();
@@ -2787,9 +2805,109 @@
         applyMixer(); saveSession();
         if (g.id === "inst") btUI();
       });
+      if (g.id === "vocal") { // vocal Pan (centre by default) + quick link to the vocal effects
+        var pw = document.createElement("label"); pw.className = "pan-wrap";
+        pw.innerHTML = '<input type="range" class="pan js-vx-pan" min="-100" max="100" step="5" aria-label="Vocal pan"><span class="val js-vx-panval"></span>';
+        st.appendChild(pw);
+        var fxb = document.createElement("button"); fxb.type = "button"; fxb.className = "mute fxb"; fxb.textContent = "FX";
+        fxb.title = "Vocal effects, Pan, Wide and auto level match";
+        fxb.addEventListener("click", function () { var b = $("vx-fx"); if (b) { b.open = true; b.scrollIntoView({ block: "start", behavior: "smooth" }); } });
+        st.appendChild(fxb);
+      }
       meterEls[g.id] = st.querySelector(".meter i");
       wrap.appendChild(st);
     });
+    vxPanUI();
+  }
+  /* ---------------- Vocal channel: Pan, Wide, auto level match, effects (manual, non-destructive) ---------------- */
+  var VXFX = [
+    { k: "lowcut", name: "Low cut", p: [["f", "Freq", 40, 300, 5, "Hz"]] },
+    { k: "eq", name: "EQ · 3-band", p: [["low", "Low", -12, 12, 0.5, "dB"], ["mid", "Mid", -12, 12, 0.5, "dB"], ["midF", "Mid freq", 300, 6000, 50, "Hz"], ["high", "High", -12, 12, 0.5, "dB"]] },
+    { k: "comp", name: "Compressor", p: [["amt", "Amount", 0, 1, 0.01, "%"]] },
+    { k: "deess", name: "De-esser", p: [["amt", "Amount", 0, 1, 0.01, "%"]] },
+    { k: "sat", name: "Saturation · warmth", p: [["amt", "Amount", 0, 1, 0.01, "%"]] },
+    { k: "chorus", name: "Chorus · doubler", p: [["mix", "Mix", 0, 1, 0.01, "%"]] },
+    { k: "delay", name: "Delay (send)", p: [["div", "Time", [["1/4", "1/4"], ["1/8", "1/8"], ["1/8d", "1/8 dotted"]]], ["pp", "Ping-pong", "bool"], ["fb", "Feedback", 0, 0.85, 0.01, "%"], ["mix", "Mix", 0, 1, 0.01, "%"]] },
+    { k: "reverb", name: "Reverb (send)", p: [["type", "Type", [["room", "Room"], ["plate", "Plate"], ["hall", "Hall"]]], ["decay", "Decay", 0.3, 5, 0.1, "s"], ["pre", "Pre-delay", 0, 0.12, 0.005, "s"], ["mix", "Mix", 0, 1, 0.01, "%"]] }
+  ];
+  function vxFmt(v, u) { return u === "%" ? Math.round(v * 100) + "%" : u === "s" ? (v < 0.2 ? Math.round(v * 1000) + " ms" : (+v).toFixed(1) + " s") : u === "Hz" ? (v >= 1000 ? (v / 1000).toFixed(1) + "k" : Math.round(v)) + " Hz" : (v > 0 ? "+" : "") + (+v).toFixed(1) + " dB"; }
+  function vxPanUI() {
+    var p = Math.round((S.vox.pan || 0) * 100), txt = p === 0 ? "C" : p < 0 ? "L" + (-p) : "R" + p;
+    document.querySelectorAll(".js-vx-pan").forEach(function (e) { e.value = p; });
+    document.querySelectorAll(".js-vx-panval").forEach(function (e) { e.textContent = txt; });
+  }
+  function vxChanged() { saveSession(); applyMixer(); var b = $("vx-reexp"); if (b) b.hidden = !vox.last; }
+  function buildVxFx() {
+    var box = document.querySelector(".vox-box"); if (!box || $("vx-fx")) return;
+    if (!S.vox.fx) S.vox.fx = FXC.defaults();
+    var d = document.createElement("details"); d.id = "vx-fx"; d.className = "vx-fx";
+    d.innerHTML = '<summary><strong>Vocal level, pan &amp; effects</strong> <small class="sub">manual · the raw take is never changed · applied to exports, Send to Player / DJ / Studio</small></summary>' +
+      '<div class="vx-row">' +
+      '<label class="vx-pan">Pan <input type="range" class="js-vx-pan" min="-100" max="100" step="5" aria-label="Vocal pan"> <span class="mono js-vx-panval">C</span>' +
+      '<button type="button" class="btn small ghost" id="vx-center">Center</button></label>' +
+      '<label class="chk vx-big" title="Subtle stereo double. Mono-safe: it cancels back to your voice in mono."><input type="checkbox" id="vx-wide"> Wide</label></div>' +
+      '<div class="vx-row vx-auto">' +
+      '<label class="chk vx-big"><input type="checkbox" id="vx-auto"> Auto match to beat</label>' +
+      '<label>Vocal vs beat <input type="range" id="vx-off" min="-6" max="6" step="0.5" aria-label="Vocal level versus beat, dB"> <output id="vx-off-val" class="mono"></output></label>' +
+      '<span class="vx-pre" role="group" aria-label="Vocal level presets"><button type="button" class="btn small" data-off="3">Upfront +3</button><button type="button" class="btn small" data-off="0">Balanced 0</button><button type="button" class="btn small" data-off="-3">Tucked −3</button></span>' +
+      '<span class="vx-applied">Applied <b id="vx-auto-val" class="mono">—</b></span></div>' +
+      '<div class="vx-grid" id="vx-grid"></div>' +
+      '<div class="vx-row"><button type="button" class="btn small" id="vx-reexp" hidden>Export last take again with these settings</button>' +
+      '<button type="button" class="btn small ghost" id="vx-alloff">All effects off</button></div>';
+    var anchor = box.querySelector(".vox-opts");
+    box.insertBefore(d, anchor);
+    var grid = d.querySelector("#vx-grid");
+    function render() {
+      grid.innerHTML = "";
+      VXFX.forEach(function (sec) {
+        var st = S.vox.fx[sec.k], b = document.createElement("div"); b.className = "vx-blk" + (st.on ? " on" : ""); b.dataset.k = sec.k;
+        b.innerHTML = '<div class="vx-h"><span>' + sec.name + '</span><button type="button" class="vx-sw' + (st.on ? " on" : "") + '" aria-pressed="' + st.on + '" aria-label="' + sec.name + ' on/off">' + (st.on ? "ON" : "OFF") + "</button></div>";
+        b.querySelector(".vx-sw").addEventListener("click", function () { st.on = !st.on; render(); vxChanged(); });
+        sec.p.forEach(function (p) {
+          var lab = document.createElement("label"); lab.className = "vx-p";
+          if (p[2] === "bool") {
+            lab.classList.add("chk"); lab.innerHTML = '<input type="checkbox"> ' + p[1];
+            var cb = lab.querySelector("input"); cb.checked = !!st[p[0]];
+            cb.addEventListener("change", function () { st[p[0]] = cb.checked; if (!st.on) { st.on = true; render(); } vxChanged(); });
+          } else if (Array.isArray(p[2])) {
+            lab.innerHTML = "<span>" + p[1] + "</span><select></select>";
+            var sel = lab.querySelector("select"); p[2].forEach(function (o) { var op = document.createElement("option"); op.value = o[0]; op.textContent = o[1]; sel.appendChild(op); });
+            sel.value = st[p[0]];
+            sel.addEventListener("change", function () {
+              st[p[0]] = sel.value;
+              if (sec.k === "reverb" && FXC.REVERBS[sel.value]) { st.decay = FXC.REVERBS[sel.value].decay; st.pre = FXC.REVERBS[sel.value].pre; } // preset sets decay / pre-delay
+              st.on = true; render(); vxChanged();
+            });
+          } else {
+            lab.innerHTML = "<span>" + p[1] + '</span><input type="range"><output class="mono"></output>';
+            var rg = lab.querySelector("input"), o = lab.querySelector("output");
+            rg.min = p[2]; rg.max = p[3]; rg.step = p[4]; rg.value = st[p[0]]; o.textContent = vxFmt(st[p[0]], p[5]);
+            rg.addEventListener("input", function () { st[p[0]] = +rg.value; o.textContent = vxFmt(st[p[0]], p[5]); if (!st.on) { st.on = true; b.classList.add("on"); var w = b.querySelector(".vx-sw"); w.classList.add("on"); w.textContent = "ON"; w.setAttribute("aria-pressed", "true"); } });
+            rg.addEventListener("change", vxChanged);
+          }
+          b.appendChild(lab);
+        });
+        grid.appendChild(b);
+      });
+    }
+    render();
+    document.addEventListener("input", function (e) {
+      if (!e.target.classList || !e.target.classList.contains("js-vx-pan")) return;
+      S.vox.pan = clamp(+e.target.value / 100, -1, 1); vxPanUI(); applyMixer();
+    });
+    document.addEventListener("change", function (e) { if (e.target.classList && e.target.classList.contains("js-vx-pan")) vxChanged(); });
+    $("vx-center").addEventListener("click", function () { S.vox.pan = 0; vxPanUI(); vxChanged(); });
+    var wide = $("vx-wide"); wide.checked = !!S.vox.wide; wide.addEventListener("change", function () { S.vox.wide = wide.checked; vxChanged(); });
+    var au = $("vx-auto"), off = $("vx-off"), ov = $("vx-off-val");
+    function offUI() { off.value = S.vox.autoOff; ov.textContent = (S.vox.autoOff > 0 ? "+" : "") + (+S.vox.autoOff).toFixed(1) + " dB"; d.querySelectorAll(".vx-pre button").forEach(function (b) { b.classList.toggle("on", +b.dataset.off === +S.vox.autoOff); }); voxAutoUI(); }
+    au.checked = !!S.vox.auto;
+    au.addEventListener("change", function () { S.vox.auto = au.checked; if (vox.last) vox.last.autoDb = null; offUI(); vxChanged(); });
+    off.addEventListener("input", function () { S.vox.autoOff = +off.value; offUI(); });
+    off.addEventListener("change", vxChanged);
+    d.querySelectorAll(".vx-pre button").forEach(function (b) { b.addEventListener("click", function () { S.vox.autoOff = +b.dataset.off; if (!S.vox.auto) { S.vox.auto = true; au.checked = true; } offUI(); vxChanged(); }); });
+    $("vx-reexp").addEventListener("click", function () { exportVocalMix(false); });
+    $("vx-alloff").addEventListener("click", function () { Object.keys(S.vox.fx).forEach(function (k) { if (S.vox.fx[k]) S.vox.fx[k].on = false; }); render(); vxChanged(); });
+    offUI(); vxPanUI();
   }
   var meterBuf = new Float32Array(512);
   function peak(an) {
@@ -2969,6 +3087,7 @@
         vox.stream = stream; vox.streamProc = proc;
         vox.src = ctx.createMediaStreamSource(stream);
         vox.src.connect(vocalBus);
+        if (micSplit) vox.src.connect(micSplit);
         var tr = stream.getAudioTracks()[0];
         var st = tr && tr.getSettings ? tr.getSettings() : {};
         vox.liveT0 = 0; vox.inMax = 0; vox.silentWarned = false;
@@ -3076,7 +3195,7 @@
     if (vox.state !== "count") return;
     var secs = recLengthSecs();
     rec.mode = "vocal";
-    rec.L = []; rec.R = []; rec.V = []; rec.frames = 0;
+    rec.L = []; rec.R = []; rec.V = []; rec.V2 = []; rec.frames = 0;
     rec.limit = Math.round((secs || 600) * ctx.sampleRate);
     rec.startedPattern = true;
     rec.t0 = Date.now();
@@ -3115,9 +3234,10 @@
     var frames = Math.min(rec.frames, rec.limit || rec.frames);
     rec.mode = "beat";
     setVoxButtons();
-    if (frames < sr * 0.5) { rec.L = []; rec.R = []; rec.V = []; setVoxStatus("Take too short — nothing saved"); return; }
-    var L = merge(rec.L, frames), R = merge(rec.R, frames), V = merge(rec.V, frames);
-    rec.L = []; rec.R = []; rec.V = [];
+    if (frames < sr * 0.5) { rec.L = []; rec.R = []; rec.V = []; rec.V2 = []; setVoxStatus("Take too short — nothing saved"); return; }
+    var L = merge(rec.L, frames), R = merge(rec.R, frames);
+    var V = FXC.smartMono([merge(rec.V, frames), rec.V2.length ? merge(rec.V2, frames) : null]); // channel fix only: live side or mono sum
+    rec.L = []; rec.R = []; rec.V = []; rec.V2 = [];
     // trim the short pre-roll before the first beat hit (both tracks equally, so sync is kept)
     var on = -1, lim = Math.min(frames, sr);
     for (var i = 0; i < lim; i++) { if (Math.abs(L[i]) > 0.002 || Math.abs(R[i]) > 0.002) { on = i; break; } }
@@ -3127,7 +3247,7 @@
     vox.last = { L: L, R: R, V: V, frames: frames, sr: sr, title: btActive() ? bt.title : song ? song.title : "", mode: vox.takeMode || "hp", clean: null, lat: null,
       mic: vox.micSettings || null, spk: vox.takeMode === "spk" ? spkBeatGain() : 1 };
     applyMixer();
-    exportVocalMix(true); // saved exactly as recorded (no automatic processing)
+    exportVocalMix(true); // the take is kept as recorded; the mix gets only the vocal channel settings (pan / FX / auto match)
     renderLastTake();
   }
   function vocalPeak(V) {
@@ -3150,11 +3270,45 @@
     }
     return { L: outL, R: outR, V: V, sh: sh };
   }
+  /* the vocal as it sits in the mix: shifted for latency, then (non-destructively) Pan, Wide, the vocal effects and the
+     auto level match. The take itself (t.V / t.clean) is never modified. Resolves to { L, R, V, sh, autoDb } */
+  var VOC_FADER0 = 0.9; // the default Vocal fader = "as matched"; moving it changes the level on top of the match
+  function vocalMixFx(t, which) {
+    var useClean = which === "clean" || (which == null && t.clean);
+    var V = useClean && t.clean ? t.clean : t.V, sh = takeShift(t), n = t.frames, vs = new Float32Array(n);
+    for (var i = 0; i < n; i++) { var j = i + sh; vs[i] = j >= 0 && j < n ? V[j] : 0; }
+    return FXC.renderMono(vs, t.sr, { fx: S.vox.fx, pan: S.vox.pan, wide: S.vox.wide, bpm: S.bpm }).then(function (pr) {
+      var ad = vocalAutoDb(t, pr), vg = S.vox.auto ? mixGain("vocal") / VOC_FADER0 * Math.pow(10, ad / 20) : mixGain("vocal");
+      var outL = new Float32Array(n), outR = new Float32Array(n), a = pr[0], b = pr[1];
+      for (var k = 0; k < n; k++) { outL[k] = t.L[k] + a[k] * vg; outR[k] = t.R[k] + b[k] * vg; }
+      return { L: outL, R: outR, V: V, sh: sh, autoDb: S.vox.auto ? ad : null };
+    });
+  }
+  /* auto level match: beat loudness (the beat bus exactly as it played during this take: beat / master volume and
+     section energy included) vs the vocal's gated loudness (silence ignored) → vocal gain = beat + offset − vocal */
+  function vocalAutoDb(t, pr) {
+    if (!S.vox.auto) return 0;
+    if (t.beatLufs == null) t.beatLufs = FXC.lufs([t.L, t.R], t.sr);
+    var v = FXC.lufs([pr[0], pr[1]], t.sr);
+    t.vocLufs = v;
+    t.autoDb = FXC.autoGainDb(t.beatLufs, v, S.vox.autoOff);
+    voxAutoUI();
+    return t.autoDb;
+  }
+  function voxAutoUI() {
+    var el = $("vx-auto-val"); if (!el) return;
+    var t = vox.last;
+    el.textContent = !S.vox.auto ? "off" : t && t.autoDb != null ? (t.autoDb >= 0 ? "+" : "") + t.autoDb.toFixed(1) + " dB" + (Math.abs(t.autoDb) >= FXC.AUTO.max - 0.01 ? " (max)" : "") : "on · next take";
+  }
   function exportVocalMix(first, which) {
     var t = vox.last;
     if (!t) { toast("No vocal take yet."); return; }
     var clean = !!t.clean && which !== "raw";
-    var mx = vocalMixArrays(t, clean ? "clean" : "raw"), n = t.frames;
+    return vocalMixFx(t, clean ? "clean" : "raw").then(function (mx) { exportVocalMixDone(t, mx, first, which, clean); })
+      .catch(function (e) { toast("Vocal export failed (" + (e && e.message || e) + ")"); });
+  }
+  function exportVocalMixDone(t, mx, first, which, clean) {
+    var n = t.frames;
     var name = "Vocal take" + (t.clean ? (clean ? (t.pro ? (t.mode === "spk" ? " (cleaned, pro vocal)" : " (pro vocal)") : " (cleaned)") : " (raw" + (t.mode === "spk" ? ", speaker)" : ")")) : "") + (t.title ? " · " + t.title : "");
     saveToVault(encodeWav(mx.L, mx.R, n, t.sr), n / t.sr, first ? name : name + " (re-mix)");
     if (S.vox.dry && first) {
@@ -3170,8 +3324,9 @@
   function sendVocal(dest) {
     var t = vox.last;
     if (!t) { toast("Record a vocal take first (🎙 Record Vocals)."); return; }
-    var mx = vocalMixArrays(t); // the cleaned vocal when the take was cleaned (speaker mode), else as recorded
+    vocalMixFx(t).then(function (mx) { // the cleaned vocal when the take was cleaned (speaker mode), else as recorded; + vocal FX / match
     sendOut(dest, encodeWav(mx.L, mx.R, t.frames, t.sr), t.frames / t.sr, (t.title || songTitle()) + (t.clean ? (t.mode === "spk" ? " (vocal take, cleaned)" : " (vocal take, pro vocal)") : " (vocal take)"));
+    });
   }
 
   /* ---------------- IslePin ecosystem: send audio to the Player / DJ booth ----------------
@@ -5912,7 +6067,7 @@
     buildPads();
     buildChords();
     buildPiano();
-    buildMixer();
+    buildMixer(); buildVxFx();
     wire();
     renderChordLoopUI();
     renderTimelines();
@@ -6031,6 +6186,18 @@
         last: vox.last ? { mode: vox.last.mode, frames: vox.last.frames, sr: vox.last.sr, cleaned: !!vox.last.clean, lat: vox.last.lat, info: vox.last.info || null } : null,
         lastInfo: vc.lastInfo, ab: vc.ab, playingAB: !!vc.src, chip: (document.querySelector(".js-hp-chip") || {}).textContent || "" };
     },
+    vocalMix: function (which) { // test hook: the vocal as it lands in the exported mix (after pan / FX / auto match)
+      var t = vox.last; if (!t) return Promise.resolve(null);
+      return vocalMixFx(t, which).then(function (mx) {
+        var n = t.frames, vl = new Float32Array(n), vr = new Float32Array(n);
+        for (var i = 0; i < n; i++) { vl[i] = mx.L[i] - t.L[i]; vr[i] = mx.R[i] - t.R[i]; }
+        var rl = FXC.rms(vl), rr = FXC.rms(vr);
+        return { frames: n, sr: t.sr, rmsL: rl, rmsR: rr, balDb: 20 * Math.log10((rl + 1e-12) / (rr + 1e-12)), vRms: FXC.rms(t.V), autoDb: mx.autoDb,
+          beatLufs: t.beatLufs, vocalOutLufs: FXC.lufs([vl, vr], t.sr), target: S.vox.auto ? t.beatLufs + S.vox.autoOff : null, fader: mixGain("vocal"),
+          sig: Array.prototype.slice.call(vl.filter(function (x, i) { return i % 37 === 0; })) };
+      });
+    },
+    vox: function () { return JSON.parse(JSON.stringify(S.vox)); },
     lastArrays: function () { var t = vox.last; return t ? { V: t.V, clean: t.clean, L: t.L, R: t.R, sr: t.sr } : null; },
     detect: hpDetect
   };
