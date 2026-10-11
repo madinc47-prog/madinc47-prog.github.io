@@ -155,15 +155,18 @@ export function probeDuration(url) {
 /** Peaks for the waveform seek bar. */
 export async function computePeaks(arrayBuffer, bins = 800) {
   const Ctx = window.OfflineAudioContext || window.webkitOfflineAudioContext;
-  const ctx = new Ctx(1, 1, 44100);
-  const ab = await ctx.decodeAudioData(arrayBuffer);
+  // decode at a low sample rate: the waveform needs no more, and a full-rate decode of a 4-minute song is ~80 MB and a
+  // long main-thread loop right when the next track starts (stutter / memory pressure on phones)
+  let ctx; try { ctx = new Ctx(1, 1, 8000); } catch (e) { ctx = new Ctx(1, 1, 44100); }
+  const ab = await new Promise((res, rej) => { const q = ctx.decodeAudioData(arrayBuffer, res, rej); if (q && q.then) q.then(res, rej); });
   const ch0 = ab.getChannelData(0), ch1 = ab.numberOfChannels > 1 ? ab.getChannelData(1) : ch0;
   const step = Math.max(1, Math.floor(ch0.length / bins)); const peaks = new Float32Array(bins);
   let max = 0;
   for (let b = 0; b < bins; b++) {
+    if (b && b % 150 === 0) await new Promise((r) => setTimeout(r, 0)); // stay responsive
     let m = 0, sum = 0; const st = b * step, en = Math.min(ch0.length, st + step);
-    for (let i = st; i < en; i += 4) { const v = (Math.abs(ch0[i]) + Math.abs(ch1[i])) * .5; sum += v * v; if (v > m) m = v; }
-    const rms = Math.sqrt(sum / Math.max(1, (en - st) / 4)); peaks[b] = m * .55 + rms * 1.2; if (peaks[b] > max) max = peaks[b];
+    for (let i = st; i < en; i += 2) { const v = (Math.abs(ch0[i]) + Math.abs(ch1[i])) * .5; sum += v * v; if (v > m) m = v; }
+    const rms = Math.sqrt(sum / Math.max(1, (en - st) / 2)); peaks[b] = m * .55 + rms * 1.2; if (peaks[b] > max) max = peaks[b];
   }
   if (max > 0) for (let b = 0; b < bins; b++) peaks[b] /= max;
   return { peaks, duration: ab.duration };

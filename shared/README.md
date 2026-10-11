@@ -68,3 +68,46 @@ Separate IndexedDB `islepin-samples` (store `samples`, BroadcastChannel `islepin
 version bump on `islepin-media`. Written by the DJ booth **Sample Studio → Save to library**, read by Beats
 (**pad Sample library → My Samples**, via `beats/user-samples.js`). API: `saveSample`, `listSamples`, `getSample`,
 `deleteSample`, `onSamplesChange` (also `globalThis.IslePinSamples`). Full docs: [USER-SAMPLES.md](USER-SAMPLES.md).
+
+## `share.js` — Share button (any app page)
+
+Self-contained classic script (no dependencies, no CDN, styles in a shadow root). One tag per page:
+
+```html
+<script src="/shared/share.js" defer
+        data-title="Island Pin Beats" data-text="Make beats free in your browser"
+        data-position="inline" data-target=".topbar .brand"></script>
+```
+
+- **Phones / tablets** (touch + `navigator.share` + `navigator.canShare` OK): opens the native share sheet with `{title, text, url}`. Closing the sheet (AbortError) is silent; any other failure falls back to the panel.
+- **Desktop** (or no Web Share): copies the link (Clipboard API, `execCommand` fallback), shows a "Copied!" toast and a panel with the link, a QR code (drawn locally by `shared/qrcode.js`, qrcode-generator 2.0.4, MIT, lazy-loaded on first open), and WhatsApp / Facebook / X / Email links (+ "More" when the browser has Web Share). Esc / outside click closes; focus returns to the button.
+- **Link** = this page's origin + path (`index.html` dropped), no hash, no query except `data-keep` params and the optional tab deep link. Inside an iframe the button is hidden (the parent page shares).
+
+| Attribute | Default | |
+|---|---|---|
+| `data-title` / `data-text` | og:title / og:description | share sheet + panel text |
+| `data-url` | current page (cleaned) | fixed link |
+| `data-keep` | — | comma list of query params to keep (e.g. `track`) |
+| `data-keep-hash` | off | `1` keeps `#hash` |
+| `data-tab-selector`, `data-tab-attr`, `data-tab-param`, `data-tab-default` | —, `data-tab`, `tab`, — | deep link to the open tab: `?tab=<attr value>` unless it's the default tab |
+| `data-position` | `br` | `br` `bl` `tr` `tl` (floating) or `inline` |
+| `data-target`, `data-insert` | —, `end` | inline: CSS selector + `start` `end` `before` `after` (missing target → floating `br`) |
+| `data-offset` | `16,16` | floating: x,y px from the corner (+ safe-area insets) |
+| `data-label` | `Share` | |
+| `data-compact` | `0` | icon-only below this viewport width (px); the aria-label stays |
+| `data-native` | `auto` | `auto` (touch devices) · `always` · `never` |
+| `data-in-frame` | `hide` | `show` to render inside iframes |
+| `data-auto` | `true` | `false` = no button, use the API |
+
+JS API — `window.IslePinShare`: `share(opts?)`, `open(opts?)` (desktop panel), `close()`, `getUrl()`, `configure({title, text, url, getUrl: fn, keep: [...]})`,
+`attach(buttonEl, opts?)` (turn your own button into a share button), `copy(text)`, `button` (host element or null).
+`document` gets an `islepin-share` event `{detail: {method: 'native'|'copy'|'panel', url}}`.
+
+Reuse in an app that already has its own button (e.g. Player, Mastering):
+
+```html
+<script src="/shared/share.js" defer data-auto="false" data-title="Psycho Fingers Player" data-keep="track"></script>
+<script>addEventListener('DOMContentLoaded', () => IslePinShare.attach(document.getElementById('my-share-btn')));</script>
+```
+
+Service workers: precache `/shared/share.js` and `/shared/qrcode.js`.

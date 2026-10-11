@@ -13,6 +13,8 @@
   <meta property="og:type" content="website">
   <meta name="theme-color" content="#0f1222">
   <link rel="stylesheet" href="styles.css">
+  <meta name="twitter:card" content="summary">
+  <script src="/shared/share.js" defer data-title="Isle Voice — free voice bank &amp; song draft helper" data-text="Record your voice bank, write lyrics and draft a beat right in your browser. Free, made in Dominica." data-position="inline" data-target=".top .top-inner"></script>
 </head>
 <body>
   <header class="top">
@@ -146,6 +148,7 @@
             <button id="btn-take" class="btn primary">● Record take</button>
             <button id="btn-take-stop" class="btn" disabled>■ Stop</button>
             <span id="take-time" class="mono">0:00</span>
+            <label class="chk" title="Makes a phone / tablet mic sound like a studio condenser: rumble cut, warm EQ with presence and air, smooth compression, de-esser, gentle noise gate, limiter. The raw take is kept too. Voice bank clips stay raw (cleanest training data for RVC)."><input type="checkbox" id="take-pro" checked> Pro vocal (auto)</label>
           </div>
           <div id="take-list" class="list"></div>
         </div>
@@ -193,6 +196,7 @@
   </main>
 
   <footer class="foot wrap">Isle Voice MVP · free, runs in your browser · no paid APIs · <a href="../">IslePin</a> · <a href="../beats/">Island Pin Beats</a></footer>
-  <script src="app.js"></script>
+  <script src="/shared/vocal-chain.js?v=20261011v"></script>
+  <script src="app.js?v=20261011v"></script>
 </body>
 </html>
