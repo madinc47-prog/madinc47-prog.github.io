@@ -464,6 +464,7 @@
       var bp = c.createBiquadFilter(); bp.type = "bandpass"; bp.frequency.value = Math.min(9000, f * 5 + 1200); bp.Q.value = 0.9;
       var ng = c.createGain(); ng.gain.setValueAtTime(0.12 * vel, t); ng.gain.exponentialRampToValueAtTime(0.0005, t + 0.035);
       nb.connect(bp); bp.connect(ng); ng.connect(v.out); nb.start(t); v.nodes.push(nb);
+      if (CUR) pianoFeel(v, c, m, f, t, dur, vel, lp);
       var decay = 1.4 + 3.5 * (1 - (m - 21) / 88); // low notes ring longer
       var end = env(v, t, dur, 0.2 * (0.35 + 0.65 * vel), 0.003, 0.0001, decay / 3.2, 0.28);
       return finish(v, end);
@@ -648,6 +649,28 @@
     else { g.linearRampToValueAtTime(pk, t + 0.012 + 0.03 * (1 - vel)); g.setTargetAtTime(pk * (longN ? 0.7 : 0.55), t + 0.05, 0.2); }
     g.setTargetAtTime(0, off, rel / (fall ? 2 : 4));
     return finish(v, off + rel * 1.6 + 0.05);
+  }
+  /* Feel piano extras (grand): velocity layers — hard strikes add a bright, slightly stretched (inharmonic) upper
+     layer and a harder hammer, soft strikes stay felt-dark; key-up damper thump; a quiet sympathetic-string bloom
+     (like a touch of sustain pedal) so notes hand over into each other instead of stopping dead. */
+  var PIANO_HI = [0, 0, 0.5, 0.42, 0.36, 0.3, 0.22, 0.16, 0.12, 0.08, 0.06];
+  function pianoFeel(v, c, m, f, t, dur, vel, lp) {
+    var hard = clamp((vel - 0.6) / 0.4, 0, 1);
+    if (hard > 0) {
+      var hl = c.createGain(); hl.gain.setValueAtTime(0.35 * hard, t); hl.gain.setTargetAtTime(0, t + 0.01, 0.12 + 0.25 * (1 - m / 108)); hl.connect(v.out);
+      var hf = c.createBiquadFilter(); hf.type = "lowpass"; hf.frequency.value = Math.min(15000, f * 12 + 3000); hf.connect(hl);
+      osc(v, c, null, f, t, 3 + 0.04 * Math.max(0, m - 48), hf, wave(c, "pianoHi", PIANO_HI));
+      var hn = c.createBufferSource(); hn.buffer = noise(c); var hb = c.createBiquadFilter(); hb.type = "highpass"; hb.frequency.value = 2500;
+      var hg = c.createGain(); hg.gain.setValueAtTime(0.06 * hard, t); hg.gain.exponentialRampToValueAtTime(0.0004, t + 0.012);
+      hn.connect(hb); hb.connect(hg); hg.connect(v.out); hn.start(t); v.nodes.push(hn);
+    }
+    if (dur > 0.12) { // damper falls back on the string at key-up
+      var dn = c.createBufferSource(); dn.buffer = noise(c); var db = c.createBiquadFilter(); db.type = "bandpass"; db.frequency.value = 300 + f * 0.5; db.Q.value = 1.5;
+      var dg = c.createGain(); dg.gain.setValueAtTime(0, t + dur); dg.gain.linearRampToValueAtTime(0.012 * (0.4 + vel), t + dur + 0.004); dg.gain.exponentialRampToValueAtTime(0.0004, t + dur + 0.06);
+      dn.connect(db); db.connect(dg); dg.connect(v.out); dn.start(t); v.nodes.push(dn);
+    }
+    var sy = c.createGain(); sy.gain.setValueAtTime(0, t); sy.gain.linearRampToValueAtTime(0.05, t + 0.25); sy.gain.setTargetAtTime(0, t + dur + 0.1, 0.35); sy.connect(lp);
+    osc(v, c, "sine", f * 2, t, -2, sy); osc(v, c, "sine", f * 3, t, 2.5, gainTo(c, 0.5, sy));
   }
   /* vocal chop: doubled saw "vocal folds" (scoop + vibrato) through parallel formant band-passes, plus breath */
   var FORMANTS = {
