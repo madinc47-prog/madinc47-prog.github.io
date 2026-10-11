@@ -531,17 +531,19 @@
       for (var i = 0; i < 1024; i++) { var x = i / 511.5 - 1; cur[i] = Math.tanh(1.8 * x) / Math.tanh(1.8); }
       sh.curve = cur; sh.connect(v.out);
       var o = osc(v, c, "sine", f, t, 0, sh);
-      o.frequency.setValueAtTime(f * 1.5, t); o.frequency.exponentialRampToValueAtTime(f, t + 0.03); // soft click-in
-      var h = c.createGain(); h.gain.value = 0.18; h.connect(sh); osc(v, c, "triangle", f * 2, t, 0, h);
-      var end = env(v, t, dur, 0.26 * (0.5 + 0.5 * vel), 0.005, 0.8, 0.6, 0.08);
+      var h = c.createGain(); h.gain.value = 0.18; h.connect(sh); var o2 = osc(v, c, "triangle", f * 2, t, 0, h); o2.__mul = 2;
+      var fb = CUR ? bassFeel(v, c, "bass", m, f, t, dur, vel, [o, o2]) : null;
+      if (!fb || !fb.slide) { o.frequency.setValueAtTime(f * 1.5, t); o.frequency.exponentialRampToValueAtTime(f, t + 0.03); } // soft click-in
+      var end = env(v, t, dur, 0.26 * (0.5 + 0.5 * vel), fb && fb.slide ? 0.01 : 0.005, 0.8, 0.6, 0.08);
       return finish(v, end);
     },
     synthbass: function (c, dest, m, t, dur, vel) {
       var v = voiceBase(c, dest, t), f = mf(m);
       var lp = c.createBiquadFilter(); lp.type = "lowpass"; lp.Q.value = 5; lp.connect(v.out);
       lp.frequency.setValueAtTime(180 + vel * 2200, t); lp.frequency.setTargetAtTime(160 + f, t, 0.12);
-      osc(v, c, "sawtooth", f, t, -6, lp); osc(v, c, "square", f, t, 6, lp); osc(v, c, "sine", f / 2, t, 0, lp);
-      var end = env(v, t, dur, 0.13 * (0.5 + 0.5 * vel), 0.004, 0.7, 0.3, 0.07);
+      var sb = [osc(v, c, "sawtooth", f, t, -6, lp), osc(v, c, "square", f, t, 6, lp), osc(v, c, "sine", f / 2, t, 0, lp)]; sb[2].__mul = 0.5;
+      var fb2 = CUR ? bassFeel(v, c, "synthbass", m, f, t, dur, vel, sb) : null;
+      var end = env(v, t, dur, 0.13 * (0.5 + 0.5 * vel), fb2 && fb2.slide ? 0.01 : 0.004, 0.7, 0.3, 0.07);
       return finish(v, end);
     },
     pluck: function (c, dest, m, t, dur, vel) {
@@ -671,6 +673,24 @@
     }
     var sy = c.createGain(); sy.gain.setValueAtTime(0, t); sy.gain.linearRampToValueAtTime(0.05, t + 0.25); sy.gain.setTargetAtTime(0, t + dur + 0.1, 0.35); sy.connect(lp);
     osc(v, c, "sine", f * 2, t, -2, sy); osc(v, c, "sine", f * 3, t, 2.5, gainTo(c, 0.5, sy));
+  }
+  /* Feel bass: played like a bassist — one string at a time (a new note stops the last one), overlapping notes
+     slide into each other (fretless / finger slide), a finger pluck thump that is harder on loud notes, and a little
+     fret/finger noise when a note is let go early. Note length is honoured exactly (env + release). */
+  function bassFeel(v, c, id, m, f, t, dur, vel, oscs) {
+    var prev = monoPrev(c, id, t), slide = prev && prev.overlap && prev.m !== m;
+    if (prev && prev.v && prev.v.stop) prev.v.stop(t + 0.004);
+    if (slide) oscs.forEach(function (x) { glideFreq(x, prev, f, t, 0.07); });
+    else {
+      var nb = c.createBiquadFilter(); nb.type = "bandpass"; nb.frequency.value = 700 + vel * 900; nb.Q.value = 1.1;
+      var ng = c.createGain(); ng.gain.setValueAtTime(0.09 * vel * vel, t); ng.gain.exponentialRampToValueAtTime(0.0005, t + 0.018);
+      nb.connect(ng); ng.connect(v.out); noiseSrc(v, c, t, nb);
+    }
+    if (dur < 0.35) { var rb = c.createBiquadFilter(); rb.type = "bandpass"; rb.frequency.value = 1800; rb.Q.value = 2;
+      var rg = c.createGain(); rg.gain.setValueAtTime(0, t + dur); rg.gain.linearRampToValueAtTime(0.012, t + dur + 0.005); rg.gain.exponentialRampToValueAtTime(0.0004, t + dur + 0.04);
+      rb.connect(rg); rg.connect(v.out); noiseSrc(v, c, t, rb); }
+    monoSet(c, id, m, t, dur, v);
+    return { slide: slide };
   }
   /* vocal chop: doubled saw "vocal folds" (scoop + vibrato) through parallel formant band-passes, plus breath */
   var FORMANTS = {
