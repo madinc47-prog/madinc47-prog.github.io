@@ -641,8 +641,6 @@
 
   /* ---------------- built-in crate: his beats + synthesized demo loops ---------------- */
   var BUILTIN = [
-    { id: "gunwalk", name: "Gunwalk — DJ Psycho Fingers", sub: "His own beat · instrumental · 96 BPM · 3:18", bpm: 96, grid: 0.36,
-      get: function () { return fetchAB("../beats/tracks/gunwalk-instrumental.mp3"); } },
     { id: "demo-bap", name: "Booth Loop 92 (boom-bap demo)", sub: "Synthesized here · 92 BPM · 16 bars", bpm: 92, grid: 0, get: function () { return synthDemo("bap"); } },
     { id: "demo-bounce", name: "Island Bounce 100 (demo)", sub: "Synthesized here · 100 BPM · 16 bars", bpm: 100, grid: 0, get: function () { return synthDemo("bounce"); } }
   ];
