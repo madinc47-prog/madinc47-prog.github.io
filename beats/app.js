@@ -1,3 +1,88 @@
+/* Tap debug: only with ?tapdebug=1 in the URL (otherwise this returns immediately and does nothing).
+ * Draws a dot at every touch (blue = pointerdown/touchstart, orange = pointerup/touchend, green = click) and keeps a small
+ * log of what was under the finger, the event target, defaultPrevented and pointerdown→click time. "Copy log" copies it. */
+(function tapDebug() {
+  if (!/[?&]tapdebug=1(&|$)/.test(location.search)) return;
+  var LOG = [], ALL = [], t0 = 0, panel, list, start = Date.now();
+  function desc(el) {
+    if (!el || !el.tagName) return "none";
+    var s = el.tagName.toLowerCase() + (el.id ? "#" + el.id : "") + (typeof el.className === "string" && el.className.trim() ? "." + el.className.trim().split(/\s+/).slice(0, 2).join(".") : "");
+    var b = el.closest && el.closest("button, a, select, label, input, [role=button]");
+    var txt = ((b || el).textContent || (b || el).value || "").replace(/\s+/g, " ").trim().slice(0, 18);
+    return (s.length > 34 ? s.slice(0, 34) + "…" : s) + (txt ? " “" + txt + "”" : "");
+  }
+  function css() {
+    var st = document.createElement("style");
+    st.textContent = ".td-dot{position:fixed;width:18px;height:18px;margin:-9px 0 0 -9px;border-radius:50%;pointer-events:none;z-index:2147483646;opacity:.9;transition:opacity 1.2s ease,transform 1.2s ease}" +
+      ".td-dot.down{background:#38bdf8}.td-dot.up{background:#fb923c;width:12px;height:12px;margin:-6px 0 0 -6px}.td-dot.click{background:transparent;border:3px solid #22c55e;width:26px;height:26px;margin:-13px 0 0 -13px}.td-dot.fade{opacity:0;transform:scale(1.8)}" +
+      ".td-panel{position:fixed;top:4px;right:4px;z-index:2147483647;width:min(380px,92vw);background:rgba(0,0,0,.72);color:#e5e7eb;font:11px/1.35 ui-monospace,Menlo,monospace;border:1px solid #f59e0b;border-radius:8px;padding:4px 6px;pointer-events:none}" +
+      ".td-panel .td-badge{display:inline-block;background:#f59e0b;color:#000;font-weight:700;padding:1px 6px;border-radius:4px;margin-right:6px}" +
+      ".td-panel .td-copy{pointer-events:auto;font:600 12px system-ui;padding:6px 10px;margin-left:4px;border-radius:6px;border:1px solid #f59e0b;background:#1f1600;color:#fde68a}" +
+      ".td-panel ol{margin:4px 0 0;padding:0;list-style:none}.td-panel li{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.td-panel li.bad{color:#f87171}";
+    document.head.appendChild(st);
+  }
+  function build() {
+    css();
+    panel = document.createElement("div"); panel.className = "td-panel"; panel.setAttribute("aria-hidden", "true");
+    panel.innerHTML = '<span class="td-badge">TAP DEBUG</span><span class="td-sum"></span><button type="button" class="td-copy">Copy log</button><ol></ol>';
+    list = panel.querySelector("ol");
+    panel.querySelector(".td-copy").addEventListener("click", function (e) {
+      e.stopPropagation();
+      var txt = "Beat tap debug · " + navigator.userAgent + " · " + innerWidth + "x" + innerHeight + " @" + devicePixelRatio + "x · " + location.href + "\n" + ALL.join("\n");
+      var done = function () { e.target.textContent = "Copied ✓"; setTimeout(function () { e.target.textContent = "Copy log"; }, 1500); };
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(done, fallback); else fallback();
+      function fallback() { var ta = document.createElement("textarea"); ta.value = txt; document.body.appendChild(ta); ta.select(); try { document.execCommand("copy"); done(); } catch (x) { /* ignore */ } ta.remove(); }
+    });
+    document.body.appendChild(panel);
+  }
+  function dot(x, y, cls) {
+    if (!document.body) return;
+    var d = document.createElement("div"); d.className = "td-dot " + cls; d.style.left = x + "px"; d.style.top = y + "px";
+    document.body.appendChild(d);
+    requestAnimationFrame(function () { requestAnimationFrame(function () { d.classList.add("fade"); }); });
+    setTimeout(function () { d.remove(); }, 1400);
+  }
+  var lastDown = 0, clicked = true;
+  function onEv(e) {
+    if (panel && panel.contains(e.target)) return;
+    var p = e.changedTouches && e.changedTouches[0] ? e.changedTouches[0] : e, x = Math.round(p.clientX || 0), y = Math.round(p.clientY || 0);
+    var now = performance.now(), extra = "";
+    if (e.type === "pointerdown") { if (!clicked && lastDown) note("⚠ previous tap got NO click"); lastDown = now; clicked = false; }
+    if (e.type === "click") {
+      clicked = true; extra = lastDown ? " +" + Math.round(now - lastDown) + "ms" : "";
+      var t1 = window.IPBBeats && IPBBeats.audioDebug ? IPBBeats.audioDebug().t : null;
+      setTimeout(function () { // where does the sound die? context state, clock moving, gains, peak level 300 ms later
+        try {
+          var A = window.IPBBeats && IPBBeats.audioDebug ? IPBBeats.audioDebug() : null;
+          if (!A) return;
+          if (!A.state) { note("  audio: " + A.ctx, false); return; }
+          var gs = Object.keys(A.groups).map(function (k) { var x = A.groups[k]; return k + " " + x.v + (x.pk ? "/" + x.pk : ""); }).join(", ");
+          var bad = A.state !== "running" || A.t === t1 || A.fader === 0 || A.masterMix === 0 || A.spk === 0;
+          note("  audio: " + A.state + " " + A.sr + "Hz clock " + (A.t === t1 ? "STUCK " : "") + A.t + "s master " + A.masterMix + " fader " + A.fader + " spk " + A.spk +
+            " PEAK " + A.peak + (A.playing ? " playing" : "") + (A.preview ? " preview" : "") + " | mix: " + gs, bad);
+        } catch (x) { note("  audio: debug error " + x.message, true); }
+      }, 300);
+    }
+    dot(x, y, /down|start/.test(e.type) ? "down" : e.type === "click" ? "click" : "up");
+    var under = document.elementFromPoint(x, y), tgt = e.target;
+    // read defaultPrevented after the page's own handlers ran
+    setTimeout(function () {
+      var line = ((Date.now() - start) / 1000).toFixed(1) + "s " + e.type + (e.pointerType ? "(" + e.pointerType + ")" : "") + " " + x + "," + y +
+        " under=" + desc(under) + (tgt !== under ? " target=" + desc(tgt) : "") + (e.defaultPrevented ? " PREVENTED" : "") + extra;
+      note(line, e.defaultPrevented);
+    }, 0);
+  }
+  function note(line, bad) {
+    ALL.push(line); if (ALL.length > 400) ALL.shift();
+    if (!list) return;
+    LOG.push([line, bad || /^⚠/.test(line)]); if (LOG.length > 8) LOG.shift();
+    list.innerHTML = ""; LOG.forEach(function (l) { var li = document.createElement("li"); li.textContent = l[0]; if (l[1]) li.className = "bad"; list.appendChild(li); });
+  }
+  ["pointerdown", "pointerup", "touchstart", "touchend", "click"].forEach(function (t) { window.addEventListener(t, onEv, { capture: true, passive: true }); });
+  window.addEventListener("error", function (e) { note("⚠ JS error: " + (e.message || e) + " @" + (e.lineno || "")); });
+  window.addEventListener("unhandledrejection", function (e) { note("⚠ promise error: " + (e.reason && e.reason.message || e.reason)); });
+  if (document.body) build(); else document.addEventListener("DOMContentLoaded", build);
+})();
 /* Island Pin Beats — Web Audio beat maker. Drums: synthesis + a few small CC0 one-shots (samples/CREDITS.md). No paid APIs. */
 (function () {
   "use strict";
@@ -2595,14 +2680,14 @@
     a[0].href = purl; a[1].href = djHref(id);
     a[dest === "dj" ? 1 : 0].classList.add("primary");
     a[1].addEventListener("click", function () { if (playing) stop(); saveSession(); });
-    el.hidden = false; el._t = setTimeout(function () { el.hidden = true; }, 12000);
+    el.hidden = false; el._t = setTimeout(function () { el.hidden = true; }, 6000);
   }
   function sendOffer(msg, fn) { // "saved — send it on?" with → Player / → DJ Booth buttons
     var el = sendBox(), acts = el.querySelector(".send-acts");
     el.querySelector(".send-msg").textContent = msg;
     acts.innerHTML = '<button type="button" class="btn small" data-d="player">Send to Player</button><button type="button" class="btn small" data-d="dj">Send to DJ Booth</button>';
     acts.querySelectorAll("button").forEach(function (b) { b.addEventListener("click", function () { fn(b.dataset.d); }); });
-    el.hidden = false; el._t = setTimeout(function () { el.hidden = true; }, 12000);
+    el.hidden = false; el._t = setTimeout(function () { el.hidden = true; }, 6000);
   }
   function vaultGet(id) {
     var mem = memVault.filter(function (x) { return x.id === id; })[0];
@@ -5192,6 +5277,14 @@
         })
       };
     },
+    audioDebug: function () { // read by ?tapdebug=1
+      if (!ctx) return { ctx: "none yet" };
+      var g = {};
+      GROUPS.forEach(function (x) { var n = groupNodes[x.id]; g[x.id] = { v: +mixGain(x.id).toFixed(2), pk: n && n.an ? +peak(n.an).toFixed(3) : null }; });
+      return { state: ctx.state, sr: ctx.sampleRate, t: +ctx.currentTime.toFixed(2), base: ctx.baseLatency, out: ctx.outputLatency, fader: +LG.fader.gain.value.toFixed(2), masterMix: +mixGain("master").toFixed(2),
+        beatMon: beatMon ? +beatMon.gain.value.toFixed(2) : null, spk: spkGain ? +spkGain.gain.value.toFixed(2) : null, peak: masterAnalyser ? +peak(masterAnalyser).toFixed(3) : null,
+        playing: playing, preview: !!klPrev, groups: g, sink: ctx.sinkId === undefined ? "" : String(ctx.sinkId) };
+    },
     kits: function () { return D.KITS.map(function (k) { return k.id; }); },
     backing: function () {
       return { id: bt.id, title: bt.title, loading: bt.loading, dur: bt.buf ? bt.buf.duration : 0, sr: bt.buf ? bt.buf.sampleRate : 0, bpm: bt.bpm,
@@ -5269,7 +5362,10 @@
         sessionStorage.setItem(key, live);
         if (rec && rec.on) return; // never interrupt a recording
         toast("Updated, reloading…");
-        setTimeout(function () { location.reload(); }, 900);
+        setTimeout(function () { // a new URL (keeps ?tapdebug=1 etc.) so a stale HTTP-cached page can't be served again on reload
+          var q = new URLSearchParams(location.search); q.set("_v", live);
+          location.replace(location.pathname + "?" + q.toString() + location.hash);
+        }, 900);
       }).catch(function () {});
     } catch (e) { /* ignore */ }
   })();
