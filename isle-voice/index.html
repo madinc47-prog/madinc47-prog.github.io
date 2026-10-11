@@ -12,6 +12,7 @@
   <meta property="og:url" content="https://madinc47-prog.github.io/isle-voice/">
   <meta property="og:type" content="website">
   <meta name="theme-color" content="#0f1222">
+  <link rel="icon" href="data:,">
   <link rel="stylesheet" href="styles.css">
   <meta name="twitter:card" content="summary">
   <script src="/shared/share.js" defer data-title="Isle Voice — free voice bank &amp; song draft helper" data-text="Record your voice bank, write lyrics and draft a beat right in your browser. Free, made in Dominica." data-position="inline" data-target=".top .top-inner"></script>
@@ -22,6 +23,8 @@
       <a href="../" class="back" aria-label="Back to IslePin">←</a>
       <span class="logo">Isle<b>Voice</b> <em>MVP</em></span>
       <nav class="jump" aria-label="Sections">
+        <a href="#make">Make my song</a>
+        <a href="how-to/">How it works</a>
         <a href="#bank">Voice bank</a>
         <a href="#studio">Prompt studio</a>
         <a href="#apply">Apply my voice</a>
@@ -32,18 +35,133 @@
 
   <div class="banner" role="note">
     <div class="wrap">
-      <strong>Free version</strong> — true voice-clone singing needs a free GPU tool like RVC (Colab); this app prepares your voice bank and draft.
+      <strong>Free, no paid AI</strong> — type your lyrics, get a beat and a draft vocal here, then free Google Colab (with your own Google account) turns the draft into your voice. <a href="how-to/">See how it works</a>.
     </div>
   </div>
 
   <main class="wrap">
+    <!-- MAKE MY SONG (one button) -->
+    <section id="make" class="card make" aria-labelledby="mk-h">
+      <div class="card-head">
+        <div>
+          <h2 id="mk-h">Make my song</h2>
+          <p class="sub">Type your lyrics. One button builds the beat and a draft vocal, then free Google Colab turns that draft into <b>your</b> voice. <a href="how-to/">How it works (with video)</a></p>
+        </div>
+      </div>
+      <ol class="stepper" id="mk-stepper" aria-label="Progress">
+        <li data-s="1"><button type="button"><b>1</b><span>Type it</span></button></li>
+        <li data-s="2"><button type="button"><b>2</b><span>Generate</span></button></li>
+        <li data-s="3"><button type="button"><b>3</b><span>Apply my voice</span></button></li>
+        <li data-s="4"><button type="button"><b>4</b><span>Hear it</span></button></li>
+      </ol>
+
+      <div class="mk-panel" id="mk-p1">
+        <label>Song name <input id="mk-name" maxlength="60" placeholder="e.g. Nature Isle Anthem" autocomplete="off"></label>
+        <label>Lyrics <span class="mk-hint">one line = one bar · up to 32 lines</span>
+          <textarea id="mk-lyrics" rows="8" maxlength="4000" placeholder="Type your bars here, one line per bar.&#10;Waitukubuli mountains, I was raised in the green&#10;Roseau to Portsmouth, the realest you've seen"></textarea>
+        </label>
+        <div class="mk-opts">
+          <div class="mk-field"><span class="mk-lab">Style</span>
+            <div class="seg" id="mk-style" role="radiogroup" aria-label="Style">
+              <button type="button" role="radio" data-v="rap" aria-checked="true">Rap</button>
+              <button type="button" role="radio" data-v="sing" aria-checked="false">Sing</button>
+            </div>
+          </div>
+          <label>Beat <select id="mk-genre">
+            <option value="trap">Trap</option>
+            <option value="drill">Drill</option>
+            <option value="afrobeats">Afrobeats</option>
+            <option value="dancehall">Dancehall</option>
+            <option value="bouyon">Bouyon</option>
+            <option value="reggae">Reggae (one drop)</option>
+            <option value="rnb">R&amp;B</option>
+            <option value="lofi">Lo-fi</option>
+            <option value="pop">Pop</option>
+          </select></label>
+          <label>Mood <select id="mk-mood">
+            <option value="dark">Dark</option>
+            <option value="chill">Chill</option>
+            <option value="happy">Happy</option>
+            <option value="energetic">Energetic</option>
+            <option value="sad">Sad</option>
+            <option value="romantic">Romantic</option>
+          </select></label>
+          <label>Draft voice <select id="mk-voice"></select></label>
+        </div>
+        <p class="mk-alt"><button type="button" class="linkbtn" id="mk-rec-toggle">or record it instead</button></p>
+        <div id="mk-rec" class="mk-rec" hidden>
+          <p class="sub">Put headphones on. Tap the main button to build the beat first, then record your lyrics over it. Your take becomes the draft vocal (Pro vocal is applied automatically).</p>
+          <div class="rec-row">
+            <button type="button" id="mk-rec-go" class="btn" disabled>● Record over the beat</button>
+            <button type="button" id="mk-rec-stop" class="btn" disabled>■ Stop</button>
+            <span id="mk-rec-time" class="mono">0:00</span>
+            <button type="button" class="linkbtn" id="mk-rec-cancel">back to typing</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="mk-panel" id="mk-p2" hidden>
+        <div class="mk-out-head"><strong id="mk-p2-title">Draft</strong><span id="mk-p2-meta" class="mono muted"></span></div>
+        <audio id="mk-prev" controls></audio>
+        <p class="sub">This is a stock on-device voice saying your words on the beat — just a guide. The next step re-voices it as you.</p>
+        <div class="row-actions">
+          <button type="button" class="btn ghost" id="mk-edit">Change words</button>
+          <button type="button" class="btn ghost" id="mk-regen">New beat</button>
+          <a class="btn ghost" id="mk-dl-prev" download>Download preview</a>
+        </div>
+      </div>
+
+      <div class="mk-panel" id="mk-p3" hidden>
+        <label class="chk mk-trained"><input type="checkbox" id="mk-trained"> My voice model is already trained in my Google Drive (skip training)</label>
+        <p id="mk-bank-note" class="mk-note"></p>
+        <ol class="mk-what">
+          <li>Tapping <b>Apply my voice</b> saves one zip (<span id="mk-zip-name" class="mono">song.zip</span>) to your Downloads and opens the free Isle Voice notebook on Google Colab.</li>
+          <li>In Colab: sign in with your Google account, tap <b>Runtime → Run all</b>, allow Google Drive, then pick the zip when asked.</li>
+          <li id="mk-train-li">First time only: it trains your voice from your voice bank — about <b>45–120 minutes</b> on Colab's free T4 GPU (plus ~5–10 min setup). The model is saved in your Google Drive (IsleVoice folder), so next time it skips straight to converting (~5–10 min).</li>
+          <li>It converts the draft into your voice and downloads <span class="mono">…_my_voice.wav</span>. Come back here and import it.</li>
+        </ol>
+        <p class="sub">Your audio only travels between this device and your own Colab session and Google Drive — no other file host. Colab's free GPUs aren't always available; see <a href="how-to/#what-if">what to do if</a>.</p>
+        <details class="mk-adv"><summary>Settings (model name, pitch) ▾</summary>
+          <div class="mk-opts">
+            <label>Voice model name <input id="mk-model" maxlength="40" value="my_voice" autocomplete="off"></label>
+            <label>Pitch shift (semitones) <input id="mk-pitch" type="number" min="-12" max="12" step="1" value="0"></label>
+          </div>
+        </details>
+        <label class="drop" id="mk-drop">
+          <input type="file" id="mk-import" accept="audio/*,.wav,.mp3,.flac" hidden>
+          <span><b>Import my voice</b> — drop the converted WAV here or tap to pick it</span>
+        </label>
+        <p class="row-actions"><a class="btn ghost" id="mk-colab" target="_blank" rel="noopener">Open Colab again</a> <button type="button" class="btn ghost" id="mk-zip-again">Download the zip again</button></p>
+      </div>
+
+      <div class="mk-panel" id="mk-p4" hidden>
+        <div class="mk-out-head"><strong id="mk-p4-title">Your song</strong><span id="mk-p4-meta" class="mono muted"></span></div>
+        <audio id="mk-final" controls></audio>
+        <div class="mk-opts">
+          <label>Timing nudge <span class="mono" id="mk-nudge-val">0 ms</span><input type="range" id="mk-nudge" min="-250" max="250" step="5" value="0"></label>
+          <label>Vocal level <span class="mono" id="mk-vol-val">+1.5 dB</span><input type="range" id="mk-vol" min="-6" max="8" step="0.5" value="1.5"></label>
+        </div>
+        <div class="row-actions">
+          <button type="button" class="btn" id="mk-mp3">Export MP3</button>
+          <button type="button" class="btn ghost" id="mk-reimport">Import a different take</button>
+          <button type="button" class="btn ghost" id="mk-new">Start a new song</button>
+        </div>
+      </div>
+
+      <div class="mk-main">
+        <button type="button" id="mk-go" class="btn primary big">Make my song</button>
+        <div class="mk-status"><span id="mk-status" role="status" aria-live="polite"></span><div class="mk-bar" id="mk-bar" hidden><i></i></div></div>
+      </div>
+    </section>
+
+    <h2 class="adv-h">Studio tools</h2>
     <!-- VOICE BANK -->
     <section id="bank" class="card">
       <div class="card-head">
         <div>
           <span class="step">1</span>
           <h2>Voice bank</h2>
-          <p class="sub">Record or upload clean, dry clips of your voice (speaking or singing). Stored only in this browser.</p>
+          <p class="sub">Needed <b>once</b>, to train your voice model. Record or upload clean, dry clips of your voice (speaking or rapping). Stored only in this browser.</p>
         </div>
         <div class="bank-total" id="bank-total">0 clips · 0:00</div>
       </div>
@@ -197,6 +315,8 @@
 
   <footer class="foot wrap">Isle Voice MVP · free, runs in your browser · no paid APIs · <a href="../">IslePin</a> · <a href="../beats/">Island Pin Beats</a></footer>
   <script src="/shared/vocal-chain.js?v=20261011v"></script>
-  <script src="app.js?v=20261011v"></script>
+  <script src="app.js?v=20261011n"></script>
+  <script src="sing.js?v=20261011n"></script>
+  <script src="make.js?v=20261011n"></script>
 </body>
 </html>
