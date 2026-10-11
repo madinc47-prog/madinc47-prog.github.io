@@ -2,19 +2,20 @@
 // Every module URL carries the same ?v= tag as player.js in index.html (and sw.js SHELL), so a deploy can never mix
 // old and new modules from the HTTP cache. Bump all of them together.
 import { saveTrack, listTracks, getTrack, deleteTrack, onMediaChange } from '../shared/media-store.js';
-import { createScene } from './scene.js?v=26';
-import { createViz, THEMES } from './viz.js?v=26';
-import { OUTFITS, OUTFIT_FOR_THEME } from './outfits.js?v=26';
-import { createEQ } from './eq.js?v=26';
-import { createHype } from './hype.js?v=26';
-import { createLadies } from './ladies.js?v=26';
-import { createShout } from './shout.js?v=26';
-import { initPhoto } from './photo.js?v=26';
-import { initRec } from './rec.js?v=26';
-import { createIsle } from './isle.js?v=26';
-import { createPop } from './pop.js?v=26';
-import { td, TD } from './td.js?v=26';
-import { fmt, hash, isAudioFile, titleFromName, makeCover, makeLabel, readTags, probeDuration, probeMedia, computePeaks, notMusicReason } from './util.js?v=26';
+import { createScene } from './scene.js?v=27';
+import { createViz, THEMES } from './viz.js?v=27';
+import { OUTFITS, OUTFIT_FOR_THEME } from './outfits.js?v=27';
+import { createEQ } from './eq.js?v=27';
+import { createHype } from './hype.js?v=27';
+import { createLadies } from './ladies.js?v=27';
+import { createShout } from './shout.js?v=27';
+import { initPhoto } from './photo.js?v=27';
+import { initRec } from './rec.js?v=27';
+import { createIsle } from './isle.js?v=27';
+import { createPop } from './pop.js?v=27';
+import { createDates } from './dates.js?v=27';
+import { td, TD } from './td.js?v=27';
+import { fmt, hash, isAudioFile, titleFromName, makeCover, makeLabel, readTags, probeDuration, probeMedia, computePeaks, notMusicReason } from './util.js?v=27';
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -648,6 +649,8 @@ const isle = createIsle({ hype, LS, td, toast });
 // popularity rewind (Deezer rank / iTunes / plays here) — real backspin from the mix, hand on the platter, "pull up!"
 const pop = createPop({ td, LS, toast, hype, scene, getCtx: ensureCtx, getOut: () => (ensureCtx(), preVol), getTap: () => (ensureCtx(), preVol), getDeck: () => deck, getBpm: () => scene.dance.bpm });
 window.__pfPop = pop;
+// My dates: birthdays / anniversaries shouted out on the day + heads-up before your girl's birthday
+const dates = createDates({ hype, LS, td, toast }); window.__pfDates = dates;
 window.addEventListener('pf-pop', (e) => { const li = document.querySelector(`#list li[data-key="${CSS.escape(e.detail.key)}"]`); if (li) popTag(li, e.detail.label, e.detail.tier); });
 function popTag(li, label, tier) { let t = li.querySelector('.pop-tag'); if (!t) { t = document.createElement('small'); t.className = 'pop-tag'; li.querySelector('.meta').appendChild(t); } t.textContent = label; t.dataset.tier = tier || ''; t.title = 'Music-service popularity score (not a chart position). High/huge songs get a rewind.'; }
 hype.setPlace(async () => (await isle.parts()) || (await shout.parts()));
@@ -1251,7 +1254,7 @@ function loop(now, L, drawViz) {
   if (drawViz) { Q.lastViz = now; viz.draw(now, F, anchorsCache); }
   F.mixing = !!(transition || (outgoing && outgoing.playing));
   scene.frame(now, F);
-  hype.tick(now); ladies.learn(now, current, F, deck);
+  hype.tick(now); ladies.learn(now, current, F, deck); dates.tick(now, !!(deck && !deck.el.paused));
   { const dd = scene.dance; pop.tick({ phrase8: !!dd.bpm && dd.phase % 32 < .5, drop: dd.dropAt > 0 && dd.phase - dd.dropAt < 1 }); }
   if (now - lastUi > (Q.level >= 2 ? 250 : 120)) {
     lastUi = now;
