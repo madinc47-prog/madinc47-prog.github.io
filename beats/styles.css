@@ -835,3 +835,13 @@ main:has(> #tab-studio.active) { max-width: none; }
   .vc-seg button { flex: 1; }
   .hp-chip { white-space: normal; }
 }
+
+/* live mic input meter (Record Vocals) */
+.vox-meter { flex-basis: 100%; display: flex; align-items: center; gap: .5rem; font-size: .75rem; color: var(--muted); }
+.vox-meter[hidden] { display: none; }
+.vox-meter b { color: var(--hot); font-family: var(--mono); }
+.vox-meter span { flex: 1; max-width: 340px; height: 10px; border-radius: 5px; background: rgba(255,255,255,.08); overflow: hidden; }
+.vox-meter i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, #22c55e 0 70%, #facc15 85%, #ef4444); transition: width .05s linear; }
+.vox-meter.hot em { color: #ef4444; }
+.rec-bar .vox-meter { order: 6; }
+body.bt-on .rec-bar .vox-meter { display: none; }
