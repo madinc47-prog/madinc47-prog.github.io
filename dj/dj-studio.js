@@ -1,6 +1,6 @@
 /* DJ Psycho Fingers — Sample Studio. Record from the mic (or import a file / open a pad or browser sound), trim with
  * start / end handles, fades, normalize, reverse, loop points, Voice Style (dj-voicefx.js), then Save to pad,
- * Save to library (shared store → Island Pin Beats "My Samples") or Send to Beats. Opens with /dj/?studio=1. */
+ * Save to library (My recordings). Opens with /dj/?studio=1. */
 (function () {
   "use strict";
   var P = window.PFDJ, V = window.PFVFX; if (!P || !V) return;
@@ -211,18 +211,9 @@
     return render().then(function (b) {
       var lp = loopTimes(b);
       return import("../shared/user-samples.js").then(function (m) { return m.saveSample({ id: ST.savedId && ST.savedKey.split("|").slice(0, -1).join("|") === key() ? ST.savedId : undefined, name: nm(), blob: wav(b), duration: b.duration, sampleRate: b.sampleRate, source: "dj-studio", tags: ST.preset ? [ST.preset] : ST.matched ? ["matched"] : [], loop: lp ? { start: lp[0], end: lp[1] } : null }); });
-    }).then(function (id) { ST.savedId = id; ST.savedKey = k; toast("Saved “" + nm() + "” to My recordings — also in Island Pin Beats → Sample library → My Samples"); if (window.PFSAMPLER && window.PFSAMPLER.B.pack === "mine" && window.PFSAMPLER.B.open) window.PFSAMPLER.browser(true); return id; })
+    }).then(function (id) { ST.savedId = id; ST.savedKey = k; toast("Saved “" + nm() + "” to My recordings"); if (window.PFSAMPLER && window.PFSAMPLER.B.pack === "mine" && window.PFSAMPLER.B.open) window.PFSAMPLER.browser(true); return id; })
       .catch(function (e) { toast("Couldn't save to the library (" + (e && e.message || e) + ")."); return null; });
   }
-  function sendToBeats() {
-    var w = window.open("", "islepin-beats");                  // open now (inside the click) so it isn't blocked as a pop-up
-    saveToLib().then(function (id) {
-      if (!id) { if (w) w.close(); return; }
-      var url = "../beats/?sample=" + encodeURIComponent(id);
-      if (w) w.location.href = url; else location.href = url;
-    });
-  }
-
   /* ---------- waveform + handles ---------- */
   function draw() {
     var cv = $("st-wave"); if (!cv || !ST.open) return;
@@ -304,7 +295,7 @@
     $("st-refplay").addEventListener("click", function () { loadRef().then(function (r) { if (!r) { toast("Pick a reference first."); return; } var ctx = P.ensureCtx(), s = ctx.createBufferSource(); s.buffer = r.buf; s.connect(P.M.bus); s.start(); }).catch(function () { toast("Couldn't load that reference."); }); });
     $("st-match").addEventListener("click", matchStyle);
     $("st-amt").addEventListener("input", function (e) { ST.amount = +e.target.value; $("st-amt-v").textContent = Math.round(ST.amount * 100) + "%"; applyAmount(); });
-    $("st-savepad").addEventListener("click", saveToPad); $("st-savelib").addEventListener("click", function () { saveToLib(); }); $("st-beats").addEventListener("click", sendToBeats);
+    $("st-savepad").addEventListener("click", saveToPad); $("st-savelib").addEventListener("click", function () { saveToLib(); });
     $("st-name").addEventListener("input", function () { ST.name = nm(); });
     wireWave(); window.addEventListener("resize", draw); requestAnimationFrame(frame);
     if (/[?&]studio=1/.test(location.search)) setTimeout(function () { open({}); }, 300);

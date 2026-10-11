@@ -312,7 +312,7 @@
     $("smpb-layout").hidden = B.pack !== "pf";
     var items = packItems(); box.innerHTML = "";
     if (B.pack === "beats" && !B.lib) { box.innerHTML = '<p class="empty">Loading the Beats hip-hop library…</p>'; return; }
-    if (!items.length) { box.innerHTML = '<p class="empty">' + (B.pack === "mine" ? "No recordings yet — make one in the Sample Studio and press “Save to library”. They also show up in Island Pin Beats → Sample library → My Samples." : "Nothing matches.") + "</p>"; return; }
+    if (!items.length) { box.innerHTML = '<p class="empty">' + (B.pack === "mine" ? "No recordings yet — make one in the Sample Studio and press “Save to library”." : "Nothing matches.") + "</p>"; return; }
     items.slice(0, 400).forEach(function (it) {
       var r = document.createElement("div"); r.className = "smpb-row" + (B.prevKey === it.id ? " previewing" : ""); r.draggable = true; r.style.setProperty("--pc", CAT[it.cat] || "#3a4459");
       r.innerHTML = '<button type="button" class="smpb-play" aria-label="Preview">' + (B.prevKey === it.id ? "■" : "▶") + '</button><div class="smpb-main"><strong></strong><span class="mono"></span></div><button type="button" class="btn small smpb-use">Load to pad</button><button type="button" class="btn small ghost smpb-st" title="Open in the Sample Studio">✎</button>';
