@@ -2,9 +2,16 @@
 // Voice plays through AudioBufferSourceNodes on its own bus (after the EQ, before the master volume),
 // the music is ducked ~3.5 dB while a line plays, and the voice gain adapts to the music's loudness
 // so a line sits ~3–4 dB under the music (plus the "Voice volume" slider).
-const DUCK_DB = 3.5, UNDER_DB = 3.5, MIN_GAP = 30;           // seconds between lines (min)
-const PERIOD = { low: 150, med: 90, high: 60 };              // occasional lines (s, ±25 %)
-const CHANCE = { low: .45, med: .7, high: .95 };             // chance an event (track start / mix / energy) gets a line
+const DUCK_DB = 3.5, UNDER_DB = 3.5;
+// density: Chill / Normal / Busy (stored as low / med / high)
+const GAP = { low: 45, med: 30, high: 20 };                  // seconds between lines (min)
+const PERIOD = { low: 150, med: 80, high: 45 };              // occasional lines (s, ±25 %)
+const CHANCE = { low: .45, med: .75, high: .95 };            // chance an event (track start / mix / energy / outro) gets a line
+const DENSITY = { low: 'Chill', med: 'Normal', high: 'Busy' };
+// item 10 categories (voice/more.json) per moment
+const CATS = { start: ['intro', 'intro', 'psycho'], mix: ['selector', 'outro', 'psycho'], energy: ['onemore', 'noise', 'crowd'], outro: ['outro'],
+  periodic: ['crowd', 'selector', 'psycho', 'noise', 'dominica', 'nature', 'time', 'time'] };
+const timeCat = (h = new Date().getHours()) => (h >= 12 && h < 17 ? 'afternoon' : h >= 17 && h < 22 ? 'evening' : h >= 22 ? 'late' : h < 2 ? 'midnight' : h < 6 ? 'early' : null);
 const DEFAULT_NAMES = 'DJ Eli';
 const KOKORO_MODEL = 'onnx-community/Kokoro-82M-v1.0-ONNX';
 const VOICE = 'am_fenrir';
@@ -62,8 +69,10 @@ function makeBag(ids) {
 
 export function createHype(api) {
   const { getCtx, getTap, getOut, getDuck, scene, toast, LS, F, isPlaying, onDuck } = api;
+  const getPos = api.getPos || (() => null);
+  const tdl = (m) => { try { window.__pfTD && window.__pfTD.log(m); } catch (e) {} };
   const base = new URL('./voice/', import.meta.url);
-  const S = Object.assign({ on: true, freq: 'med', muteVoice: false, vol: .6, names: DEFAULT_NAMES, generic: true }, LS.get('hype', {}));
+  const S = Object.assign({ on: true, freq: 'high', muteVoice: false, vol: .6, names: DEFAULT_NAMES, generic: true }, LS.get('hype', {}));
   const save = () => LS.set('hype', S);
   let manifest = null; const mp = fetch(new URL('voice.json', base)).then((r) => r.json()).then((m) => (manifest = m)).catch((e) => { console.warn('[hype] no voice pack', e); return null; });
   const buffers = new Map();
@@ -205,32 +214,80 @@ export function createHype(api) {
   const PLACE_FIRST_MS = 35000, PLACE_EVERY = 3, PLACE_MIN_GAP_MS = 120000;
   async function placeParts() { try { return placeFn ? await placeFn() : null; } catch (e) { return null; } }
   function placeChanged() { PL.said = false; PL.playMs = Math.min(PL.playMs, PLACE_FIRST_MS - 8000); }
+  // item 10: more shout-outs (crowd / selector / pull up / one more time / DJ Psycho Fingers / intro / outro / Dominica / Nature Isle / time of night)
+  let more = null; const MO = { lastCat: null, lastText: '', bags: new Map() };
+  const morep = fetch(new URL('./voice/more.json', import.meta.url)).then((r) => (r.ok ? r.json() : null)).then((m) => { more = m; if (m) tdl('shouts: more pack ' + Object.keys(m.cats).length + ' categories, ' + Object.values(m.cats).reduce((a, c) => a + c.length, 0) + ' clips'); return m; }).catch(() => null);
+  function catParts(cat) {
+    const arr = more && more.cats[cat]; if (!arr || !arr.length) return null;
+    if (!MO.bags.has(cat)) MO.bags.set(cat, makeBag(() => arr.map((c) => c.id)));
+    let id = MO.bags.get(cat).pick(); let e = arr.find((c) => c.id === id);
+    if (e.text === MO.lastText && arr.length > 1) { id = MO.bags.get(cat).pick(); e = arr.find((c) => c.id === id); }
+    MO.lastCat = cat; MO.lastText = e.text;
+    return [{ file: e.file, text: e.text, lufs: e.lufs, pose: /noise|crowd|onemore|pullup|dominica|selector/.test(cat) ? 'up' : 'point', kind: 'more', cat, id }];
+  }
+  function moreParts(type) {
+    const list = (CATS[type] || CATS.periodic).map((c) => (c === 'time' ? timeCat() : c)).filter((c) => c && more && more.cats[c] && more.cats[c].length);
+    const fresh = list.filter((c) => c !== MO.lastCat); const pool = fresh.length ? fresh : list;
+    if (!pool.length) return null;
+    return catParts(pool[(Math.random() * pool.length) | 0]);
+  }
   async function fire(type = 'periodic', { force = false } = {}) {
     await mp; if (!manifest) return false;
     if (!force && (!S.on || talk.active || talk.busy)) return false;
     let parts = null; const names = crowd();
     const now0 = performance.now();
-    const placeDue = type === 'place' || (type !== 'start' && type !== 'callout' && PL.said && PL.since >= PLACE_EVERY && now0 - PL.lastAt > PLACE_MIN_GAP_MS);
+    const placeDue = type === 'place' || (!['start', 'callout', 'pullup', 'outro'].includes(type) && PL.said && PL.since >= PLACE_EVERY && now0 - PL.lastAt > PLACE_MIN_GAP_MS);
     if (placeDue) { parts = await placeParts(); if (parts) { PL.said = true; PL.lastAt = now0; PL.since = 0; PL.count++; } else if (type === 'place') return false; }
     else PL.since++;
     const wantCallout = names.length && (Math.random() < .25 || talk.sinceCallout >= 5) && type !== 'start';
     if (!parts && (wantCallout || type === 'callout')) { parts = await calloutParts(); if (parts) talk.sinceCallout = 0; }
+    if (!parts && (type === 'outro' || type === 'pullup' || Math.random() < (type === 'start' ? .7 : .6))) { await morep; parts = type === 'pullup' ? catParts('pullup') : moreParts(type); if (parts) talk.sinceCallout++; }
     if (!parts) {
-      const id = hypeBag.pick(PREFER[type] || []); const e = manifest.hype.find((h) => h.id === id);
+      let id = hypeBag.pick(PREFER[type] || []); let e = manifest.hype.find((h) => h.id === id);
+      if (e && e.text === MO.lastText) { id = hypeBag.pick(PREFER[type] || []); e = manifest.hype.find((h) => h.id === id); }
+      MO.lastCat = 'hype'; MO.lastText = e.text;
       parts = [{ file: e.file, text: e.text, lufs: e.lufs, pose: UP_POSE.test(id) ? 'up' : (talk.count % 2 ? 'up' : 'point'), kind: 'hype', id }];
       talk.sinceCallout++;
     }
-    talk.count++; talk.lastType = type; talk.lastParts = parts.map((p) => ({ text: p.text, kind: p.kind, id: p.id, name: p.name, place: p.place, src: p.src }));
+    talk.count++; talk.lastType = type; talk.lastParts = parts.map((p) => ({ text: p.text, kind: p.kind, id: p.id, name: p.name, place: p.place, src: p.src, cat: p.cat }));
+    tdl('shouts: ' + type + ' → ' + parts.map((x) => (x.cat || x.kind) + ' "' + x.text + '"').join(' + '));
     return speak(parts, { force });
   }
 
   // ---------------- scheduler ----------------
   const E = { fast: 0, slow: 0, lastRise: 0 };
-  const gapOk = (now) => now - talk.lastAt >= MIN_GAP * 1000;
+  const gapOk = (now) => now - talk.lastAt >= (GAP[S.freq] || 30) * 1000;
+  // smarter timing: start lines on 8-bar phrase lines (16 bars when busy music has vocals), prefer intros/breakdowns, hold back over vocals
+  const V = { fast: 0, slow: 0, vocal: false, breakdown: false, lastLog: 0 };
+  function feelMusic() {
+    const tot = (F.bass || 0) + (F.mid || 0) + (F.high || 0) + 1e-3, mr = (F.mid || 0) / tot;
+    V.fast += (mr - V.fast) * .06; V.slow += (mr - V.slow) * .004;
+    V.vocal = (F.level || 0) > .12 && V.fast > V.slow * 1.12 + .01;
+    V.breakdown = E.slow > .1 && E.fast < E.slow * .72;
+  }
+  function phraseGate(now, dueAt, type) {
+    const d = scene.dance || {}; const waited = (now - dueAt) / 1000;
+    if (!d.bpm) return { ok: true, why: 'no beat grid' };
+    const b = d.phase;
+    const at = (n) => ((b % n) + n) % n < .5; // just after the phrase line (within ½ beat)
+    const urgent = type === 'start' || type === 'mix' || type === 'outro';
+    const bar8 = at(32), bar4 = at(16);
+    if (V.vocal && !V.breakdown && waited < (urgent ? 6 : 14)) return { ok: false, why: 'vocals' };
+    if (bar8) return { ok: true, why: V.breakdown ? '8-bar line, breakdown' : '8-bar line' };
+    if (bar4 && (urgent || waited > 18)) return { ok: true, why: '4-bar line' };
+    if (waited > (urgent ? 10 : 34)) return { ok: true, why: 'waited ' + waited.toFixed(0) + ' s' };
+    return { ok: false, why: 'waiting for the phrase' };
+  }
+  function gated(now, dueAt, type) {
+    const g = phraseGate(now, dueAt, type);
+    if (g.ok) { const d = scene.dance || {}; tdl('shouts: ' + type + ' timing → ' + g.why + ' · beat ' + (d.phase != null ? (d.phase % 32).toFixed(1) : '?') + '/32 · waited ' + ((now - dueAt) / 1000).toFixed(1) + ' s' + (V.vocal ? ' · vocals' : '')); }
+    else if (now - V.lastLog > 4000) { V.lastLog = now; tdl('shouts: holding ' + type + ' (' + g.why + ')'); }
+    return g.ok;
+  }
   const period = () => PERIOD[S.freq] || 90;
   function queue(type, delay = 0) {
     if (!S.on || Math.random() > (CHANCE[S.freq] || .7)) return;
-    if (!talk.pending || type === 'mix') talk.pending = { type, at: performance.now() + delay * 1000, exp: performance.now() + (delay + 10) * 1000 };
+    if (!talk.pending || type === 'mix' || type === 'outro') talk.pending = { type, at: performance.now() + delay * 1000, exp: performance.now() + (delay + 22) * 1000 };
   }
   function tick(now) {
     if (!A && isPlaying()) { try { audio(); } catch (e) {} }
@@ -245,13 +302,18 @@ export function createHype(api) {
     E.fast += (lvl - E.fast) * .08; E.slow += (lvl - E.slow) * .006;
     if (E.fast > E.slow * 1.4 + .07 && E.fast > .33 && now - E.lastRise > 20000) { E.lastRise = now; queue('energy', .4); }
     if (PL.lastT && now - PL.lastT < 1000) PL.playMs += now - PL.lastT; PL.lastT = now;
+    feelMusic();
+    const pos = getPos(); if (pos && pos.dur > 75 && !talk.outroSaid && pos.dur - pos.t < 26 && pos.dur - pos.t > 12) { talk.outroSaid = true; queue('outro', 0); }
     if (talk.active || talk.busy) return;
-    if (!PL.said && placeFn && PL.playMs >= PLACE_FIRST_MS && gapOk(now)) { PL.said = true; fire('place'); return; }
+    if (!PL.said && placeFn && PL.playMs >= PLACE_FIRST_MS && gapOk(now) && gated(now, now - (PL.playMs - PLACE_FIRST_MS), 'place')) { PL.said = true; fire('place'); return; }
     const p = talk.pending;
-    if (p && now >= p.at) { if (gapOk(now)) { talk.pending = null; fire(p.type); return; } if (now > p.exp) talk.pending = null; }
-    if (now >= talk.nextPeriodic) { if (gapOk(now)) fire('periodic'); talk.nextPeriodic = now + period() * 1000 * (.75 + Math.random() * .5); }
+    if (p && now >= p.at) { if (gapOk(now) && gated(now, p.at, p.type)) { talk.pending = null; fire(p.type); return; } if (now > p.exp) { tdl('shouts: dropped ' + p.type + ' (no good moment)'); talk.pending = null; } }
+    if (now >= talk.nextPeriodic) {
+      if (!gapOk(now)) talk.nextPeriodic = now + period() * 1000 * (.75 + Math.random() * .5);
+      else if (gated(now, talk.nextPeriodic, 'periodic')) { fire('periodic'); talk.nextPeriodic = now + period() * 1000 * (.75 + Math.random() * .5); }
+    }
   }
-  const onTrackStart = () => queue('start', 2.5 + Math.random() * 2);
+  const onTrackStart = () => { talk.outroSaid = false; queue('start', 2.5 + Math.random() * 2); };
   const onTransition = (info) => queue('mix', Math.max(.5, (info && info.secs || 4) * .5));
 
   // ---------------- on-device voice (kokoro-js, Kokoro-82M) for custom names ----------------
@@ -265,7 +327,7 @@ export function createHype(api) {
   const W = { worker: null, seq: 0, calls: new Map(), files: {} };
   function kWorker() {
     if (W.worker) return W.worker;
-    W.worker = new Worker(new URL('./kokoro-worker.js?v=24', import.meta.url), { type: 'module' });
+    W.worker = new Worker(new URL('./kokoro-worker.js?v=25', import.meta.url), { type: 'module' });
     W.worker.onmessage = (e) => {
       const m = e.data || {};
       if (m.type === 'progress') { W.files[m.file] = [m.loaded, m.total]; const a = Object.values(W.files).reduce((s, x) => [s[0] + x[0], s[1] + x[1]], [0, 0]); if (!K.tts) setStatus(`Downloading the on-device voice… ${Math.round(a[0] / a[1] * 100)}%`); return; }
@@ -379,7 +441,7 @@ export function createHype(api) {
       <button type="button" class="icon-btn" id="hyClose" aria-label="Close hype talk settings" title="Close (Esc)"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></header>
     <div class="hy-grid">
       <label class="switch"><input type="checkbox" id="hyOn"><span class="track"><span class="knob"></span></span><span class="sw-lbl">Hype talk</span></label>
-      <div class="hy-seg" role="radiogroup" aria-label="How often"><span class="hy-l">How often</span>${['low', 'med', 'high'].map((f) => `<button type="button" role="radio" data-f="${f}">${f === 'med' ? 'Med' : f[0].toUpperCase() + f.slice(1)}</button>`).join('')}</div>
+      <div class="hy-seg" role="radiogroup" aria-label="How often"><span class="hy-l">Shout-outs</span>${['low', 'med', 'high'].map((f) => `<button type="button" role="radio" data-f="${f}">${DENSITY[f]}</button>`).join('')}</div>
       <label class="switch"><input type="checkbox" id="hyMute"><span class="track"><span class="knob"></span></span><span class="sw-lbl">Mute voice (keep bubbles)</span></label>
       <label class="hy-vol"><span class="hy-l">Voice volume</span><input type="range" id="hyVol" min="0" max="100" step="1" class="range" aria-label="Voice volume"><output id="hyVolOut"></output></label>
     </div>
@@ -406,7 +468,7 @@ export function createHype(api) {
   q('#hyOn').addEventListener('change', (e) => { S.on = e.target.checked; save(); paint(); if (!S.on) { talk.pending = null; } toast(S.on ? 'Hype talk on' : 'Hype talk off'); });
   q('#hyMute').addEventListener('change', (e) => { S.muteVoice = e.target.checked; save(); paint(); });
   q('#hyGeneric').addEventListener('change', (e) => { S.generic = e.target.checked; save(); });
-  root.querySelectorAll('[data-f]').forEach((b) => b.addEventListener('click', () => { S.freq = b.dataset.f; save(); paint(); talk.nextPeriodic = performance.now() + period() * 1000 * (.75 + Math.random() * .5); }));
+  root.querySelectorAll('[data-f]').forEach((b) => b.addEventListener('click', () => { S.freq = b.dataset.f; save(); paint(); tdl('shouts: density ' + DENSITY[S.freq] + ' · every ~' + period() + ' s · gap ' + GAP[S.freq] + ' s'); talk.nextPeriodic = performance.now() + period() * 1000 * (.75 + Math.random() * .5); }));
   q('#hyVol').addEventListener('input', (e) => { S.vol = e.target.value / 100; save(); paint(); });
   let namesT; q('#hyNames').addEventListener('input', (e) => { S.names = e.target.value; save(); clearTimeout(namesT); namesT = setTimeout(renderNames, 1500); });
   q('#hyNames').addEventListener('change', () => { clearTimeout(namesT); renderNames(); });
@@ -430,5 +492,8 @@ export function createHype(api) {
     _resetGap() { talk.lastAt = -1e9; },
     resetSchedule() { talk.nextPeriodic = 0; talk.pending = null; talk.pausedAt = 0; E.lastRise = 0; },
     get schedule() { return { nextPeriodic: talk.nextPeriodic, pending: talk.pending, pausedAt: talk.pausedAt }; },
+    get music() { return { vocal: V.vocal, breakdown: V.breakdown, mid: +V.fast.toFixed(3), midAvg: +V.slow.toFixed(3) }; },
+    get more() { return more; }, moreParts, catParts, phraseGate, morep, get lastParts() { return talk.lastParts; },
+    pullUp() { return fire('pullup', { force: true }); },
   };
 }
