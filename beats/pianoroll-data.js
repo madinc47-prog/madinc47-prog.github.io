@@ -53,6 +53,15 @@
       ["drive", "glide"].forEach(function (k) { if (o.tone[k] != null && isFinite(+o.tone[k])) tn[k] = clamp(Math.round(+o.tone[k] * 100) / 100, 0, 1); });
       if (Object.keys(tn).length) p.tone = tn;
     }
+    if (o.lx && typeof o.lx === "object" && window.IPBLayers) { // tweakable layers: knobs per instrument of this pattern
+      var LYR = window.IPBLayers, lx = {};
+      Object.keys(o.lx).slice(0, 12).forEach(function (k) {
+        var id = mig(k);
+        if (!id || (instOk && !instOk(id))) return;
+        lx[id.slice(0, 24)] = LYR.clean(o.lx[k], "mel");
+      });
+      if (Object.keys(lx).length) p.lx = lx;
+    }
     var L = lenTicks(p), seen = {};
     (Array.isArray(o.notes) ? o.notes : []).forEach(function (n) {
       if (!n || typeof n !== "object") return;

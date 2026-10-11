@@ -740,7 +740,8 @@
       if (fc) { var tl = c.createBiquadFilter(); tl.type = "lowpass"; tl.frequency.value = fc; tl.Q.value = 0.5; tl.connect(dest); dest = tl; }
     }
     CUR = ar ? { pno: ar.pno || 0, sw: ar.sw || 0, rel: ar.rel || 0, ens: (ar.ens || 0) * Math.min(FEEL_A, 1.3), vel: vv } : null;
-    try { return fn(c, dest, clamp(Math.round(midi), 0, 127), Math.max(0, when), Math.max(0.02, dur || 0.25), vv, o); }
+    var mm = +midi || 0; mm = Math.abs(mm - Math.round(mm)) < 1e-4 ? Math.round(mm) : mm; // layer Pitch fine-tune → fractional notes
+    try { return fn(c, dest, clamp(mm, 0, 127), Math.max(0, when), Math.max(0.02, dur || 0.25), vv, o); }
     finally { CUR = null; }
   }
   function presetOf(inst, tone) {
