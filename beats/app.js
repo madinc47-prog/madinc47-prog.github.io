@@ -255,7 +255,7 @@
         fmt: 2, kit: S.kit, bpm: S.bpm, swing: S.swing, slot: S.slot, slots: S.slots,
         padCfg: S.padCfg, kitSwing: S.kitSwing, mute: S.mute, solo: S.solo, mixer: S.mixer, sel: S.sel,
         chordTrack: S.chordTrack, structure: S.structure, cueBar: S.cueBar, feel: S.feel,
-        lyricSong: S.lyricSong, bpl: S.bpl, prSize: S.prSize, vox: S.vox, tool: S.tool,
+        lyricSong: S.lyricSong, bpl: S.bpl, prSize: S.prSize, vox: S.vox, tool: S.tool, master: S.master || null,
         backing: bt.id ? { id: bt.id, layer: bt.layer, prevBpm: bt.prevBpm } : null,
         piano: S.piano, songKey: S.songKey, klTempo: S.klTempo
       }));
@@ -339,6 +339,7 @@
         S.vox.wide = !!d.vox.wide;
         S.vox.fx = d.vox.fx ? FXC.norm(d.vox.fx) : null;                      // older sessions: every effect off
         S.vox.auto = typeof d.vox.auto === "boolean" ? d.vox.auto : false;     // older sessions: auto match off
+        S.master = d.master && typeof d.master === "object" ? d.master : null;  // Master tab settings (master/master.js normalizes)
         S.vox.autoOff = isFinite(+d.vox.autoOff) && d.vox.autoOff != null ? clamp(+d.vox.autoOff, -12, 12) : 1;
       }
       return true;
@@ -5956,7 +5957,7 @@
   }
   // tab names for ?tab= / #hash deep links. "video" is the visualizer/capture panel (it was labelled "Studio" before Oct 2026);
   // "studio" is the multitrack recorder (studio/ embedded). "visualizer" and "capture" are extra aliases for the video panel.
-  var TAB_ALIAS = { beats: "beats", piano: "piano", "piano-roll": "piano", pianoroll: "piano", studio: "studio", multitrack: "studio", lyrics: "lyrics", mixer: "mixer", video: "video", visualizer: "video", capture: "video", vault: "vault" };
+  var TAB_ALIAS = { beats: "beats", piano: "piano", "piano-roll": "piano", pianoroll: "piano", studio: "studio", multitrack: "studio", lyrics: "lyrics", mixer: "mixer", video: "video", visualizer: "video", capture: "video", vault: "vault", master: "master", mastering: "master" };
   function studioWin() { var f = $("studio-frame"); try { return f && f.contentWindow && f.contentWindow.IPBStudio ? f.contentWindow : null; } catch (e) { return null; } }
   function studioEnsure() {
     var f = $("studio-frame");
@@ -6273,6 +6274,38 @@
       reset: function () { secReset(); }, copy: function () { secCopyToSame(); },
       state: function () { var A = arrangement(); return { edSec: edSec, curCtx: curCtx, label: edSec >= 0 ? secLabel(edSec) : "Whole song", changed: A ? A.map(function (s, j) { return secChanged(j); }) : [], ov: withSong(function () { return secOvSave(); }) }; },
       feelOf: function (i) { return secFeel(i); }
+    },
+    /* Master tab (master/master.js): sources, reference, Vault, settings storage */
+    master: {
+      ctx: function () { return ensureCtx(); },
+      stopBeat: function () { if (playing) stop(); if (vpv && vpv.src) voxPrevStop(true); },
+      isPlaying: function () { return playing; },
+      renderBeat: function (sel) {
+        return new Promise(function (res, rej) {
+          var need = libIds().filter(function (id) { return !LIB.get(id); });
+          (need.length ? LIB.want(need, ctx || ensureCtx()) : Promise.resolve()).then(function () { return PK.ready && !PK.ready(pianoInsts()) ? pianoSamplesLoad() : null; }).then(function () {
+            var r = renderOffline(sel || "song");
+            if (r.err) { rej(new Error(r.err)); return; }
+            r.promise.then(function (buf) {
+              var off = Math.round(GRAPH_LAT * SR), frames = Math.min(Math.round((r.total * r.sd + 0.8) * SR), buf.length - off);
+              res({ L: buf.getChannelData(0).slice(off, off + frames), R: buf.getChannelData(1).slice(off, off + frames), sr: SR, name: r.songMode ? "Beat · full song" : "Beat · " + r.bars + " bars" });
+            }, rej);
+          }, rej);
+        });
+      },
+      vocalMix: function () {
+        var t = vox.last; if (!t) return Promise.resolve(null);
+        return vocalMixFx(t).then(function (mx) { return { L: mx.L, R: mx.R, sr: t.sr, name: "Last vocal take" + (t.title ? " · " + t.title : "") }; });
+      },
+      reference: function () { return ref.playBuf || ref.buf || null; },
+      refName: function () { return ref.loaded ? (ref.name || "Reference") : ""; },
+      vaultList: function () { return idb("vault", "readonly", function (st) { return st.getAll(); }).then(function (a) { return (a || []).concat(memVault); }, function () { return memVault.slice(); }); },
+      vaultGet: vaultGet,
+      saveToVault: function (blob, dur, label) { return new Promise(function (res, rej) { saveToVault(blob, dur, label, res, rej); }); },
+      studio: function () { studioEnsure(); return studioWin(); },
+      saved: function () { return S.master || null; },
+      save: function (st) { S.master = st; saveSession(); },
+      toast: toast, title: function () { return btActive() ? bt.title : songTitle(); }, bpm: function () { return S.bpm; }
     },
     bounceForStudio: bounceForStudio, showTab: showTab, activeTab: function () { return activeTab; },
     lastSent: function () { return lastSent; }, sendOut: sendOut, djHref: djHref,

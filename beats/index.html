@@ -14,7 +14,7 @@
   <meta name="theme-color" content="#0b0d12">
   <meta name="color-scheme" content="dark"><!-- the app is already dark: stops Samsung Internet / Chrome "force dark" from re-colouring it -->
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="styles.css?v=20261011t">
+  <link rel="stylesheet" href="styles.css?v=20261011u">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Island Pin Beats — Free Beat Maker">
   <meta name="twitter:description" content="Make boom-bap, trap, drill, afrobeats, amapiano, house and bouyon beats in your browser. Free, from Dominica.">
@@ -46,6 +46,7 @@
     <a class="tab tab-dj" id="tab-dj-link" href="../dj/?from=beats" title="Switch to the DJ booth (your beat is saved; press ← Back to Beats there to return)">DJ</a>
     <button class="tab" role="tab" data-tab="lyrics" aria-selected="false">Lyrics</button>
     <button class="tab" role="tab" data-tab="mixer" aria-selected="false">Mixer</button>
+    <button class="tab" role="tab" data-tab="master" aria-selected="false" title="Mixing &amp; mastering: EQ, glue + multiband compression, warmth, width, true-peak limiter, loudness meters and targets, final export">Master</button>
     <button class="tab" role="tab" data-tab="video" aria-selected="false" title="Visualizer frames for YouTube and Shorts / Reels / TikTok">Video</button>
     <button class="tab" role="tab" data-tab="vault" aria-selected="false">Vault</button>
   </nav>
@@ -592,6 +593,56 @@
     </section>
 
     <!-- VAULT -->
+    <section id="tab-master" class="panel" role="tabpanel">
+      <h2>Master <small class="sub">your engineer's master chain · manual only, raw takes are never touched</small></h2>
+      <div class="mst-top">
+        <div class="mst-row">
+          <label class="mst-lab">Source <select id="mst-src" aria-label="What to master">
+            <option value="song">Beat · full song (bounce)</option><option value="loop">Beat · loop (bounce length)</option>
+            <option value="vocal">Last vocal take + beat</option><option value="studio">Studio mix</option><option value="file">Upload a file…</option>
+          </select></label>
+          <button type="button" id="mst-load" class="btn">Load source</button>
+          <input type="file" id="mst-file" accept="audio/*,.wav,.mp3,.m4a,.flac,.ogg" hidden>
+          <span id="mst-src-name" class="mono mst-note">No source loaded</span>
+          <span id="mst-busy" class="mst-busy" role="status" hidden></span>
+        </div>
+        <div class="mst-row">
+          <button type="button" id="mst-play" class="btn rec mst-big" disabled>▶ Play</button>
+          <span id="mst-ab" class="mst-seg" role="group" aria-label="Compare">
+            <button type="button" class="btn on" data-m="master" aria-pressed="true">Master</button>
+            <button type="button" class="btn" data-m="bypass" aria-pressed="false" title="The source without the chain, level-matched to the master (fair A/B)">Bypass (matched)</button>
+            <button type="button" class="btn" data-m="ref" aria-pressed="false">Reference</button>
+          </span>
+          <button type="button" id="mst-mono" class="btn" aria-pressed="false" title="Listen in mono (monitoring only)">Mono check</button>
+          <select id="mst-preset" aria-label="Mastering presets"><option value="">Preset…</option><option value="reset">Reset (all off)</option></select>
+        </div>
+        <div class="mst-row">
+          <label class="mst-lab">Target <select id="mst-target" aria-label="Loudness target"></select></label>
+          <button type="button" id="mst-fit" class="btn" disabled title="Sets the gain into the limiter so the master lands on the target (offline, a few seconds)">Auto gain to target</button>
+          <span class="mst-note">gain to target <b id="mst-tgt-v" class="mono">+0.0 dB</b> <button type="button" id="mst-tgt-reset" class="btn small ghost">0</button></span>
+          <span id="mst-out" class="mono mst-note"></span>
+        </div>
+      </div>
+      <div class="mst-main">
+        <div class="mst-meters" aria-label="Meters">
+          <div class="mst-lufs"><div><small>Momentary</small><b id="mst-m" class="mono">—</b></div><div><small>Short-term</small><b id="mst-s" class="mono">—</b></div><div><small>Integrated</small><b id="mst-i" class="mono">—</b></div>
+            <div><small>LRA</small><b id="mst-lra" class="mono">—</b></div><div><small>True peak</small><b id="mst-tp" class="mono">—</b></div></div>
+          <div class="mst-corr"><small>Phase −1</small><div class="mst-corr-bar"><i id="mst-corr"></i></div><small>+1 · <b id="mst-corr-v" class="mono">—</b></small></div>
+          <canvas id="mst-spec" class="mst-spec" aria-label="Spectrum"></canvas>
+          <div class="mst-gains">
+            <label class="mst-p"><span>Input gain</span><input type="range" id="mst-in" min="-24" max="24" step="0.5"><output id="mst-in-v"></output></label>
+            <label class="mst-p"><span>Output trim</span><input type="range" id="mst-outg" min="-12" max="0" step="0.5"><output id="mst-outg-v"></output></label>
+          </div>
+        </div>
+        <div id="mst-mods" class="mst-mods"></div>
+      </div>
+      <div class="mst-exp">
+        <label class="mst-lab">Export <select id="mst-fmt" aria-label="Export format"><option value="wav24">WAV 24-bit</option><option value="wav16">WAV 16-bit (dithered)</option><option value="mp3">MP3 320 kbps</option></select></label>
+        <button type="button" id="mst-export" class="btn rec mst-big" disabled>Export master</button>
+        <span class="mst-note">Downloads the file, saves it to the Vault and shows a loudness report.</span>
+        <div id="mst-report" class="mst-report" hidden></div>
+      </div>
+    </section>
     <section id="tab-vault" class="panel" role="tabpanel">
       <h2>Vault</h2>
       <p class="sub">Recordings are stored in this browser (IndexedDB). Download WAVs to keep them safe.</p>
@@ -645,18 +696,20 @@
 
   <footer class="foot">Free · runs in your browser · synthesized drums + CC0 one-shots (<a href="samples/CREDITS.md">credits</a>), no paid APIs · <a href="studio/">Studio</a> · <a href="../dj/">DJ booth</a> · <a href="check/">Sound check</a> · <a href="../">IslePin</a></footer>
 
-  <script src="fresh.js?v=20261011t"></script>
-  <script src="humanize.js?v=20261011t"></script>
-  <script src="layers.js?v=20261011t"></script>
-  <script src="library.js?v=20261011t"></script>
-  <script src="drums.js?v=20261011t"></script>
-  <script src="keys-instruments.js?v=20261011t"></script>
-  <script src="pianoroll-data.js?v=20261011t"></script>
-  <script src="keys-loops.js?v=20261011t"></script>
-  <script src="pianoroll.js?v=20261011t"></script>
-  <script src="fx-chain.js?v=20261011t"></script>
-  <script src="vocal-clean-client.js?v=20261011t"></script>
-  <script src="app.js?v=20261011t"></script>
+  <script src="fresh.js?v=20261011u"></script>
+  <script src="humanize.js?v=20261011u"></script>
+  <script src="layers.js?v=20261011u"></script>
+  <script src="library.js?v=20261011u"></script>
+  <script src="drums.js?v=20261011u"></script>
+  <script src="keys-instruments.js?v=20261011u"></script>
+  <script src="pianoroll-data.js?v=20261011u"></script>
+  <script src="keys-loops.js?v=20261011u"></script>
+  <script src="pianoroll.js?v=20261011u"></script>
+  <script src="fx-chain.js?v=20261011u"></script>
+  <script src="vocal-clean-client.js?v=20261011u"></script>
+  <script src="app.js?v=20261011u"></script>
+  <script src="master/master-dsp.js?v=20261011u"></script>
+  <script src="master/master.js?v=20261011u"></script>
   <script type="module" src="../shared/ecosystem-nav.js"></script><!-- Beats | DJ Booth | Player switcher (shared/README.md) -->
 </body>
 </html>

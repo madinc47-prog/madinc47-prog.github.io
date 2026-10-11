@@ -1022,6 +1022,13 @@
     $("t-stop").addEventListener("click", stopAll);
     $("t-home").addEventListener("click", function () { setPlayhead(P.loop.on ? P.loop.start : 0); $("lanes-wrap").scrollLeft = 0; });
     $("t-rec").addEventListener("click", record);
+    $("btn-master").addEventListener("click", function () { // the Master tab lives in Beats: embedded → switch tab + load this mix; standalone → open it
+      if (E.playing) pause();
+      saveNow();
+      var par = null; try { par = window.parent !== window && window.parent.IPBBeats && window.parent.IPBMaster ? window.parent : null; } catch (e) { par = null; }
+      if (par) { par.IPBBeats.showTab("master"); par.IPBMaster.loadSource("studio"); }
+      else location.href = "../?tab=master&src=studio";
+    });
     $("t-vo").addEventListener("click", function () {
       if (E.recording) { toast("Change this between takes."); return; }
       try { localStorage.setItem(VO_KEY, voiceOnly() ? "0" : "1"); } catch (e) { /* ignore */ }
