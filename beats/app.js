@@ -626,8 +626,8 @@
         if (v.ck === def.ck && v.start < when) {
           try {
             v.g.gain.cancelScheduledValues(when);
-            v.g.gain.setTargetAtTime(0, when, 0.008);
-            v.src.stop(when + 0.06);
+            v.g.gain.setTargetAtTime(0, when, S.feel === "off" ? 0.008 : 0.014); // Feel: the old 808 dies naturally under the new one
+            v.src.stop(when + (S.feel === "off" ? 0.06 : 0.1));
           } catch (e) { /* already stopped */ }
           reg.splice(k, 1);
         }

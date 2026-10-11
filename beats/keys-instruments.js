@@ -205,6 +205,12 @@
     var from = mf(prev.m);
     o.frequency.cancelScheduledValues(t);
     o.frequency.setValueAtTime(from * (o.__mul || 1), t);
+    if (CUR) { // Feel: a played slide leaves slowly, then lands on the note (not a straight robotic ramp)
+      o.frequency.setValueAtTime(from * (o.__mul || 1), t + g * 0.15);
+      o.frequency.setTargetAtTime(f * (o.__mul || 1), t + g * 0.15, g * 0.3);
+      o.frequency.setValueAtTime(f * (o.__mul || 1), t + g * 1.6);
+      return;
+    }
     o.frequency.exponentialRampToValueAtTime(f * (o.__mul || 1), t + g);
   }
 
@@ -232,12 +238,12 @@
       if (prev && prev.v && prev.v.stop) prev.v.stop(t + 0.004);
       var slide = prev && prev.overlap && o.glide > 0.01 && prev.m !== m;
       var lp = c.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = Math.min(9000, 1400 + o.drive * 4200 + f * 3); lp.Q.value = 0.5; lp.connect(v.out);
-      var dIn = driveStage(c, lp, 0.15 + o.drive * 0.85, 0.9);
+      var dIn = driveStage(c, lp, (0.15 + o.drive * 0.85) * (CUR ? 0.7 + 0.45 * vel : 1), 0.9); // Feel: harder hit = more grit
       var body = osc(v, c, "sine", f, t, 0, dIn);
       var h2 = gainTo(c, 0.22, dIn); var tri = osc(v, c, "triangle", f, t, 0, h2);
       var sub = gainTo(c, 0.55 + 0.25 * o.drive, v.out); var so = osc(v, c, "sine", f, t, 0, sub);
       if (slide) [body, tri, so].forEach(function (x) { glideFreq(x, prev, f, t, gt); });
-      else [body, tri, so].forEach(function (x) { x.frequency.setValueAtTime(f * 1.9, t); x.frequency.exponentialRampToValueAtTime(f, t + 0.045); });
+      else { var kn = CUR ? 1.45 + 0.6 * vel : 1.9; [body, tri, so].forEach(function (x) { x.frequency.setValueAtTime(f * kn, t); x.frequency.exponentialRampToValueAtTime(f, t + 0.045); }); }
       if (!slide) { // click transient
         var hp = c.createBiquadFilter(); hp.type = "highpass"; hp.frequency.value = 2500;
         var ng = c.createGain(); ng.gain.setValueAtTime(0.35 * vel, t); ng.gain.exponentialRampToValueAtTime(0.0005, t + 0.008);
