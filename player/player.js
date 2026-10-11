@@ -2,20 +2,20 @@
 // Every module URL carries the same ?v= tag as player.js in index.html (and sw.js SHELL), so a deploy can never mix
 // old and new modules from the HTTP cache. Bump all of them together.
 import { saveTrack, listTracks, getTrack, deleteTrack, onMediaChange } from '../shared/media-store.js';
-import { createScene } from './scene.js?v=29';
-import { createViz, THEMES } from './viz.js?v=29';
-import { OUTFITS, OUTFIT_FOR_THEME } from './outfits.js?v=29';
-import { createEQ } from './eq.js?v=29';
-import { createHype } from './hype.js?v=29';
-import { createLadies } from './ladies.js?v=29';
-import { createShout } from './shout.js?v=29';
-import { initPhoto } from './photo.js?v=29';
-import { initRec } from './rec.js?v=29';
-import { createIsle } from './isle.js?v=29';
-import { createPop } from './pop.js?v=29';
-import { createDates } from './dates.js?v=29';
-import { td, TD } from './td.js?v=29';
-import { fmt, hash, isAudioFile, titleFromName, makeCover, makeLabel, readTags, probeDuration, probeMedia, computePeaks, notMusicReason } from './util.js?v=29';
+import { createScene } from './scene.js?v=30';
+import { createViz, THEMES } from './viz.js?v=30';
+import { OUTFITS, OUTFIT_FOR_THEME } from './outfits.js?v=30';
+import { createEQ } from './eq.js?v=30';
+import { createHype } from './hype.js?v=30';
+import { createLadies } from './ladies.js?v=30';
+import { createShout } from './shout.js?v=30';
+import { initPhoto } from './photo.js?v=30';
+import { initRec } from './rec.js?v=30';
+import { createIsle } from './isle.js?v=30';
+import { createPop } from './pop.js?v=30';
+import { createDates } from './dates.js?v=30';
+import { td, TD } from './td.js?v=30';
+import { fmt, hash, isAudioFile, titleFromName, makeCover, makeLabel, readTags, probeDuration, probeMedia, computePeaks, notMusicReason } from './util.js?v=30';
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -1290,7 +1290,9 @@ async function boot() {
   // DEFAULT_DJ: who is on the decks before anyone picks ('psycho' = stock DJ Psycho Fingers, 'emmanuel' = cartoon Emmanuel)
   const DEFAULT_DJ = 'emmanuel';
   try {
-    const dp = document.getElementById('djPick'); const v0 = scene.setDJ(LS.get('djVariant', DEFAULT_DJ)); dp.value = v0; td('dj: ' + v0 + (LS.get('djVariant', null) ? ' (saved choice)' : ' (default)'));
+    const dp = document.getElementById('djPick'); const qdj = (new URLSearchParams(location.search).get('dj') || '').toLowerCase(); // deep link ?dj=emmanuel / ?dj=psycho (kept by the update reload, and saved)
+    if (qdj === 'emmanuel' || qdj === 'psycho') { LS.set('djVariant', qdj); td('dj: link ?dj=' + qdj + ' → saved'); }
+    const v0 = scene.setDJ(LS.get('djVariant', DEFAULT_DJ)); dp.value = v0; td('dj: ' + v0 + (LS.get('djVariant', null) ? ' (saved choice)' : ' (default)'));
     dp.addEventListener('change', () => { const v = scene.setDJ(dp.value); LS.set('djVariant', v); td('dj: picked ' + v); toast(v === 'emmanuel' ? 'DJ Emmanuel on the decks' : 'DJ Psycho Fingers on the decks'); });
   } catch (e) { console.warn('[player] dj pick', e); }
   // recording tap: decks after crossfader/EQ/duck + effects/shout-outs, before the volume knob (master)
