@@ -987,3 +987,6 @@ body.sec-editing .seq-wrap { outline: 2px solid var(--accent); outline-offset: 3
 .vx-p.chk { display: flex; }
 .vx-p.chk input { width: 22px; height: 22px; }
 @media (max-width: 760px) { .vx-grid { grid-template-columns: 1fr; } .vx-row input[type=range] { width: 120px; } }
+/* 44px touch area on the new sliders (the visible track stays thin) */
+.vx-fx input[type=range], .vx-row input[type=range], .vx-p input[type=range], .strip input.pan { height: 44px; margin: 0; touch-action: pan-y; }
+.vx-pan .js-vx-panval { display: inline-block; min-width: 2.8em; text-align: center; margin-right: .35rem; }

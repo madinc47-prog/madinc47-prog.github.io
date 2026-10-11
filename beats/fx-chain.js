@@ -36,7 +36,7 @@
   function anyOn(fx) { if (!fx) return false; for (var k in fx) if (fx[k] && fx[k].on) return true; return false; }
   /* simple compressor "amount" 0..1 → threshold / ratio / makeup */
   function compParams(c) {
-    if (c.thr != null && c.ratio != null && c.amt == null) return { thr: c.thr, ratio: c.ratio, atk: c.atk || 0.01, rel: c.rel || 0.15, makeup: c.makeup || 0 };
+    if (c.thr != null && c.ratio != null) return { thr: c.thr, ratio: c.ratio, atk: c.atk || 0.01, rel: c.rel || 0.15, makeup: c.makeup || 0 };
     var a = clamp(+c.amt || 0, 0, 1);
     return { thr: -8 - a * 26, ratio: 1.5 + a * 4.5, atk: 0.006, rel: 0.14, makeup: a * 9 };
   }

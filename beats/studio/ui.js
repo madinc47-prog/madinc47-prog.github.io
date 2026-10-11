@@ -48,7 +48,7 @@
     if (view === "mixer") renderMixer();
     $("btn-undo").disabled = !S.H.undo.length; $("btn-redo").disabled = !S.H.redo.length;
   }
-  function anyFx(tr) { var f = tr.fx; return f.eq.on || f.comp.on || f.gate.on || f.delay.on || f.reverb.on; }
+  function anyFx(tr) { var f = tr.fx; return Object.keys(f).some(function (k) { return f[k] && f[k].on; }); }
   function renderHeads() {
     var H = $("heads"); H.innerHTML = "";
     P.tracks.forEach(function (tr, i) {
@@ -744,17 +744,21 @@
   /* ---------------- FX sheet ---------------- */
   var FXS = [
     { k: "gate", name: "Noise Gate", desc: "mutes hiss between phrases", p: [["thr", "Threshold", -80, -10, 1, "dB"], ["rel", "Release", 0.02, 1, 0.01, "s"]] },
+    { k: "lowcut", name: "Low cut", desc: "removes rumble / mic thumps", p: [["f", "Freq", 40, 300, 5, "Hz"]] },
     { k: "eq", name: "EQ · 3-band", desc: "shape the tone", p: [["low", "Low 120Hz", -15, 15, 0.5, "dB"], ["mid", "Mid", -15, 15, 0.5, "dB"], ["midF", "Mid freq", 200, 6000, 10, "Hz"], ["high", "High 8kHz", -15, 15, 0.5, "dB"]] },
     { k: "comp", name: "Compressor", desc: "evens out loud & quiet", p: [["thr", "Threshold", -50, 0, 1, "dB"], ["ratio", "Ratio", 1, 20, 0.5, ":1"], ["atk", "Attack", 0.001, 0.1, 0.001, "s"], ["rel", "Release", 0.02, 1, 0.01, "s"], ["makeup", "Makeup", 0, 24, 0.5, "dB"]] },
-    { k: "delay", name: "Delay · echo", desc: "synced to BPM", p: [["div", "Time", ["1/16", "1/8", "1/8d", "1/4", "1/4d", "1/2"]], ["fb", "Feedback", 0, 0.9, 0.01, "%"], ["mix", "Mix", 0, 1, 0.01, "%"]] },
-    { k: "reverb", name: "Reverb", desc: "room / hall space", p: [["size", "Size", 0.3, 5, 0.1, "s"], ["mix", "Mix", 0, 1, 0.01, "%"]] }
+    { k: "deess", name: "De-esser", desc: "tames harsh S / T sounds", p: [["amt", "Amount", 0, 1, 0.01, "%"]] },
+    { k: "sat", name: "Saturation · warmth", desc: "tape-style harmonics", p: [["amt", "Amount", 0, 1, 0.01, "%"]] },
+    { k: "chorus", name: "Chorus · doubler", desc: "thicker, double-tracked feel", p: [["mix", "Mix", 0, 1, 0.01, "%"]] },
+    { k: "delay", name: "Delay · echo (send)", desc: "synced to BPM", p: [["div", "Time", ["1/16", "1/8", "1/8d", "1/4", "1/4d", "1/2"]], ["pp", "Ping-pong", "bool"], ["fb", "Feedback", 0, 0.9, 0.01, "%"], ["mix", "Send", 0, 1, 0.01, "%"]] },
+    { k: "reverb", name: "Reverb (send)", desc: "room / plate / hall", p: [["type", "Type", ["room", "plate", "hall"]], ["decay", "Decay", 0.3, 5, 0.1, "s"], ["pre", "Pre-delay", 0, 0.12, 0.005, "s"], ["mix", "Send", 0, 1, 0.01, "%"]] }
   ];
   var PRESETS = {
-    vocal: { gate: { on: true, thr: -55, rel: 0.15 }, eq: { on: true, low: -2, mid: 1.5, midF: 2500, high: 3 }, comp: { on: true, thr: -20, ratio: 3, atk: 0.008, rel: 0.12, makeup: 4 }, delay: { on: false }, reverb: { on: true, size: 1.6, mix: 0.12 } },
-    rap: { gate: { on: true, thr: -50, rel: 0.1 }, eq: { on: true, low: -3, mid: 2, midF: 3000, high: 2.5 }, comp: { on: true, thr: -24, ratio: 4.5, atk: 0.004, rel: 0.1, makeup: 6 }, delay: { on: false }, reverb: { on: true, size: 1.0, mix: 0.08 } },
-    adlib: { gate: { on: true, thr: -50, rel: 0.1 }, eq: { on: true, low: -6, mid: 0, midF: 1500, high: 4 }, comp: { on: true, thr: -22, ratio: 4, atk: 0.005, rel: 0.12, makeup: 5 }, delay: { on: true, div: "1/8d", fb: 0.35, mix: 0.25 }, reverb: { on: true, size: 2.5, mix: 0.22 } },
-    beat: { gate: { on: false }, eq: { on: true, low: 1.5, mid: -1, midF: 400, high: 1 }, comp: { on: true, thr: -14, ratio: 2, atk: 0.02, rel: 0.2, makeup: 2 }, delay: { on: false }, reverb: { on: false } },
-    off: { gate: { on: false }, eq: { on: false }, comp: { on: false }, delay: { on: false }, reverb: { on: false } }
+    vocal: { gate: { on: true, thr: -55, rel: 0.15 }, lowcut: { on: true, f: 90 }, eq: { on: true, low: -2, mid: 1.5, midF: 2500, high: 3 }, comp: { on: true, thr: -20, ratio: 3, atk: 0.008, rel: 0.12, makeup: 4 }, deess: { on: true, amt: 0.4 }, sat: { on: false }, chorus: { on: false }, delay: { on: false }, reverb: { on: true, type: "plate", decay: 1.6, pre: 0.02, mix: 0.12 } },
+    rap: { gate: { on: true, thr: -50, rel: 0.1 }, lowcut: { on: true, f: 100 }, eq: { on: true, low: -3, mid: 2, midF: 3000, high: 2.5 }, comp: { on: true, thr: -24, ratio: 4.5, atk: 0.004, rel: 0.1, makeup: 6 }, deess: { on: true, amt: 0.5 }, sat: { on: true, amt: 0.25 }, chorus: { on: false }, delay: { on: false }, reverb: { on: true, type: "room", decay: 0.9, pre: 0.01, mix: 0.08 } },
+    adlib: { gate: { on: true, thr: -50, rel: 0.1 }, lowcut: { on: true, f: 150 }, eq: { on: true, low: -6, mid: 0, midF: 1500, high: 4 }, comp: { on: true, thr: -22, ratio: 4, atk: 0.005, rel: 0.12, makeup: 5 }, deess: { on: true, amt: 0.4 }, sat: { on: false }, chorus: { on: true, mix: 0.4 }, delay: { on: true, div: "1/8d", pp: true, fb: 0.35, mix: 0.25 }, reverb: { on: true, type: "hall", decay: 2.5, pre: 0.03, mix: 0.22 } },
+    beat: { gate: { on: false }, lowcut: { on: false }, eq: { on: true, low: 1.5, mid: -1, midF: 400, high: 1 }, comp: { on: true, thr: -14, ratio: 2, atk: 0.02, rel: 0.2, makeup: 2 }, deess: { on: false }, sat: { on: true, amt: 0.2 }, chorus: { on: false }, delay: { on: false }, reverb: { on: false } },
+    off: { gate: { on: false }, lowcut: { on: false }, eq: { on: false }, comp: { on: false }, deess: { on: false }, sat: { on: false }, chorus: { on: false }, delay: { on: false }, reverb: { on: false } }
   };
   var fxTrack = null;
   function fmtP(v, u) { return u === "%" ? Math.round(v * 100) + "%" : u === "s" ? (v < 0.1 ? (v * 1000).toFixed(0) + "ms" : v.toFixed(2) + "s") : u === "Hz" ? (v >= 1000 ? (v / 1000).toFixed(1) + "k" : Math.round(v)) : u === ":1" ? v.toFixed(1) + ":1" : (v > 0 ? "+" : "") + (+v).toFixed(1); }
@@ -768,11 +772,19 @@
       box.querySelector(".sw").addEventListener("click", function () { S.pushUndo(P, sec.name); st.on = !st.on; openFx(id); changed(null, true); renderHeads(); });
       sec.p.forEach(function (p) {
         var lab = document.createElement("label");
-        if (Array.isArray(p[2])) {
+        if (p[2] === "bool") {
+          lab.className = "chk"; lab.innerHTML = '<input type="checkbox"> <span>' + p[1] + "</span>";
+          var cb = lab.querySelector("input"); cb.checked = !!st[p[0]];
+          cb.addEventListener("change", function () { S.pushUndo(P, sec.name); st[p[0]] = cb.checked; if (!st.on) { st.on = true; } changed(null, true); openFx(id); renderHeads(); });
+        } else if (Array.isArray(p[2])) {
           lab.innerHTML = "<span>" + p[1] + "</span><select></select><output></output>";
-          var sel = lab.querySelector("select"); p[2].forEach(function (o) { var op = document.createElement("option"); op.value = o; op.textContent = o.replace("d", " dotted"); sel.appendChild(op); });
+          var sel = lab.querySelector("select"); p[2].forEach(function (o) { var op = document.createElement("option"); op.value = o; op.textContent = window.IPBFx && window.IPBFx.REVERBS[o] ? window.IPBFx.REVERBS[o].name : o.replace("d", " dotted"); sel.appendChild(op); });
           sel.value = st[p[0]];
-          sel.addEventListener("change", function () { S.pushUndo(P, sec.name); st[p[0]] = sel.value; changed(null, true); });
+          sel.addEventListener("change", function () {
+            S.pushUndo(P, sec.name); st[p[0]] = sel.value;
+            var R = window.IPBFx && window.IPBFx.REVERBS[sel.value]; if (sec.k === "reverb" && R) { st.decay = R.decay; st.pre = R.pre; } // type sets decay / pre-delay
+            st.on = true; changed(null, true); openFx(id); renderHeads();
+          });
         } else {
           lab.innerHTML = "<span>" + p[1] + '</span><input type="range"><output></output>';
           var r = lab.querySelector("input"), o = lab.querySelector("output");
@@ -819,7 +831,7 @@
   }
   function setProject(p) {
     E.stop(false); uiStopped();
-    P = p; P.tracks.forEach(function (t) { t.fx = Object.assign(S.defaultFx(), t.fx || {}); });
+    P = p; P.tracks.forEach(function (t) { t.fx = S.normFx(t.fx); });
     if (P.countIn == null) P.countIn = 1;
     selTrack = P.tracks[0] && P.tracks[0].id; selClip = null; playhead = 0; waveClip = null; waveBuf = null;
     if (waveEd) waveEd.load(null);

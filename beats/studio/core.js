@@ -10,12 +10,26 @@
 
   function defaultFx() {
     return {
+      gate: { on: false, thr: -50, rel: 0.12 },
+      lowcut: { on: false, f: 90 },
       eq: { on: false, low: 0, mid: 0, midF: 1200, high: 0 },
       comp: { on: false, thr: -18, ratio: 3, atk: 0.01, rel: 0.15, makeup: 3 },
-      gate: { on: false, thr: -50, rel: 0.12 },
-      delay: { on: false, div: "1/8d", fb: 0.3, mix: 0.2 },
-      reverb: { on: false, size: 1.8, mix: 0.18 }
+      deess: { on: false, amt: 0.5 },
+      sat: { on: false, amt: 0.3 },
+      chorus: { on: false, mix: 0.35 },
+      delay: { on: false, div: "1/8d", pp: false, fb: 0.3, mix: 0.2 },
+      reverb: { on: false, type: "plate", decay: 1.8, pre: 0.02, mix: 0.18 }
     };
+  }
+  /* saved projects → current fx shape. Every new effect starts OFF; older reverbs ("size") become a Plate of that decay */
+  function normFx(fx) {
+    var d = defaultFx(), o = {};
+    fx = fx && typeof fx === "object" ? fx : {};
+    Object.keys(d).forEach(function (k) { o[k] = Object.assign({}, d[k], fx[k] && typeof fx[k] === "object" ? fx[k] : {}); o[k].on = !!o[k].on; });
+    if (fx.reverb && fx.reverb.decay == null && fx.reverb.size != null) o.reverb.decay = +fx.reverb.size || 1.8;
+    delete o.reverb.size;
+    if (o.comp.amt != null) delete o.comp.amt; // Studio uses the detailed compressor
+    return o;
   }
   function newTrack(i, name) {
     return { id: uid("t"), name: name || ("Track " + (i + 1)), color: COLORS[i % COLORS.length], vol: 0, pan: 0, mute: false, solo: false, arm: false, fx: defaultFx() };
@@ -214,7 +228,7 @@
 
   window.IPBS = window.IPBS || {};
   Object.assign(window.IPBS, {
-    SR: SR, COLORS: COLORS, uid: uid, clamp: clamp, db: db, toDb: toDb, defaultFx: defaultFx, newTrack: newTrack, newProject: newProject,
+    SR: SR, COLORS: COLORS, uid: uid, clamp: clamp, db: db, toDb: toDb, defaultFx: defaultFx, normFx: normFx, newTrack: newTrack, newProject: newProject,
     sources: sources, addSource: addSource, makeBuffer: makeBuffer, bufFrom: bufFrom, chans: chans,
     H: H, pushUndo: pushUndo, undo: undo, redo: redo, clearHistory: clearHistory,
     encodeWav: encodeWav, encodeMp3: encodeMp3, loadScript: loadScript,

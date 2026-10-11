@@ -14,29 +14,25 @@
     }
     return b;
   }
-  /* one channel strip: in → gate → EQ → comp → makeup → (dry | delay | reverb) → pan → fader → meter → out */
-  function makeStrip(c, out, useGate) {
-    var T = {};
+  /* one channel strip: in → gate → shared insert chain (low cut → EQ → comp → de-ess → warmth → doubler; ../fx-chain.js)
+     → pan (+ Wide) → fader → meter → out. Reverb / Delay are post-fader SENDS into shared buses (one bus per distinct
+     setting, so a project usually runs a single convolver + delay line). */
+  function makeStrip(c, out, useGate, buses) {
+    var T = { buses: buses };
     T.input = c.createGain();
     T.gate = useGate ? new AudioWorkletNode(c, "ipb-gate", { numberOfInputs: 1, numberOfOutputs: 1, outputChannelCount: [2] }) : c.createGain();
-    T.low = c.createBiquadFilter(); T.low.type = "lowshelf"; T.low.frequency.value = 120;
-    T.mid = c.createBiquadFilter(); T.mid.type = "peaking"; T.mid.Q.value = 0.9;
-    T.high = c.createBiquadFilter(); T.high.type = "highshelf"; T.high.frequency.value = 8000;
-    T.comp = c.createDynamicsCompressor(); T.comp.knee.value = 6;
-    T.makeup = c.createGain();
+    T.X = window.IPBFx.build(c);
     T.post = c.createGain();
-    T.dly = c.createDelay(4); T.fb = c.createGain(); T.dlyMix = c.createGain(); T.dlyLp = c.createBiquadFilter(); T.dlyLp.type = "lowpass"; T.dlyLp.frequency.value = 5000;
-    T.rev = c.createConvolver(); T.revMix = c.createGain(); T.revSize = 0;
     T.pan = c.createStereoPanner();
     // Wide (per track, off by default): a 12 ms copy added left / subtracted right → wider in stereo, cancels in mono
     T.wd = c.createDelay(0.05); T.wd.delayTime.value = 0.012; T.wl = c.createGain(); T.wr = c.createGain(); T.wl.gain.value = 0; T.wr.gain.value = 0;
     T.wpl = c.createStereoPanner(); T.wpr = c.createStereoPanner(); T.wpl.pan.value = -1; T.wpr.pan.value = 1;
     T.fader = c.createGain();
     T.meter = c.createAnalyser(); T.meter.fftSize = 1024;
-    T.input.connect(T.gate); T.gate.connect(T.low); T.low.connect(T.mid); T.mid.connect(T.high); T.high.connect(T.comp); T.comp.connect(T.makeup); T.makeup.connect(T.post);
+    T.input.connect(T.gate); T.gate.connect(T.X.input); T.X.out.connect(T.post);
     T.post.connect(T.pan);
-    T.post.connect(T.dly); T.dly.connect(T.dlyLp); T.dlyLp.connect(T.fb); T.fb.connect(T.dly); T.dlyLp.connect(T.dlyMix); T.dlyMix.connect(T.pan);
-    T.post.connect(T.rev); T.rev.connect(T.revMix); T.revMix.connect(T.pan);
+    try { T.X.out.disconnect(T.X.revSend); T.X.out.disconnect(T.X.dlySend); } catch (e) { /* older engines: rewire below anyway */ }
+    T.fader.connect(T.X.revSend); T.fader.connect(T.X.dlySend); // post-fader sends: a muted track sends nothing
     T.pan.connect(T.fader); T.fader.connect(T.meter); T.fader.connect(out);
     T.post.connect(T.wd); T.wd.connect(T.wl); T.wd.connect(T.wr); T.wl.connect(T.wpl); T.wr.connect(T.wpr); T.wpl.connect(T.fader); T.wpr.connect(T.fader);
     return T;
@@ -45,14 +41,7 @@
     var f = tr.fx, t = c.currentTime;
     function set(p, v) { if (c instanceof OfflineAudioContext) p.value = v; else p.setTargetAtTime(v, t, 0.015); }
     if (T.gate.parameters) { T.gate.parameters.get("on").value = f.gate.on ? 1 : 0; T.gate.parameters.get("thr").value = f.gate.thr; T.gate.parameters.get("rel").value = f.gate.rel; }
-    set(T.low.gain, f.eq.on ? f.eq.low : 0); set(T.mid.gain, f.eq.on ? f.eq.mid : 0); T.mid.frequency.value = f.eq.midF; set(T.high.gain, f.eq.on ? f.eq.high : 0);
-    if (f.comp.on) { T.comp.threshold.value = f.comp.thr; T.comp.ratio.value = f.comp.ratio; T.comp.attack.value = f.comp.atk; T.comp.release.value = f.comp.rel; set(T.makeup.gain, db(f.comp.makeup)); }
-    else { T.comp.threshold.value = 0; T.comp.ratio.value = 1; set(T.makeup.gain, 1); }
-    var beat = 60 / P.bpm;
-    T.dly.delayTime.value = Math.min(3.9, beat * (DIV[f.delay.div] || 0.75));
-    set(T.fb.gain, f.delay.on ? Math.min(0.9, f.delay.fb) : 0); set(T.dlyMix.gain, f.delay.on ? f.delay.mix : 0);
-    if (f.reverb.on && T.revSize !== f.reverb.size) { T.rev.buffer = impulse(c, f.reverb.size); T.revSize = f.reverb.size; }
-    set(T.revMix.gain, f.reverb.on ? f.reverb.mix : 0);
+    T.busKeys = window.IPBFx.apply(c, T.X, f, P.bpm, T.buses, !(c instanceof OfflineAudioContext));
     set(T.pan.pan, tr.pan);
     set(T.wl.gain, tr.wide ? 0.32 : 0); set(T.wr.gain, tr.wide ? -0.32 : 0);
     var audible = !tr.mute && (!solo || tr.solo);
@@ -89,13 +78,16 @@
   function syncGraph(P) {
     E.P = P;
     if (!E.ctx) return;
-    var c = E.ctx, solo = anySolo(P), seen = {};
+    var c = E.ctx, solo = anySolo(P), seen = {}, keep = {};
+    if (!E.buses) E.buses = window.IPBFx.Buses(c, E.master.bus);
     P.tracks.forEach(function (tr) {
-      if (!E.tracks[tr.id]) E.tracks[tr.id] = makeStrip(c, E.master.bus, E.hasWorklet);
+      if (!E.tracks[tr.id]) E.tracks[tr.id] = makeStrip(c, E.master.bus, E.hasWorklet, E.buses);
       applyFx(c, E.tracks[tr.id], tr, P, solo);
+      (E.tracks[tr.id].busKeys || []).forEach(function (k) { keep[k] = 1; });
       seen[tr.id] = 1;
     });
     Object.keys(E.tracks).forEach(function (id) { if (!seen[id]) { try { E.tracks[id].fader.disconnect(); } catch (e) { /* gone */ } delete E.tracks[id]; } });
+    E.buses.gc(keep);
     applyMaster(c, E.master, P);
   }
 
@@ -299,7 +291,8 @@
     return c.audioWorklet.addModule("worklets.js").then(function () { return true; }, function () { return false; }).then(function (gate) {
       var M = makeMaster(c); M.meter.connect(c.destination); applyMaster(c, M, P);
       var solo = anySolo(P), T = {};
-      P.tracks.forEach(function (tr) { T[tr.id] = makeStrip(c, M.bus, gate); applyFx(c, T[tr.id], tr, P, solo); });
+      var buses = window.IPBFx.Buses(c, M.bus);
+      P.tracks.forEach(function (tr) { T[tr.id] = makeStrip(c, M.bus, gate, buses); applyFx(c, T[tr.id], tr, P, solo); });
       P.clips.forEach(function (cl) { if (T[cl.track]) clipSource(c, cl, T[cl.track].input, 0, from, to, null); });
       return c.startRendering();
     }).then(function (buf) {

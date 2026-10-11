@@ -173,3 +173,9 @@ body.embed .st-standalone { display: none; }
 #clean-sheet .st-panel { pointer-events: auto; width: min(460px, calc(100vw - 2rem)); border-color: rgba(52, 211, 153, .45); }
 @media (max-width: 640px) { #clean-sheet { inset: auto .5rem 4rem .5rem; } #clean-sheet .st-panel { width: 100%; } }
 .mini.wide.on { background: #a78bfa; color: #111; border-color: #a78bfa; }
+/* touch: 44px hit area on effect sliders / switches (visible track stays thin) */
+.fxs input[type=range] { height: 44px; margin: 0; touch-action: pan-y; }
+.fxs label.chk { display: flex; gap: .5rem; min-height: 44px; }
+.fxs label.chk input { width: 22px; height: 22px; }
+.fxs select { min-height: 40px; }
+.fxs .sw::before { content: ""; position: absolute; inset: -12px -6px; } /* 44px hit area, same look */
