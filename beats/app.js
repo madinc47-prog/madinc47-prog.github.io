@@ -1637,8 +1637,7 @@
    *   2   = raw mic (only used by Record Vocals; silent otherwise)
    */
   var rec = { on: false, mode: "beat", L: [], R: [], V: [], frames: 0, limit: 0, startedPattern: false, t0: 0, tick: null };
-  var recNode = null, vocalBus = null, vocalFader = null, vocalAnalyser = null, vocalInAn = null, monitorGain = null, proMon = null;
-  function proOn() { return !!window.VocalChain && window.VocalChain.enabled(); }
+  var recNode = null, vocalBus = null, vocalFader = null, vocalAnalyser = null, vocalInAn = null, monitorGain = null;
   function setupRecorder() {
     var stereo = ctx.createGain(); // force stereo so a mono master lands in both L and R
     stereo.channelCount = 2; stereo.channelCountMode = "explicit"; stereo.channelInterpretation = "speakers";
@@ -1663,11 +1662,6 @@
     vocalFader.connect(vocalAnalyser);
     vocalAnalyser.connect(monitorGain);
     monitorGain.connect(ctx.destination); // monitor bypasses master so it is never double-recorded
-    // Pro vocal on the headphone monitor: you hear the processed voice; the recording itself stays RAW (processed after)
-    if (window.VocalChain) window.VocalChain.processInput(vocalAnalyser, { profile: "builtin", enabled: proOn() }).then(function (ch) {
-      try { vocalAnalyser.disconnect(monitorGain); } catch (e) { /* ignore */ }
-      ch.output.connect(monitorGain); proMon = ch;
-    }).catch(function () { /* no AudioWorklet: monitor stays dry */ });
     recNode = ctx.createScriptProcessor(4096, 3, 1);
     mergeN.connect(recNode);
     var z = ctx.createGain();
@@ -2261,7 +2255,7 @@
     } else { vox.inMax = 0; vox.liveT0 = 0; vox.silentWarned = false; }
   }
   var MIC_SILENT = "Your mic is sending silence. Close any call or app using the mic (voice calls, WhatsApp, recorders), check Microphone access is ON in quick settings, then try again.";
-  function micWantsProcessing() { return hpMode() === "spk" && S.vox.aec; }
+  function micWantsProcessing() { return false; } // takes are always RAW: no echo-cancel, noise suppression or auto-gain
   function openMic() {
     if (!window.isSecureContext || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       return Promise.reject({ name: "Unsupported" });
@@ -2270,13 +2264,12 @@
     if (vox.stream && vox.streamProc === proc) return Promise.resolve(vox.stream);
     if (vox.stream) closeMic(); // mode changed since the mic was opened → reopen with the right processing
     var md = navigator.mediaDevices;
-    // headphones: raw mic (best quality). Speaker mode: ask the browser / phone for its echo canceller, noise
-    // suppression and auto gain as a first pass; the take is cleaned properly afterwards either way.
-    // Pro vocal on: the phone's auto-gain stays off (it pumps; the Pro vocal leveler rides the level smoothly instead)
-    var agc = proc && !proOn();
-    return md.getUserMedia({ audio: { echoCancellation: proc, noiseSuppression: proc, autoGainControl: agc, channelCount: 1 } })
+    // every mode (headphones and speaker): the RAW mic, exactly as captured. No browser / phone echo canceller, noise
+    // suppression or auto gain, and nothing is applied after the take; 🧹 Clean last take is manual.
+    var RAW = { echoCancellation: false, noiseSuppression: false, autoGainControl: false };
+    return md.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: 1 } })
       .catch(function (e) {
-        if (e && (e.name === "OverconstrainedError" || e.name === "TypeError")) return md.getUserMedia({ audio: true });
+        if (e && (e.name === "OverconstrainedError" || e.name === "TypeError")) return md.getUserMedia({ audio: RAW });
         throw e;
       })
       .then(function (stream) {
@@ -2441,9 +2434,7 @@
     vox.last = { L: L, R: R, V: V, frames: frames, sr: sr, title: btActive() ? bt.title : song ? song.title : "", mode: vox.takeMode || "hp", clean: null, lat: null,
       mic: vox.micSettings || null, spk: vox.takeMode === "spk" ? spkBeatGain() : 1 };
     applyMixer();
-    if (vox.last.mode === "spk" && S.vox.clean) cleanTake(vox.last);
-    else if (proOn()) proTake(vox.last);
-    else exportVocalMix(true);
+    exportVocalMix(true); // saved exactly as recorded (no automatic processing)
     renderLastTake();
   }
   function vocalPeak(V) {
@@ -2481,7 +2472,7 @@
     if (which === "raw") return;
     var quiet = vocalPeak(t.V) < 0.003;
     setVoxStatus("Saved " + fmtTime(n / t.sr) + " vocal + " + (btActive() ? "instrumental" : "beat") + " mix to Vault" + (clean ? (t.mode === "spk" ? " (cleaned: no speaker beat, no room noise" + (t.pro ? ", pro vocal)" : ")") : " (pro vocal)") : "") + (quiet ? " — warning: the mic signal was almost silent" : ""), quiet);
-    if (first) sendOffer(clean ? (t.mode === "spk" ? "Cleaned vocal take saved to Vault." : "Pro vocal take saved to Vault.") : "Vocal take saved to Vault (beat + vocal WAV).", function (dest) { sendVocal(dest); });
+    if (first) sendOffer(clean ? "Cleaned copy of the vocal take saved to Vault." : "Vocal take saved to Vault (beat + vocal WAV).", function (dest) { sendVocal(dest); });
   }
   function sendVocal(dest) {
     var t = vox.last;
@@ -2605,7 +2596,7 @@
       txt = (hp.pref === "hp" ? "🎧 Headphones (confirmed)" : "🎧 Headphones detected") + " · monitoring " + (S.vox.monitor ? "on" : "off");
       tip = hp.pref === "hp" ? "You said you're on headphones: takes are recorded as-is, no cleanup." : "Detected: " + hp.label + ". Takes are recorded as-is, no cleanup.";
     } else {
-      txt = "🔈 Speaker mode · " + (S.vox.clean ? "take will be cleaned" : "take saved as recorded");
+      txt = "🔈 Speaker mode · take saved as recorded";
       tip = hp.pref === "spk" ? "You chose speaker mode." : hp.labels ? "No headphones detected (phones often can't tell). Tick “I'm on headphones” if you are." : "Headphones can't be detected until the mic is allowed. Tick “I'm on headphones” if you are.";
     }
     document.querySelectorAll(".js-hp-chip").forEach(function (el) { el.textContent = txt; el.title = tip; el.classList.toggle("hp", m === "hp"); el.classList.toggle("spk", m !== "hp"); });
@@ -2635,8 +2626,7 @@
     setVoxStatus("Cleaning take on this device… (the page stays usable)");
     setVoxButtons();
     var T0 = performance.now();
-    var pro = proOn();
-    vcRun(t.V, t.L, t.R, t.sr, pro ? { hpf: false, gate: false } : {}, function (stage, p) {
+    vcRun(t.V, t.L, t.R, t.sr, {}, function (stage, p) {
       $("vc-bar").style.width = Math.max(2, Math.round(p * 100)) + "%";
       $("vc-step").textContent = (VC_STEPS[stage] || "Working…") + " " + Math.round(p * 100) + "%";
     }).then(function (m) {
@@ -2645,51 +2635,18 @@
       t.clean = m.out; t.info = info;
       if (info.bleedFound && info.delayMs > 3 && info.delayMs < 900) t.lat = info.delayMs / 1000;
       vc.lastInfo = info;
-      if (!pro) return;
-      $("vc-step").textContent = "Pro vocal: EQ, compression, de-esser…"; $("vc-prog").hidden = false;
-      return proRender(m.out, t).catch(function () { /* keep the cleaned take without the pro chain */ });
     }).then(function () {
       if (vox.last !== t || !t.clean) return;
       $("vc-prog").hidden = true;
       exportVocalMix(true, "clean");
-      if (S.vox.raw) { exportVocalMix(true, "raw"); vc.rawSaved = true; }
+      vc.rawSaved = true; // the raw take was already saved when it was recorded
       vcShowResult(t);
     }).catch(function (e) {
       if (vox.last !== t) return;
       vc.lastInfo = { error: String(e && e.message || e) };
-      exportVocalMix(true, "raw");
       $("vc-title").textContent = "Couldn't clean this take";
-      $("vc-step").textContent = "Saved as recorded instead. (" + (e && e.message ? e.message : "cleanup unavailable in this browser") + ")";
-      setVoxStatus("Saved the take as recorded — cleanup isn't available in this browser.", true);
-    }).then(function () { vc.busy = false; setVoxButtons(); });
-  }
-  /* ---------------- Pro vocal: shared/vocal-chain.js on the recorded RAW take (headphones takes, or after cleanup) ----
-   * HPF 90 Hz → condenser EQ → leveler + 3.5:1 comp → de-esser → gentle gate → limiter (−1 dBTP). t.V stays RAW. */
-  function proRender(x, t) {
-    var VC = window.VocalChain, T0 = performance.now();
-    return VC.render(x, t.sr, { profile: "builtin" }).then(function (y) {
-      var a = VC.analyse(x, t.sr), b = VC.analyse(y, t.sr);
-      t.clean = y; t.pro = { floorIn: a.floorDb, floorOut: b.floorDb, voiceIn: a.voiceDb, voiceOut: b.voiceDb, ms: Math.round(performance.now() - T0) };
-      return t;
-    });
-  }
-  function proTake(t) {
-    vc.busy = true; vc.rawSaved = false; vc.bufs = {}; vcStop();
-    var sheet = $("vc-sheet"); sheet.hidden = false; sheet.classList.remove("done");
-    $("vc-title").textContent = "Pro vocal…"; $("vc-ab").hidden = true; $("vc-prog").hidden = false;
-    $("vc-bar").style.width = "50%"; $("vc-step").textContent = "EQ, compression, de-esser, noise gate…";
-    setVoxButtons();
-    proRender(t.V, t).then(function () {
-      if (vox.last !== t) return;
-      t.info = { proOnly: true };
-      exportVocalMix(true, "clean");
-      if (S.vox.raw) { exportVocalMix(true, "raw"); vc.rawSaved = true; }
-      vcShowResult(t);
-    }).catch(function (e) {
-      if (vox.last !== t) return;
-      $("vc-sheet").hidden = true;
-      exportVocalMix(true);
-      setVoxStatus("Saved the take as recorded — Pro vocal isn't available in this browser (" + (e && e.message || e) + ").", true);
+      $("vc-step").textContent = "Your raw take is still saved in the Vault. (" + (e && e.message ? e.message : "cleanup unavailable in this browser") + ")";
+      setVoxStatus("Cleanup isn't available in this browser — the raw take is still in the Vault.", true);
     }).then(function () { vc.busy = false; setVoxButtons(); });
   }
   function proStats(t) {
@@ -2760,19 +2717,23 @@
   }
   function initVocalClean() {
     document.querySelectorAll(".js-hp-toggle").forEach(function (el) {
-      el.addEventListener("change", function () { hpSetPref(el.checked ? "hp" : hp.detected ? "spk" : "auto"); toast(el.checked ? "Headphones: takes are recorded as-is" : "Speaker mode: takes will be cleaned"); });
+      el.addEventListener("change", function () { hpSetPref(el.checked ? "hp" : hp.detected ? "spk" : "auto"); toast(el.checked ? "Headphones: takes are recorded as-is" : "Speaker mode: takes are recorded as-is too (🧹 Clean last take is optional)"); });
     });
     document.querySelectorAll(".js-hp-auto").forEach(function (el) { el.addEventListener("click", function (e) { e.preventDefault(); hpSetPref("auto"); }); });
     if (navigator.mediaDevices && navigator.mediaDevices.addEventListener) navigator.mediaDevices.addEventListener("devicechange", hpDetect);
     var sp = $("vox-spk"), so = $("vox-spk-val");
     sp.value = S.vox.spk; so.textContent = S.vox.spk + "%";
     sp.addEventListener("input", function () { S.vox.spk = clamp(Math.round(+sp.value), 10, 100); so.textContent = S.vox.spk + "%"; applyMixer(); saveSession(); });
-    [["vox-guide", "guide"], ["vox-clean", "clean"], ["vox-aec", "aec"], ["vox-raw", "raw"]].forEach(function (p) {
-      var el = $(p[0]); el.checked = !!S.vox[p[1]];
-      el.addEventListener("change", function () {
-        S.vox[p[1]] = el.checked; saveSession(); applyMixer(); hpUI();
-        if (p[1] === "aec" && vox.check) { closeMic(); startMicCheck(); }
-      });
+    [["vox-guide", "guide"]].forEach(function (p) {
+      var el = $(p[0]); if (!el) return; el.checked = !!S.vox[p[1]];
+      el.addEventListener("change", function () { S.vox[p[1]] = el.checked; saveSession(); applyMixer(); hpUI(); });
+    });
+    var cb = $("vox-clean-btn"); // manual only: never runs by itself
+    if (cb) cb.addEventListener("click", function () {
+      if (!vox.last) { toast("Record a vocal take first (🎙 Record Vocals)."); return; }
+      if (vc.busy) { toast("Still cleaning — one moment."); return; }
+      if (vox.last.clean) { toast("This take is already cleaned. The raw take is in the Vault."); return; }
+      cleanTake(vox.last);
     });
     $("vc-close").addEventListener("click", function () { vcStop(); $("vc-sheet").hidden = true; });
     $("vc-play").addEventListener("click", function () { vc.src ? vcStop(true) : vcPlay(); });
@@ -5080,12 +5041,6 @@
       S.vox.monitor = e.target.checked; applyMixer(); saveSession(); hpUI();
       if (S.vox.monitor) toast(hpMode() === "hp" ? "🎧 Monitoring on — headphones only. On a speaker the mic would howl (feedback)." : "Monitoring only plays through headphones — it stays silent in speaker mode so it can't feed back.", 4200);
     });
-    var pv = $("vox-pro");
-    if (pv) {
-      pv.checked = proOn();
-      pv.disabled = !window.VocalChain;
-      pv.addEventListener("change", function () { window.VocalChain.setEnabled(pv.checked); if (proMon) proMon.setEnabled(pv.checked); toast(pv.checked ? "Pro vocal on: takes get condenser EQ, compression, de-esser and a gentle noise gate (raw take kept)." : "Pro vocal off: takes are saved as recorded."); });
-    }
     $("vox-dry").addEventListener("change", function (e) { S.vox.dry = e.target.checked; saveSession(); });
     $("vox-nudge").addEventListener("change", function (e) {
       S.vox.nudge = clamp(Math.round(+e.target.value || 0), -300, 300);
