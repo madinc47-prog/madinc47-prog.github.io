@@ -1255,7 +1255,25 @@
     },
     cleanClip: cleanClip, cleanState: function () { return { busy: CL.busy, last: CL.last || null, speaker: speakerMode(), hp: { found: hp.found, label: hp.label, manual: hp.manual } }; },
     setHeadphones: function (v) { hp.manual = v == null ? null : !!v; hpUI(); return speakerMode(); }, hpDetect: hpDetect,
-    saveNow: saveNow, render: render, meters: function () { return E.ctx ? E.meters() : null; }, zoomFit: zoomFit
+    saveNow: saveNow, render: render, meters: function () { return E.ctx ? E.meters() : null; }, zoomFit: zoomFit,
+    /* built-in Helper (../helper.js): quick checks of the project, each with a one-tap fix where there is a safe one */
+    helperChecks: function () {
+      var out = [], bt = beatTrackId(), has = function (tr) { return P.clips.some(function (c) { return c.track === tr.id; }); };
+      if (!P.clips.length) { out.push({ level: "tip", text: "The project is empty. In Beats, Bounce your beat and tap “Send to Studio” (it lands on Track 1), then arm a vocal track (R) and press ● to record." }); return out; }
+      var voc = P.tracks.filter(function (t) { return t.id !== bt && has(t); });
+      if (!voc.length) out.push({ level: "tip", text: "Only the beat is in the project. Arm a vocal track (tap its ● or press R) and press ● Record." });
+      var off = voc.filter(function (t) { return !t.auto; });
+      if (off.length) out.push({ level: "warn", text: off.map(function (t) { return t.name; }).join(", ") + ": not level-matched to the beat (AUTO off), so the vocal can end up buried or too loud.", fix: { label: "Turn AUTO match on", run: function () { S.pushUndo(P, "auto match"); off.forEach(function (t) { t.auto = true; }); changed(null, true); return "AUTO match on for " + off.length + " track" + (off.length > 1 ? "s" : ""); } } });
+      var muted = P.tracks.filter(function (t) { return t.mute && has(t); });
+      if (muted.length) out.push({ level: "warn", text: muted.map(function (t) { return t.name; }).join(", ") + " muted (you won't hear it or export it).", fix: { label: "Unmute", run: function () { S.pushUndo(P, "unmute"); muted.forEach(function (t) { t.mute = false; }); changed(null, true); return "Unmuted"; } } });
+      var dry = voc.filter(function (t) { return !window.IPBFx.anyOn(t.fx) || t.fxOff; });
+      if (dry.length) out.push({ level: "tip", text: dry.map(function (t) { return t.name; }).join(", ") + ": no effects on the vocal. A little compression and room reverb usually sits it in the beat.", fix: { label: "Add comp + reverb", run: function () { S.pushUndo(P, "vocal fx"); dry.forEach(function (t) { t.fxOff = false; t.fx.comp.on = true; t.fx.reverb.on = true; }); changed(null, true); E.ctx && E.syncGraph(P); return "Compressor + reverb on (open FX to adjust)"; } } });
+      var hot = P.clips.filter(function (c) { var src = S.sources[c.src]; if (!src) return false; var sr = src.buf.sampleRate; return OPS.peakOf(src.buf, Math.round(c.offset * sr), Math.round((c.offset + c.dur) * sr)) > 0.985; });
+      if (hot.length) out.push({ level: "warn", text: hot.length + " clip" + (hot.length > 1 ? "s" : "") + " hit full scale (recorded too hot: distortion is baked in). Next take: back off the mic a little or turn the input down." });
+      if (!P.master.limiter) out.push({ level: "tip", text: "Master limiter is off: loud parts can clip on export.", fix: { label: "Turn limiter on", run: function () { S.pushUndo(P, "limiter"); P.master.limiter = true; changed(null, true); return "Limiter on"; } } });
+      if (!out.length) out.push({ level: "ok", text: "Project looks good: vocals matched to the beat, nothing muted or clipping. Next: tap “Master ↗” to master it." });
+      return out;
+    }
   };
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init); else init();
 })();

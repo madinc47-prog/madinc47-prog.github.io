@@ -1083,3 +1083,5 @@ body.sec-editing .seq-wrap { outline: 2px solid var(--accent); outline-offset: 3
 .mst-filebtn { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; cursor: pointer; }
 .mst-prog { width: 220px; height: 12px; accent-color: var(--accent, #22d3ee); }
 #mst-refresh.stale { border-color: rgba(250,204,21,.8); color: #fef08a; }
+/* built-in Helper tab button (helper.js) */
+.tabs .hp-tab { margin-left: auto; color: #67e8f9; border-color: #0e7490; }

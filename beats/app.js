@@ -6697,6 +6697,29 @@
       toast: toast, title: function () { return btActive() ? bt.title : songTitle(); }, bpm: function () { return S.bpm; }
     },
     bounceForStudio: bounceForStudio, showTab: showTab, activeTab: function () { return activeTab; },
+    /* built-in Helper (helper.js): quick checks of the beat / mix / vocal, each with a one-tap fix where there is a safe one */
+    helperChecks: function () {
+      var out = [], refreshMix = function () { applyMixer(); buildMixer(); saveSession(); };
+      if (!ctx) out.push({ level: "tip", text: "Sound isn't started yet: tap any pad (or ▶) once and the audio engine wakes up." });
+      if (livePeak >= 0.985) out.push({ level: "warn", text: "Your beat hit the ceiling during playback (the safety clipper had to work, which can sound crunchy).", fix: { label: "Master −2 dB", run: function () { S.mixer.master.v = +(S.mixer.master.v * 0.79).toFixed(3); livePeak = 0; refreshMix(); return "Master fader down 2 dB"; } } });
+      var muted = GROUPS.filter(function (g) { var m = S.mixer[g.id]; return m && (m.m || m.v === 0); });
+      if (muted.length) out.push({ level: "warn", text: "Muted / silent channels: " + muted.map(function (g) { return g.name; }).join(", ") + ".", fix: { label: "Bring them back", run: function () { var d = defaultMixer(); muted.forEach(function (g) { var m = S.mixer[g.id]; m.m = false; if (m.v === 0) m.v = d[g.id].v; }); refreshMix(); return "Channels back on"; } } });
+      if (S.mixer.vocal && (S.mixer.vocal.m || S.mixer.vocal.v === 0) && vox.last) out.push({ level: "warn", text: "The Vocal channel is muted / at zero, so your take is silent.", fix: { label: "Unmute vocal", run: function () { S.mixer.vocal.m = false; if (!S.mixer.vocal.v) S.mixer.vocal.v = VOC_FADER0; refreshMix(); return "Vocal back on"; } } });
+      var t = vox.last;
+      if (t) {
+        if (!S.vox.auto) {
+          var rel = t.vocLufs != null && t.beatLufs != null ? t.vocLufs + 20 * Math.log10(Math.max(1e-4, mixGain("vocal"))) - t.beatLufs : null;
+          var txt = rel != null && rel < -5 ? "Vocal is buried: about " + Math.round(-rel) + " dB under the beat." : rel != null && rel > 5 ? "Vocal is very loud: about " + Math.round(rel) + " dB over the beat." : "Your vocal isn't level-matched to the beat yet (Auto match is off).";
+          out.push({ level: rel != null && Math.abs(rel) > 5 ? "warn" : "tip", text: txt, fix: { label: "Auto-match vocal", run: function () { S.vox.auto = true; t.autoDb = null; buildVxFx(); vxChanged(); return "Auto match on: the vocal follows the beat level"; } } });
+        }
+        if (S.vox.fxOff) out.push({ level: "warn", text: "Vocal FX are bypassed (FX A/B is on OFF), so effect changes won't be heard.", fix: { label: "FX back on", run: function () { vxToggleAB(); return "Vocal FX on"; } } });
+        else if (!FXC.anyOn(S.vox.fx)) out.push({ level: "tip", text: "Your vocal has no effects. A little compression and room reverb usually sits it in the beat (the raw take stays untouched).", fix: { label: "Add comp + reverb", run: function () { S.vox.fx = S.vox.fx || FXC.defaults(); S.vox.fx.comp.on = true; S.vox.fx.reverb.on = true; buildVxFx(); vxChanged(); return "Compressor + reverb on (Mixer → Vocal FX to adjust)"; } } });
+      } else out.push({ level: "tip", text: "No vocal take yet: tap ● Record Vocals on the Beats tab (headphones give the cleanest take; no headphones? turn on “No headphones — voice only”)." });
+      if (sampleVol() > 90) out.push({ level: "tip", text: "Sample previews are turned up very high (" + sampleVol() + "%), they can mask the beat.", fix: { label: "Samples to 70%", run: function () { setSampleVol(70); return "Sample volume 70%"; } } });
+      if (S.feel === "off" && !S.swing) out.push({ level: "tip", text: "Feel is off and swing is 0, so the beat is quantized stiff. Try Feel “Natural” or swing 55–58 % for bounce." });
+      if (!out.some(function (x) { return x.level === "warn"; })) out.push({ level: "ok", text: "Nothing wrong found: levels are safe, nothing muted, vocal matched." });
+      return out;
+    },
     lastSent: function () { return lastSent; }, sendOut: sendOut, djHref: djHref,
     info: function () {
       return {

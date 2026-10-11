@@ -147,7 +147,7 @@
   var MW = null, mwSeq = 0, mwWait = {};
   function post(msg) {
     if (MW === false) return Promise.reject(new Error("no worker"));
-    if (!MW) { try { MW = new Worker("master/master-worker.js?v=20261011y"); MW.onmessage = function (e) { var w = mwWait[e.data.id]; if (!w) return; delete mwWait[e.data.id]; if (e.data.ok) w.res(e.data); else w.rej(new Error(e.data.err)); };
+    if (!MW) { try { MW = new Worker("master/master-worker.js?v=20261011z"); MW.onmessage = function (e) { var w = mwWait[e.data.id]; if (!w) return; delete mwWait[e.data.id]; if (e.data.ok) w.res(e.data); else w.rej(new Error(e.data.err)); };
       MW.onerror = function () { MW = false; Object.keys(mwWait).forEach(function (k) { mwWait[k].rej(new Error("worker failed")); delete mwWait[k]; }); }; } catch (e) { MW = false; return Promise.reject(e); } }
     msg.id = ++mwSeq;
     return new Promise(function (res, rej) { mwWait[msg.id] = { res: res, rej: rej }; MW.postMessage(msg, [msg.L.buffer, msg.R.buffer]); });
@@ -326,7 +326,7 @@
       applyLive(); return L;
     };
     var go = function () { return chainLatency(c.sampleRate).then(function () {
-      if (c.audioWorklet && !L.noWorklet) return c.audioWorklet.addModule("master/master-dsp.js?v=20261011y").then(function () { return c.audioWorklet.addModule("master/master-worklet.js?v=20261011y"); }).then(function () {
+      if (c.audioWorklet && !L.noWorklet) return c.audioWorklet.addModule("master/master-dsp.js?v=20261011z").then(function () { return c.audioWorklet.addModule("master/master-worklet.js?v=20261011z"); }).then(function () {
         var w = new AudioWorkletNode(c, "ipb-tplimiter", { numberOfInputs: 1, numberOfOutputs: 1, outputChannelCount: [2] });
         w.port.onmessage = function (e) { L.limGr = e.data.gr; }; L.lim = w; L.limLat = Math.round(0.005 * c.sampleRate) + 8; return after(w);
       });
@@ -611,5 +611,21 @@
   wire();
   window.IPBMaster = { state: function () { return JSON.parse(JSON.stringify(st)); }, setSource: setSource, loadSource: function (v) { if (v === "studio") fromStudio = true; $("mst-src").value = v; loadSource(); }, renderChain: renderChain, stats: stats, truePeak: truePeak,
     source: function () { return src; }, fit: fitTarget, report: function () { return lastReport; }, mode: function () { return mode; }, live: function () { return L; }, outLufs: function () { return outLufs; }, dryMatch: function () { return dryMatch; },
-    set: function (o) { st = norm(o); renderAll(); changed(); }, PRESETS: PRESETS, TARGETS: TARGETS, buildChain: buildChain, applyChain: applyChain, defaults: defaults };
+    set: function (o) { st = norm(o); renderAll(); changed(); }, PRESETS: PRESETS,
+    /* built-in Helper (../helper.js): checks of the loaded song + chain, each with a one-tap fix where there is a safe one */
+    helperChecks: function () {
+      var out = [], tg = TARGETS[st.target];
+      if (loading) { out.push({ level: "tip", text: "Your song is still being prepared (progress bar). Checks run once it's loaded." }); return out; }
+      if (!src) { out.push({ level: "tip", text: "No song loaded. Tap “Refresh from current song” (or pick a source / “Choose a song file…”).", fix: { label: "Load my song", run: function () { $("mst-src").value = "auto"; loadSource(); return "Loading your current song…"; } } }); return out; }
+      if (srcKind !== "file" && srcKind !== "vault" && srcKind !== "studio" && B.songSig && srcSig !== B.songSig()) out.push({ level: "warn", text: "You edited the song after it was loaded here, so you're mastering an older version.", fix: { label: "Refresh song", run: function () { $("mst-src").value = "auto"; loadSource(); return "Re-loading your current song…"; } } });
+      if (!STAGES.some(function (k) { return st[k].on; })) out.push({ level: "tip", text: "The master chain is all off. Start from a preset, then tap “Auto gain to target”.", fix: { label: "Hip-Hop Punch preset", run: function () { var keep = { fmt: st.fmt, inGain: st.inGain, outGain: st.outGain }; st = norm(Object.assign({}, PRESETS.hiphop.s, keep)); st.tgtGain = 0; renderAll(); changed(); return "Preset: Hip-Hop Punch (now try Auto gain to target)"; } } });
+      if (!st.lim.on) out.push({ level: "warn", text: "The true-peak limiter is off: the export can clip on phones / streaming.", fix: { label: "Limiter on (−1 dBTP)", run: function () { st.lim.on = true; st.lim.ceil = -1; renderAll(); changed(); return "Limiter on, ceiling −1 dBTP"; } } });
+      if (isFinite(src.lufs) && src.lufs < -24) out.push({ level: "tip", text: "The song comes in quiet (" + src.lufs.toFixed(1) + " LUFS). Raise Input gain a few dB so the chain works on a healthy level.", fix: { label: "Input +6 dB", run: function () { st.inGain = clamp(st.inGain + 6, -12, 12); renderReadouts(); changed(); return "Input gain +6 dB"; } } });
+      if (tg && outLufs != null && isFinite(outLufs) && Math.abs(outLufs - tg.lufs) > 1) out.push({ level: "warn", text: "Output is " + outLufs.toFixed(1) + " LUFS, " + Math.abs(outLufs - tg.lufs).toFixed(1) + " dB " + (outLufs < tg.lufs ? "quieter" : "louder") + " than " + tg.name + ".", fix: { label: "Auto gain to target", run: function () { fitTarget(); return "Matching " + tg.name + "…"; } } });
+      var corr = parseFloat(($("mst-corr-v") || {}).textContent);
+      if (isFinite(corr) && corr < 0 && prev) out.push({ level: "warn", text: "Stereo correlation is negative (" + corr.toFixed(2) + "): parts can cancel out on a phone speaker / in mono.", fix: { label: "Mono below 120 Hz, width 100%", run: function () { st.width.on = true; st.width.mono = 120; st.width.w = Math.min(st.width.w, 1); renderAll(); changed(); return "Width: mono below 120 Hz"; } } });
+      if (st.glue.on && st.glue.thr < -26 && st.glue.ratio > 4) out.push({ level: "tip", text: "Glue compressor is pushed hard (threshold " + st.glue.thr + " dB, " + st.glue.ratio + ":1): it can squash the punch. Watch its gain-reduction bar; 1–3 dB is typical." });
+      if (!out.some(function (x) { return x.level === "warn"; })) out.push({ level: "ok", text: "Master looks healthy" + (outLufs != null && isFinite(outLufs) ? " (" + outLufs.toFixed(1) + " LUFS out" + (tg ? ", target " + tg.lufs : "") + ")" : "") + ". Play it, compare with Bypass (level-matched), then Export." });
+      return out;
+    }, TARGETS: TARGETS, buildChain: buildChain, applyChain: applyChain, defaults: defaults };
 })();
