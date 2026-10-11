@@ -18,7 +18,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
-  <link rel="stylesheet" href="player.css?v=22">
+  <link rel="stylesheet" href="player.css?v=23">
 </head>
 <body data-theme="club">
   <canvas id="viz" aria-hidden="true"></canvas>
@@ -33,7 +33,7 @@
         <a href="../beats/" class="chip"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h3l2-6 4 12 3-9 2 3h4"/></svg>Open in Beats</a>
         <a href="../dj/" class="chip"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.5"/></svg>Open DJ Booth</a>
         <span class="add-wrap"><button id="addBtn" class="add-btn" type="button" title="Add music: pick as many songs as you like (any length) — or drop files / folders onto the player"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add music</button><button id="addFolder" class="add-folder" type="button" hidden title="Add every song in a folder (and its subfolders)">or a folder</button></span>
-        <button id="recBtn" class="rec-btn" type="button" aria-pressed="false" title="Record the mix (everything the Player plays, shout-outs included)"><i class="dot" aria-hidden="true"></i><span>Rec</span></button><span id="recTime" class="rec-time" hidden>0:00</span>
+        <button id="recBtn" class="rec-btn" type="button" aria-pressed="false" title="Record the mix (everything the Player plays, shout-outs included)"><i class="dot" aria-hidden="true"></i><span>Rec</span></button><span id="recTime" class="rec-time" hidden>0:00</span><button id="recList" class="chip" type="button" title="Your recorded mixes (saved on this device)">Mixes</button>
         <button id="photoBtn" class="chip photo" type="button" title="Put your own face on the DJ (stays on this device)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg><span>Use your photo</span></button>
         <button id="photoReset" class="chip" type="button" hidden title="Back to the default DJ face">Reset face</button>
         <button id="installBtn" class="chip gold" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>Install</button>
@@ -141,6 +141,15 @@
     <button role="menuitem" data-act="remove" class="danger">Remove from My Tracks</button>
   </div>
 
+  <dialog id="recDlg" class="dlg rec-dlg">
+    <form method="dialog">
+      <h3>Your mixes</h3>
+      <p class="fine">Recorded from the Player's output before the volume knob (volume and mute don't change it). WAV is lossless; the compressed copy is smaller. Kept on this device only.</p>
+      <ul class="rec-list"></ul>
+      <p class="fine rec-free"></p>
+      <div class="dlg-actions"><button value="ok" class="btn">Close</button></div>
+    </form>
+  </dialog>
   <dialog id="skipDlg" class="dlg skip-dlg">
     <form method="dialog">
       <h3>Only songs go in the playlist</h3>
@@ -188,6 +197,6 @@
   <input type="file" id="photoIn" accept="image/*" hidden>
 
   <script type="module" src="../shared/ecosystem-nav.js"></script>
-  <script type="module" src="player.js?v=22"></script>
+  <script type="module" src="player.js?v=23"></script>
 </body>
 </html>
