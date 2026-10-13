@@ -1087,3 +1087,26 @@ body.sec-editing .seq-wrap { outline: 2px solid var(--accent); outline-offset: 3
 #mst-refresh.stale { border-color: rgba(250,204,21,.8); color: #fef08a; }
 /* built-in Helper tab button (helper.js) */
 .tabs .hp-tab { margin-left: auto; color: #67e8f9; border-color: #0e7490; }
+/* Samsung Galaxy A11 & Mobile Optimizations */
+* {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+/* Fix pad latency & instant tap feedback on mobile */
+.pad, .tbtn, .tab, button {
+  touch-action: pointer-events;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Prevent accidental scrolling while hitting pads */
+.pads-wrap, .seq-wrap {
+  touch-action: pan-y;
+}
+
+/* Optimize scroll performance for mobile GPUs */
+body, main, .panel {
+  -webkit-overflow-scrolling: touch;
+  will-change: transform;
+}
