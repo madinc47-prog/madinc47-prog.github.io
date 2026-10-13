@@ -1,75 +1,47 @@
-// Island Pin Beats - Custom Sample Importer & Preset Loader
+// Island Pin Beats - Keys Loops Picker & Loader
 
-window.customSamples = window.customSamples || {};
+window.keysLoops = [
+  { id: 'keys_1', name: 'Melodic Piano (C Min)', key: 'Cmin', bpm: 90, file: 'samples/keys1.mp3' },
+  { id: 'keys_2', name: 'Island Synth Riff (G Maj)', key: 'Gmaj', bpm: 95, file: 'samples/keys2.mp3' },
+  { id: 'keys_3', name: 'Chill Rhodes Chords (F Min)', key: 'Fmin', bpm: 88, file: 'samples/keys3.mp3' }
+];
 
-// Function to handle sample file picking
-function openInAppSampleUploader(padIndex = 0) {
-  const fileInput = document.createElement('input');
-  fileInput.type = 'file';
-  fileInput.accept = 'audio/*';
-
-  fileInput.onchange = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    const audioURL = URL.createObjectURL(file);
-    window.customSamples[`pad_${padIndex}`] = {
-      name: file.name,
-      url: audioURL,
-      audio: new Audio(audioURL)
-    };
-
-    if (navigator.vibrate) navigator.vibrate([10, 30, 10]);
-    alert(`Loaded "${file.name}" into Pad ${padIndex + 1}!`);
-  };
-
-  fileInput.click();
+function openKeysLoopPicker() {
+  let modal = document.getElementById('keys-modal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'keys-modal';
+    modal.style.cssText = 'position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:#1c1d22; border:1px solid #333; padding:20px; z-index:9999; border-radius:8px; color:#fff; min-width:280px; max-width:90vw; box-shadow:0 10px 25px rgba(0,0,0,0.5);';
+    
+    let html = '<h3 style="margin-top:0; color:#4da6ff;">Select Keys Loop</h3><ul style="list-style:none; padding:0; margin:15px 0;">';
+    window.keysLoops.forEach(loop => {
+      html += `<li style="margin-bottom:10px;"><button style="width:100%; padding:10px; background:#2a2c34; color:#fff; border:1px solid #444; border-radius:4px; text-align:left; cursor:pointer;" onclick="selectKeysLoop('${loop.id}')">🎹 ${loop.name} (${loop.key})</button></li>`;
+    });
+    html += '</ul><button style="width:100%; padding:8px; background:#e74c3c; color:#fff; border:none; border-radius:4px; cursor:pointer;" onclick="document.getElementById(\'keys-modal\').style.display=\'none\'">Close</button>';
+    modal.innerHTML = html;
+    document.body.appendChild(modal);
+  } else {
+    modal.style.display = 'block';
+  }
 }
 
-// Attach Import button safely next to the controls
-function injectSampleButton() {
-  if (document.getElementById("in-app-upload-btn")) return;
-
-  const uploadBtn = document.createElement("button");
-  uploadBtn.id = "in-app-upload-btn";
-  uploadBtn.innerText = "📂 Import Sample";
-  uploadBtn.style.cssText = `
-    background: #ff4757;
-    color: white;
-    font-weight: bold;
-    border: none;
-    padding: 8px 14px;
-    border-radius: 8px;
-    margin: 6px;
-    font-size: 13px;
-    cursor: pointer;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.4);
-    display: inline-block;
-    vertical-align: middle;
-  `;
-
-  uploadBtn.addEventListener("click", () => {
-    const padChoice = prompt("Which Pad/Slot (1-16) do you want to load this sample to?", "1");
-    const padNum = parseInt(padChoice, 10);
-    if (padNum >= 1 && padNum <= 16) {
-      openInAppSampleUploader(padNum - 1);
-    } else {
-      alert("Please enter a pad number between 1 and 16.");
+function selectKeysLoop(loopId) {
+  const selected = window.keysLoops.find(l => l.id === loopId);
+  if (selected) {
+    const keysBtn = document.querySelector('.keys-loop') || document.getElementById('keysLoopBtn') || document.querySelector('[data-action="pick-keys"]');
+    if (keysBtn) {
+      keysBtn.innerText = selected.name;
     }
-  });
-
-  // Find the playback control bar or top bar to place it safely
-  const targetArea = document.querySelector('.playback-controls') || 
-                     document.querySelector('header') || 
-                     document.querySelector('.top-bar') || 
-                     document.body;
-
-  targetArea.appendChild(uploadBtn);
+    console.log('Selected Keys Loop:', selected);
+  }
+  const modal = document.getElementById('keys-modal');
+  if (modal) modal.style.display = 'none';
 }
 
-// Run on page load
-if (document.readyState === "complete" || document.readyState === "interactive") {
-  setTimeout(injectSampleButton, 500);
-} else {
-  document.addEventListener("DOMContentLoaded", () => setTimeout(injectSampleButton, 500));
-}
+// Bind click event to Pick a Keys Loop button on page load
+document.addEventListener('DOMContentLoaded', () => {
+  const keysBtn = document.querySelector('.keys-loop') || document.getElementById('keysLoopBtn') || document.querySelector('[data-action="pick-keys"]') || document.evaluate("//*[contains(text(), 'Pick a keys loop')]", document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
+  if (keysBtn) {
+    keysBtn.addEventListener('click', openKeysLoopPicker);
+  }
+});
