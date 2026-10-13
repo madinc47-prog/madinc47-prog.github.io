@@ -26,7 +26,7 @@ function openInAppSampleUploader(padIndex = 0) {
   fileInput.click();
 }
 
-// Attach Import button directly into the Beats controls
+// Attach Import button safely next to the controls
 function injectSampleButton() {
   if (document.getElementById("in-app-upload-btn")) return;
 
@@ -45,6 +45,7 @@ function injectSampleButton() {
     cursor: pointer;
     box-shadow: 0 2px 6px rgba(0,0,0,0.4);
     display: inline-block;
+    vertical-align: middle;
   `;
 
   uploadBtn.addEventListener("click", () => {
@@ -57,11 +58,13 @@ function injectSampleButton() {
     }
   });
 
-  const targetArea = document.querySelector('.KEYS LOOPS')?.parentElement || 
-                     document.querySelector('button')?.parentElement || 
+  // Find the playback control bar or top bar to place it safely
+  const targetArea = document.querySelector('.playback-controls') || 
+                     document.querySelector('header') || 
+                     document.querySelector('.top-bar') || 
                      document.body;
 
-  targetArea.prepend(uploadBtn);
+  targetArea.appendChild(uploadBtn);
 }
 
 // Run on page load
