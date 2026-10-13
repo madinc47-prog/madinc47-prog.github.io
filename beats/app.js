@@ -6888,4 +6888,29 @@
   })();
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
   else init();
-})();
+})();// Web MIDI & URL Parameter Connection
+if (navigator.requestMIDIAccess) {
+    navigator.requestMIDIAccess().then(onMIDISuccess, onMIDIFailure);
+}
+
+function onMIDISuccess(midiAccess) {
+    for (let input of midiAccess.inputs.values()) {
+        input.onmidimessage = (msg) => {
+            const [cmd, note, vel] = msg.data;
+            if (cmd === 144 && vel > 0) {
+                console.log("MIDI Note Pressed:", note);
+            }
+        };
+    }
+}
+
+function onMIDIFailure() {
+    console.log("Could not access MIDI devices.");
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const freshID = urlParams.get('fresh');
+    if (freshID) console.log("Loaded session ID:", freshID);
+});
+
