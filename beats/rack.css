@@ -1,0 +1,138 @@
+/* ISLAND PIN BEATS — PROFESSIONAL STUDIO RACK THEME
+   CSS-only skin over existing DOM: brushed metal rack units, rack rails + screws (cheap gradients),
+   hardware LCD transport, LED buttons, knob-look slider thumbs, toggle switches, VU channel strips.
+   No blur stacks / no heavy shadows for Android 10 tablets. Loaded after styles.css. */
+:root{
+  --bg:#07080a; --bg2:#141519; --bg3:#1e2025; --line:#34363c; --text:#eceef2; --muted:#9aa0ab;
+  --accent:#22d3ee; --accent2:#b79cff; --hot:#ff3b57; --ok:#3dff88; --amber:#ffb02e; --amber2:#ff7a1a;
+  --metal:linear-gradient(180deg,#26272c 0%,#17181c 48%,#101114 55%,#1a1b1f 100%);
+  --metal2:linear-gradient(180deg,#1d1e23,#121316);
+  --brushed:repeating-linear-gradient(0deg,rgba(255,255,255,.018) 0 1px,transparent 1px 3px);
+  --radius:6px;
+  --font:"Roboto Condensed","Arial Narrow","Segoe UI",system-ui,sans-serif;
+  --mono:"Roboto Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+}
+html{color-scheme:dark}
+body{background:#050506;background-image:radial-gradient(circle at 50% -80px,#1b1c20,transparent 520px);font-family:var(--font);padding-bottom:86px}
+h2,h3{font-family:var(--font);text-transform:uppercase;letter-spacing:.14em;font-weight:700}
+.label,.sname,.strip-note{letter-spacing:.18em}
+/* ---------- top rack unit / transport ---------- */
+.topbar{background:var(--metal);background-image:var(--brushed),var(--metal);border-bottom:2px solid #000;box-shadow:inset 0 1px 0 #3a3b42,inset 0 -1px 0 #2b1602,0 2px 0 rgba(255,176,46,.25);backdrop-filter:none}
+.logo{font-family:var(--font);font-size:1rem;letter-spacing:.22em;color:#d8d9dd;text-shadow:0 1px 0 #000,0 -1px 0 #444}
+.logo b{color:var(--amber);text-shadow:0 0 8px rgba(255,176,46,.45)}
+.logo::after{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--ok);box-shadow:0 0 7px var(--ok);margin-left:10px;vertical-align:2px}
+.dj-link,.sound-check-link{border-radius:3px;background:#0c0d0f;border-color:#3a3b42;text-transform:uppercase;letter-spacing:.12em}
+.tbtn{width:48px;height:44px;border-radius:5px;background:linear-gradient(180deg,#33343a,#17181b);border:1px solid #000;box-shadow:inset 0 1px 0 #4a4b54,0 2px 3px #000;color:#eee;font-size:1rem}
+.tbtn:active{transform:translateY(1px)}
+.tbtn.play.on{background:linear-gradient(180deg,#ffcf6b,var(--amber2));color:#1a0e00;border-color:#000;box-shadow:0 0 10px rgba(255,150,30,.55),inset 0 1px 0 #ffe1a0}
+.bpm{color:var(--amber);font-family:var(--mono)}
+.bpm input{background:#160f04!important;color:#ffb02e!important;border:1px solid #000!important;box-shadow:inset 0 0 0 1px #4a2d08,inset 0 2px 7px #000;font-family:var(--mono);font-size:1.05rem;font-weight:700;letter-spacing:.08em;text-align:center;border-radius:3px}
+.audio-state{font-family:var(--mono);color:#7dd87d}
+.audio-state::before{content:"● ";color:var(--ok)}
+/* ---------- page selector: bottom rack nav (one page at a time) ---------- */
+.tabs{position:fixed;left:0;right:0;bottom:0;top:auto;z-index:60;display:flex;gap:4px;overflow-x:auto;padding:8px 8px calc(8px + env(safe-area-inset-bottom));background:var(--metal);background-image:var(--brushed),var(--metal);border-top:2px solid #000;box-shadow:inset 0 1px 0 #3d3e46,0 -3px 8px rgba(0,0,0,.55);scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex:1 0 auto;min-height:52px;padding:.55rem .8rem;border:1px solid #000;border-bottom:1px solid #000;border-radius:5px;background:linear-gradient(180deg,#2b2c32,#141518);color:#aeb3bd;font-family:var(--font);text-transform:uppercase;letter-spacing:.13em;font-size:.78rem;box-shadow:inset 0 1px 0 #45464f;position:relative}
+.tab::before{content:"";display:block;width:6px;height:6px;border-radius:50%;background:#333;margin:0 auto 4px;box-shadow:inset 0 1px 1px #000}
+.tab.active{color:#fff;background:linear-gradient(180deg,#3a2a10,#211503);border-color:#000;box-shadow:inset 0 1px 0 #6b4a18,0 0 9px rgba(255,160,40,.25)}
+.tab.active::before{background:var(--amber);box-shadow:0 0 8px var(--amber)}
+.tab-dj{color:#7ee6f5}
+/* ---------- rack units ---------- */
+.panel.active{animation:rackIn .12s ease-out}
+@keyframes rackIn{from{opacity:.65}to{opacity:1}}
+.kit-open,.seq-wrap,.pad-edit,.keys-wrap,.chordloop,.rec-bar,.bt-panel,.ref-panel,.vox-box,.pn-lib,.note-box,.ly-preview,.vitem,.kit-browser,.mst-top,.mst-meters,.mst-mods,.mst-exp,.lib-panel,.studio-bar,body #tab-daw .daw-wrap,body #tab-daw .daw-piano,body #tab-daw .daw-strip{
+  background-image:var(--brushed),var(--metal2);border:1px solid #000;border-radius:6px;
+  box-shadow:inset 0 1px 0 #3a3b43,inset 0 -1px 0 #000,0 3px 7px rgba(0,0,0,.45);
+  position:relative;
+}
+/* rack screws in 4 corners (one cheap pseudo element, radial gradients) */
+.kit-open::after,.seq-wrap::after,.keys-wrap::after,.pn-lib::after,.vox-box::after,.mst-top::after,body #tab-daw .daw-wrap::after{
+  content:"";position:absolute;inset:4px;pointer-events:none;opacity:.8;
+  background:
+   radial-gradient(circle at 0 0,#888 0 2px,#222 3px,transparent 4px) left top/12px 12px no-repeat,
+   radial-gradient(circle at 100% 0,#888 0 2px,#222 3px,transparent 4px) right top/12px 12px no-repeat,
+   radial-gradient(circle at 0 100%,#888 0 2px,#222 3px,transparent 4px) left bottom/12px 12px no-repeat,
+   radial-gradient(circle at 100% 100%,#888 0 2px,#222 3px,transparent 4px) right bottom/12px 12px no-repeat;
+}
+main{max-width:1240px}
+/* left/right rack rails hint on wide screens */
+@media(min-width:1100px){ main{background-image:repeating-linear-gradient(0deg,transparent 0 62px,rgba(255,255,255,.025) 62px 63px)} }
+/* ---------- buttons / toggles / knobs (sliders kept, thumbs become knobs) ---------- */
+.btn,.seg,.slots>button,.pn-zoom .btn{border-radius:4px}
+.btn{background:linear-gradient(180deg,#303138,#17181b);border:1px solid #000;box-shadow:inset 0 1px 0 #4b4c56,0 2px 3px rgba(0,0,0,.5);color:#e8e9ed;text-transform:uppercase;letter-spacing:.09em;font-size:.76rem;min-height:44px}
+.btn:hover{border-color:#000;color:#fff;box-shadow:inset 0 1px 0 #555,0 0 7px rgba(34,211,238,.28)}
+.btn.primary,.btn.pn-play.on{background:linear-gradient(180deg,#ffcf6b,var(--amber2));color:#190c00}
+.btn.rec{color:#ff8296}.btn.rec.on{background:linear-gradient(180deg,#ff5f78,#c91835);color:#fff;box-shadow:0 0 10px rgba(255,40,80,.5)}
+.btn:disabled{box-shadow:none}
+.seg,.slots{background:#0a0b0d;border:1px solid #000;border-radius:5px;box-shadow:inset 0 2px 5px #000;padding:3px}
+.seg button,.slots>button{min-height:40px;border-radius:3px;text-transform:uppercase;letter-spacing:.1em}
+.seg button.on,.slots>button.on{background:linear-gradient(180deg,#ffca5c,var(--amber2));color:#180b00;box-shadow:0 0 7px rgba(255,160,40,.4)}
+input[type=range]{accent-color:var(--amber);min-height:44px;cursor:pointer}
+input[type=range]::-webkit-slider-runnable-track{height:6px;background:linear-gradient(180deg,#050505,#242529);border:1px solid #000;border-radius:3px}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:30px;height:30px;margin-top:-13px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#66676f,#232428 55%,#0a0a0b);border:2px solid #000;box-shadow:inset 0 1px 0 #888,0 2px 5px #000,0 0 0 1px #3c3d45}
+input[type=range]::-moz-range-thumb{width:28px;height:28px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#66676f,#232428 55%,#0a0a0b);border:2px solid #000}
+input[type=checkbox]{appearance:none;-webkit-appearance:none;width:46px;height:26px;flex:0 0 46px;border-radius:4px;background:linear-gradient(180deg,#060607,#1d1e22);border:1px solid #000;box-shadow:inset 0 2px 5px #000;position:relative;cursor:pointer;vertical-align:middle}
+input[type=checkbox]::after{content:"";position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:3px;background:linear-gradient(180deg,#55565e,#242529);box-shadow:inset 0 1px 0 #888;transition:left .08s}
+input[type=checkbox]:checked{background:linear-gradient(180deg,#4a2c05,#7a4306)}
+input[type=checkbox]:checked::after{left:22px;background:linear-gradient(180deg,#ffd27a,var(--amber2))}
+select,input[type=text],input[type=number],input[type=search],textarea{background:#0b0c0e!important;color:#f0f1f4!important;border:1px solid #000!important;box-shadow:inset 0 2px 6px #000,inset 0 0 0 1px #2e2f36;border-radius:4px;min-height:44px}
+output,.mono,.rec-status,.song-pos,.pn-pos{font-family:var(--mono)}
+/* ---------- pads / sequencer / keys ---------- */
+.pad{background:linear-gradient(160deg,#2a2b31,#121316);border:1px solid #000;border-radius:6px;box-shadow:inset 0 1px 0 #44454e,0 3px 5px #000;min-height:64px}
+.pad .pname{text-transform:uppercase;letter-spacing:.12em}
+.pad.hit{background:linear-gradient(160deg,#5a3a0d,#241503);box-shadow:0 0 12px rgba(255,160,40,.55)}
+.pad.sel{box-shadow:0 0 0 2px var(--cyan,#22d3ee),0 0 10px rgba(34,211,238,.4)}
+.step{background:#101114;border:1px solid #000;border-radius:3px;min-height:24px}
+.step.on{background:var(--amber);box-shadow:0 0 6px rgba(255,170,40,.45)}
+.chord{background:linear-gradient(180deg,#2c2d33,#151619);border-color:#000;text-transform:uppercase}
+.wkey{background:linear-gradient(#f2f0e9,#c9c6bb)} .bkey{background:linear-gradient(#2c2d33,#080809)}
+.kit-card,.kl-card{background:var(--metal2);border:1px solid #000;border-radius:6px;box-shadow:inset 0 1px 0 #3a3b43}
+.kit-card.on,.kl-card.previewing{border-color:var(--amber);box-shadow:0 0 8px rgba(255,170,40,.35)}
+/* ---------- Piano Roll ---------- */
+.pn-roll{background:#08090b;border-color:#000;box-shadow:inset 0 2px 10px #000}
+.pn-bar{background-image:var(--brushed),var(--metal2);border:1px solid #000;border-radius:6px;padding:.45rem .55rem;box-shadow:inset 0 1px 0 #3a3b43}
+#tab-piano{--pn:var(--amber)}
+/* ---------- Mixer = rack channel strips ---------- */
+.mixer{gap:8px;padding:.4rem .1rem .7rem}
+.strip{background-image:var(--brushed),linear-gradient(180deg,#232429,#111215);border:1px solid #000;border-radius:6px;box-shadow:inset 0 1px 0 #41424b,0 3px 6px rgba(0,0,0,.5);min-width:104px}
+.strip .sname{color:#f2f3f5;text-shadow:0 1px 0 #000}
+.strip .sname::after{content:"";display:block;width:7px;height:7px;border-radius:50%;background:var(--ok);box-shadow:0 0 6px var(--ok);margin:5px auto 0}
+.strip.master{border-color:#000;box-shadow:inset 0 0 0 1px rgba(255,176,46,.55),inset 0 1px 0 #41424b}
+.strip .meter{width:14px;background:#050607;border:1px solid #000;border-radius:2px;box-shadow:inset 0 0 0 1px #26272c;background-image:repeating-linear-gradient(0deg,transparent 0 11px,rgba(255,255,255,.14) 11px 12px)}
+.strip .meter i{background:linear-gradient(to top,#22c55e 0 62%,#facc15 78%,#ef4444 96%)}
+.strip .val{background:#160f04;color:#ffb02e;border:1px solid #000;padding:2px 5px;border-radius:2px}
+.mute,.strip .fxb{min-height:44px;background:linear-gradient(180deg,#303138,#17181b);border:1px solid #000;color:#ddd;text-transform:uppercase;letter-spacing:.12em}
+.mute.on{background:var(--amber);color:#160b00;box-shadow:0 0 8px rgba(255,170,40,.5)}
+/* ---------- Master rack ---------- */
+.mst-mods{display:grid;gap:8px}
+.mst-mods>*{background-image:var(--brushed),var(--metal2);border:1px solid #000;border-radius:6px;box-shadow:inset 0 1px 0 #3a3b43;padding:.55rem}
+.mst-lufs b,.mst-note b{color:var(--amber);font-family:var(--mono)}
+.mst-spec,.ref-spec-wrap,#ref-spec{background:#050607;border:1px solid #000}
+/* ---------- Lyrics / Video / Vault ---------- */
+#ly-text{font-family:var(--mono);background-image:var(--brushed),var(--metal2)}
+.frame{border-color:#000;box-shadow:0 4px 10px #000}
+.vitem audio{filter:invert(.9) hue-rotate(180deg)} /* dark native player to match rack */
+/* ---------- DAW (overrides daw.css with higher specificity) ---------- */
+body #tab-daw .daw-tlane,body #tab-daw .daw-heads{background:#15161a}
+body #tab-daw .daw-scroll{background:#0a0b0d}
+body #tab-daw .daw-ruler{background:#222329;color:#ffb02e;font-family:var(--mono)}
+body #tab-daw .daw-lane{background-color:#101114;border-bottom-color:#000}
+body #tab-daw .daw-clip{border:1px solid #000;border-radius:4px;box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 2px 4px #000;text-transform:uppercase;letter-spacing:.06em}
+body #tab-daw .daw-clip.sel{border-color:#ffb02e;box-shadow:0 0 9px rgba(255,170,40,.55)}
+body #tab-daw .daw-playhead{background:#ffb02e;box-shadow:0 0 7px rgba(255,170,40,.7)}
+body #tab-daw .daw-pnote.on{background:#ffb02e}
+body #tab-daw .daw-rec.on{box-shadow:0 0 10px rgba(255,40,80,.6)}
+/* ---------- Studio tab host ---------- */
+.studio-frame{border:1px solid #000;border-radius:6px;background:#0a0b0d;box-shadow:0 4px 10px #000}
+.foot{padding-bottom:2rem;color:#777d89;text-transform:uppercase;letter-spacing:.12em;font-size:.68rem}
+/* helper sheet stays readable over rack nav */
+.hp-sheet{z-index:2147483000!important}
+@media(max-width:560px){ .tab{padding:.5rem .55rem;font-size:.68rem} .audio-state{display:none} main{padding:.65rem} }
+@media(prefers-reduced-motion:reduce){ .panel.active{animation:none} }
+/* no horizontal overflow on narrow phones: grid children must be allowed to shrink */
+.beats-grid,.pads-wrap{min-width:0;max-width:100%}
+.seq-wrap{min-width:0;max-width:100%;overflow-x:auto}
+main,.panel{min-width:0}
+.pads{grid-template-columns:repeat(4,minmax(0,1fr))}
+.pad{min-width:0}
+.pad .pname{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}

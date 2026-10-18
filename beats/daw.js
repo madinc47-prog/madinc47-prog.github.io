@@ -266,7 +266,7 @@ function init(){
 }
 function refreshProjects(){ var sel=$("daw-project-list"); if(!sel)return; var all={}; try{all=JSON.parse(localStorage.getItem("ipb_daw_projects_v1")||"{}")}catch(e){} sel.innerHTML=Object.keys(all).map(function(k){return '<option value="'+esc(k)+'">'+esc(k)+"</option>"}).join("")||'<option value="">No saved projects</option>'; }
 function clampNum(v,a,b,d){ return isNaN(v)?d:Math.max(a,Math.min(b,v)); }
-window.IPBDaw={init:init,state:function(){return S},addTrack:addTrack,addClip:addClip,play:play,pause:pause,stop:stopAll,seek:seek,exportMix:exportMix,render:render,save:save,startRecording:startRecording,stopRecording:stopRecording,version:"20261018b"};
+window.IPBDaw={init:init,state:function(){return S},addTrack:addTrack,addClip:addClip,play:play,pause:pause,stop:stopAll,seek:seek,exportMix:exportMix,render:render,save:save,startRecording:startRecording,stopRecording:stopRecording,version:"20261018d"};
 document.addEventListener("ipb-tab",function(e){ if(e.detail==="daw"){ init._once?render():(init._once=true,init()); } });
 if(document.querySelector('.tab[data-tab="daw"].active')){ init._once=true; init(); }
 log("DAW module loaded (lazy)");

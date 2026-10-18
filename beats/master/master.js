@@ -147,7 +147,7 @@
   var MW = null, mwSeq = 0, mwWait = {};
   function post(msg) {
     if (MW === false) return Promise.reject(new Error("no worker"));
-    if (!MW) { try { MW = new Worker("master/master-worker.js?v=20261018b"); MW.onmessage = function (e) { var w = mwWait[e.data.id]; if (!w) return; delete mwWait[e.data.id]; if (e.data.ok) w.res(e.data); else w.rej(new Error(e.data.err)); };
+    if (!MW) { try { MW = new Worker("master/master-worker.js?v=20261018d"); MW.onmessage = function (e) { var w = mwWait[e.data.id]; if (!w) return; delete mwWait[e.data.id]; if (e.data.ok) w.res(e.data); else w.rej(new Error(e.data.err)); };
       MW.onerror = function () { MW = false; Object.keys(mwWait).forEach(function (k) { mwWait[k].rej(new Error("worker failed")); delete mwWait[k]; }); }; } catch (e) { MW = false; return Promise.reject(e); } }
     msg.id = ++mwSeq;
     return new Promise(function (res, rej) { mwWait[msg.id] = { res: res, rej: rej }; MW.postMessage(msg, [msg.L.buffer, msg.R.buffer]); });
@@ -326,7 +326,7 @@
       applyLive(); return L;
     };
     var go = function () { return chainLatency(c.sampleRate).then(function () {
-      if (c.audioWorklet && !L.noWorklet) return c.audioWorklet.addModule("master/master-dsp.js?v=20261018b").then(function () { return c.audioWorklet.addModule("master/master-worklet.js?v=20261018b"); }).then(function () {
+      if (c.audioWorklet && !L.noWorklet) return c.audioWorklet.addModule("master/master-dsp.js?v=20261018d").then(function () { return c.audioWorklet.addModule("master/master-worklet.js?v=20261018d"); }).then(function () {
         var w = new AudioWorkletNode(c, "ipb-tplimiter", { numberOfInputs: 1, numberOfOutputs: 1, outputChannelCount: [2] });
         w.port.onmessage = function (e) { L.limGr = e.data.gr; }; L.lim = w; L.limLat = Math.round(0.005 * c.sampleRate) + 8; return after(w);
       });

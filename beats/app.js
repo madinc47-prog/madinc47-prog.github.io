@@ -6192,7 +6192,7 @@
   }
   function klOpen(open, where) {
     var kb = $("kl-browser");
-    if (where && where !== klWhere) { $(where === "piano" ? "kl-host-piano" : "kl-host-beats").appendChild(kb); klWhere = where; if (open == null) open = true; }
+    if (where && where !== klWhere) { $(where === "piano" ? "kl-host-piano" : where === "loops" ? "kl-host-loops" : "kl-host-beats").appendChild(kb); klWhere = where; if (open == null) open = true; }
     kb.hidden = open == null ? !kb.hidden : !open;
     $("kl-open").setAttribute("aria-expanded", String(!kb.hidden && klWhere === "beats"));
     $("pn-loops").setAttribute("aria-expanded", String(!kb.hidden && klWhere === "piano"));
@@ -6357,7 +6357,7 @@
   }
   // tab names for ?tab= / #hash deep links. "video" is the visualizer/capture panel (it was labelled "Studio" before Oct 2026);
   // "studio" is the multitrack recorder (studio/ embedded). "visualizer" and "capture" are extra aliases for the video panel.
-  var TAB_ALIAS = { beats: "beats", piano: "piano", "piano-roll": "piano", pianoroll: "piano", studio: "studio", multitrack: "studio", lyrics: "lyrics", mixer: "mixer", video: "video", visualizer: "video", capture: "video", vault: "vault", master: "master", mastering: "master", daw: "daw", arrange: "daw" };
+  var TAB_ALIAS = { beats: "beats", piano: "piano", "piano-roll": "piano", pianoroll: "piano", studio: "studio", multitrack: "studio", lyrics: "lyrics", mixer: "mixer", video: "video", visualizer: "video", capture: "video", vault: "vault", master: "master", mastering: "master", daw: "daw", arrange: "daw", loops: "loops", "keys-loops": "loops", keysloops: "loops" };
   function studioWin() { var f = $("studio-frame"); try { return f && f.contentWindow && f.contentWindow.IPBStudio ? f.contentWindow : null; } catch (e) { return null; } }
   function studioEnsure() {
     var f = $("studio-frame");
@@ -6376,7 +6376,7 @@
     if (!document.querySelector('.tab[data-tab="' + name + '"]')) return;
     var prev = activeTab;
     activeTab = name;
-    if (prev !== name && klPrev) klStopPreview(); // a keys-loop preview never keeps playing on another tab
+    if (prev !== name && klPrev && name !== "loops") klStopPreview(); // a keys-loop preview never keeps playing on another tab (Loops page is its home)
     document.querySelectorAll(".tab[data-tab]").forEach(function (x) {
       var on = x.dataset.tab === name;
       x.classList.toggle("active", on);
@@ -6392,6 +6392,8 @@
     if (activeTab === "lyrics" && ly.preview) { ly.preview.tops = null; }
     if (activeTab === "mixer") updateLatencyLabel();
     if (activeTab === "piano") pianoShown();
+    if (name === "loops") klOpen(true, "loops");
+    try { localStorage.setItem("ipb_page_v1", name); var q = new URLSearchParams(location.search); q.set("tab", name); q.delete("page"); history.replaceState(null, "", location.pathname + "?" + q.toString() + location.hash); } catch (e) { /* private mode */ }
   }
   function bounceForStudio(bars) { // called by the embedded Studio: bounce the current beat → Vault id
     if (playing) stop();
@@ -6408,7 +6410,7 @@
     var stLink = document.querySelector(".studio-link");
     if (stLink) stLink.addEventListener("click", function (e) { if (e.ctrlKey || e.metaKey || e.shiftKey) return; e.preventDefault(); showTab("studio"); });
     var tabQ = null;
-    try { tabQ = (new URLSearchParams(location.search).get("tab") || location.hash.replace(/^#/, "") || "").toLowerCase(); } catch (e) { tabQ = null; }
+    try { var sp = new URLSearchParams(location.search); tabQ = (sp.get("tab") || sp.get("page") || location.hash.replace(/^#/, "") || localStorage.getItem("ipb_page_v1") || "").toLowerCase(); } catch (e) { tabQ = null; }
     if (tabQ && TAB_ALIAS[tabQ]) showTab(TAB_ALIAS[tabQ]);
     $("btn-play").addEventListener("click", togglePlay);
     $("btn-stop").addEventListener("click", function () {
