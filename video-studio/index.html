@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Video Studio — Green Screen, Lenses, Color & Film | IslePin</title>
+<meta name="description" content="Free browser video & movie editor: green screen, cinema lens emulations inspired by Netflix-level productions, color grading, LUTs and film emulation. Works offline.">
+<meta name="theme-color" content="#0b0f14"><link rel="icon" href="data:,"><link rel="stylesheet" href="styles.css?v=20261018a"></head>
+<body>
+<header><a class="back" href="../">← IslePin</a><div><h1>🎬 Video Studio</h1><p>Green screen · Cinema lenses · Color · Film — full suite, free, on this device</p></div><span id="ver" class="pill">v20261018a</span></header>
+<p class="notice">Lens looks are <b>inspired-by emulation, not official</b> — not endorsed by Netflix, ARRI, Cooke, Panavision, Zeiss, Leica, Canon or Angénieux. Netflix is the quality bar, not a lens maker. 2D emulation of lens character — not true optical depth or real bokeh. Preview is light on tablets; export may be slower than the clip.</p>
+<div id="tier" class="tier"></div>
+<main>
+<section class="viewer-card">
+ <div class="viewer-wrap"><canvas id="gl" width="640" height="360"></canvas><canvas id="overlay"></canvas></div>
+ <div class="transport">
+  <button id="playBtn">▶ Play</button><button id="pauseBtn">⏸ Pause</button><button id="stopBtn">⏹ Stop</button>
+  <label class="inline"><input type="checkbox" id="loopChk" data-set="loop"> Loop</label>
+  <label class="inline">Vol <input type="range" id="vol" min="0" max="1" step="0.01" value="0.8" data-set="volume"></label>
+  <label class="inline"><input type="checkbox" id="muteChk" data-set="mute"> Mute</label>
+  <span id="timeLabel">0.00 / 0.00s</span>
+ </div>
+ <input type="range" id="seek" min="0" max="1000" value="0" aria-label="Seek">
+ <div class="row wrap">
+   <label>View <select id="viewMode" data-set="viewMode"><option value="0">Final Composite</option><option value="1">Alpha Matte</option><option value="2">Spill Map</option><option value="3">Before / After (left raw)</option></select></label>
+   <button id="testBtn" type="button">Load test scene</button>
+   <button id="pickBtn" type="button">🎯 Pick screen colour</button>
+   <span id="pickInfo" class="small">Test scene loads first so you can try the key straight away.</span>
+ </div>
+ <div class="scopes"><div><h3>Histogram</h3><canvas id="hist" width="256" height="80"></canvas></div><div><h3>Waveform</h3><canvas id="wave" width="256" height="80"></canvas></div></div>
+</section>
+
+<section class="grid">
+<article class="card"><h2>1 · Media</h2>
+<label>Foreground (green screen video/image)<input type="file" id="fgFile" accept="video/*,image/*"></label>
+<label>Background plate (video/image)<input type="file" id="bgFile" accept="video/*,image/*"></label>
+<label>Extra music / audio<input type="file" id="auFile" accept="audio/*"></label>
+<div id="mediaBin" class="bin">No files yet — test scene is loaded.</div>
+<video id="fgVid" playsinline crossorigin="anonymous" hidden></video><video id="bgVid" playsinline crossorigin="anonymous" hidden></video><audio id="auEl" hidden></audio>
+<label>Foreground trim in (s)<input type="number" id="trimIn" min="0" step="0.1" value="0" data-set="trimIn"></label>
+<label>Foreground trim out (s, 0=end)<input type="number" id="trimOut" min="0" step="0.1" value="0" data-set="trimOut"></label>
+</article>
+
+<article class="card"><h2>2 · Green Screen ✦ main feature</h2>
+<div class="row"><button data-preset="green">Green preset</button><button data-preset="blue">Blue preset</button></div>
+<label>Screen colour <input type="color" id="keyColor" value="#00b140" data-set="keyColor"></label>
+<label>Tolerance <input type="range" id="tol" min="0" max="1" step="0.01" value="0.32" data-set="tol"><output></output></label>
+<label>Softness <input type="range" id="soft" min="0.01" max="0.6" step="0.01" value="0.18" data-set="soft"></label>
+<label>Hue tolerance <input type="range" id="hueTol" min="0" max="3" step="0.01" value="0.7" data-set="hueTol"></label>
+<label>Saturation min <input type="range" id="satMin" min="0" max="1" step="0.01" value="0.25" data-set="satMin"></label>
+<label>Clip black <input type="range" id="clipB" min="0" max="0.9" step="0.01" value="0.05" data-set="clipB"></label>
+<label>Clip white <input type="range" id="clipW" min="0.1" max="1" step="0.01" value="0.95" data-set="clipW"></label>
+<label>Choke (− erode / + grow) <input type="range" id="choke" min="-0.3" max="0.3" step="0.01" value="0" data-set="choke"></label>
+<label>Feather (px) <input type="range" id="feather" min="0" max="8" step="0.5" value="1.5" data-set="feather"></label>
+<label>Spill suppression <input type="range" id="spill" min="0" max="1" step="0.01" value="0.85" data-set="spill"></label>
+<label>Skin protect <input type="range" id="skin" min="0" max="1" step="0.01" value="0.6" data-set="skin"></label>
+<h3>Garbage matte (polygon)</h3>
+<p class="small">Turn on, then tap the picture to add points around the area to KEEP. 3+ points.</p>
+<label class="inline"><input type="checkbox" id="garbageOn" data-set="garbageOn"> Use garbage matte</label>
+<label class="inline"><input type="checkbox" id="garbageInv" data-set="garbageInv"> Invert</label>
+<div class="row"><button id="matteUndo">Undo point</button><button id="matteClear">Clear</button><span id="matteInfo">0 points</span></div>
+</article>
+
+<article class="card"><h2>3 · Cinema Lens Library</h2>
+<p class="small">Inspired-by emulation, not official. Changes distortion, vignette, colour character, halation, flare and squeeze for real in the picture.</p>
+<label>Lens family <select id="lens" data-set="lens"></select></label>
+<div id="lensCard" class="lens-card"></div>
+<label>Focal length <select id="focal" data-set="focal"><option>24</option><option selected>35</option><option>50</option><option>85</option></select> mm (crop / FOV)</label>
+<label>Anamorphic squeeze <select id="squeeze" data-set="squeeze"><option>1.0</option><option>1.33</option><option>1.5</option><option>1.8</option><option>2.0</option></select></label>
+<label>Distortion <input type="range" id="distort" min="-0.2" max="0.2" step="0.005" data-set="distort"></label>
+<label>Vignette <input type="range" id="vig" min="0" max="1" step="0.01" data-set="vig"></label>
+<label>Chromatic aberration <input type="range" id="ca" min="0" max="0.02" step="0.001" data-set="ca"></label>
+<label>Halation / flare <input type="range" id="hal" min="0" max="1" step="0.01" data-set="hal"></label>
+<label>Focus breathing (on focal change) <input type="range" id="breath" min="0" max="0.2" step="0.01" value="0.05" data-set="breath"></label>
+</article>
+
+<article class="card"><h2>4 · Color Suite</h2>
+<label>Input transform <select id="idt" data-set="idt"><option value="0">Rec.709 (normal video)</option><option value="1">ARRI LogC</option><option value="2">RED Log3G10</option><option value="3">Sony S-Log3</option><option value="4">Canon C-Log</option><option value="5">Panasonic V-Log</option></select></label>
+<label>Exposure <input type="range" id="exp" min="-3" max="3" step="0.05" value="0" data-set="exp"></label>
+<label>Contrast <input type="range" id="con" min="0.2" max="2" step="0.01" value="1" data-set="con"></label>
+<label>Pivot <input type="range" id="pivot" min="0" max="1" step="0.01" value="0.45" data-set="pivot"></label>
+<label>Saturation <input type="range" id="sat" min="0" max="2" step="0.01" value="1" data-set="sat"></label>
+<label>Temperature <input type="range" id="temp" min="-1" max="1" step="0.01" value="0" data-set="temp"></label>
+<label>Tint <input type="range" id="tint" min="-1" max="1" step="0.01" value="0" data-set="tint"></label>
+<fieldset><legend>Lift (shadows) R/G/B</legend><input type="range" class="lg" id="liftR" min="-0.3" max="0.3" step="0.01" value="0" data-set="liftR"><input type="range" class="lg" id="liftG" min="-0.3" max="0.3" step="0.01" value="0" data-set="liftG"><input type="range" class="lg" id="liftB" min="-0.3" max="0.3" step="0.01" value="0" data-set="liftB"></fieldset>
+<fieldset><legend>Gamma (mids) R/G/B</legend><input type="range" class="lg" id="gamR" min="-0.5" max="0.5" step="0.01" value="0" data-set="gamR"><input type="range" class="lg" id="gamG" min="-0.5" max="0.5" step="0.01" value="0" data-set="gamG"><input type="range" class="lg" id="gamB" min="-0.5" max="0.5" step="0.01" value="0" data-set="gamB"></fieldset>
+<fieldset><legend>Gain (highlights) R/G/B</legend><input type="range" class="lg" id="gainR" min="-0.5" max="0.5" step="0.01" value="0" data-set="gainR"><input type="range" class="lg" id="gainG" min="-0.5" max="0.5" step="0.01" value="0" data-set="gainG"><input type="range" class="lg" id="gainB" min="-0.5" max="0.5" step="0.01" value="0" data-set="gainB"></fieldset>
+<fieldset><legend>Offset R/G/B</legend><input type="range" class="lg" id="offR" min="-0.3" max="0.3" step="0.01" value="0" data-set="offR"><input type="range" class="lg" id="offG" min="-0.3" max="0.3" step="0.01" value="0" data-set="offG"><input type="range" class="lg" id="offB" min="-0.3" max="0.3" step="0.01" value="0" data-set="offB"></fieldset>
+<label>Look <select id="look" data-set="look"><option value="0">None</option><option value="1">Teal & Orange</option><option value="2">Bleach Bypass</option><option value="3">Cross Process</option><option value="4">Day-for-Night</option><option value="5">Mono — film stock</option><option value="6">Mono — red filter</option><option value="7">Mono — sepia</option></select></label>
+<label>Look amount <input type="range" id="lookAmt" min="0" max="1" step="0.01" value="0.7" data-set="lookAmt"></label>
+<label>.cube LUT file <input type="file" id="lutFile" accept=".cube,.CUBE,text/plain"></label>
+<label>LUT intensity <input type="range" id="lutAmt" min="0" max="1" step="0.01" value="0" data-set="lutAmt"></label><span id="lutInfo" class="small">No LUT. Intensity 0 = off.</span>
+</article>
+
+<article class="card"><h2>5 · Film Emulation</h2>
+<label>Stock <select id="stock" data-set="stock"><option value="0">Clean (no grain)</option><option value="1">16mm</option><option value="2" selected>35mm 50D-style (fine, daylight)</option><option value="3">35mm 500T-style (coarse, tungsten)</option></select></label>
+<label>Grain amount <input type="range" id="grain" min="0" max="1" step="0.01" value="0.25" data-set="grain"></label>
+<label>Grain size <input type="range" id="grainSize" min="1" max="4" step="0.5" value="1.5" data-set="grainSize"></label>
+<label>Bloom <input type="range" id="bloom" min="0" max="1" step="0.01" value="0.2" data-set="bloom"></label>
+<label class="inline"><input type="checkbox" id="weave" data-set="weave"> Gate weave (tiny frame wobble)</label>
+</article>
+
+<article class="card"><h2>6 · Project & Export</h2>
+<div class="row wrap"><button id="saveBtn">Save project (this device)</button><button id="loadBtn">Load saved</button><button id="expProjBtn">Export project file</button><label class="filebtn">Import project<input type="file" id="impProj" accept=".json,application/json" hidden></label></div>
+<p class="small">Project file saves all settings + matte points. It does not pack your video files — re-pick them after import.</p>
+<label>Export size <select id="expRes" data-set="expRes"><option value="720" selected>720p (best for tablet)</option><option value="1080">1080p</option><option value="360">360p (fast test)</option></select></label>
+<button id="exportBtn" class="primary">⬇ Export video (WebM / MP4 if supported)</button>
+<progress id="expProg" max="100" value="0"></progress><span id="expInfo" class="small">Export records in real time — a 10s clip takes about 10s. Keep this tab open.</span>
+<div id="dl"></div>
+<h3>Honest limits</h3><ul class="small"><li>Tablet preview is reduced size for smoothness.</li><li>Export is real-time recording, not fast rendering.</li><li>Some phones only give WebM, not MP4.</li><li>Lens & film looks are 2D emulations.</li><li>Very large 4K files may be slow or run out of memory on an old tablet — use 720p/1080p clips.</li></ul>
+</article>
+</section>
+<div id="debug" class="debug" hidden></div>
+</main>
+<footer>Video Studio v20261018a · Built for Emmanuel Griffith · Free, works offline after first load · Spec: VIDEO_STUDIO_SPEC</footer>
+<script src="app.js?v=20261018a"></script></body></html>
