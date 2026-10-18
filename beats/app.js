@@ -621,7 +621,9 @@
       "Imitating the tape replacement.",
       "The engineers at Ampex have already freed the song from the single.",
       "They had not yet met the machine that would make every track free, endless, and.",
-      "A town so valuable, the U.S. Census cannot even measure it."
+      "A town so valuable, the U.S. Census cannot even measure it.",
+      "Not because that's the price, but because that's where the government's instrument stops counting.",
+      "Nearly half the houses sit empty."
     ].join("\n")
   }];
   function patternFrom(src) {
