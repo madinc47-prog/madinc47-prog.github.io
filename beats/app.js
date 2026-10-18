@@ -620,7 +620,8 @@
       "Designed to seal up every channel of.",
       "Imitating the tape replacement.",
       "The engineers at Ampex have already freed the song from the single.",
-      "They had not yet met the machine that would make every track free, endless, and."
+      "They had not yet met the machine that would make every track free, endless, and.",
+      "A town so valuable, the U.S. Census cannot even measure it."
     ].join("\n")
   }];
   function patternFrom(src) {
