@@ -14,8 +14,8 @@
   <meta name="theme-color" content="#0b0d12">
   <meta name="color-scheme" content="dark"><!-- the app is already dark: stops Samsung Internet / Chrome "force dark" from re-colouring it -->
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="styles.css?v=20261018d">
-  <link rel="stylesheet" href="rack.css?v=20261018d">
+  <link rel="stylesheet" href="styles.css?v=20261018e">
+  <link rel="stylesheet" href="rack.css?v=20261018e">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Island Pin Beats — Free Beat Maker">
   <meta name="twitter:description" content="Make boom-bap, trap, drill, afrobeats, amapiano, house and bouyon beats in your browser. Free, from Dominica.">
@@ -758,29 +758,29 @@
 
   <footer class="foot">Free · runs in your browser · synthesized drums + CC0 one-shots (<a href="samples/CREDITS.md">credits</a>), no paid APIs · <a href="studio/">Studio</a> · <a href="../dj/">DJ booth</a> · <a href="check/">Sound check</a> · <a href="../">IslePin</a></footer>
 
-  <script src="fresh.js?v=20261018d"></script>
-  <script src="storage.js?v=20261018d"></script>
-  <script src="helper.js?v=20261018d"></script>
+  <script src="fresh.js?v=20261018e"></script>
+  <script src="storage.js?v=20261018e"></script>
+  <script src="helper.js?v=20261018e"></script>
   <script>setTimeout(function () { if (window.IPBStorage) IPBStorage.line().then(function (t) { var a = document.getElementById("storage-line"); if (a && t) { a.textContent = t; a.hidden = false; } }); }, 2500);</script>
-  <script src="humanize.js?v=20261018d"></script>
-  <script src="layers.js?v=20261018d"></script>
-  <script src="library.js?v=20261018d"></script>
-  <script src="drums.js?v=20261018d"></script>
-  <script src="keys-instruments.js?v=20261018d"></script>
-  <script src="pianoroll-data.js?v=20261018d"></script>
-  <script src="keys-loops.js?v=20261018d"></script>
-  <script src="pianoroll.js?v=20261018d"></script>
-  <script src="fx-chain.js?v=20261018d"></script>
-  <script src="match.js?v=20261018d"></script>
-  <script src="vocal-clean-client.js?v=20261018d"></script>
+  <script src="humanize.js?v=20261018e"></script>
+  <script src="layers.js?v=20261018e"></script>
+  <script src="library.js?v=20261018e"></script>
+  <script src="drums.js?v=20261018e"></script>
+  <script src="keys-instruments.js?v=20261018e"></script>
+  <script src="pianoroll-data.js?v=20261018e"></script>
+  <script src="keys-loops.js?v=20261018e"></script>
+  <script src="pianoroll.js?v=20261018e"></script>
+  <script src="fx-chain.js?v=20261018e"></script>
+  <script src="match.js?v=20261018e"></script>
+  <script src="vocal-clean-client.js?v=20261018e"></script>
 <script src="greenscreen.js"></script>
 <script src="voiceover.js"></script>
 <script src="midi.js"></script>
-  <script src="app.js?v=20261018d"></script>
-  <script src="master/master-dsp.js?v=20261018d"></script>
-  <script src="master/master.js?v=20261018d"></script>
+  <script src="app.js?v=20261018e"></script>
+  <script src="master/master-dsp.js?v=20261018e"></script>
+  <script src="master/master.js?v=20261018e"></script>
   <script>/* DAW lazy loader: daw.js/daw.css load only on first DAW tab open (keeps Tab fast) */
-(function(){var done=false;function load(){if(done)return;done=true;var l=document.createElement("link");l.rel="stylesheet";l.href="daw.css?v=20261018d";document.head.appendChild(l);var s=document.createElement("script");s.src="daw.js?v=20261018d";document.body.appendChild(s);}document.addEventListener("click",function(e){var b=e.target.closest&&e.target.closest('button[data-tab="daw"]');if(b)load();});try{if(new URLSearchParams(location.search).get("tab")==="daw")load();}catch(e){}})();</script>
+(function(){var done=false;function load(){if(done)return;done=true;var l=document.createElement("link");l.rel="stylesheet";l.href="daw.css?v=20261018e";document.head.appendChild(l);var s=document.createElement("script");s.src="daw.js?v=20261018e";document.body.appendChild(s);}document.addEventListener("click",function(e){var b=e.target.closest&&e.target.closest('button[data-tab="daw"]');if(b)load();});try{if(new URLSearchParams(location.search).get("tab")==="daw")load();}catch(e){}})();</script>
   <script type="module" src="../shared/ecosystem-nav.js"></script><!-- Beats | DJ Booth | Player switcher (shared/README.md) -->
 <script>/* offline app (sw.js): after the first visit Beat works with no connection. ?nosw=1 skips it. */
 if ("serviceWorker" in navigator && !/[?&]nosw/.test(location.search) && !(window.parent !== window && /\/beats\/studio\//.test(location.pathname))) addEventListener("load", function () { setTimeout(function () { navigator.serviceWorker.register("sw.js", { scope: "./" }).catch(function () {}); }, 1500); });</script>
