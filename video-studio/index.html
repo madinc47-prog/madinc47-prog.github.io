@@ -2,14 +2,40 @@
 <html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Video Studio — Green Screen, Lenses, Color & Film | IslePin</title>
 <meta name="description" content="Free browser video & movie editor: green screen, cinema lens emulations inspired by Netflix-level productions, color grading, LUTs and film emulation. Works offline.">
-<meta name="theme-color" content="#0b0f14"><link rel="icon" href="data:,"><link rel="stylesheet" href="styles.css?v=20261018a"></head>
+<meta name="theme-color" content="#0b0f14"><link rel="icon" href="data:,"><link rel="stylesheet" href="styles.css?v=20261018c"></head>
 <body>
-<header><a class="back" href="../">← IslePin</a><div><h1>🎬 Video Studio</h1><p>Green screen · Cinema lenses · Color · Film — full suite, free, on this device</p></div><span id="ver" class="pill">v20261018a</span></header>
+<header><a class="back" href="../">← IslePin</a><div><h1>🎬 Video Studio</h1><p>Green screen · Cinema lenses · Color · Film — full suite, free, on this device</p></div><span id="ver" class="pill">v20261018c</span></header>
 <p class="notice">Lens looks are <b>inspired-by emulation, not official</b> — not endorsed by Netflix, ARRI, Cooke, Panavision, Zeiss, Leica, Canon or Angénieux. Netflix is the quality bar, not a lens maker. 2D emulation of lens character — not true optical depth or real bokeh. Preview is light on tablets; export may be slower than the clip.</p>
 <div id="tier" class="tier"></div>
+
+<div id="bootMsg" style="margin:10px 16px;padding:12px 14px;border-radius:10px;background:#17202c;color:#e8eef4;font-family:system-ui,sans-serif;font-size:14px;line-height:1.5;border:1px solid #38506b">🎬 Video Studio is loading…<br><span style="color:#9fb0c0;font-size:12.5px">If this message stays here, the app did not start on this device — a help button will appear below.</span></div>
+<script>
+// Inline boot guard: no dependencies, runs even if app.js / WebGL fails, so the page is never silently blank.
+window.__vsReady=false; window.__vsBootTimer=null;
+window.__vsShowBootError=function(msg){
+  var b=document.getElementById('bootMsg'); if(!b)return;
+  b.style.background='#3d1515'; b.style.color='#ffc4c4'; b.style.borderColor='#c0392b';
+  b.innerHTML='⚠ Video Studio did not start properly on this device.<br>'+msg+'<br><br>'
+    +'<button type="button" onclick="location.reload()" style="min-height:44px;padding:10px 16px;margin-right:8px;border-radius:9px;border:1px solid #38506b;background:#1c2a3a;color:#fff;font-size:14px">↻ Tap to retry</button>'
+    +'<button type="button" onclick="window.__vsClearOld()" style="min-height:44px;padding:10px 16px;border-radius:9px;border:1px solid #c0392b;background:#5a1a1a;color:#fff;font-size:14px">Clear old version &amp; reload</button>'
+    +'<br><span style="font-size:12px;color:#ffb3b3">“Clear old version” removes the saved copy of this app on this device (not your videos), then loads it fresh.</span>';
+};
+window.__vsClearOld=function(){
+  var done=function(){ location.href=location.pathname+'?fresh='+Date.now(); };
+  var jobs=[];
+  try{ if('serviceWorker' in navigator) jobs.push(navigator.serviceWorker.getRegistrations().then(function(rs){ return Promise.all(rs.map(function(r){ return r.unregister(); })); })); }catch(e){}
+  try{ if(window.caches&&caches.keys) jobs.push(caches.keys().then(function(ks){ return Promise.all(ks.map(function(k){ return caches.delete(k); })); })); }catch(e){}
+  if(!jobs.length){ done(); return; }
+  Promise.all(jobs).then(done).catch(done); setTimeout(done,2500);
+};
+window.addEventListener('error',function(e){ if(!window.__vsReady) window.__vsShowBootError('Problem: '+((e&&e.message)||'a script failed to load')+'.'); },true);
+window.__vsBootTimer=setTimeout(function(){ if(!window.__vsReady) window.__vsShowBootError('It is taking too long to start — the picture or buttons may not work.'); },7000);
+</script>
 <main>
 <section class="viewer-card">
  <div class="viewer-wrap"><canvas id="gl" width="640" height="360"></canvas><canvas id="overlay"></canvas></div>
+ <div id="status" class="status" role="status" aria-live="polite">Starting… checking your device…</div>
+ <div id="errOverlay" class="err-overlay" hidden></div>
  <div class="transport">
   <button id="playBtn">▶ Play</button><button id="pauseBtn">⏸ Pause</button><button id="stopBtn">⏹ Stop</button>
   <label class="inline"><input type="checkbox" id="loopChk" data-set="loop"> Loop</label>
@@ -109,5 +135,5 @@
 </section>
 <div id="debug" class="debug" hidden></div>
 </main>
-<footer>Video Studio v20261018a · Built for Emmanuel Griffith · Free, works offline after first load · Spec: VIDEO_STUDIO_SPEC</footer>
-<script src="app.js?v=20261018a"></script></body></html>
+<footer>Video Studio v20261018c · Built for Emmanuel Griffith · Free, works offline after first load · Spec: VIDEO_STUDIO_SPEC</footer>
+<script src="app.js?v=20261018c"></script></body></html>

@@ -1,8 +1,14 @@
 'use strict';
-const VERSION='20261018a';
+const VERSION='20261018c';
 const $=id=>document.getElementById(id);
 const debugOn=new URLSearchParams(location.search).has('tapdebug');
 function log(...a){console.log('[VideoStudio]',...a); if(debugOn){$('debug').hidden=false; $('debug').textContent+=a.join(' ')+'\n';}}
+function setStatus(msg,kind){const s=$('status'); if(!s)return; s.textContent=msg; s.className='status'+(kind?' '+kind:'');}
+function showError(msg){setStatus('⚠ '+msg,'bad'); const o=$('errOverlay'); if(o&&(debugOn||true)){o.hidden=false; o.textContent=(o.textContent?o.textContent+'\n':'')+msg;} console.error('[VideoStudio]',msg);}
+window.addEventListener('error',e=>{showError('Problem: '+(e.message||'unknown error')+' — try closing and reopening Video Studio.');});
+window.addEventListener('unhandledrejection',e=>{showError('Problem: '+((e.reason&&e.reason.message)||e.reason||'something failed')+' — try closing and reopening Video Studio.');});
+const IS_MOBILE=/Android|iPhone|iPad/i.test(navigator.userAgent)||Math.min(screen.width||9999,screen.height||9999)<820;
+const LIGHT=IS_MOBILE||(navigator.hardwareConcurrency||8)<=4;
 const LENSES=[
 {id:'clean',name:'Clean Digital (no lens)',group:'Clean',desc:'No lens character. Sharp, neutral, modern digital look.',era:'Modern',use:'Clean corporate, product, news.',dist:0,vig:0.05,ca:0,hal:0,halCol:[1,1,1],con:1,sat:1,flare:0,squeeze:'1.0'},
 {id:'arri-signature',name:'ARRI Signature Prime',group:'ARRI',desc:'Warm, gentle skin, soft highlight roll-off, very clean wide open. Detachable rear look elements in real life — here: warmth + soft glow.',era:'2018–now',use:'Netflix / prestige drama, features.',dist:-0.01,vig:0.18,ca:0.002,hal:0.35,halCol:[1,0.75,0.55],con:0.97,sat:1.02,flare:0.1},
@@ -17,11 +23,17 @@ const LENSES=[
 {id:'angenieux-optimo',name:'Angénieux Optimo',group:'Angénieux',desc:'French zoom elegance: warm, smooth contrast, gentle flare, flattering faces.',era:'2000s–now',use:'Features & TV zooms, elegant drama.',dist:0.015,vig:0.3,ca:0.003,hal:0.38,halCol:[1,0.75,0.5],con:0.95,sat:1.04,flare:0.2},
 ];
 const state={matte:[],pick:false,playing:false,breathZoom:1,lutTex:null,lutSize:0,fgKind:'test',bgKind:'test'};
-let gl,prog,U={},fgTex,bgTex,matteTex,lutTexObj;
+let gl,prog,U={},fgTex,bgTex,matteTex,lutTexObj,fallback2D=false,fgDirty=true,bgDirty=true,lastFgTime=-1,lastBgTime=-1,lastTestDx=999,playClock=0,lastFrameTs=0,fpsFrames=0,fpsTs=0,fpsNow=0,degraded=0,selfTested=false;
+const proxyFG=document.createElement('canvas'), proxyBG=document.createElement('canvas');
+function proxied(src,isFG){ // downscale big video/image frames before GPU upload (huge win on old tablets)
+ const w=src.videoWidth||src.naturalWidth||src.width, h=src.videoHeight||src.naturalHeight||src.height; if(!w||!h)return src;
+ const maxW=LIGHT?640:960; if(w<=maxW && src.tagName==='CANVAS')return src;
+ const c=isFG?proxyFG:proxyBG; const s=Math.min(1,maxW/w); c.width=Math.round(w*s); c.height=Math.round(h*s);
+ c.getContext('2d').drawImage(src,0,0,c.width,c.height); return c;}
 const canvas=$('gl'); const overlay=$('overlay');
 const fgVid=$('fgVid'), bgVid=$('bgVid'), auEl=$('auEl');
 // test canvases
-function makeTestFG(){const c=document.createElement('canvas');c.width=640;c.height=360;const x=c.getContext('2d');x.fillStyle='#00b140';x.fillRect(0,0,640,360);x.fillStyle='#ff7a1a';x.beginPath();x.arc(320,130,52,0,7);x.fill();x.fillStyle='#173a7a';x.fillRect(270,185,100,110);x.fillStyle='#ffd9b0';x.fillRect(295,175,50,20);x.fillStyle='#111';x.fillRect(285,118,70,14);return c;}
+function makeTestFG(dx){dx=dx||0;const c=document.createElement('canvas');c.width=640;c.height=360;const x=c.getContext('2d');x.fillStyle='#00b140';x.fillRect(0,0,640,360);x.fillStyle='#ff7a1a';x.beginPath();x.arc(320+dx,130,52,0,7);x.fill();x.fillStyle='#173a7a';x.fillRect(270+dx,185,100,110);x.fillStyle='#ffd9b0';x.fillRect(295+dx,175,50,20);x.fillStyle='#111';x.fillRect(285+dx,118,70,14);return c;}
 function makeTestBG(){const c=document.createElement('canvas');c.width=640;c.height=360;const x=c.getContext('2d');const g=x.createLinearGradient(0,0,0,360);g.addColorStop(0,'#2b6cb0');g.addColorStop(.6,'#f6ad55');g.addColorStop(1,'#276749');x.fillStyle=g;x.fillRect(0,0,640,360);x.fillStyle='#fff3b0';x.beginPath();x.arc(520,70,34,0,7);x.fill();x.fillStyle='#234e2d';x.fillRect(0,300,640,60);x.fillStyle='#1a365d';for(let i=0;i<6;i++)x.fillRect(i*110+10,240-(i%3)*20,60,120);return c;}
 let fgCanvas=makeTestFG(), bgCanvas=makeTestBG(), fgImage=null, bgImage=null;
 const VERT=`#version 300 es
@@ -29,7 +41,7 @@ out vec2 vUv;void main(){vec2 p=vec2(float((gl_VertexID<<1)&2),float(gl_VertexID
 const FRAG=`#version 300 es
 precision highp float;precision highp int;precision highp sampler3D;in vec2 vUv;out vec4 O;
 uniform sampler2D uFG,uBG,uMatte;uniform sampler3D uLUT;
-uniform int uHasFG,uHasBG,uView,uIDT,uLook,uUseLUT,uGarbage,uInvert;
+uniform int uHasFG,uHasBG,uView,uIDT,uLook,uUseLUT,uGarbage,uInvert,uLight;
 uniform vec3 uKey;uniform float uTol,uSoft,uHueTol,uSatMin,uClipB,uClipW,uChoke,uFeather,uSpill,uSkin;
 uniform float uTime,uExp,uCon,uPivot,uSat,uTemp,uTint,uLookAmt,uLUTAmt;
 uniform vec3 uLift,uGam,uGain,uOff;
@@ -43,7 +55,7 @@ float screenAmt(vec3 px){vec3 p=ycb(px),k=ycb(uKey);float kl=max(length(k.yz),1e
  float h=(1.-smoothstep(uHueTol,uHueTol+.3,ang))*smoothstep(uSatMin,uSatMin+max(uSoft,1e-4),pl/kl);
  return clamp(max(d,h),0.,1.);}
 float alphaAt(vec2 uv){if(uHasFG==0)return 0.;vec3 c=texture(uFG,uv).rgb;float a=1.-screenAmt(c);
- if(uFeather>0.){vec2 px=uFeather/uRes;float s=a;vec2 o[4];o[0]=vec2(px.x,0.);o[1]=vec2(-px.x,0.);o[2]=vec2(0.,px.y);o[3]=vec2(0.,-px.y);for(int i=0;i<4;i++)s+=1.-screenAmt(texture(uFG,uv+o[i]).rgb);a=s/5.;}
+ if(uFeather>0. && uLight==0){vec2 px=uFeather/uRes;float s=a;vec2 o[4];o[0]=vec2(px.x,0.);o[1]=vec2(-px.x,0.);o[2]=vec2(0.,px.y);o[3]=vec2(0.,-px.y);for(int i=0;i<4;i++)s+=1.-screenAmt(texture(uFG,uv+o[i]).rgb);a=s/5.;}
  a=clamp((a-uClipB)/max(uClipW-uClipB,1e-4),0.,1.);a=clamp(a+uChoke,0.,1.);
  if(uGarbage==1){float m=texture(uMatte,uv).r; if(uInvert==1)m=1.-m; a*=m;}
  return a;}
@@ -69,8 +81,9 @@ vec3 applyLook(vec3 c){ if(uLook==0)return c; float y=dot(c,L); vec3 o=c;
 vec3 compAt(vec2 uv,out float aOut,out float spillOut){
  // chromatic aberration per layer
  vec2 dir=uv-.5; float r2=dot(dir,dir);
- vec3 bg=vec3(.02,.03,.06); if(uHasBG==1){bg=vec3(texture(uBG,uv+dir*uCA).r,texture(uBG,uv).g,texture(uBG,uv-dir*uCA).b);}
- vec3 fg=vec3(0.); if(uHasFG==1){fg=vec3(texture(uFG,uv+dir*uCA).r,texture(uFG,uv).g,texture(uFG,uv-dir*uCA).b);}
+ vec3 bg=vec3(.02,.03,.06); vec3 fg=vec3(0.);
+ if(uLight==1){ if(uHasBG==1)bg=texture(uBG,uv).rgb; if(uHasFG==1)fg=texture(uFG,uv).rgb; }
+ else { if(uHasBG==1){bg=vec3(texture(uBG,uv+dir*uCA).r,texture(uBG,uv).g,texture(uBG,uv-dir*uCA).b);} if(uHasFG==1){fg=vec3(texture(uFG,uv+dir*uCA).r,texture(uFG,uv).g,texture(uFG,uv-dir*uCA).b);} }
  float a=alphaAt(uv); aOut=a;
  // despill (green/blue by key)
  vec3 dfg=fg; float rem=0.; bool green=uKey.g>=uKey.b;
@@ -108,9 +121,9 @@ void main(){vec2 uv=vUv;
  O=vec4(clamp(col,0.,1.),1.);}
 `;
 function compile(type,src){const s=gl.createShader(type);gl.shaderSource(s,src);gl.compileShader(s);if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))throw new Error(gl.getShaderInfoLog(s));return s;}
-function initGL(){gl=canvas.getContext('webgl2',{preserveDrawingBuffer:true}); if(!gl){$('tier').textContent='⚠ WebGL2 not available on this browser — green screen preview cannot run. Try Chrome updated.'; return false;}
+function initGL(){gl=canvas.getContext('webgl2',{preserveDrawingBuffer:true}); if(!gl){$('tier').textContent='⚠ Simple mode (no WebGL2): basic green screen is running. For the full lens/colour suite, update Chrome.'; return false;}
  prog=gl.createProgram();gl.attachShader(prog,compile(gl.VERTEX_SHADER,VERT));gl.attachShader(prog,compile(gl.FRAGMENT_SHADER,FRAG));gl.linkProgram(prog);gl.useProgram(prog);
- for(const n of ['uFG','uBG','uMatte','uLUT','uHasFG','uHasBG','uView','uIDT','uLook','uUseLUT','uGarbage','uInvert','uKey','uTol','uSoft','uHueTol','uSatMin','uClipB','uClipW','uChoke','uFeather','uSpill','uSkin','uTime','uExp','uCon','uPivot','uSat','uTemp','uTint','uLookAmt','uLUTAmt','uLift','uGam','uGain','uOff','uDist','uVig','uCA','uHal','uFlare','uBloom','uGrain','uGrainSize','uZoom','uSqueeze','uHalCol','uRes'])U[n]=gl.getUniformLocation(prog,n);
+ for(const n of ['uFG','uBG','uMatte','uLUT','uHasFG','uHasBG','uView','uIDT','uLook','uUseLUT','uGarbage','uInvert','uKey','uTol','uSoft','uHueTol','uSatMin','uClipB','uClipW','uChoke','uFeather','uSpill','uSkin','uTime','uExp','uCon','uPivot','uSat','uTemp','uTint','uLookAmt','uLUTAmt','uLift','uGam','uGain','uOff','uDist','uVig','uCA','uHal','uFlare','uBloom','uGrain','uGrainSize','uZoom','uSqueeze','uHalCol','uRes','uLight'])U[n]=gl.getUniformLocation(prog,n);
  const mk=()=>{const t=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,t);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);return t;};
  fgTex=mk();bgTex=mk();matteTex=mk(); uploadMatte(); return true;}
 function uploadTex(tex,src,unit){gl.activeTexture(gl.TEXTURE0+unit);gl.bindTexture(gl.TEXTURE_2D,tex);gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,true);try{gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,src);}catch(e){}}
@@ -123,9 +136,17 @@ let startT=performance.now();
 function render(){ if(!gl)return; const now=(performance.now()-startT)/1000;
  // sources
  let fgSrc=null,bgSrc=null;
- if(state.fgKind==='video'&&fgVid.readyState>=2)fgSrc=fgVid; else if(state.fgKind==='image'&&fgImage)fgSrc=fgImage; else if(state.fgKind==='test')fgSrc=fgCanvas;
+ if(state.fgKind==='video'&&fgVid.readyState>=2)fgSrc=fgVid; else if(state.fgKind==='image'&&fgImage)fgSrc=fgImage; else if(state.fgKind==='test'){
+   const dx=Math.round(Math.sin(now*1.4)*26); if(dx!==lastTestDx){lastTestDx=dx; fgCanvas=makeTestFG(dx); fgDirty=true;} fgSrc=fgCanvas;}
  if(state.bgKind==='video'&&bgVid.readyState>=2)bgSrc=bgVid; else if(state.bgKind==='image'&&bgImage)bgSrc=bgImage; else if(state.bgKind==='test')bgSrc=bgCanvas;
- if(fgSrc)uploadTex(fgTex,fgSrc,0); if(bgSrc)uploadTex(bgTex,bgSrc,1);
+ if(fgSrc){const ct=state.fgKind==='video'?fgVid.currentTime:-1; if(fgDirty||ct!==lastFgTime){uploadTex(fgTex,proxied(fgSrc,true),0); lastFgTime=ct; fgDirty=false;}}
+ if(bgSrc){const ct=state.bgKind==='video'?bgVid.currentTime:-1; if(bgDirty||ct!==lastBgTime){uploadTex(bgTex,proxied(bgSrc,false),1); lastBgTime=ct; bgDirty=false;}}
+ // fps meter + auto step-down on slow devices
+ fpsFrames++; if(now-(fpsTs||now)>2||!fpsTs){} if(lastFrameTs){} 
+ {const tnow=performance.now(); if(!fpsTs)fpsTs=tnow; if(tnow-fpsTs>=2000){fpsNow=Math.round(fpsFrames/((tnow-fpsTs)/1000)); fpsFrames=0; fpsTs=tnow;
+   if(fpsNow>0&&fpsNow<18&&canvas.width>320&&degraded<3){degraded++; const nw=canvas.width>480?480:320; canvas.width=nw; canvas.height=Math.round(nw*9/16); fgDirty=bgDirty=true; setStatus('🐢 Preview was slow ('+fpsNow+' fps), so I lowered the preview size to keep it smooth. Your export size is not changed.','warn'); log('degrade to',nw,'fps',fpsNow);}
+   if(!selfTested){selfTested=true; selfTest();}
+ }}
  gl.activeTexture(gl.TEXTURE0+2);gl.bindTexture(gl.TEXTURE_2D,matteTex);
  if(state.lutTex){gl.activeTexture(gl.TEXTURE0+3);gl.bindTexture(gl.TEXTURE_3D,state.lutTex);}
  gl.viewport(0,0,canvas.width,canvas.height);
@@ -133,7 +154,7 @@ function render(){ if(!gl)return; const now=(performance.now()-startT)/1000;
  const focal=parseFloat($('focal').value); let zoom=(focal/24)*state.breathZoom;
  // weave: time-varying zoom handled via grain? use zoom wobble approximated by breathZoom oscillation if weave on
  if($('weave').checked) zoom*=1+Math.sin(now*7)*0.002;
- gl.uniform1i(U.uFG,0);gl.uniform1i(U.uBG,1);gl.uniform1i(U.uMatte,2);gl.uniform1i(U.uLUT,3);
+ gl.uniform1i(U.uLight,LIGHT?1:0);gl.uniform1i(U.uFG,0);gl.uniform1i(U.uBG,1);gl.uniform1i(U.uMatte,2);gl.uniform1i(U.uLUT,3);
  gl.uniform1i(U.uHasFG,fgSrc?1:0);gl.uniform1i(U.uHasBG,bgSrc?1:0);
  gl.uniform1i(U.uView,parseInt($('viewMode').value));gl.uniform1i(U.uIDT,parseInt($('idt').value));gl.uniform1i(U.uLook,parseInt($('look').value));
  gl.uniform1i(U.uUseLUT,state.lutTex?1:0);gl.uniform1i(U.uGarbage,$('garbageOn').checked?1:0);gl.uniform1i(U.uInvert,$('garbageInv').checked?1:0);
@@ -150,8 +171,23 @@ function render(){ if(!gl)return; const now=(performance.now()-startT)/1000;
  gl.drawArrays(gl.TRIANGLES,0,3);
  updateTransport();
 }
+function selfTest(){ if(fallback2D){setStatus('⚠ WebGL2 is not available on this browser, so Video Studio is in simple mode: basic green-screen only. Try updating Chrome. Pick your foreground video below to start.','warn'); return;}
+ try{const c=getPixelSafe(320,130), k=getPixelSafe(16,16); const black=(c[0]+c[1]+c[2]<12)&&(k[0]+k[1]+k[2]<12);
+  if(black){setStatus('⚠ The preview picture is black on this device. Close other apps, then close and reopen Video Studio. If it stays black, tell me — do not keep tapping.','bad');}
+  else setStatus('✅ Preview is working'+(LIGHT?' (light mode for your tablet/phone)':'')+'. TEST SCENE is showing — a moving cartoon on green. To use your own clip: tap “Foreground (green screen video/image)” below, pick your video, then tap ▶ Play.');
+ }catch(e){setStatus('✅ Preview started. TEST SCENE is showing. Pick your foreground video below, then tap ▶ Play.');}}
+function getPixelSafe(x,y){const p=new Uint8Array(4); gl.readPixels(Math.min(x,canvas.width-1),Math.max(0,canvas.height-Math.min(y,canvas.height-1)),1,1,gl.RGBA,gl.UNSIGNED_BYTE,p); return [...p];}
+function render2D(){ const ctx=canvas.getContext('2d'); if(!ctx)return; const W=canvas.width,H=canvas.height;
+ const bgSrc=state.bgKind==='video'?(bgVid.readyState>=2?bgVid:null):state.bgKind==='image'?bgImage:bgCanvas;
+ const fgSrc=state.fgKind==='video'?(fgVid.readyState>=2?fgVid:null):state.fgKind==='image'?fgImage:fgCanvas;
+ if(bgSrc)ctx.drawImage(bgSrc,0,0,W,H); else {ctx.fillStyle='#123';ctx.fillRect(0,0,W,H);}
+ if(fgSrc){const small=render2D.s||(render2D.s=document.createElement('canvas')); small.width=256; small.height=144; const sx=small.getContext('2d',{willReadFrequently:true}); sx.drawImage(fgSrc,0,0,256,144);
+  try{const id=sx.getImageData(0,0,256,144),d=id.data,key=hexRGB($('keyColor').value),tol=val('tol')*255+40;
+   for(let i=0;i<d.length;i+=4){const dr=d[i]-key[0]*255,dg=d[i+1]-key[1]*255,db=d[i+2]-key[2]*255; if(Math.sqrt(dr*dr+dg*dg+db*db)<tol){d[i+3]=0;} else if(dg>60&&d[i+1]>d[i]&&d[i+1]>d[i+2]){d[i+1]=Math.max(d[i],d[i+2]);}}
+   sx.putImageData(id,0,0); ctx.imageSmoothingEnabled=true; ctx.drawImage(small,0,0,W,H);}catch(e){ctx.drawImage(fgSrc,0,0,W,H);}}
+ updateTransport();}
 let scopeTimer=0;
-function loop(t){render(); if(t-scopeTimer>350){scopeTimer=t;drawScopes();} requestAnimationFrame(loop);}
+function loop(t){ if(fallback2D)render2D(); else render(); const iv=LIGHT?1200:350; if(t-scopeTimer>iv){scopeTimer=t; if(!document.hidden)drawScopes();} requestAnimationFrame(loop);}
 function updateTransport(){const v=fgVid; const dur=(state.fgKind==='video'&&v.duration)?v.duration:(parseFloat($('trimOut').value)||10); const cur=(state.fgKind==='video')?v.currentTime:0; $('timeLabel').textContent=`${cur.toFixed(2)} / ${dur?dur.toFixed(2):'0.00'}s`; if(dur)$('seek').value=Math.round(cur/dur*1000);
  // trim loop/stop
  if(state.fgKind==='video'&&v.duration){const ti=val('trimIn'),to=val('trimOut')||v.duration; if(v.currentTime>=to){if($('loopChk').checked){v.currentTime=ti;bgVid.currentTime=ti;}else{v.pause();}} if(v.currentTime<ti&&state.playing)v.currentTime=ti;}
@@ -167,14 +203,16 @@ document.addEventListener('change',e=>{if(e.target.id==='lens')applyLens(); if(e
 function syncOutputs(){document.querySelectorAll('input[type=range]').forEach(r=>{const o=r.parentElement&&r.parentElement.querySelector('output'); if(o)o.textContent=r.value;});}
 // media
 function bindFile(id,vid,imgSetter,kind){$(id).addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;const url=URL.createObjectURL(f);log('media',kind,f.name);
- if(f.type.startsWith('video/')){vid.src=url;vid.play().catch(()=>{});state[kind+'Kind']='video';}
- else if(f.type.startsWith('image/')){const im=new Image();im.onload=()=>imgSetter(im);im.src=url;state[kind+'Kind']='image';}
+ if(f.type.startsWith('video/')){vid.src=url;vid.play().catch(()=>{});state[kind+'Kind']='video'; fgDirty=bgDirty=true; setStatus('✅ '+(kind==='fg'?'Foreground':'Background')+' loaded: '+f.name+'. Tap ▶ Play if it does not start.');}
+ else if(f.type.startsWith('image/')){const im=new Image();im.onload=()=>{imgSetter(im); fgDirty=bgDirty=true;};im.src=url;state[kind+'Kind']='image'; fgDirty=bgDirty=true;}
  $('mediaBin').textContent+=`\n${kind.toUpperCase()}: ${f.name} (${(f.size/1048576).toFixed(1)} MB)`;});}
 bindFile('fgFile',fgVid,im=>fgImage=im,'fg'); bindFile('bgFile',bgVid,im=>bgImage=im,'bg');
 $('auFile').addEventListener('change',e=>{const f=e.target.files[0];if(f) {auEl.src=URL.createObjectURL(f);$('mediaBin').textContent+=`\nAUDIO: ${f.name}`;}});
 $('testBtn').onclick=()=>{state.fgKind='test';state.bgKind='test';log('test scene');};
 // transport
-$('playBtn').onclick=()=>{state.playing=true;fgVid.play().catch(()=>{});bgVid.play().catch(()=>{});auEl.play().catch(()=>{});log('play');};
+$('playBtn').onclick=()=>{state.playing=true;fgVid.play().catch(()=>{});bgVid.play().catch(()=>{});auEl.play().catch(()=>{});
+ if(state.fgKind==='test')setStatus('▶ Test scene is playing (watch the cartoon move). To play your own clip, pick it under “Foreground” below first.');
+ else setStatus('▶ Playing.'); log('play');};
 $('pauseBtn').onclick=()=>{state.playing=false;fgVid.pause();bgVid.pause();auEl.pause();log('pause');};
 $('stopBtn').onclick=()=>{state.playing=false;[fgVid,bgVid].forEach(v=>{v.pause();try{v.currentTime=val('trimIn')}catch(e){}});auEl.pause();auEl.currentTime=0;log('stop');};
 $('seek').addEventListener('input',e=>{if(fgVid.duration)fgVid.currentTime=fgVid.duration*e.target.value/1000; if(bgVid.duration)bgVid.currentTime=fgVid.currentTime;});
@@ -213,6 +251,7 @@ $('impProj').addEventListener('change',async e=>{const f=e.target.files[0];if(f)
 // export
 let exporting=false;
 $('exportBtn').onclick=async()=>{if(exporting)return; exporting=true; const res=parseInt($('expRes').value); const ow=canvas.width,oh=canvas.height; canvas.width=res*16/9|0; canvas.height=res; render();
+ if(!canvas.captureStream||!window.MediaRecorder){$('expInfo').textContent='This browser cannot record video export. Try Chrome updated, or screen-record the preview.'; setStatus('⚠ This browser cannot record an export. Try updating Chrome, or screen-record the preview instead.','warn'); exporting=false; return;}
  const mimes=['video/mp4;codecs=avc1','video/mp4','video/webm;codecs=vp9','video/webm']; const mime=mimes.find(m=>window.MediaRecorder&&MediaRecorder.isTypeSupported(m))||'';
  try{const stream=canvas.captureStream(30); // audio mix best effort
    try{const AC=new AudioContext(); const dest=AC.createMediaStreamDestination(); [fgVid,bgVid,auEl].forEach(el=>{try{const s=AC.createMediaElementSource(el);s.connect(dest);s.connect(AC.destination);}catch(e){}}); dest.stream.getAudioTracks().forEach(t=>stream.addTrack(t));}catch(e){log('export audio mix failed',e.message)}
@@ -226,10 +265,13 @@ $('exportBtn').onclick=async()=>{if(exporting)return; exporting=true; const res=
  }catch(err){$('expInfo').textContent='Export failed: '+err.message;}
  canvas.width=ow;canvas.height=oh; $('exportBtn').textContent='⬇ Export video (WebM / MP4 if supported)'; exporting=false;};
 // tier
-(function(){const mob=/Android/.test(navigator.userAgent); const small=Math.min(screen.width,screen.height)<500; $('tier').textContent=(mob||small)?'📱 Light preview mode for phone/tablet: preview canvas is 640px wide for smoothness. Export at 720p for best tablet results.':'💻 Desktop / full preview mode.'; if(small){canvas.width=480;canvas.height=270;}})();
+(function(){$('tier').textContent=LIGHT?'📱 Light preview mode for phone/tablet: smaller preview for smoothness. Export at 720p for best tablet results.':'💻 Desktop / full preview mode.'; if(LIGHT){canvas.width=480;canvas.height=270;}})();
+canvas.addEventListener('webglcontextlost',e=>{e.preventDefault(); showError('The graphics stopped (this can happen on older tablets when memory is low). Close other apps, then close and reopen Video Studio.');});
+canvas.addEventListener('webglcontextrestored',()=>{setStatus('Graphics restarted — preview is back.','warn'); try{initGL(); fgDirty=bgDirty=true; uploadMatte();}catch(err){showError('Graphics could not restart: '+err.message);}});
 // init
-fillLenses(); syncOutputs();
-try{if(initGL()){uploadMatte(); requestAnimationFrame(loop);}}catch(err){console.error(err);document.getElementById('tier').textContent='Shader/WebGL error: '+err.message;}
-if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
-window.VideoStudio={version:VERSION,lenses:LENSES,collect,applyProj,getPixel:(x,y)=>{const p=new Uint8Array(4);gl.readPixels(x,canvas.height-y,1,1,gl.RGBA,gl.UNSIGNED_BYTE,p);return [...p];},render:()=>render(),state};
+try{fillLenses();}catch(err){showError('Lens list failed to load: '+err.message);} try{syncOutputs();}catch(err){}
+try{if(initGL()){uploadMatte(); fgDirty=bgDirty=true; requestAnimationFrame(loop);}else{throw new Error('WebGL2 not available');}}catch(err){console.error(err); fallback2D=true; setStatus('⚠ WebGL2 is not available on this browser, so Video Studio is in simple mode: basic green-screen only. Try updating Chrome.','warn'); requestAnimationFrame(loop);}
+if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').then(r=>{log('sw scope',r.scope); if(debugOn&&navigator.serviceWorker.controller)log('sw controlled');}).catch(e=>log('sw failed',e.message));}
+window.VideoStudio={version:VERSION,lenses:LENSES,collect,applyProj,getPixel:(x,y)=>{if(fallback2D||!gl)return [0,0,0,0]; const p=new Uint8Array(4);gl.readPixels(x,canvas.height-y,1,1,gl.RGBA,gl.UNSIGNED_BYTE,p);return [...p];},render:()=>render(),state};
 log('ready',VERSION);
+window.__vsReady=true; if(window.__vsBootTimer)clearTimeout(window.__vsBootTimer); var bm=document.getElementById('bootMsg'); if(bm)bm.style.display='none';
