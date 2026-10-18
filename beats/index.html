@@ -14,8 +14,8 @@
   <meta name="theme-color" content="#0b0d12">
   <meta name="color-scheme" content="dark"><!-- the app is already dark: stops Samsung Internet / Chrome "force dark" from re-colouring it -->
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="styles.css?v=20261018h">
-  <link rel="stylesheet" href="rack.css?v=20261018h">
+  <link rel="stylesheet" href="styles.css?v=20261018j">
+  <link rel="stylesheet" href="rack.css?v=20261018j">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Island Pin Beats — Free Beat Maker">
   <meta name="twitter:description" content="Make boom-bap, trap, drill, afrobeats, amapiano, house and bouyon beats in your browser. Free, from Dominica.">
@@ -45,7 +45,6 @@
     <button class="tab active" role="tab" data-tab="beats" aria-selected="true">Beats</button>
     <button class="tab" role="tab" data-tab="piano" aria-selected="false">Piano Roll</button>
     <button class="tab" role="tab" data-tab="loops" aria-selected="false" title="Keys Loops page: preview and load hip-hop keys loops">Keys Loops</button>
-    <button class="tab" role="tab" data-tab="daw" aria-selected="false" title="DAW: multi-track timeline, record vocals raw onto the timeline, arrange, export mix and stems">DAW</button>
     <button class="tab" role="tab" data-tab="studio" aria-selected="false" title="Multitrack recorder: beat on Track 1, record vocals, ad-libs and doubles, edit, mix, export WAV/MP3">Studio</button>
     <a class="tab tab-dj" id="tab-dj-link" href="../dj/?from=beats" title="Switch to the DJ booth (your beat is saved; press ← Back to Beats there to return)">DJ</a>
     <button class="tab" role="tab" data-tab="lyrics" aria-selected="false">Lyrics</button>
@@ -613,6 +612,14 @@
           <label for="mst-file" id="mst-file-btn" class="btn mst-filebtn" role="button" tabindex="0">📂 Load another song…</label>
           <input type="file" id="mst-file" class="vh-file" accept="audio/*,.wav,.mp3,.m4a,.aac,.flac,.ogg">
           <span id="mst-src-name" class="mono mst-note">No source loaded</span>
+          <button type="button" id="mst-clean" class="btn" disabled title="Optional, only when you tap it: noise reduction, gate, de-esser and gentle EQ/comp on a COPY. The raw source is never changed.">Clean up (optional)</button>
+          <span id="mst-clean-ui" hidden>
+            <button type="button" class="btn small" data-clean-ab="raw">A · Raw</button>
+            <button type="button" class="btn small" data-clean-ab="clean">B · Cleaned</button>
+            <button type="button" class="btn small primary" id="mst-use-clean">Use cleaned</button>
+            <button type="button" class="btn small ghost" id="mst-keep-raw">Keep raw</button>
+          </span>
+          <span id="mst-clean-status" class="mst-note" role="status"></span>
           <span id="mst-busy" class="mst-busy" role="status" hidden></span>
           <progress id="mst-prog" class="mst-prog" max="1" value="0" hidden></progress>
         </div>
@@ -653,62 +660,17 @@
         <div id="mst-report" class="mst-report" hidden></div>
       </div>
     </section>
+    <!-- VAULT -->
+    <section id="tab-vault" class="panel" role="tabpanel">
+      <h2>Vault</h2>
+      <p class="sub">Recordings are stored in this browser (IndexedDB). Download WAVs to keep them safe.</p>
+      <div id="vault-list" class="vault-list"></div>
+    </section>
     <!-- KEYS LOOPS (own page) -->
     <section id="tab-loops" class="panel" role="tabpanel">
       <h2>Keys Loops</h2>
       <p class="sub">Preview a loop, stop it clean, then Load it into a Piano Roll pattern. Your beat keeps playing while you browse.</p>
       <div id="kl-host-loops"></div>
-    </section>
-    <!-- DAW -->
-    <section id="tab-daw" class="panel" role="tabpanel">
-      <h2>DAW <small class="sub">Arrange on a timeline · record raw vocals (no auto cleanup) · manual FX only in Mixer/Studio</small></h2>
-      <div class="daw-bar">
-        <button type="button" id="daw-play" class="daw-tbtn">▶ Play</button>
-        <button type="button" id="daw-pause" class="daw-tbtn">❚❚ Pause</button>
-        <button type="button" id="daw-stop" class="daw-tbtn">■ Stop</button>
-        <button type="button" id="daw-record" class="daw-tbtn daw-rec">● Record</button>
-        <label>BPM <input id="daw-bpm" type="number" min="40" max="220" value="90" style="width:70px"></label>
-        <label>Time <select id="daw-sig"><option value="4">4/4</option><option value="3">3/4</option></select></label>
-        <span id="daw-pos" class="mono">Bar 1</span>
-        <label class="chk"><input type="checkbox" id="daw-metro"> Metronome</label>
-        <label>Count-in <select id="daw-countin"><option value="0">Off</option><option value="1" selected>1 bar</option></select></label>
-        <label class="chk"><input type="checkbox" id="daw-snap" checked> Snap</label>
-        <label class="chk"><input type="checkbox" id="daw-follow" checked> Follow</label>
-        <label>Zoom <input type="range" id="daw-zoom" min="28" max="120" value="56"></label>
-      </div>
-      <div class="daw-bar">
-        <label class="chk"><input type="checkbox" id="daw-loop"> Loop</label>
-        <label>from bar <input id="daw-loop-start" type="number" min="1" value="1" style="width:60px"></label>
-        <label>to bar <input id="daw-loop-end" type="number" min="2" value="8" style="width:60px"></label>
-        <button type="button" id="daw-add-audio-track">+ Audio track</button>
-        <button type="button" id="daw-add-midi-track">+ Keys/MIDI track</button>
-        <button type="button" id="daw-add-drums">+ Drum clip</button>
-        <button type="button" id="daw-add-midi">+ MIDI clip</button>
-        <button type="button" id="daw-add-keys">+ Keys loop clip</button>
-        <button type="button" id="daw-add-section">+ Section</button>
-        <button type="button" id="daw-copy-clip">Copy clip</button>
-        <button type="button" id="daw-del-clip">Delete clip</button>
-        <label class="btn file-btn">Import audio…<input type="file" id="daw-import-btn" accept="audio/*" multiple hidden></label>
-      </div>
-      <div class="daw-wrap"><div class="daw-heads" id="daw-heads"></div><div class="daw-scroll" id="daw-scroll"></div></div>
-      <p class="hint">Drag a clip to move it, drag its right edge to trim. Tap the timeline to move the playhead. Drop audio files onto the timeline. Long songs play from the file — they are not fully decoded.</p>
-      <div id="daw-piano" class="daw-piano"></div>
-      <h3>Mixer (per track)</h3><div id="daw-mixer" class="daw-mixer"></div>
-      <div class="daw-bar">
-        <button type="button" id="daw-export">Export mix WAV</button>
-        <button type="button" id="daw-stems">Export stems</button>
-        <button type="button" id="daw-save-name">Save project…</button>
-        <select id="daw-project-list" aria-label="Saved DAW projects"></select>
-        <button type="button" id="daw-load-name">Load</button>
-        <button type="button" id="daw-export-proj">Export project file</button>
-        <label class="btn file-btn">Import project…<input type="file" id="daw-import-proj" accept=".json,application/json" hidden></label>
-        <span id="daw-status" role="status"></span>
-      </div>
-    </section>
-    <section id="tab-vault" class="panel" role="tabpanel">
-      <h2>Vault</h2>
-      <p class="sub">Recordings are stored in this browser (IndexedDB). Download WAVs to keep them safe.</p>
-      <div id="vault-list" class="vault-list"></div>
     </section>
   </main>
 
@@ -758,29 +720,25 @@
 
   <footer class="foot">Free · runs in your browser · synthesized drums + CC0 one-shots (<a href="samples/CREDITS.md">credits</a>), no paid APIs · <a href="studio/">Studio</a> · <a href="../dj/">DJ booth</a> · <a href="check/">Sound check</a> · <a href="../">IslePin</a></footer>
 
-  <script src="fresh.js?v=20261018h"></script>
-  <script src="storage.js?v=20261018h"></script>
-  <script src="helper.js?v=20261018h"></script>
+  <script src="fresh.js?v=20261018j"></script>
+  <script src="storage.js?v=20261018j"></script>
+  <script src="helper.js?v=20261018j"></script>
   <script>setTimeout(function () { if (window.IPBStorage) IPBStorage.line().then(function (t) { var a = document.getElementById("storage-line"); if (a && t) { a.textContent = t; a.hidden = false; } }); }, 2500);</script>
-  <script src="humanize.js?v=20261018h"></script>
-  <script src="layers.js?v=20261018h"></script>
-  <script src="library.js?v=20261018h"></script>
-  <script src="drums.js?v=20261018h"></script>
-  <script src="keys-instruments.js?v=20261018h"></script>
-  <script src="pianoroll-data.js?v=20261018h"></script>
-  <script src="keys-loops.js?v=20261018h"></script>
-  <script src="pianoroll.js?v=20261018h"></script>
-  <script src="fx-chain.js?v=20261018h"></script>
-  <script src="match.js?v=20261018h"></script>
-  <script src="vocal-clean-client.js?v=20261018h"></script>
-<script src="greenscreen.js"></script>
-<script src="voiceover.js"></script>
+  <script src="humanize.js?v=20261018j"></script>
+  <script src="layers.js?v=20261018j"></script>
+  <script src="library.js?v=20261018j"></script>
+  <script src="drums.js?v=20261018j"></script>
+  <script src="keys-instruments.js?v=20261018j"></script>
+  <script src="pianoroll-data.js?v=20261018j"></script>
+  <script src="keys-loops.js?v=20261018j"></script>
+  <script src="pianoroll.js?v=20261018j"></script>
+  <script src="fx-chain.js?v=20261018j"></script>
+  <script src="match.js?v=20261018j"></script>
+  <script src="vocal-clean-client.js?v=20261018j"></script>
 <script src="midi.js"></script>
-  <script src="app.js?v=20261018h"></script>
-  <script src="master/master-dsp.js?v=20261018h"></script>
-  <script src="master/master.js?v=20261018h"></script>
-  <script>/* DAW lazy loader: daw.js/daw.css load only on first DAW tab open (keeps Tab fast) */
-(function(){var done=false;function load(){if(done)return;done=true;var l=document.createElement("link");l.rel="stylesheet";l.href="daw.css?v=20261018h";document.head.appendChild(l);var s=document.createElement("script");s.src="daw.js?v=20261018h";document.body.appendChild(s);}document.addEventListener("click",function(e){var b=e.target.closest&&e.target.closest('button[data-tab="daw"]');if(b)load();});try{if(new URLSearchParams(location.search).get("tab")==="daw")load();}catch(e){}})();</script>
+  <script src="app.js?v=20261018j"></script>
+  <script src="master/master-dsp.js?v=20261018j"></script>
+  <script src="master/master.js?v=20261018j"></script>
   <script type="module" src="../shared/ecosystem-nav.js"></script><!-- Beats | DJ Booth | Player switcher (shared/README.md) -->
 <script>/* offline app (sw.js): after the first visit Beat works with no connection. ?nosw=1 skips it. */
 if ("serviceWorker" in navigator && !/[?&]nosw/.test(location.search) && !(window.parent !== window && /\/beats\/studio\//.test(location.pathname))) addEventListener("load", function () { setTimeout(function () { navigator.serviceWorker.register("sw.js", { scope: "./" }).catch(function () {}); }, 1500); });</script>

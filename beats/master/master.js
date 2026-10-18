@@ -147,7 +147,7 @@
   var MW = null, mwSeq = 0, mwWait = {};
   function post(msg) {
     if (MW === false) return Promise.reject(new Error("no worker"));
-    if (!MW) { try { MW = new Worker("master/master-worker.js?v=20261018h"); MW.onmessage = function (e) { var w = mwWait[e.data.id]; if (!w) return; delete mwWait[e.data.id]; if (e.data.ok) w.res(e.data); else w.rej(new Error(e.data.err)); };
+    if (!MW) { try { MW = new Worker("master/master-worker.js?v=20261018j"); MW.onmessage = function (e) { var w = mwWait[e.data.id]; if (!w) return; delete mwWait[e.data.id]; if (e.data.ok) w.res(e.data); else w.rej(new Error(e.data.err)); };
       MW.onerror = function () { MW = false; Object.keys(mwWait).forEach(function (k) { mwWait[k].rej(new Error("worker failed")); delete mwWait[k]; }); }; } catch (e) { MW = false; return Promise.reject(e); } }
     msg.id = ++mwSeq;
     return new Promise(function (res, rej) { mwWait[msg.id] = { res: res, rej: rej }; MW.postMessage(msg, [msg.L.buffer, msg.R.buffer]); });
@@ -222,10 +222,14 @@
   }
 
   /* ---------------- source ---------------- */
-  var src = null; // { L, R, sr, name, lufs }
+  var src = null, rawSrc = null, cleanSrc = null; // { L, R, sr, name, lufs } — rawSrc is never overwritten by cleanup
+  function tdLog(m) { if (window.__ipbTD && window.__ipbTD.log) window.__ipbTD.log("Master " + m); }
+  function cleanUI() { var b = $("mst-clean"), ui = $("mst-clean-ui"); if (b) b.disabled = !rawSrc; if (ui) ui.hidden = !cleanSrc;
+    if (ui) ui.querySelectorAll("[data-clean-ab]").forEach(function (x) { x.classList.toggle("on", (x.dataset.cleanAb === "clean") === !!(src && src._isClean)); }); }
   function setSource(s) {
     if (!s || !s.L || !s.L.length) { B.toast("Nothing to master yet from that source."); return; }
-    src = s; src.lufs = FX.lufs([s.L, s.R], s.sr); srcBuf = null; dryMatch = null; outLufs = null;
+    if (!s._isClean && s !== rawSrc) { rawSrc = s; cleanSrc = null; }
+    src = s; src.lufs = FX.lufs([s.L, s.R], s.sr); srcBuf = null; dryMatch = null; outLufs = null; cleanUI();
     $("mst-src-name").textContent = s.name + " · " + fmtT(s.L.length / s.sr) + " · " + (isFinite(src.lufs) ? src.lufs.toFixed(1) + " LUFS in" : "silent");
     ["mst-play", "mst-fit", "mst-export"].forEach(function (id) { $(id).disabled = false; });
     resetMeters(); measureOut();
@@ -299,6 +303,25 @@
     });
   }
 
+  /* Manual "Clean up (optional)": ONLY on tap. Noise reduction + gate (vocal-clean DSP), then gentle EQ/comp/de-ess
+     via the vocal FX chain, applied to a COPY. Raw stays the default source and is never overwritten. */
+  function runCleanup() {
+    if (!rawSrc || !window.IPBVocalClean || !window.IPBVocalClean.run) { B.toast("Cleanup isn't available in this browser."); return; }
+    var raw = rawSrc, stEl = $("mst-clean-status");
+    busy(true, "Cleaning a copy… (raw is untouched)"); prog(0.4); if (stEl) stEl.textContent = "Cleaning a copy…";
+    tdLog("manual cleanup applied by user tap");
+    var mono = new Float32Array(raw.L.length); for (var i = 0; i < mono.length; i++) mono[i] = (raw.L[i] + raw.R[i]) / 2;
+    window.IPBVocalClean.run(mono.slice(), raw.L, raw.R, raw.sr, { aec: false, denoise: true, gate: true, hpf: false }).then(function (m) {
+      var cleaned = m && m.out ? m.out : mono;
+      var fx = FX.defaults(); fx.lowcut.on = true; fx.eq.on = true; fx.eq.low = -1; fx.eq.mid = 1; fx.eq.high = 1.5; fx.comp.on = true; fx.deess.on = true;
+      return FX.renderMono(cleaned, raw.sr, { fx: fx, pan: 0, wide: false, bpm: 90 }).then(function (pr) {
+        cleanSrc = { L: pr[0], R: pr[1], sr: raw.sr, name: raw.name + " (cleaned copy)", _isClean: true };
+        busy(false); prog(null); if (stEl) stEl.textContent = "Cleaned copy ready — A/B it, then Use cleaned or Keep raw (raw is the default).";
+        cleanUI(); B.toast("Cleaned copy ready. Raw is still the source until you tap Use cleaned.");
+        tdLog("manual cleanup copy ready (raw unchanged)");
+      });
+    }).catch(function (e) { busy(false); prog(null); if (stEl) stEl.textContent = ""; B.toast("Cleanup failed (" + (e && e.message || e) + ") — raw copy kept."); });
+  }
   /* ---------------- live preview ---------------- */
   var L = null, srcBuf = null, prev = null, mode = "master", mono = false, dryMatch = null, outLufs = null;
   function MFFT(sr) { return sr > 50000 ? 16384 : 8192; } // ≥ the 100 ms the meters read each tick (was 32768)
@@ -326,7 +349,7 @@
       applyLive(); return L;
     };
     var go = function () { return chainLatency(c.sampleRate).then(function () {
-      if (c.audioWorklet && !L.noWorklet) return c.audioWorklet.addModule("master/master-dsp.js?v=20261018h").then(function () { return c.audioWorklet.addModule("master/master-worklet.js?v=20261018h"); }).then(function () {
+      if (c.audioWorklet && !L.noWorklet) return c.audioWorklet.addModule("master/master-dsp.js?v=20261018j").then(function () { return c.audioWorklet.addModule("master/master-worklet.js?v=20261018j"); }).then(function () {
         var w = new AudioWorkletNode(c, "ipb-tplimiter", { numberOfInputs: 1, numberOfOutputs: 1, outputChannelCount: [2] });
         w.port.onmessage = function (e) { L.limGr = e.data.gr; }; L.lim = w; L.limLat = Math.round(0.005 * c.sampleRate) + 8; return after(w);
       });
@@ -532,12 +555,12 @@
 
   /* ---------------- UI ---------------- */
   var MODS = [
-    { k: "eq", name: "EQ", desc: "low cut · shelves · bell · tilt", p: [["lowcut", "Low cut", 10, 200, 1, "Hz"], ["lsF", "Low shelf", 40, 400, 5, "Hz"], ["lsG", "Low gain", -12, 12, 0.5, "dB"], ["bellF", "Bell", 150, 8000, 10, "Hz"], ["bellG", "Bell gain", -12, 12, 0.5, "dB"], ["bellQ", "Bell Q", 0.3, 4, 0.1, ""], ["hsF", "High shelf", 2000, 16000, 100, "Hz"], ["hsG", "High gain", -12, 12, 0.5, "dB"], ["tilt", "Tilt (dark ↔ bright)", -4, 4, 0.25, "dB"]] },
-    { k: "glue", name: "Glue compressor", desc: "bus compression", gr: "glue", p: [["thr", "Threshold", -40, 0, 0.5, "dB"], ["ratio", "Ratio", 1, 10, 0.1, ":1"], ["atk", "Attack", 1, 100, 1, "ms"], ["rel", "Release", 30, 1000, 10, "ms"], ["mk", "Makeup", 0, 12, 0.5, "dB"]] },
-    { k: "mb", name: "Multiband (3-band)", desc: "low · mid · high compression", p: [["f1", "Low / mid", 60, 500, 5, "Hz"], ["f2", "Mid / high", 1000, 8000, 50, "Hz"], ["lo.thr", "Low thr", -40, 0, 0.5, "dB"], ["lo.ratio", "Low ratio", 1, 8, 0.1, ":1"], ["lo.mk", "Low makeup", -6, 6, 0.5, "dB"], ["mid.thr", "Mid thr", -40, 0, 0.5, "dB"], ["mid.ratio", "Mid ratio", 1, 8, 0.1, ":1"], ["mid.mk", "Mid makeup", -6, 6, 0.5, "dB"], ["hi.thr", "High thr", -40, 0, 0.5, "dB"], ["hi.ratio", "High ratio", 1, 8, 0.1, ":1"], ["hi.mk", "High makeup", -6, 6, 0.5, "dB"]], grs: ["lo", "mid", "hi"] },
-    { k: "sat", name: "Saturation / tape", desc: "warmth", p: [["drive", "Drive", 0, 1, 0.01, "%"], ["mix", "Mix", 0, 1, 0.01, "%"], ["tape", "Tape warmth", 0, 1, 0.01, "%"]] },
-    { k: "width", name: "Stereo width", desc: "mono below X Hz keeps the low end tight", p: [["w", "Width", 0, 2, 0.01, "%w"], ["mono", "Mono below", 0, 300, 5, "Hz"]] },
-    { k: "lim", name: "True-peak limiter", desc: "brick-wall · 4× oversampled peaks", gr: "lim", p: [["ceil", "Ceiling", -6, 0, 0.1, "dBTP"]] }
+    { k: "eq", name: "BeatEQ", desc: "low cut · shelves · bell · tilt", p: [["lowcut", "Low cut", 10, 200, 1, "Hz"], ["lsF", "Low shelf", 40, 400, 5, "Hz"], ["lsG", "Low gain", -12, 12, 0.5, "dB"], ["bellF", "Bell", 150, 8000, 10, "Hz"], ["bellG", "Bell gain", -12, 12, 0.5, "dB"], ["bellQ", "Bell Q", 0.3, 4, 0.1, ""], ["hsF", "High shelf", 2000, 16000, 100, "Hz"], ["hsG", "High gain", -12, 12, 0.5, "dB"], ["tilt", "Tilt (dark ↔ bright)", -4, 4, 0.25, "dB"]] },
+    { k: "glue", name: "BeatComp", desc: "bus compression", gr: "glue", p: [["thr", "Threshold", -40, 0, 0.5, "dB"], ["ratio", "Ratio", 1, 10, 0.1, ":1"], ["atk", "Attack", 1, 100, 1, "ms"], ["rel", "Release", 30, 1000, 10, "ms"], ["mk", "Makeup", 0, 12, 0.5, "dB"]] },
+    { k: "mb", name: "BeatMulti", desc: "low · mid · high compression", p: [["f1", "Low / mid", 60, 500, 5, "Hz"], ["f2", "Mid / high", 1000, 8000, 50, "Hz"], ["lo.thr", "Low thr", -40, 0, 0.5, "dB"], ["lo.ratio", "Low ratio", 1, 8, 0.1, ":1"], ["lo.mk", "Low makeup", -6, 6, 0.5, "dB"], ["mid.thr", "Mid thr", -40, 0, 0.5, "dB"], ["mid.ratio", "Mid ratio", 1, 8, 0.1, ":1"], ["mid.mk", "Mid makeup", -6, 6, 0.5, "dB"], ["hi.thr", "High thr", -40, 0, 0.5, "dB"], ["hi.ratio", "High ratio", 1, 8, 0.1, ":1"], ["hi.mk", "High makeup", -6, 6, 0.5, "dB"]], grs: ["lo", "mid", "hi"] },
+    { k: "sat", name: "BeatTape", desc: "warmth", p: [["drive", "Drive", 0, 1, 0.01, "%"], ["mix", "Mix", 0, 1, 0.01, "%"], ["tape", "Tape warmth", 0, 1, 0.01, "%"]] },
+    { k: "width", name: "BeatWidth", desc: "mono below X Hz keeps the low end tight", p: [["w", "Width", 0, 2, 0.01, "%w"], ["mono", "Mono below", 0, 300, 5, "Hz"]] },
+    { k: "lim", name: "BeatLimit", desc: "brick-wall · 4× oversampled peaks", gr: "lim", p: [["ceil", "Ceiling", -6, 0, 0.1, "dBTP"]] }
   ];
   function getP(o, path) { return path.split(".").reduce(function (a, k) { return a[k]; }, o); }
   function setP(o, path, v) { var ks = path.split("."), last = ks.pop(); ks.reduce(function (a, k) { return a[k]; }, o)[last] = v; }
@@ -595,6 +618,10 @@
     $("mst-tgt-reset").addEventListener("click", function () { st.tgtGain = 0; changed(); });
     $("mst-fmt").addEventListener("change", function () { st.fmt = this.value; save(); });
     $("mst-export").addEventListener("click", exportMaster);
+    if ($("mst-clean")) $("mst-clean").addEventListener("click", runCleanup);
+    if ($("mst-use-clean")) $("mst-use-clean").addEventListener("click", function () { if (cleanSrc) { setSource(cleanSrc); $("mst-clean-status").textContent = "Using the cleaned copy. Raw is still saved — reload the source to go back."; tdLog("user chose cleaned copy"); } });
+    if ($("mst-keep-raw")) $("mst-keep-raw").addEventListener("click", function () { if (rawSrc) { setSource(rawSrc); if ($("mst-clean-status")) $("mst-clean-status").textContent = "Keeping raw (default)."; tdLog("user kept raw"); } });
+    if ($("mst-clean-ui")) $("mst-clean-ui").querySelectorAll("[data-clean-ab]").forEach(function (b) { b.addEventListener("click", function () { stopPrev(); if (b.dataset.cleanAb === "clean" && cleanSrc) setSource(cleanSrc); else if (rawSrc) setSource(rawSrc); cleanUI(); }); });
     $("mst-preset").addEventListener("change", function () {
       var v = this.value; this.value = ""; if (!v) return;
       if (v === "reset") st = norm({ fmt: st.fmt }); else { var keep = { fmt: st.fmt, inGain: st.inGain, outGain: st.outGain }; st = norm(Object.assign({}, PRESETS[v].s, keep)); st.tgtGain = 0; }

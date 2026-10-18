@@ -295,7 +295,7 @@
     bpl: "auto",          // teleprompter bars per line ("auto" = fit song sections)
     prSize: 1,
     vox: { fxOff: false, tight: { on: false, str: 0.5 }, nudge: 0, monitor: false, dry: false, clean: true, aec: true, raw: true, spk: 80, guide: false,
-      pan: 0, wide: false, fx: null, auto: true, autoOff: 1 }, // vocal channel: pan, Wide, effects (manual, non-destructive), auto level match
+      pan: 0, wide: false, fx: null, auto: false, autoOff: 1 }, // vocal channel: pan, Wide, effects (manual, non-destructive), auto level match
     tool: "hit", lane: "vel", page: 0,
     piano: { slot: "A", slots: { A: PD.empty(), B: PD.empty(), C: PD.empty(), D: PD.empty() } }, // piano-roll pattern slots
     songKey: null,        // song key 0–11 for the keys loop bank (null = the first loaded loop sets it)
@@ -3001,10 +3001,13 @@
       st.className = "strip" + (g.id === "master" ? " master" : "") + (g.id === "vocal" ? " vocal" : "");
       st.innerHTML =
         '<span class="sname"></span>' +
+        '<span class="io">IN · ' + g.name + '</span>' +
+        '<div class="inserts" role="group" aria-label="Insert slots">' + ["A","B","C","D","E"].map(function (L) { return '<button type="button" class="ins" data-ins="' + L + '" title="Insert ' + L + ' — open effects for this channel">INS ' + L + '</button>'; }).join("") + '</div>' +
         '<div class="faders"><div class="meter"><i></i></div>' +
         '<div class="vwrap"><input type="range" min="0" max="100" aria-label="Volume"></div></div>' +
         '<span class="val"></span>' +
-        '<button type="button" class="mute">MUTE</button>';
+        '<span class="io">OUT · ' + (g.id === "master" ? "Main" : "Master") + '</span>' +
+        '<div class="msr"><button type="button" class="mute">MUTE</button></div>';
       st.querySelector(".sname").textContent = g.name;
       var r = st.querySelector("input"), val = st.querySelector(".val"), mute = st.querySelector(".mute");
       r.value = Math.round(S.mixer[g.id].v * 100);
@@ -3021,6 +3024,14 @@
         mute.classList.toggle("on", S.mixer[g.id].m);
         applyMixer(); saveSession();
         if (g.id === "inst") btUI();
+      });
+      st.querySelectorAll(".ins").forEach(function (b) {
+        b.addEventListener("click", function () {
+          st.querySelectorAll(".ins").forEach(function (x) { x.classList.remove("on"); }); b.classList.add("on");
+          if (g.id === "vocal") { var fx = $("vx-fx"); if (fx) { fx.open = true; fx.scrollIntoView({ block: "start", behavior: "smooth" }); } }
+          else if (g.id === "master") { var mt = document.querySelector('button[data-tab="master"]'); if (mt) mt.click(); }
+          else { showTab("beats"); var pe = document.querySelector(".pad-edit"); if (pe) setTimeout(function () { pe.scrollIntoView({ block: "center", behavior: "smooth" }); }, 60); }
+        });
       });
       if (g.id === "vocal") { // vocal Pan (centre by default) + quick link to the vocal effects
         var pw = document.createElement("label"); pw.className = "pan-wrap";
@@ -3671,26 +3682,15 @@
     var L = merge(rec.L, frames), R = merge(rec.R, frames);
     var V = FXC.smartMono([merge(rec.V, frames), rec.V2.length ? merge(rec.V2, frames) : null]); // channel fix only: live side or mono sum
     rec.L = []; rec.R = []; rec.V = []; rec.V2 = [];
-    // trim the short pre-roll before the first beat hit (both tracks equally, so sync is kept)
-    var on = -1, lim = Math.min(frames, sr);
-    for (var i = 0; i < lim; i++) { if (Math.abs(L[i]) > 0.002 || Math.abs(R[i]) > 0.002) { on = i; break; } }
-    var cut = on > 0 ? Math.max(0, on - Math.round(sr * 0.01)) : 0;
-    if (cut) { L = L.subarray(cut); R = R.subarray(cut); V = V.subarray(cut); frames -= cut; }
+    // RAW: no silence-trim — the take is kept exactly as captured (channel mono-sum fix above only)
     var song = getSong(S.lyricSong);
     vox.last = { L: L, R: R, V: V, frames: frames, sr: sr, title: btActive() ? bt.title : song ? song.title : "", mode: vox.takeMode || "hp", clean: null, lat: null,
       mic: vox.micSettings || null, spk: vox.takeMode === "spk" ? spkBeatGain() : 1,
       beatStart: vox.beatStart, cueBar: vox.cueBar, grpE: rec.grpE, grpG: rec.grpG, mst: rec.mst, pt0: rec.pt0, ct0: rec.ct0, bs: recNode ? recNode.bufferSize : 4096 };
     applyMixer();
-    if (vox.voTake) { // voice only: keep the raw take (Vault) and add a copy with the beat bleed removed
-      var tk = vox.last; tk.voiceOnly = true;
-      exportVocalMix(true, "raw");
-      setVoxStatus("Voice only: removing beat bleed from the take…");
-      vcRun(tk.V, tk.L, tk.R, tk.sr, { aec: true, denoise: false, gate: false, hpf: false }).then(function (m) {
-        if (vox.last !== tk) return;
-        tk.clean = m.out; tk.info = m.info; tk.voInfo = m.info;
-        exportVocalMix(true, "clean");
-      }).catch(function (e) { setVoxStatus("Couldn't remove the beat bleed here (" + (e && e.message || e) + "). The raw take is saved.", true); });
-    } else exportVocalMix(true); // the take is kept as recorded; the mix gets only the vocal channel settings (pan / FX / auto match)
+    if (window.__ipbTD && window.__ipbTD.log) window.__ipbTD.log("take saved RAW (no cleanup)");
+    if (vox.voTake) { vox.last.voiceOnly = true; exportVocalMix(true, "raw"); setVoxStatus("Take saved RAW (no cleanup). For optional cleanup: Master page → Clean up (optional), or Clean last take."); }
+    else exportVocalMix(true); // the take is kept exactly as recorded; the mix gets only the vocal channel settings he set (pan / FX, all off by default)
     renderLastTake();
   }
   function vocalPeak(V) {
@@ -6357,7 +6357,7 @@
   }
   // tab names for ?tab= / #hash deep links. "video" is the visualizer/capture panel (it was labelled "Studio" before Oct 2026);
   // "studio" is the multitrack recorder (studio/ embedded). "visualizer" and "capture" are extra aliases for the video panel.
-  var TAB_ALIAS = { beats: "beats", piano: "piano", "piano-roll": "piano", pianoroll: "piano", studio: "studio", multitrack: "studio", lyrics: "lyrics", mixer: "mixer", video: "video", visualizer: "video", capture: "video", vault: "vault", master: "master", mastering: "master", daw: "daw", arrange: "daw", loops: "loops", "keys-loops": "loops", keysloops: "loops" };
+  var TAB_ALIAS = { beats: "beats", piano: "piano", "piano-roll": "piano", pianoroll: "piano", studio: "studio", multitrack: "studio", lyrics: "lyrics", mixer: "mixer", video: "video", visualizer: "video", capture: "video", vault: "vault", master: "master", mastering: "master", daw: "beats", arrange: "beats", loops: "loops", "keys-loops": "loops", keysloops: "loops" };
   function studioWin() { var f = $("studio-frame"); try { return f && f.contentWindow && f.contentWindow.IPBStudio ? f.contentWindow : null; } catch (e) { return null; } }
   function studioEnsure() {
     var f = $("studio-frame");

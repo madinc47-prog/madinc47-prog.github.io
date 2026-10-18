@@ -353,19 +353,14 @@
       var buf = S.bufFrom([res.data], res.sr), name = "Take " + (takeN++), id = S.addSource(buf, name), made = [];
       lastTake = { start: res.start, latencyMs: Math.round(res.latency * 1000), dur: buf.duration };
       res.armed.forEach(function (tid) {
-        var c = { id: S.uid("c"), track: tid, src: id, start: res.start, offset: 0, dur: buf.duration, gain: 0, fadeIn: 0.005, fadeOut: 0.01, name: name };
+        var c = { id: S.uid("c"), track: tid, src: id, start: res.start, offset: 0, dur: buf.duration, gain: 0, fadeIn: 0, fadeOut: 0, name: name };
         P.clips.push(c); made.push(c);
       });
       selClip = made[0].id; selTrack = made[0].track;
       playhead = playFrom;
       changed();
       if (silent) { toast(name + " was saved, but it is silent. " + MIC_SILENT, 9000); return; }
-      if (res.voiceOnly) { // voice only: Remove beat bleed on the new take (the raw take stays as the clip's original)
-        toast(name + " recorded — voice only: removing the beat bleed…");
-        cleanClip(made[0].id, { opts: { aec: true, denoise: false, gate: false, hpf: false } });
-        return;
-      }
-      toast(name + " recorded (" + buf.duration.toFixed(1) + "s). " + (res.speaker ? "Press 🧹 Clean take to remove the speaker bleed. " : "") + "Double-click it to edit.");
+      toast(name + " recorded RAW (no cleanup) (" + buf.duration.toFixed(1) + "s) — use Clean take only if you want cleanup.", 7000);
     });
   }
 
@@ -1250,7 +1245,7 @@
     arm: function (i, on) { var t = P.tracks[i]; if (t) { t.arm = on !== false; render(); } }, record: record, stop: stopAll, play: play, latency: function () { return E.ctx ? E.latency() : null; },
     addTake: function (data, sr, start, ti, name) { // tests: put a mono "recording" on track ti as if it had just been recorded
       S.pushUndo(P, "record"); var buf = S.bufFrom([data], sr), id = S.addSource(buf, name || "Take " + (takeN++)), tr = P.tracks[ti] || P.tracks[0];
-      var c = { id: S.uid("c"), track: tr.id, src: id, start: start || 0, offset: 0, dur: buf.duration, gain: 0, fadeIn: 0.005, fadeOut: 0.01, name: name || "Take" };
+      var c = { id: S.uid("c"), track: tr.id, src: id, start: start || 0, offset: 0, dur: buf.duration, gain: 0, fadeIn: 0, fadeOut: 0, name: name || "Take" };
       P.clips.push(c); selClip = c.id; selTrack = tr.id; changed(); return c.id;
     },
     cleanClip: cleanClip, cleanState: function () { return { busy: CL.busy, last: CL.last || null, speaker: speakerMode(), hp: { found: hp.found, label: hp.label, manual: hp.manual } }; },

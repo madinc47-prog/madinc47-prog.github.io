@@ -40,13 +40,13 @@ h2,h3{font-family:var(--font);text-transform:uppercase;letter-spacing:.14em;font
 /* ---------- rack units ---------- */
 .panel.active{animation:rackIn .12s ease-out}
 @keyframes rackIn{from{opacity:.65}to{opacity:1}}
-.kit-open,.seq-wrap,.pad-edit,.keys-wrap,.chordloop,.rec-bar,.bt-panel,.ref-panel,.vox-box,.pn-lib,.note-box,.ly-preview,.vitem,.kit-browser,.mst-top,.mst-meters,.mst-mods,.mst-exp,.lib-panel,.studio-bar,body #tab-daw .daw-wrap,body #tab-daw .daw-piano,body #tab-daw .daw-strip{
+.kit-open,.seq-wrap,.pad-edit,.keys-wrap,.chordloop,.rec-bar,.bt-panel,.ref-panel,.vox-box,.pn-lib,.note-box,.ly-preview,.vitem,.kit-browser,.mst-top,.mst-meters,.mst-mods,.mst-exp,.lib-panel,.studio-bar{
   background-image:var(--brushed),var(--metal2);border:1px solid #000;border-radius:6px;
   box-shadow:inset 0 1px 0 #3a3b43,inset 0 -1px 0 #000,0 3px 7px rgba(0,0,0,.45);
   position:relative;
 }
 /* rack screws in 4 corners (one cheap pseudo element, radial gradients) */
-.kit-open::after,.seq-wrap::after,.keys-wrap::after,.pn-lib::after,.vox-box::after,.mst-top::after,body #tab-daw .daw-wrap::after{
+.kit-open::after,.seq-wrap::after,.keys-wrap::after,.pn-lib::after,.vox-box::after,.mst-top::after{
   content:"";position:absolute;inset:4px;pointer-events:none;opacity:.8;
   background:
    radial-gradient(circle at 0 0,#888 0 2px,#222 3px,transparent 4px) left top/12px 12px no-repeat,
@@ -112,16 +112,6 @@ output,.mono,.rec-status,.song-pos,.pn-pos{font-family:var(--mono)}
 #ly-text{font-family:var(--mono);background-image:var(--brushed),var(--metal2)}
 .frame{border-color:#000;box-shadow:0 4px 10px #000}
 .vitem audio{filter:invert(.9) hue-rotate(180deg)} /* dark native player to match rack */
-/* ---------- DAW (overrides daw.css with higher specificity) ---------- */
-body #tab-daw .daw-tlane,body #tab-daw .daw-heads{background:#15161a}
-body #tab-daw .daw-scroll{background:#0a0b0d}
-body #tab-daw .daw-ruler{background:#222329;color:#ffb02e;font-family:var(--mono)}
-body #tab-daw .daw-lane{background-color:#101114;border-bottom-color:#000}
-body #tab-daw .daw-clip{border:1px solid #000;border-radius:4px;box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 2px 4px #000;text-transform:uppercase;letter-spacing:.06em}
-body #tab-daw .daw-clip.sel{border-color:#ffb02e;box-shadow:0 0 9px rgba(255,170,40,.55)}
-body #tab-daw .daw-playhead{background:#ffb02e;box-shadow:0 0 7px rgba(255,170,40,.7)}
-body #tab-daw .daw-pnote.on{background:#ffb02e}
-body #tab-daw .daw-rec.on{box-shadow:0 0 10px rgba(255,40,80,.6)}
 /* ---------- Studio tab host ---------- */
 .studio-frame{border:1px solid #000;border-radius:6px;background:#0a0b0d;box-shadow:0 4px 10px #000}
 .foot{padding-bottom:2rem;color:#777d89;text-transform:uppercase;letter-spacing:.12em;font-size:.68rem}
@@ -136,3 +126,43 @@ main,.panel{min-width:0}
 .pads{grid-template-columns:repeat(4,minmax(0,1fr))}
 .pad{min-width:0}
 .pad .pname{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* ================= STUDIO LOOK v2 (generic Pro-DAW style, original Island Pin Beats branding) ================= */
+/* Session header: green Play, red Record-arm accents, LCD counters */
+.tbtn.play.on,.btn.pn-play.on{background:linear-gradient(180deg,#4ade80,#16a34a)!important;color:#04150a!important;box-shadow:0 0 10px rgba(34,197,94,.55),inset 0 1px 0 #bbf7d0!important}
+#btn-rec,.btn.rec.vox{border-color:rgba(255,60,90,.7)!important}
+.song-pos,.pn-pos,#song-pos{background:#0a140a;color:#4ade80;border:1px solid #000;box-shadow:inset 0 2px 7px #000,inset 0 0 0 1px #14351a;border-radius:3px;padding:4px 8px;font-family:var(--mono);letter-spacing:.06em}
+.panel>h2,.ly-head h2{border-left:5px solid var(--amber);padding-left:.55rem;position:relative}
+.panel>h2::after{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--ok);box-shadow:0 0 7px var(--ok);margin-left:10px;vertical-align:3px}
+/* Marker / section ruler */
+.timeline{background:#0a0b0d;border-color:#000;box-shadow:inset 0 2px 7px #000}
+.tl-seg{border-radius:3px;border:1px solid #000;text-transform:uppercase}
+.tl-seg.sel{background:linear-gradient(180deg,#ffca5c,var(--amber2));color:#180b00}
+/* Edit windows (Piano Roll): track-header keys + region grid */
+.prl-keys{background:#141519}
+.prk{text-transform:uppercase}
+.pn-roll{border-top:3px solid #2a2b31}
+.pn-bar:first-of-type{border-top:3px solid rgba(255,176,46,.5)}
+/* Mix window: meter bridge + full channel strips with inserts/sends labels */
+#tab-mixer .mixer{background-image:linear-gradient(180deg,#26272d 0 34px,#101114 34px);border:1px solid #000;border-radius:6px;padding:42px .5rem .7rem;position:relative;box-shadow:inset 0 1px 0 #3a3b43,0 3px 7px rgba(0,0,0,.45)}
+#tab-mixer .mixer::before{content:"METER BRIDGE · ISLAND PIN BEATS MIX";position:absolute;top:9px;left:12px;font:700 .66rem var(--font);letter-spacing:.22em;color:#ffb02e}
+.strip .io{font:700 .58rem var(--mono);letter-spacing:.14em;color:#8f96a3;text-transform:uppercase;text-align:center}
+.inserts{display:grid;gap:3px;width:100%}
+.ins{min-height:28px;padding:2px 4px;font:700 .6rem var(--font);letter-spacing:.1em;background:linear-gradient(180deg,#191a1e,#0c0d0f);color:#7ee6f5;border:1px solid #000;border-radius:3px;cursor:pointer;text-align:left}
+.ins::after{content:"▸";float:right;color:#555}
+.ins.on{color:#ffb02e;box-shadow:inset 2px 0 0 var(--amber)}
+.strip .msr{display:flex;gap:4px;width:100%}.strip .msr .mute{flex:1}
+/* Plugin windows: Master modules + Vocal FX blocks */
+.mst-blk,.vx-blk{background-image:var(--brushed),linear-gradient(180deg,#232429,#121316)!important;border:1px solid #000!important;border-radius:6px!important;box-shadow:inset 0 1px 0 #41424b,0 3px 6px rgba(0,0,0,.5);overflow:hidden}
+.mst-blk h4,.vx-h{background:linear-gradient(180deg,#33343b,#1a1b1f);margin:-.55rem -.55rem .55rem;padding:.5rem .6rem;border-bottom:1px solid #000;color:#fff;letter-spacing:.12em;text-transform:uppercase;font-size:.78rem}
+.mst-blk:not(.on),.vx-blk:not(.on){opacity:.82}
+.mst-sw,.vx-sw{min-width:52px;min-height:30px;border-radius:3px;background:#0a0b0d;color:#777d89;border:1px solid #000;font:700 .62rem var(--font);letter-spacing:.12em}
+.mst-sw::after,.vx-sw::after{content:"BYPASS"}
+.mst-sw.on,.vx-sw.on{background:linear-gradient(180deg,#4ade80,#16a34a);color:#04150a}
+.vx-fx{border:1px solid #000;border-radius:6px;background-image:var(--brushed),var(--metal2);box-shadow:inset 0 1px 0 #3a3b43}
+.vx-fx>summary{background:linear-gradient(180deg,#33343b,#1a1b1f);padding:.6rem .7rem;cursor:pointer;min-height:44px;text-transform:uppercase;letter-spacing:.1em}
+.mst-lufs{background:#0a140a;border:1px solid #000;border-radius:4px;padding:.45rem}
+.mst-lufs b{color:#4ade80!important}
+/* Lyrics readability kept large/clear on purpose */
+.ly-l{font-size:1.02rem;line-height:1.6}
+#ly-text{font-size:.98rem;line-height:1.65}

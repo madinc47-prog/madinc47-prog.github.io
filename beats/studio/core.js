@@ -36,7 +36,7 @@
   function newTrack(i, name) {
     var nm = name || ("Track " + (i + 1));
     // auto level match: ON for new vocal tracks (not the beat track); offset = vocal vs beat in dB
-    return { id: uid("t"), name: nm, color: COLORS[i % COLORS.length], vol: 0, pan: 0, mute: false, solo: false, arm: false, fx: defaultFx(), auto: !/beat/i.test(nm), autoOff: 1, fxOff: false, tight: { on: false, str: 0.5 } };
+    return { id: uid("t"), name: nm, color: COLORS[i % COLORS.length], vol: 0, pan: 0, mute: false, solo: false, arm: false, fx: defaultFx(), auto: false, autoOff: 1, fxOff: false, tight: { on: false, str: 0.5 } };
   }
   /* saved projects: tracks without the auto-match fields load with it OFF (old saves keep their sound) */
   function normTrack(t) {
