@@ -605,26 +605,6 @@
       "Pick up the phone."
 
     ].join("\n")
-  }, {
-    id: "ampex",
-    title: "Ampex reel-to-reel history",
-    artist: "Emmanuel Griffith",
-    text: [
-      "around itself.",
-      "It really.",
-      "So, stop me.",
-      "They were.",
-      "On part of the time.",
-      "Today those 24 packs open as an empty tablet in the current software.",
-      "In the.",
-      "Designed to seal up every channel of.",
-      "Imitating the tape replacement.",
-      "The engineers at Ampex have already freed the song from the single.",
-      "They had not yet met the machine that would make every track free, endless, and.",
-      "A town so valuable, the U.S. Census cannot even measure it.",
-      "Not because that's the price, but because that's where the government's instrument stops counting.",
-      "Nearly half the houses sit empty."
-    ].join("\n")
   }];
   function patternFrom(src) {
     var p = emptyPattern();
