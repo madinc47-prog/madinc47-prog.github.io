@@ -6357,7 +6357,7 @@
   }
   // tab names for ?tab= / #hash deep links. "video" is the visualizer/capture panel (it was labelled "Studio" before Oct 2026);
   // "studio" is the multitrack recorder (studio/ embedded). "visualizer" and "capture" are extra aliases for the video panel.
-  var TAB_ALIAS = { beats: "beats", piano: "piano", "piano-roll": "piano", pianoroll: "piano", studio: "studio", multitrack: "studio", lyrics: "lyrics", mixer: "mixer", video: "video", visualizer: "video", capture: "video", vault: "vault", master: "master", mastering: "master" };
+  var TAB_ALIAS = { beats: "beats", piano: "piano", "piano-roll": "piano", pianoroll: "piano", studio: "studio", multitrack: "studio", lyrics: "lyrics", mixer: "mixer", video: "video", visualizer: "video", capture: "video", vault: "vault", master: "master", mastering: "master", daw: "daw", arrange: "daw" };
   function studioWin() { var f = $("studio-frame"); try { return f && f.contentWindow && f.contentWindow.IPBStudio ? f.contentWindow : null; } catch (e) { return null; } }
   function studioEnsure() {
     var f = $("studio-frame");

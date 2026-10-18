@@ -12,6 +12,11 @@
       "🎹 Keys loops ▾ adds a chord / melody loop in your song key.",
       "🎙 Record Vocals records over the beat. Headphones give the cleanest take; without them turn on “No headphones — voice only”.",
       "Bounce loop saves the beat as audio to the Vault; “Send to Studio →” puts it on Track 1 for multitrack recording."] },
+    daw: { name: "DAW", steps: [
+      "▶ Play, ❚❚ Pause (keeps your place) and ■ Stop are separate. ● Record records a raw vocal on the armed audio track — no cleanup is added.",
+      "+ Drum clip / + MIDI clip / + Keys loop clip puts clips on the timeline at the playhead. Drag to move, drag the right edge to trim, Copy/Delete above.",
+      "Tap a Keys/MIDI clip, then tap squares in the Piano roll under the timeline to change notes.",
+      "Import audio or drop files on the timeline. Export mix WAV or stems when ready; projects autosave on this device."] },
     piano: { name: "Piano Roll", steps: [
       "✎ Draw adds notes, ⌫ Erase removes them; drag a note to move it, drag its end to make it longer.",
       "Pick the instrument and grid (1/16, 1/8, 1/16T); −oct / +oct moves the view.",
