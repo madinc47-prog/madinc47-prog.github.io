@@ -40,7 +40,7 @@ var learning=null; // target id waiting for a CC
 var access=null, enabled=false, logLines=[];
 function noteLog(m){ var t=new Date(); logLines.unshift(t.toLocaleTimeString()+" "+m); if(logLines.length>30)logLines.pop(); var el=$("midi-log"); if(el) el.innerHTML=logLines.slice(0,8).map(function(l){return "<li>"+l.replace(/</g,"&lt;")+"</li>";}).join(""); log(m); }
 function setStatus(cls,text){ var led=$("midi-led"),st=$("midi-status"); if(led)led.className="midi-led "+cls; if(st)st.textContent=text; }
-function deviceNames(){ if(!access) return []; return Array.prototype.map.call(access.inputs.values(),function(i){return (i.name||"MIDI device")+(i.manufacturer?" · "+i.manufacturer:"");}); }
+function deviceNames(){ if(!access) return []; return Array.from(access.inputs.values()).map(function(i){return (i.name||"MIDI device")+(i.manufacturer?" · "+i.manufacturer:"");}); }
 function refreshDevices(){ var sel=$("midi-devices"); var names=deviceNames();
   if(sel) sel.innerHTML=names.length?names.map(function(n){return "<option>"+n.replace(/</g,"&lt;")+"</option>";}).join(""):"<option>No MIDI device connected</option>";
   if(!access) return;
