@@ -68,7 +68,7 @@ function firePad(i,vel){
 var heldKeys={}; // midi note -> {el, pid}
 function octBase(){ var o=$("key-oct"); return 12*((o?+o.value:4)+1); }
 function fireKey(note,on){
-  if(!on){ var h=heldKeys[note]; if(h){ window.dispatchEvent(new PointerEvent("pointerup",{pointerId:h.pid})); delete heldKeys[note]; noteLog("Key off "+note); } return; }
+  if(!on){ var h=heldKeys[note]; if(h){ (document.body||document).dispatchEvent(new PointerEvent("pointerup",{pointerId:h.pid,bubbles:true})); delete heldKeys[note]; noteLog("Key off "+note); } return; }
   var base=octBase(), s=note-base;
   if(s<0||s>24){ // shift the on-screen octave so the note exists (key-oct options are 3/4/5)
     var octEl=$("key-oct"); if(octEl){ var want=Math.max(3,Math.min(5,Math.floor(note/12)-1)); if(+octEl.value!==want){ octEl.value=want; octEl.dispatchEvent(new Event("change",{bubbles:true})); base=octBase(); s=note-base; } }
