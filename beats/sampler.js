@@ -223,7 +223,7 @@
   }
   function openPanel(i) {
     selChanged(i);
-    var p = $("pad-assign"); if (p) { p.scrollIntoView({ block: "nearest", behavior: "smooth" }); p.classList.add("pa-flash"); setTimeout(function () { p.classList.remove("pa-flash"); }, 900); }
+    var p = $("pad-assign"); if (p) { p.hidden=false; var tg=$("btn-pad-assign"); if(tg){tg.setAttribute("aria-expanded","true");}  p.scrollIntoView({ block: "nearest", behavior: "smooth" }); p.classList.add("pa-flash"); setTimeout(function () { p.classList.remove("pa-flash"); }, 900); }
   }
   function setMode(m) {
     padMode = m; save();
@@ -315,6 +315,7 @@
       save(); refresh(); toast("Pad " + (sel + 1) + " back to its kit drum.");
       td("pad " + (sel + 1) + " sample cleared (kit drum stays)");
     });
+    var _tg=$("btn-pad-assign"); if(_tg) _tg.addEventListener("click", function(){ var p=$("pad-assign"); if(!p) return; p.hidden=!p.hidden; _tg.setAttribute("aria-expanded", String(!p.hidden)); if(!p.hidden) p.scrollIntoView({block:"nearest"}); });
     $("padmode-sounds").addEventListener("click", function () { setMode("sounds"); });
     $("padmode-songs").addEventListener("click", function () { setMode("songs"); });
   }

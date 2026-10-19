@@ -7,7 +7,7 @@
 (function(){
 "use strict";
 if(window.IPBMidi && window.IPBMidi.version) return;
-var VERSION="20261018m";
+var VERSION="20261019a";
 var LS_SET="ipb_midi_settings_v2", LS_LEARN="ipb_midi_learn_v2";
 var $=function(id){return document.getElementById(id)};
 function log(m){ if(window.__ipbTD&&window.__ipbTD.log) window.__ipbTD.log("MIDI "+m); if(/[?&]tapdebug=1(&|$)/.test(location.search)) console.log("[MIDI]",m); }
@@ -122,7 +122,7 @@ function build(){
   '<div id="midi-learn"></div>'+
   '<div class="midi-row"><span class="label">Test (no Akai needed):</span><button type="button" class="btn small" id="midi-test-pad">Test pad</button><button type="button" class="btn small" id="midi-test-key">Test key</button><button type="button" class="btn small" id="midi-test-cc">Test knob CC70</button><button type="button" class="btn small" id="midi-test-song">Test song switch</button></div>'+
   '<ol id="midi-log"></ol>';
-  var grid=document.querySelector("#tab-beats .beats-grid"); var host=$("tab-beats"); if(grid&&host) host.insertBefore(panel,grid); else if(host) host.appendChild(panel); else return;
+  var host=$("tab-beats"); if(!host) return; var fb=$("midi-fallback"); if(fb) fb.remove(); host.insertBefore(panel,host.firstChild);
   $("midi-channel").value=String(settings.channel); $("midi-base").value=settings.baseNote;
   if(!navigator.requestMIDIAccess) setStatus("err","Not supported: this browser has no Web MIDI. Use Chrome on Android or desktop (Safari/iPhone cannot do this).");
   $("midi-enable").addEventListener("click",function(){ enable(); });

@@ -30,7 +30,7 @@ h2,h3{font-family:var(--font);text-transform:uppercase;letter-spacing:.14em;font
 .audio-state{font-family:var(--mono);color:#7dd87d}
 .audio-state::before{content:"● ";color:var(--ok)}
 /* ---------- page selector: bottom rack nav (one page at a time) ---------- */
-.tabs{position:fixed;left:0;right:0;bottom:0;top:auto;z-index:60;display:flex;gap:4px;overflow-x:auto;padding:8px 8px calc(8px + env(safe-area-inset-bottom));background:var(--metal);background-image:var(--brushed),var(--metal);border-top:2px solid #000;box-shadow:inset 0 1px 0 #3d3e46,0 -3px 8px rgba(0,0,0,.55);scrollbar-width:none}
+.tabs{scrollbar-width:none;-webkit-overflow-scrolling:touch;position:fixed;left:0;right:0;bottom:0;top:auto;z-index:60;display:flex;gap:4px;overflow-x:auto;padding:8px 8px calc(8px + env(safe-area-inset-bottom));background:var(--metal);background-image:var(--brushed),var(--metal);border-top:2px solid #000;box-shadow:inset 0 1px 0 #3d3e46,0 -3px 8px rgba(0,0,0,.55);scrollbar-width:none}
 .tabs::-webkit-scrollbar{display:none}
 .tab{flex:1 0 auto;min-height:52px;padding:.55rem .8rem;border:1px solid #000;border-bottom:1px solid #000;border-radius:5px;background:linear-gradient(180deg,#2b2c32,#141518);color:#aeb3bd;font-family:var(--font);text-transform:uppercase;letter-spacing:.13em;font-size:.78rem;box-shadow:inset 0 1px 0 #45464f;position:relative}
 .tab::before{content:"";display:block;width:6px;height:6px;border-radius:50%;background:#333;margin:0 auto 4px;box-shadow:inset 0 1px 1px #000}
@@ -117,7 +117,7 @@ output,.mono,.rec-status,.song-pos,.pn-pos{font-family:var(--mono)}
 .foot{padding-bottom:2rem;color:#777d89;text-transform:uppercase;letter-spacing:.12em;font-size:.68rem}
 /* helper sheet stays readable over rack nav */
 .hp-sheet{z-index:2147483000!important}
-@media(max-width:560px){ .tab{padding:.5rem .55rem;font-size:.68rem} .audio-state{display:none} main{padding:.65rem} }
+@media(max-width:560px){ .tab{padding:.5rem .45rem;font-size:.62rem;min-height:48px} .tabs{mask-image:linear-gradient(to right,#000 92%,transparent)} .audio-state{display:none} main{padding:.65rem} }
 @media(prefers-reduced-motion:reduce){ .panel.active{animation:none} }
 /* no horizontal overflow on narrow phones: grid children must be allowed to shrink */
 .beats-grid,.pads-wrap{min-width:0;max-width:100%}

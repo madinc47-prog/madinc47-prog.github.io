@@ -6402,7 +6402,7 @@
     document.querySelectorAll(".tab[data-tab]").forEach(function (x) {
       var on = x.dataset.tab === name;
       x.classList.toggle("active", on);
-      x.setAttribute("aria-selected", on ? "true" : "false");
+      x.setAttribute("aria-selected", on ? "true" : "false"); if(on && x.scrollIntoView) try{x.scrollIntoView({inline:"center",block:"nearest"});}catch(e){}
     });
     document.querySelectorAll(".panel").forEach(function (p) {
       p.classList.toggle("active", p.id === "tab-" + activeTab);
@@ -6661,6 +6661,7 @@
   }
 
   function init() {
+    window.__ipbReady=true; var _boot=document.getElementById("boot"); if(_boot) _boot.remove();
     var had = loadSession();
     if (!had) loadStarter(DEFAULT_KIT);
     var migrated = migratePads();
@@ -6928,29 +6929,4 @@
   })();
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
   else init();
-})();// Web MIDI & URL Parameter Connection
-if (navigator.requestMIDIAccess) {
-    navigator.requestMIDIAccess().then(onMIDISuccess, onMIDIFailure);
-}
-
-function onMIDISuccess(midiAccess) {
-    for (let input of midiAccess.inputs.values()) {
-        input.onmidimessage = (msg) => {
-            const [cmd, note, vel] = msg.data;
-            if (cmd === 144 && vel > 0) {
-                console.log("MIDI Note Pressed:", note);
-            }
-        };
-    }
-}
-
-function onMIDIFailure() {
-    console.log("Could not access MIDI devices.");
-}
-
-window.addEventListener('DOMContentLoaded', () => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const freshID = urlParams.get('fresh');
-    if (freshID) console.log("Loaded session ID:", freshID);
-});
-
+})();
