@@ -366,7 +366,8 @@
         chordTrack: S.chordTrack, structure: S.structure, cueBar: S.cueBar, feel: S.feel,
         lyricSong: S.lyricSong, bpl: S.bpl, prSize: S.prSize, vox: S.vox, tool: S.tool, master: S.master || null,
         backing: bt.id ? { id: bt.id, layer: bt.layer, prevBpm: bt.prevBpm } : null,
-        piano: S.piano, songKey: S.songKey, klTempo: S.klTempo
+        piano: S.piano, songKey: S.songKey, klTempo: S.klTempo,
+        padAssign: window.IPBPadAssign ? IPBPadAssign.pack() : null
       }));
     } catch (e) { /* storage full or blocked */ }
     useCtx(pc);
@@ -376,6 +377,7 @@
   function loadSession() {
     try {
       var raw = localStorage.getItem(SESSION_KEY);
+      try { var pd0 = JSON.parse(raw || "null"); if (pd0 && pd0.padAssign) window.__ipbPadAssignSaved = pd0.padAssign; } catch (e) { /* ignore */ }
       if (!raw) return false;
       var d = JSON.parse(raw);
       if (d.fmt >= 2) {
@@ -1080,8 +1082,23 @@
   /* shared by live playback + offline bounce. o = { vel, semi, slide } */
   function playPadInto(c, G, i, when, reg, o) {
     o = o || {};
-    var def = padDef(i), cfg = padCfg(i), bufs = stockBufs[i];
-    var buf = customBuf[i] || (bufs && bufs.length ? bufs[G.rr[i]++ % bufs.length] : null), lrate = 1;
+    /* Pad assignments (sampler.js, window.IPBPadAssign): a pad can BE another sound (Replace) or carry one
+       alongside its drum (Layer). Switch / Empty pads never sound here — the sequencer row stays silent. */
+    var PA = window.IPBPadAssign, asg = PA ? PA.get(i) : null;
+    if (asg) {
+      if (asg.type === "switch" || asg.type === "empty") return;
+      if (asg.type === "mel") {
+        PK.play(c, stripsFor(G)[i].inp, clamp((asg.note || 60) + (o.semi || 0), 0, 127), when, asg.dur || 1.1, o.vel == null ? 0.8 : o.vel, asg.inst || PK.DEFAULT, 1, null);
+        if (window.__ipbTD && c === ctx) window.__ipbTD.log("pad " + (i + 1) + " melodic " + (asg.inst || "") + " note " + ((asg.note || 60) + (o.semi || 0)));
+        if (asg.mode !== "layer") return;
+      } else if (asg.type === "sample" || asg.type === "loop") {
+        var sp = PA.playBuf(c, stripsFor(G)[i].inp, i, when, o);
+        if (asg.mode !== "layer" || !sp) return;
+      }
+    }
+    var si = asg && asg.type === "drum" && asg.drum != null ? asg.drum : i;
+    var def = padDef(si), cfg = padCfg(i), bufs = stockBufs[si];
+    var buf = customBuf[si] || (bufs && bufs.length ? bufs[G.rr[si]++ % bufs.length] : null), lrate = 1;
     var ls = libSnd(cfg); // swapped in from the instrument library (not loaded / offline → the kit's own sound)
     if (ls && ls.it.k === "preset") { libPresetPad(c, G, i, when, o, ls, cfg, def); return; }
     if (ls && ls.zones.length) {
@@ -1168,6 +1185,8 @@
   var pendingHits = [], audioUnlocked = false, loadingToastAt = 0;
   function feelHit(i, v) { return FEEL.liveDrum(S.feel, kitDef(S.kit), padDef(i), i, v); } // tone + variation, never delayed
   function triggerPad(i, when, vel) {
+    var PAq = window.IPBPadAssign;
+    if (!when && PAq && PAq.tapSwitch && PAq.tapSwitch(i)) return; // switch pad tapped (Songs pad mode): no sound
     if (!ensureCtx()) return;
     var v = vel == null ? TOOL_VEL[S.tool] : vel;
     if (!when && (ctx.state !== "running" || !hasPad(i))) {
@@ -1509,7 +1528,7 @@
           flashPad(i);
           selectPad(i);
         });
-        onLongPress(el, function () { lyOpen({ kind: "drum", pad: i }); swOpen({ kind: "drum", pad: i }); });
+        onLongPress(el, function () { selectPad(i); if (window.IPBPadAssign) IPBPadAssign.openPanel(i); else { lyOpen({ kind: "drum", pad: i }); swOpen({ kind: "drum", pad: i }); } });
         wrap.appendChild(el);
         padEls.push(el);
       })(i);
@@ -1529,6 +1548,7 @@
       el.querySelector(".pname").textContent = name.length > 14 ? name.slice(0, 13) + "…" : name;
     });
     refreshInspector();
+    if (window.IPBPadAssign) IPBPadAssign.decorate(padEls);
   }
   var PE = [
     { id: "pitch", key: "tune", fmt: function (v) { return (v > 0 ? "+" : "") + v + " st"; } },
@@ -1551,6 +1571,7 @@
     });
     $("pe-mute").classList.toggle("on", !!S.mute[i]);
     $("pe-solo").classList.toggle("on", !!S.solo[i]);
+    if (window.IPBPadAssign) IPBPadAssign.selChanged(i);
     if (lyT) { if (lyT.kind === "drum" && (lyT.pad !== i || lyT.kit !== S.kit)) { lyT = { kind: "drum", pad: i, kit: S.kit }; } lyRefresh(); }
     lyDots();
   }
@@ -4688,7 +4709,7 @@
     if (!beat || !song) { toast("That song has no beat attached."); return; }
     var conv = beatSlot(beat);
     var same = conv.kit === S.kit && JSON.stringify(conv.slot.pattern) === JSON.stringify(S.pattern);
-    if (patternHasNotes() && !same && !confirm("Load “" + song.title + "”? This replaces the current pattern, BPM, chord loop and song form" + (beat.piano ? ", and the current piano-roll pattern" : "") + " (your swapped pad samples stay).")) {
+    if (patternHasNotes() && !same && !window.__ipbPadNoConfirm && !confirm("Load “" + song.title + "”? This replaces the current pattern, BPM, chord loop and song form" + (beat.piano ? ", and the current piano-roll pattern" : "") + " (your swapped pad samples stay).")) {
       $("song-preset").value = ""; return;
     }
     if (vox.state !== "idle") stopVocalTake();
@@ -6717,6 +6738,22 @@
       saved: function () { return S.master || null; },
       save: function (st) { S.master = st; saveSession(); },
       toast: toast, title: function () { return btActive() ? bt.title : songTitle(); }, bpm: function () { return S.bpm; }
+    },
+    /* Sampler / pad assignments (sampler.js): bridges into the sequencer, piano patterns, sections and songs. */
+    padBridge: {
+      playing: function () { return playing; }, bpm: function () { return S.bpm; },
+      kitPads: function () { return kitDef(S.kit).pads.map(function (p) { return p.n; }); },
+      switchSlot: function (id) { switchSlot(id); },
+      pianoSwitch: function (id) { if (playing) pianoPending = id; else { S.piano.slot = id; pianoUI(true, true); saveSession(); } },
+      sections: function () { var A = arrangement(); return A ? A.map(function (s, idx) { return { i: idx, label: secLabel(idx), bars: s.bars }; }) : []; },
+      section: function (i) { var A = arrangement(); if (!A || !A[i]) return false; var b = 0; for (var j = 0; j < i; j++) b += A[j].bars; cueTo(b); return true; },
+      songs: function () { var out = []; BUILTIN_SONGS.forEach(function (b) { if (b.preset) out.push({ val: "b:" + b.id, title: b.title + " · built-in beat" }); }); songStore.songs.forEach(function (s) { if (s.beat) out.push({ val: "u:" + s.id, title: s.title + " · my song beat" }); }); return out; },
+      applySong: function (val) { window.__ipbPadNoConfirm = true; try { return applySongPreset(val); } finally { window.__ipbPadNoConfirm = false; } },
+      play: function () { play(); },
+      barMs: function () { return stepDur() * STEPS * 1000; },
+      posSteps: function () { return currentPosK(); },
+      loopName: function () { var L = klSlotLoop(S.piano.slot); return L ? L.name : null; },
+      toast: toast
     },
     bounceForStudio: bounceForStudio, showTab: showTab, activeTab: function () { return activeTab; },
     /* built-in Helper (helper.js): quick checks of the beat / mix / vocal, each with a one-tap fix where there is a safe one */

@@ -6,7 +6,7 @@
 (function(){
 "use strict";
 if(window.IPBSingVoice) return;
-var VERSION="20261018k";
+var VERSION="20261018l";
 var COLAB_URL="https://colab.research.google.com/github/madinc47-prog/madinc47-prog.github.io/blob/main/isle-voice/colab/IsleVoice_RVC.ipynb";
 var LS_KEY="ipb_voice_clone_v1", DB_NAME="ipb-voice-clone-v1";
 var $=function(id){return document.getElementById(id)};

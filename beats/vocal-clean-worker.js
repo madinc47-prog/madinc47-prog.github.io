@@ -3,7 +3,7 @@
  * suppression) → 70 Hz high-pass → RNNoise (Xiph RNNoise, BSD-3-Clause; WASM build by Jitsi, Apache-2.0,
  * vendor/rnnoise) → voice-activity gate driven by RNNoise's own VAD.
  * Input must be 48 kHz (the page resamples if the AudioContext runs at another rate). */
-import "./vocal-clean-dsp.js?v=20261018k"; // bump together with the ?v= in index.html
+import "./vocal-clean-dsp.js?v=20261018l"; // bump together with the ?v= in index.html
 const D = self.IPBVocalCleanDSP;
 // two RNNoise builds from @jitsi/rnnoise-wasm 0.2.1: "v2" = RNNoise 0.2 model (rnnoise-sync.js, WASM inlined, ~1.9 MB, ~1.3 MB gzip; default — measured better),
 // "v1" = RNNoise 0.1 model (rnnoise.js + rnnoise.wasm, 124 KB). Loaded on first use only.

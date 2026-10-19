@@ -166,3 +166,32 @@ main,.panel{min-width:0}
 /* Lyrics readability kept large/clear on purpose */
 .ly-l{font-size:1.02rem;line-height:1.6}
 #ly-text{font-size:.98rem;line-height:1.65}
+
+/* ---- Pad assignments (sampler.js): MPC-style assignable pads, studio rack look ---- */
+.pad-modebar{display:flex;align-items:center;gap:.45rem;flex-wrap:wrap;margin:0 0 .5rem;padding:.4rem .55rem;background:linear-gradient(180deg,#22262e,#14161c);border:1px solid #3a4152;border-radius:8px}
+.pm-btn{min-height:44px;padding:.35rem .8rem;border-radius:6px;border:1px solid #4a5468;background:#1b1f28;color:#cfd6e4;font-weight:700;cursor:pointer}
+.pm-btn.on{background:#ffb347;color:#191207;border-color:#ffcf87;box-shadow:0 0 8px #ffb34766}
+.pm-hint{font-size:.78rem;color:#9fb0c9}
+.pad{position:relative}
+.pad .pasg{position:absolute;left:4px;right:4px;bottom:4px;font-size:.58rem;line-height:1.15;color:#eaf2ff;background:#000a;border-radius:4px;padding:2px 3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none}
+.pad.pa-mel{box-shadow:inset 0 0 0 2px #b78cff}
+.pad.pa-sample{box-shadow:inset 0 0 0 2px #57d9a3}
+.pad.pa-switch{box-shadow:inset 0 0 0 2px #ffb347}
+.pad.pa-drum{box-shadow:inset 0 0 0 2px #6fc3ff}
+.pad.pa-empty{opacity:.55}
+.pad.switch-arm{animation:paarm .5s infinite alternate}
+@keyframes paarm{from{filter:brightness(1)}to{filter:brightness(1.7)}}
+.pad.switch-fire{filter:brightness(2)}
+.pad-assign{margin-top:.6rem;padding:.55rem;border:1px solid #4a5468;border-radius:8px;background:linear-gradient(180deg,#1d212b,#12141a)}
+.pad-assign.pa-flash{outline:2px solid #ffb347}
+.pa-head{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap}
+.pa-on{margin-left:auto;font-size:.85rem;color:#cfd6e4}
+.pa-types{display:flex;gap:.35rem;flex-wrap:wrap;margin:.5rem 0}
+.pa-types button{min-height:44px;padding:.3rem .6rem;border-radius:6px;border:1px solid #4a5468;background:#1b1f28;color:#cfd6e4;cursor:pointer;font-weight:600}
+.pa-types button.on{background:#2e7d5b;color:#fff;border-color:#57d9a3}
+.pa-mode{display:block;margin:.3rem 0;font-size:.85rem;color:#cfd6e4}
+.pa-sub label{display:block;margin:.35rem 0;font-size:.85rem;color:#cfd6e4}
+.pa-sub input[type=range]{min-height:32px;vertical-align:middle}
+.pa-btns{display:flex;gap:.4rem;flex-wrap:wrap;align-items:center;margin:.4rem 0}
+.pa-sname{font-size:.85rem;color:#aef0d2;margin:.3rem 0}
+.pa-note{font-size:.78rem;color:#9fb0c9}
