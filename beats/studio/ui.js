@@ -350,17 +350,30 @@
       var pkIn = 0; for (var q = 0; q < res.data.length; q += 8) { var aq = Math.abs(res.data[q]); if (aq > pkIn) pkIn = aq; }
       var silent = pkIn < 0.001;
       S.pushUndo(P, "record");
-      var buf = S.bufFrom([res.data], res.sr), name = "Take " + (takeN++), id = S.addSource(buf, name), made = [];
+      var name = "Take " + (takeN++), made = [];
+      if (res.split && res.data2 && res.armed.length>=1) {
+        // 2 mics on separate tracks: Mic1->first armed, Mic2->second armed (each centred mono)
+        var buf1=S.bufFrom([res.data],res.sr), id1=S.addSource(buf1,name+" Mic 1");
+        var buf2=S.bufFrom([res.data2],res.sr), id2=S.addSource(buf2,name+" Mic 2");
+        var tids=[res.armed[0], res.armed[1]||res.armed[0]];
+        [ {src:id1,buf:buf1,tid:tids[0],nm:name+" Mic 1"}, {src:id2,buf:buf2,tid:tids[1],nm:name+" Mic 2"} ].forEach(function(x){
+          var c={id:S.uid("c"),track:x.tid,src:x.src,start:res.start,offset:0,dur:x.buf.duration,gain:0,fadeIn:0,fadeOut:0,name:x.nm}; P.clips.push(c); made.push(c);
+        });
+        lastTake={start:res.start,latencyMs:Math.round(res.latency*1000),dur:buf1.duration};
+        if (window.__ipbTD&&window.__ipbTD.log) window.__ipbTD.log("USB-Audio studio split made 2 clips");
+      } else {
+      var buf = S.bufFrom([res.data], res.sr), id = S.addSource(buf, name);
       lastTake = { start: res.start, latencyMs: Math.round(res.latency * 1000), dur: buf.duration };
       res.armed.forEach(function (tid) {
         var c = { id: S.uid("c"), track: tid, src: id, start: res.start, offset: 0, dur: buf.duration, gain: 0, fadeIn: 0, fadeOut: 0, name: name };
         P.clips.push(c); made.push(c);
       });
+      }
       selClip = made[0].id; selTrack = made[0].track;
       playhead = playFrom;
       changed();
       if (silent) { toast(name + " was saved, but it is silent. " + MIC_SILENT, 9000); return; }
-      toast(name + " recorded RAW (no cleanup) (" + buf.duration.toFixed(1) + "s) — use Clean take only if you want cleanup.", 7000);
+      toast(name + " recorded RAW (no cleanup) (" + (lastTake?lastTake.dur:0).toFixed(1) + "s)" + (res.split ? " — Mic 1 + Mic 2 on separate tracks" : "") + " — use Clean take only if you want cleanup.", 7000);
     });
   }
 

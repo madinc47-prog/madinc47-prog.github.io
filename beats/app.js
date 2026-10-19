@@ -3536,7 +3536,7 @@
     // suppression or auto gain, and nothing is applied after the take; 🧹 Clean last take is manual.
     var RAW = { echoCancellation: false, noiseSuppression: false, autoGainControl: false };
     var want = proc ? { echoCancellation: true, noiseSuppression: true, autoGainControl: false, channelCount: 1 } // voice only (manual)
-      : { echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: 1 };
+      : (window.BeatAudioInput ? window.BeatAudioInput.constraints(undefined,false) : { echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: {ideal:2} });
     if (proc) RAW = { echoCancellation: true, noiseSuppression: true, autoGainControl: false };
     return md.getUserMedia({ audio: want })
       .catch(function (e) {
@@ -3701,7 +3701,8 @@
     setVoxButtons();
     if (frames < sr * 0.5) { rec.L = []; rec.R = []; rec.V = []; rec.V2 = []; setVoxStatus("Take too short — nothing saved"); return; }
     var L = merge(rec.L, frames), R = merge(rec.R, frames);
-    var V = FXC.smartMono([merge(rec.V, frames), rec.V2.length ? merge(rec.V2, frames) : null]); // channel fix only: live side or mono sum
+    var _vL=merge(rec.V, frames), _vR=rec.V2.length ? merge(rec.V2, frames) : null;
+    var V = (window.BeatAudioInput && _vR) ? window.BeatAudioInput.applyMode(_vL,_vR,window.BeatAudioInput.getMode()).mono : FXC.smartMono([_vL, _vR]); // USB 2-mic mode (mix/mic1/mic2) else channel fix only
     rec.L = []; rec.R = []; rec.V = []; rec.V2 = [];
     // RAW: no silence-trim — the take is kept exactly as captured (channel mono-sum fix above only)
     var song = getSong(S.lyricSong);

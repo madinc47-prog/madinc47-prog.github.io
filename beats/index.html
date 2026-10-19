@@ -14,9 +14,10 @@
   <meta name="theme-color" content="#0b0d12">
   <meta name="color-scheme" content="dark"><!-- the app is already dark: stops Samsung Internet / Chrome "force dark" from re-colouring it -->
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="styles.css?v=20261018m">
-  <link rel="stylesheet" href="rack.css?v=20261018m">
-  <link rel="stylesheet" href="sing-my-voice.css?v=20261018m">
+  <link rel="stylesheet" href="styles.css?v=20261018n">
+  <link rel="stylesheet" href="rack.css?v=20261018n">
+  <link rel="stylesheet" href="sing-my-voice.css?v=20261018n">
+  <link rel="stylesheet" href="usb-audio.css?v=20261018n">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Island Pin Beats — Free Beat Maker">
   <meta name="twitter:description" content="Make boom-bap, trap, drill, afrobeats, amapiano, house and bouyon beats in your browser. Free, from Dominica.">
@@ -791,27 +792,28 @@
 
   <footer class="foot">Free · runs in your browser · synthesized drums + CC0 one-shots (<a href="samples/CREDITS.md">credits</a>), no paid APIs · <a href="studio/">Studio</a> · <a href="../dj/">DJ booth</a> · <a href="check/">Sound check</a> · <a href="../">IslePin</a></footer>
 
-  <script src="fresh.js?v=20261018m"></script>
-  <script src="storage.js?v=20261018m"></script>
-  <script src="helper.js?v=20261018m"></script>
+  <script src="fresh.js?v=20261018n"></script>
+  <script src="storage.js?v=20261018n"></script>
+  <script src="helper.js?v=20261018n"></script>
   <script>setTimeout(function () { if (window.IPBStorage) IPBStorage.line().then(function (t) { var a = document.getElementById("storage-line"); if (a && t) { a.textContent = t; a.hidden = false; } }); }, 2500);</script>
-  <script src="humanize.js?v=20261018m"></script>
-  <script src="layers.js?v=20261018m"></script>
-  <script src="library.js?v=20261018m"></script>
-  <script src="drums.js?v=20261018m"></script>
-  <script src="keys-instruments.js?v=20261018m"></script>
-  <script src="pianoroll-data.js?v=20261018m"></script>
-  <script src="keys-loops.js?v=20261018m"></script>
-  <script src="pianoroll.js?v=20261018m"></script>
-  <script src="fx-chain.js?v=20261018m"></script>
-  <script src="match.js?v=20261018m"></script>
-  <script src="vocal-clean-client.js?v=20261018m"></script>
-<script src="midi.js?v=20261018m"></script>
-  <script src="app.js?v=20261018m"></script>
-  <script src="sampler.js?v=20261018m"></script>
-  <script src="sing-my-voice.js?v=20261018m"></script>
-  <script src="master/master-dsp.js?v=20261018m"></script>
-  <script src="master/master.js?v=20261018m"></script>
+  <script src="humanize.js?v=20261018n"></script>
+  <script src="layers.js?v=20261018n"></script>
+  <script src="library.js?v=20261018n"></script>
+  <script src="drums.js?v=20261018n"></script>
+  <script src="keys-instruments.js?v=20261018n"></script>
+  <script src="pianoroll-data.js?v=20261018n"></script>
+  <script src="keys-loops.js?v=20261018n"></script>
+  <script src="pianoroll.js?v=20261018n"></script>
+  <script src="fx-chain.js?v=20261018n"></script>
+  <script src="match.js?v=20261018n"></script>
+  <script src="vocal-clean-client.js?v=20261018n"></script>
+<script src="midi.js?v=20261018n"></script>
+  <script src="usb-audio.js?v=20261018n"></script>
+  <script src="app.js?v=20261018n"></script>
+  <script src="sampler.js?v=20261018n"></script>
+  <script src="sing-my-voice.js?v=20261018n"></script>
+  <script src="master/master-dsp.js?v=20261018n"></script>
+  <script src="master/master.js?v=20261018n"></script>
   <script type="module" src="../shared/ecosystem-nav.js"></script><!-- Beats | DJ Booth | Player switcher (shared/README.md) -->
 <script>/* offline app (sw.js): after the first visit Beat works with no connection. ?nosw=1 skips it. */
 if ("serviceWorker" in navigator && !/[?&]nosw/.test(location.search) && !(window.parent !== window && /\/beats\/studio\//.test(location.pathname))) addEventListener("load", function () { setTimeout(function () { navigator.serviceWorker.register("sw.js", { scope: "./" }).catch(function () {}); }, 1500); });</script>

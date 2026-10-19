@@ -270,7 +270,9 @@
       var RAW = { echoCancellation: false, noiseSuppression: false, autoGainControl: false };
       // "No headphones — voice only" (manual toggle): browser echo-cancel + noise suppression on, auto-gain still off
       if (vo) RAW = { echoCancellation: true, noiseSuppression: true, autoGainControl: false };
-      return navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: vo, noiseSuppression: vo, autoGainControl: false, channelCount: 1 } })
+      var _bai = (typeof window!=="undefined" && window.BeatAudioInput) || (typeof parent!=="undefined" && parent.BeatAudioInput) || null;
+      var _want = vo ? { echoCancellation: true, noiseSuppression: true, autoGainControl: false, channelCount: 1 } : (_bai ? _bai.constraints(undefined,false) : { echoCancellation:false, noiseSuppression:false, autoGainControl:false, channelCount:{ideal:2} });
+      return navigator.mediaDevices.getUserMedia({ audio: _want })
         .catch(function (e) { if (e && (e.name === "OverconstrainedError" || e.name === "TypeError")) return navigator.mediaDevices.getUserMedia({ audio: RAW }); throw e; });
     }).then(function (stream) {
       var mic = {}; try { mic = stream.getAudioTracks()[0].getSettings() || {}; } catch (e) { /* ignore */ }
@@ -308,12 +310,17 @@
         if (!R.chunks.length) { res(null); return; }
         var c = E.ctx, n = R.chunks.reduce(function (a, b) { return a + b.length; }, 0), all = new Float32Array(n), o = 0;
         R.chunks.forEach(function (ch) { all.set(ch, o); o += ch.length; });
-        if (R.chunks2.some(Boolean) && window.IPBFx) { // stereo stream: keep the live side (dead / near-silent other side) or sum both to mono
+        var _splitData=null, _modeData=null;
+        if (R.chunks2.some(Boolean)) {
           var all2 = new Float32Array(n), o2 = 0;
           R.chunks2.forEach(function (ch, k) { var len = R.chunks[k].length; if (ch) all2.set(ch.subarray(0, len), o2); o2 += len; });
-          var side = window.IPBFx.liveSide(all, all2), rl = window.IPBFx.rms(all), rr = window.IPBFx.rms(all2);
+          var _bai2 = (typeof window!=="undefined" && window.BeatAudioInput) || null;
+          var _mode = _bai2 ? _bai2.getMode() : "mix";
+          if (_bai2 && (_mode==="mic1"||_mode==="mic2")) { _modeData=_bai2.applyMode(all,all2,_mode).mono; all=_modeData; if(TD) tdLog("studio take: USB mode "+_mode); }
+          else if (_bai2 && _mode==="split") { _splitData={mic1:new Float32Array(all), mic2:new Float32Array(all2)}; if(TD) tdLog("studio take: USB split Mic1 L / Mic2 R, channels kept separate"); }
+          else if (window.IPBFx) { var side = window.IPBFx.liveSide(all, all2), rl = window.IPBFx.rms(all), rr = window.IPBFx.rms(all2);
           if (TD) tdLog("studio take: stereo mic stream, L " + (20 * Math.log10(rl + 1e-9)).toFixed(1) + " dB R " + (20 * Math.log10(rr + 1e-9)).toFixed(1) + " dB → " + (side === 0 ? "left side only, saved mono (both ears)" : side === 1 ? "right side only, saved mono (both ears)" : "both sides live, summed to mono"));
-          all = window.IPBFx.smartMono([all, all2]);
+          all = window.IPBFx.smartMono([all, all2]); }
         } else if (TD) tdLog("studio take: mono mic stream, saved mono (both ears)");
         // align: first captured frame's context time vs. when playback of `from` started, minus round-trip latency
         var firstT = R.t[0], lat = latency();
@@ -321,7 +328,9 @@
         var cut = 0;
         if (startTl < R.from) { cut = Math.round((R.from - startTl) * c.sampleRate); startTl = R.from; }
         var data = all.subarray(Math.min(cut, all.length - 1));
-        res({ voiceOnly: R.voiceOnly, data: new Float32Array(data), start: startTl, armed: R.armed, sr: c.sampleRate, latency: lat, speaker: R.speaker, mic: R.mic });
+        var _res={ voiceOnly: R.voiceOnly, data: new Float32Array(data), start: startTl, armed: R.armed, sr: c.sampleRate, latency: lat, speaker: R.speaker, mic: R.mic };
+        if (_splitData) { var _cut=Math.min(cut,_splitData.mic1.length-1); _res.split=true; _res.data=_splitData.mic1.subarray(_cut); _res.data=new Float32Array(_res.data); _res.data2=new Float32Array(_splitData.mic2.subarray(_cut)); _res.channels=2; }
+        res(_res);
       }, 120);
     });
   }

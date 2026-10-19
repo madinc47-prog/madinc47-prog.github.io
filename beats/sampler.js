@@ -238,7 +238,7 @@
   function recStart() {
     var br = B(); if (!br) return;
     var c = br.master.ctx();
-    navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } }).then(function (stream) {
+    navigator.mediaDevices.getUserMedia({ audio: window.BeatAudioInput ? window.BeatAudioInput.constraints(undefined,false) : { echoCancellation: false, noiseSuppression: false, autoGainControl: false } }).then(function (stream) {
       var src = c.createMediaStreamSource(stream), proc = c.createScriptProcessor(4096, 1, 1), mute = c.createGain();
       mute.gain.value = 0; var chunks = [];
       proc.onaudioprocess = function (e) { chunks.push(new Float32Array(e.inputBuffer.getChannelData(0))); };
