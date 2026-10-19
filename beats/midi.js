@@ -7,7 +7,7 @@
 (function(){
 "use strict";
 if(window.IPBMidi && window.IPBMidi.version) return;
-var VERSION="20261018l";
+var VERSION="20261018m";
 var LS_SET="ipb_midi_settings_v2", LS_LEARN="ipb_midi_learn_v2";
 var $=function(id){return document.getElementById(id)};
 function log(m){ if(window.__ipbTD&&window.__ipbTD.log) window.__ipbTD.log("MIDI "+m); if(/[?&]tapdebug=1(&|$)/.test(location.search)) console.log("[MIDI]",m); }
@@ -54,11 +54,13 @@ function enable(){
   return navigator.requestMIDIAccess({sysex:false}).then(function(a){ access=a; enabled=true; attach(); var n=deviceNames(); noteLog(n.length?("Enabled. Connected: "+n.join(", ")):"Enabled. No device yet — plug the Akai in."); return true; })
    .catch(function(e){ enabled=false; setStatus("err","MIDI was denied or failed. Check the browser's site permission for MIDI, then tap Enable MIDI again. ("+(e.message||e)+")"); noteLog("enable failed "+(e.message||e)); return false; });
 }
-/* ---- pad / key firing ---- */
+/* ---- pad / key firing ----
+   Final pads build (451c9a6): assignments/switch pads are handled inside app triggerPad(), reached via the pad
+   element pointerdown below (fires assigned sound + selects). If a velocity pad API appears, it is preferred. */
 function firePad(i,vel){
   var B=window.IPBBeats;
   // future/parallel pad-assignment API (picked up automatically if the pads work adds one)
-  var fn=(B&&(B.triggerPad||(B.pads&&B.pads.trigger)||B.padTrigger||(B.midi&&B.midi.pad)));
+  var fn=(B&&(B.triggerPad||(B.pads&&B.pads.trigger)||B.padTrigger||(B.padBridge&&B.padBridge.trigger)||(B.midi&&B.midi.pad)));
   if(typeof fn==="function"){ try{ fn.call(B,i,vel); noteLog("Pad "+(i+1)+" (vel "+vel+") via pad API"); return; }catch(e){ log("pad API failed "+e.message); } }
   var pads=document.querySelectorAll(".pad"); var el=pads[i]; if(!el){ noteLog("Pad "+(i+1)+" — pads not on screen"); return; }
   el.dispatchEvent(new PointerEvent("pointerdown",{bubbles:true,cancelable:true}));
