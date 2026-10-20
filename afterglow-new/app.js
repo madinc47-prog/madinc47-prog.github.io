@@ -4,17 +4,21 @@
   var all = DATA.items.slice();
   // "recent" = the New & Recent shelf; the action shelves only show in the Action view (or in search results).
   var items = all.filter(function(x){ return !x.shelf || x.shelf === "recent"; });
-  var EXTRA = [
-    {key: "action-80s", el: "shelf-80s"},
-    {key: "action-2026", el: "shelf-2026"}
+  // Front door order: modern first, classics last.
+  var SHELVES = [
+    {key: "recent", host: "shelves", title: "New &amp; Recent", sub: "Films from 2019 to 2026: open movies, official free releases and NASA documentaries."},
+    {key: "action-2026", host: "shelves", title: "2026 Action", sub: "Recent action (2025–2026) posted free in full by the studio or the filmmakers themselves."},
+    {key: "action-80s", host: "shelves", title: "80s Action", sub: "1980s classics the licensed distributor (Shout! Studios) posts free in full on its own channel."},
+    {key: "vault", host: "shelves-late", title: "Vintage Vault", sub: "Older films from the Internet Archive, marked public domain by the uploader and played in the Archive's own player."}
   ];
+  function shelfOf(x){ return x.shelf || "recent"; }
   var THIS_YEAR = 2026;
   var state = {q: "", genre: "all", rights: "all"};
   var $ = function(id){ return document.getElementById(id); };
   window.__agPlayer = {id: null, state: "idle", error: null};
 
   function esc(s){ return String(s == null ? "" : s).replace(/[&<>"']/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
-  function rightsOf(it){ return it.kind === "open-movie" ? "cc" : it.kind === "public-domain-gov" ? "pd" : "official"; }
+  function rightsOf(it){ return it.kind === "open-movie" ? "cc" : (it.kind === "public-domain-gov" || it.kind === "public-domain") ? "pd" : "official"; }
   function rightsBadge(it){ var r = rightsOf(it); return r === "cc" ? it.license : r === "pd" ? "Public domain" : "Official free"; }
   function studioShort(it){
     if (it.badge) return it.badge;
@@ -26,12 +30,12 @@
   function licenseLine(it){
     var r = rightsOf(it);
     if (r === "cc") return it.license + " · open movie";
-    if (r === "pd") return "Public domain · U.S. Government work";
+    if (r === "pd") return it.kind === "public-domain" ? "Public domain · Internet Archive" : "Public domain · U.S. Government work";
     if (it.badge === "Filmmaker") return "Free, posted by the filmmaker";
     return "Free, official upload · " + studioShort(it);
   }
 
-  var GENRES = [["all","all"],["action","action"],["animation","animation"],["documentary","documentary"],["space","space"],["caribbean","Caribbean"],["nature","nature & climate"],["comedy","comedy"],["short","shorts"]];
+  var GENRES = [["all","all"],["action","action"],["animation","animation"],["documentary","documentary"],["space","space"],["caribbean","Caribbean"],["nature","nature & climate"],["comedy","comedy"],["short","shorts"],["horror","horror"]];
   var RIGHTS = [["all","all"],["cc","Creative Commons"],["official","official free"],["pd","public domain"]];
 
   function chips(el, list, key){
@@ -49,7 +53,7 @@
     if (state.rights !== "all" && rightsOf(it) !== state.rights) return false;
     var q = state.q.trim().toLowerCase();
     if (!q) return true;
-    return [it.title, it.studio, it.license, it.source, String(it.year), it.genres.join(" "), it.synopsis, it.shelf === "action-80s" ? "80s eighties classic" : ""].join(" ").toLowerCase().indexOf(q) >= 0;
+    return [it.title, it.studio, it.license, it.source, String(it.year), it.genres.join(" "), it.synopsis, it.shelf === "action-80s" ? "80s eighties classic" : it.shelf === "vault" ? "vintage vault classic archive" : ""].join(" ").toLowerCase().indexOf(q) >= 0;
   }
 
   function card(it){
@@ -60,24 +64,26 @@
       '<h3>' + esc(it.title) + '</h3><p class="sub">' + it.year + ' · ' + esc(it.runtime) + '</p><p class="lic">' + esc(licenseLine(it)) + '</p></button>';
   }
 
-  function render(){
-    var list = items.filter(match);
-    $("grid").innerHTML = list.map(card).join("");
-    $("empty").hidden = list.length > 0;
-    $("count").textContent = list.length + " of " + items.length + " films · newest first";
-    // Action shelves: always shown in the Action view; in "all" they only appear when a search matches them.
-    var q = state.q.trim();
-    EXTRA.forEach(function(sh){
-      var pool = all.filter(function(x){ return x.shelf === sh.key; });
-      var hits = pool.filter(match);
-      var show = state.genre === "action" || (state.genre === "all" && q !== "" && hits.length > 0);
-      var sec = $(sh.el);
-      sec.hidden = !show;
-      if (!show) { sec.querySelector(".grid").innerHTML = ""; return; }
-      sec.querySelector(".grid").innerHTML = hits.map(card).join("");
-      sec.querySelector(".x-empty").hidden = hits.length > 0;
-      sec.querySelector(".x-count").textContent = hits.length + " of " + pool.length + " films";
+  function buildShelves(){
+    SHELVES.forEach(function(sh){
+      var sec = document.createElement("section");
+      sec.className = "wrap shelf"; sec.id = "shelf-" + sh.key;
+      sec.innerHTML = '<div class="shelf-head"><h2>' + sh.title + ' <span class="soft">(free &amp; legal)</span></h2><p class="muted x-count"></p></div>' +
+        '<p class="muted small shelf-sub">' + sh.sub + '</p><div class="grid"></div>';
+      $(sh.host).appendChild(sec);
     });
+  }
+  function render(){
+    var filtered = state.q.trim() !== "" || state.genre !== "all" || state.rights !== "all", total = 0;
+    SHELVES.forEach(function(sh){
+      var pool = all.filter(function(x){ return shelfOf(x) === sh.key; });
+      var hits = pool.filter(match); total += hits.length;
+      var sec = $("shelf-" + sh.key);
+      sec.hidden = hits.length === 0;
+      sec.querySelector(".grid").innerHTML = hits.map(card).join("");
+      sec.querySelector(".x-count").textContent = (filtered ? hits.length + " of " : "") + pool.length + (pool.length === 1 ? " film" : " films");
+    });
+    $("empty").hidden = total > 0;
   }
 
   function hero(){
@@ -124,6 +130,11 @@
     var p = v.play(); if (p && p.catch) p.catch(function(){ /* autoplay blocked: user presses play */ setState("ready"); });
   }
 
+  function playArchive(it){
+    // The Internet Archive's own embedded player; nothing is copied or re-hosted.
+    $("screen-inner").innerHTML = '<iframe src="https://archive.org/embed/' + encodeURIComponent(it.play.id) + '" title="' + esc(it.title) + '" allow="autoplay; fullscreen" allowfullscreen></iframe>';
+    setState("ready");
+  }
   function playYT(it, vid){
     $("screen-inner").innerHTML = '<div id="yt-slot"></div>';
     loadYT().then(function(YT){
@@ -148,17 +159,19 @@
     var it = all.filter(function(x){ return x.id === id; })[0]; if (!it) return;
     lastFocus = document.activeElement;
     window.__agPlayer = {id: it.id, state: "loading", error: null};
-    $("p-eyebrow").textContent = it.shelf === "action-80s" ? "80s Action · Classic, free & legal" : it.shelf === "action-2026" ? "2026 Action · Free & legal" : it.mediaType === "documentary" ? "Documentary · New & Recent" : "Film · New & Recent";
+    $("p-eyebrow").textContent = it.shelf === "vault" ? "Vintage Vault · Public domain" : it.shelf === "action-80s" ? "80s Action · Classic, free & legal" : it.shelf === "action-2026" ? "2026 Action · Free & legal" : it.mediaType === "documentary" ? "Documentary · New & Recent" : "Film · New & Recent";
     $("p-title").textContent = it.title;
     $("p-meta").textContent = it.year + " · " + it.runtime + " · " + it.license + " · " + it.studio;
     $("p-syn").textContent = it.synopsis;
     $("p-note").textContent = (it.note ? it.note + " " : "") + "Playing from: " + it.source + ".";
     var links = ['<a href="' + esc(it.licenseUrl) + '" target="_blank" rel="noopener">License: ' + esc(it.license) + '</a>'];
     it.licenseProof.forEach(function(u, i){ if (u !== it.licenseUrl) links.push('<a href="' + esc(u) + '" target="_blank" rel="noopener">Source ' + (i + 1) + '</a>'); });
-    if (it.play.watchUrl) links.push('<a href="' + esc(it.play.watchUrl) + '" target="_blank" rel="noopener">Open on YouTube</a>');
+    if (it.play.watchUrl) links.push('<a href="' + esc(it.play.watchUrl) + '" target="_blank" rel="noopener">Open on ' + (it.play.type === "archive" ? "Internet Archive" : "YouTube") + '</a>');
     $("p-links").innerHTML = links.join("");
     $("player").hidden = false; document.body.style.overflow = "hidden";
-    if (it.play.type === "mp4") playMp4(it, it.play.src); else playYT(it, it.play.id);
+    if (it.play.type === "mp4") playMp4(it, it.play.src);
+    else if (it.play.type === "archive") playArchive(it);
+    else playYT(it, it.play.id);
     if (!fromHash) history.replaceState(null, "", "#watch/" + it.id);
     document.querySelector("#player .close").focus();
   }
@@ -188,12 +201,13 @@
   }
   function fromHash(){
     if (/^#action$/.test(location.hash)) { setGenre("action"); return; }
+    if (/^#shelf-/.test(location.hash)) return;
     var m = location.hash.match(/^#watch\/([\w-]+)/); if (m) open(m[1], true);
   }
 
   $("q").addEventListener("input", function(e){ state.q = e.target.value; render(); });
   chips($("genres"), GENRES, "genre");
   chips($("rights"), RIGHTS, "rights");
-  hero(); render(); fromHash();
+  buildShelves(); hero(); render(); fromHash();
   window.addEventListener("hashchange", fromHash);
 })();

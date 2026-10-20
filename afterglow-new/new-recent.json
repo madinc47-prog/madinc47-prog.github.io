@@ -2,11 +2,12 @@
   "shelf": "New & Recent (free & legal)",
   "generated": "2026-09-28",
   "policy": "Only open-licensed films (Creative Commons), U.S. Government public-domain works, and full films uploaded free by the rights holder (or its licensed showcase) on official channels. No trailers, no unofficial copies. Action shelves: full films posted free by their rights holder or licensed distributor (e.g. Shout! Studios, iQIYI) or by the filmmakers themselves on their own channels.",
-  "count": 48,
+  "count": 53,
   "shelves": {
-    "recent": 23,
+    "recent": 22,
     "action-2026": 11,
-    "action-80s": 14
+    "action-80s": 14,
+    "vault": 6
   },
   "items": [
     {
@@ -330,10 +331,6 @@
         "embedUrl": "https://www.youtube-nocookie.com/embed/u9lj-c29dxI",
         "watchUrl": "https://www.youtube.com/watch?v=u9lj-c29dxI"
       },
-      "alt": {
-        "type": "mp4",
-        "src": "https://archive.org/download/wing_it/wing_it.mp4"
-      },
       "poster": "https://i.ytimg.com/vi/u9lj-c29dxI/maxresdefault.jpg",
       "source": "Blender Studio (official YouTube)",
       "kind": "open-movie",
@@ -460,38 +457,6 @@
       "kind": "official-free",
       "mediaType": "documentary",
       "runtime": "25 min",
-      "shelf": "recent"
-    },
-    {
-      "id": "sprite-fright-2021",
-      "title": "Sprite Fright",
-      "year": 2021,
-      "duration": 630,
-      "genres": [
-        "animation",
-        "horror",
-        "comedy",
-        "short"
-      ],
-      "synopsis": "Rowdy teenagers on a woodland trip meet a colony of adorable mushroom sprites who turn out to be far less adorable than they look. 80s-style horror comedy (some cartoon gore).",
-      "studio": "Blender Studio",
-      "license": "CC BY 4.0",
-      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
-      "licenseProof": [
-        "https://studio.blender.org/films/sprite-fright/",
-        "https://archive.org/details/sprite-fright-2021",
-        "https://studio.blender.org/terms-and-conditions/"
-      ],
-      "play": {
-        "type": "mp4",
-        "src": "https://archive.org/download/sprite-fright-2021/Sprite%20Fright%20(2021).mp4"
-      },
-      "poster": "https://archive.org/download/sprite-fright-2021/sprite-fright-2021.thumbs/Sprite%20Fright%20(2021)_000148.jpg",
-      "source": "Internet Archive mirror (CC BY 4.0 allows re-hosting)",
-      "kind": "open-movie",
-      "note": "Played from the Internet Archive copy because Blender Studio's YouTube upload is age-gated and will not play in embeds.",
-      "mediaType": "movie",
-      "runtime": "10 min",
       "shelf": "recent"
     },
     {
@@ -1519,6 +1484,188 @@
       "shelf": "action-80s",
       "mediaType": "movie",
       "runtime": "1h 27m"
+    },
+    {
+      "id": "vault-getchristielove",
+      "title": "Get Christie Love!",
+      "year": 1974,
+      "duration": 4440,
+      "runtime": "1h 14m",
+      "genres": [
+        "action",
+        "crime"
+      ],
+      "synopsis": "Teresa Graves stars as an undercover LAPD detective out to take down a drug kingpin and his secret ledger. The TV movie that made her the first Black woman to lead a U.S. police series.",
+      "studio": "Internet Archive",
+      "license": "Public domain",
+      "licenseUrl": "https://creativecommons.org/publicdomain/mark/1.0/",
+      "licenseProof": [
+        "https://archive.org/details/GetChristieLove"
+      ],
+      "play": {
+        "type": "archive",
+        "id": "GetChristieLove",
+        "embedUrl": "https://archive.org/embed/GetChristieLove",
+        "watchUrl": "https://archive.org/details/GetChristieLove"
+      },
+      "poster": "https://archive.org/services/img/GetChristieLove",
+      "source": "Internet Archive (marked public domain by the uploader)",
+      "kind": "public-domain",
+      "mediaType": "movie",
+      "shelf": "vault",
+      "badge": "Archive"
+    },
+    {
+      "id": "vault-concretecowboys",
+      "title": "Concrete Cowboys",
+      "year": 1979,
+      "duration": 5460,
+      "runtime": "1h 31m",
+      "genres": [
+        "comedy",
+        "adventure"
+      ],
+      "synopsis": "Tom Selleck and Jerry Reed play two Montana con-artist cowboys who land in Nashville and stumble into a missing-person mystery.",
+      "studio": "Internet Archive",
+      "license": "Public domain",
+      "licenseUrl": "https://creativecommons.org/publicdomain/mark/1.0/",
+      "licenseProof": [
+        "https://archive.org/details/ConcreteCowboys"
+      ],
+      "play": {
+        "type": "archive",
+        "id": "ConcreteCowboys",
+        "embedUrl": "https://archive.org/embed/ConcreteCowboys",
+        "watchUrl": "https://archive.org/details/ConcreteCowboys"
+      },
+      "poster": "https://archive.org/services/img/ConcreteCowboys",
+      "source": "Internet Archive (marked public domain by the uploader)",
+      "kind": "public-domain",
+      "mediaType": "movie",
+      "shelf": "vault",
+      "badge": "Archive"
+    },
+    {
+      "id": "vault-horror-express",
+      "title": "Horror Express",
+      "year": 1973,
+      "duration": 5220,
+      "runtime": "1h 27m",
+      "genres": [
+        "horror",
+        "scifi"
+      ],
+      "synopsis": "Christopher Lee and Peter Cushing on a Trans-Siberian train in 1906, where a thawed prehistoric creature starts draining the passengers.",
+      "studio": "Internet Archive",
+      "license": "Public domain",
+      "licenseUrl": "https://creativecommons.org/publicdomain/mark/1.0/",
+      "licenseProof": [
+        "https://archive.org/details/Horror_Express"
+      ],
+      "play": {
+        "type": "archive",
+        "id": "Horror_Express",
+        "embedUrl": "https://archive.org/embed/Horror_Express",
+        "watchUrl": "https://archive.org/details/Horror_Express"
+      },
+      "poster": "https://archive.org/services/img/Horror_Express",
+      "source": "Internet Archive (marked public domain by the uploader)",
+      "kind": "public-domain",
+      "mediaType": "movie",
+      "shelf": "vault",
+      "badge": "Archive"
+    },
+    {
+      "id": "vault-grave-of-the-vampire-movie",
+      "title": "Grave of the Vampire",
+      "year": 1974,
+      "duration": 5400,
+      "runtime": "1h 30m",
+      "genres": [
+        "horror"
+      ],
+      "synopsis": "A man born of a vampire hunts down the father who attacked his mother. A grim 70s drive-in horror; mature.",
+      "studio": "Internet Archive",
+      "license": "Public domain",
+      "licenseUrl": "https://creativecommons.org/publicdomain/mark/1.0/",
+      "licenseProof": [
+        "https://archive.org/details/Grave_of_the_Vampire_movie"
+      ],
+      "play": {
+        "type": "archive",
+        "id": "Grave_of_the_Vampire_movie",
+        "embedUrl": "https://archive.org/embed/Grave_of_the_Vampire_movie",
+        "watchUrl": "https://archive.org/details/Grave_of_the_Vampire_movie"
+      },
+      "poster": "https://archive.org/services/img/Grave_of_the_Vampire_movie",
+      "source": "Internet Archive (marked public domain by the uploader)",
+      "kind": "public-domain",
+      "mediaType": "movie",
+      "shelf": "vault",
+      "badge": "Archive"
+    },
+    {
+      "id": "vault-teddy1971",
+      "title": "Teddy",
+      "year": 1971,
+      "duration": 960,
+      "runtime": "16 min",
+      "genres": [
+        "documentary",
+        "short"
+      ],
+      "synopsis": "A teenager from Watts, Los Angeles speaks his mind on the system, war and his community. A 1971 educational short from the Prelinger Archives.",
+      "studio": "Internet Archive",
+      "license": "Public domain",
+      "licenseUrl": "https://creativecommons.org/publicdomain/mark/1.0/",
+      "licenseProof": [
+        "https://archive.org/details/Teddy1971"
+      ],
+      "play": {
+        "type": "archive",
+        "id": "Teddy1971",
+        "embedUrl": "https://archive.org/embed/Teddy1971",
+        "watchUrl": "https://archive.org/details/Teddy1971"
+      },
+      "poster": "https://archive.org/services/img/Teddy1971",
+      "source": "Internet Archive (marked public domain by the uploader)",
+      "kind": "public-domain",
+      "mediaType": "documentary",
+      "shelf": "vault",
+      "badge": "Archive"
+    },
+    {
+      "id": "vault-whenyoug1973",
+      "title": "When You Grow Up",
+      "year": 1973,
+      "duration": 660,
+      "runtime": "11 min",
+      "genres": [
+        "documentary",
+        "short"
+      ],
+      "synopsis": "A 1973 classroom film about jobs and dreams, full of everyday early-70s life. From the Prelinger Archives.",
+      "studio": "Internet Archive",
+      "license": "Public domain",
+      "licenseUrl": "https://creativecommons.org/publicdomain/mark/1.0/",
+      "licenseProof": [
+        "https://archive.org/details/WhenYouG1973"
+      ],
+      "play": {
+        "type": "archive",
+        "id": "WhenYouG1973",
+        "embedUrl": "https://archive.org/embed/WhenYouG1973",
+        "watchUrl": "https://archive.org/details/WhenYouG1973"
+      },
+      "poster": "https://archive.org/services/img/WhenYouG1973",
+      "source": "Internet Archive (marked public domain by the uploader)",
+      "kind": "public-domain",
+      "mediaType": "documentary",
+      "shelf": "vault",
+      "badge": "Archive"
     }
+  ],
+  "removedByHealthCheck": [
+    "sprite-fright-2021"
   ]
 }
