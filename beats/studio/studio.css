@@ -224,3 +224,34 @@ body.embed .st-main{padding:.4rem .4rem 1rem}
 body.embed .st-transport{position:relative;top:auto}
 @media (max-width:760px) and (pointer:coarse){ .mt{--hw:184px} .mini{width:36px;height:44px} .trk input.tname{font-size:.78rem} }
 body.embed .st-top{position:relative;top:auto}
+/* Oct 20 (b): tracks get the screen */
+.bai-sum{display:flex;align-items:center;width:100%;min-height:44px;padding:0 .8rem;border:1px solid var(--line);border-radius:8px;background:var(--bg3);color:var(--text);font:inherit;font-weight:700;font-size:.85rem;text-align:left;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bai-panel.bai-collapsed>:not(.bai-sum):not(.bai-err){display:none!important}
+.bai-panel.bai-collapsed{padding:4px!important;margin:4px 0!important}
+.st-steps{display:flex;align-items:center;gap:8px;margin:0 0 6px;padding:4px 6px 4px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg2)}
+.st-steps .mt-empty.in-strip{position:static;pointer-events:auto;opacity:1;max-width:none;flex:1 1 auto;background:none;border:0;padding:0;line-height:1.5;font-size:.8rem}
+.st-steps .mt-empty.in-strip br{display:none}
+.st-steps-x{flex:0 0 auto;min-width:44px;min-height:44px;border:1px solid var(--line);border-radius:8px;background:var(--bg3);color:var(--text);font-size:1rem;cursor:pointer}
+.st-resume{position:fixed;left:50%;transform:translateX(-50%);bottom:18px;z-index:200;min-height:52px;padding:0 22px;font-size:1rem;border-radius:999px;box-shadow:0 6px 20px #000c}
+/* pinned transport: ⇤ ▶ ■ ● + position never scroll away; view tabs inline (no bottom-bar remnant) */
+body.embed .st-transport{position:sticky!important;top:0!important;z-index:40;background:var(--bg,#0b0d12);padding-top:4px;padding-bottom:4px;box-shadow:0 2px 6px #000a}
+body.embed .st-tabs{position:static!important;inset:auto!important;box-shadow:none;border-top:0;padding:4px 0;background:none;justify-content:flex-start}
+body.embed .st-tabs .tab{min-height:44px;flex:0 0 auto}
+body.embed{padding-bottom:0}
+body.embed .st-hint{margin:.2rem 0 0;font-size:.72rem}
+@media (orientation:landscape) and (pointer:coarse){
+  body.embed .st-transport{flex-wrap:nowrap;overflow-x:auto;gap:6px;scrollbar-width:none}
+  body.embed .st-transport>*{flex:0 0 auto}
+  body.embed .st-transport .vo-btn small{display:none}
+  body.embed .st-top{padding-top:2px;padding-bottom:2px}
+}
+/* Oct 20 (c): fewer rows — each toolbar is one swipeable strip (fade on the right = more), core transport first */
+@media (pointer:coarse){
+  body.embed .st-top,body.embed .st-transport,body.embed .st-tools,body.embed .st-tabs{flex-wrap:nowrap!important;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;-webkit-mask-image:linear-gradient(to right,#000 calc(100% - 28px),transparent);mask-image:linear-gradient(to right,#000 calc(100% - 28px),transparent);padding-right:28px}
+  body.embed .st-top>*,body.embed .st-transport>*,body.embed .st-tools>*{flex:0 0 auto}
+  body.embed .st-top::-webkit-scrollbar,body.embed .st-transport::-webkit-scrollbar,body.embed .st-tools::-webkit-scrollbar{display:none}
+  body.embed .st-transport>*{order:3} body.embed #t-home,body.embed #t-play,body.embed #t-stop,body.embed #t-rec{order:0} body.embed #t-time{order:1}
+  body.embed .st-main{padding-top:.2rem}
+  body.embed .st-tabs .tab{min-height:44px;padding:0 .9rem}
+}
+@media (pointer:coarse) and (max-height:700px){ .mt{--th:86px} body.embed .tbtn{min-height:48px;min-width:48px} }
