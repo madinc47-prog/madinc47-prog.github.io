@@ -16,8 +16,8 @@
   try{var q=new URLSearchParams(location.search),t=(q.get("tab")||q.get("page")||location.hash.replace(/^#/,"")||"").toLowerCase();q.delete("tab");q.delete("page");var rest=q.toString();var real=[...q.keys()].some(function(k){return !/^(nosw|noupdate|_v|build|hub|utm_.*|fbclid)$/.test(k)});
   if(P[t]||real){location.replace((P[t]||"beats")+".html"+(rest?"?"+rest:""));return;}
   var st=JSON.parse(localStorage.getItem("ipb_start_page_v1")||"null");if(st&&P[st]&&!q.has("hub")&&!location.hash)location.replace(P[st]+".html");}catch(e){}})();</script>
-  <link rel="stylesheet" href="styles.css?v=20261020g">
-  <link rel="stylesheet" href="rack.css?v=20261020g">
+  <link rel="stylesheet" href="styles.css?v=20261020h">
+  <link rel="stylesheet" href="rack.css?v=20261020h">
   <style>
     body{min-height:100vh}
     .hub{max-width:1100px;margin:0 auto;padding:16px 16px 40px}
@@ -35,7 +35,7 @@
 </head>
 <body>
   <header class="topbar"><div class="brand"><a href="../" class="back" aria-label="Back to IslePin">←</a><span class="logo">ISLAND <b>BEATS HUB</b></span><span class="beta-badge">BETA</span></div>
-  <div class="transport"><span class="build-version" id="build-version">v20261020g</span><a href="check/" class="sound-check-link">Sound check</a></div></header>
+  <div class="transport"><span class="build-version" id="build-version">v20261020h</span><a href="check/" class="sound-check-link">Sound check</a></div></header>
   <main class="hub">
     <h1>Pick a tool</h1>
     <p class="sub">Every tool has its own page. Your beat, songs, takes and Vault are shared — make a beat on one page and it's there on the others.</p>
@@ -47,6 +47,7 @@
       <a class="tile" href="midi.html"><i class="ic">🎛</i><b>MIDI</b><span>Akai MPK: Enable MIDI, devices, channel, pad base note, knob Learn, tests, log.</span></a>
       <a class="tile" href="loops.html"><i class="ic">🎹</i><b>Keys Loops</b><span>Preview hip-hop keys loops and load them into the Piano Roll.</span></a>
       <a class="tile" href="../dj/?from=beats"><i class="ic">💿</i><b>DJ Decks</b><span>Two-deck DJ booth.</span></a>
+      <a class="tile" href="live.html"><i class="ic">🔴</i><b>Go Live <span class="beta-badge">BETA</span></b><span>Stream to YouTube, Facebook, TikTok, Twitch, Kick, Telegram and more (Larix app or browser WHIP). Keys stay on this device.</span></a>
       <a class="tile" href="../radio/"><i class="ic">📻</i><b>Island Beats Radio</b><span>Dominica &amp; Caribbean stations + your own channel with DJ Psycho Fingers.</span></a>
       <a class="tile" href="piano.html"><i class="ic">🎼</i><b>Piano Roll</b><span>Write melodies and basslines, save patterns.</span></a>
       <a class="tile" href="mixer.html"><i class="ic">🎛</i><b>Mixer</b><span>Levels, mute/solo, FX, reference channel.</span></a>

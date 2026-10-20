@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' https: http://localhost:* http://127.0.0.1:*; media-src 'self' blob: mediastream:; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <title>Go Live (Beta) · Island Beats Hub</title>
+  <meta name="theme-color" content="#0b0d12"><meta name="color-scheme" content="dark">
+  <link rel="icon" href="icons/icon-192.png"><link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="styles.css?v=20261020h"><link rel="stylesheet" href="rack.css?v=20261020h">
+  <script src="prefs.js?v=20261020h"></script>
+  <style>
+    .set{max-width:760px;margin:0 auto;padding:14px 16px 60px}
+    .set h1{font-size:1.2rem;margin:.3rem 0 .8rem}
+    .grp{border:1px solid #000;border-radius:10px;background:linear-gradient(#22242b,#17181d);box-shadow:inset 0 1px 0 #3d3e46;padding:12px 14px;margin:0 0 12px}
+    .grp h2{font-size:.8rem;letter-spacing:.12em;text-transform:uppercase;color:#fbbf24;margin:0 0 8px}
+    .r{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;min-height:52px;border-top:1px solid #2a2d36;padding:6px 0}
+    .r:first-of-type{border-top:0}
+    .r label{flex:1 1 220px;font-weight:700}.r small{display:block;font-weight:400;color:#9aa0ad}
+    .r select,.r input[type=number]{min-height:48px;min-width:160px;font-size:1rem}
+    .r input[type=color]{width:64px;height:48px;border:0;background:none}
+    .r input[type=checkbox]{width:28px;height:28px}
+    .links a{min-height:48px;display:inline-flex;align-items:center;margin:4px 8px 4px 0}
+    .beta-badge{margin-left:8px;padding:2px 7px;border-radius:5px;background:#f59e0b;color:#111;font:800 .65rem/1.4 system-ui;letter-spacing:.08em;vertical-align:middle}
+    .lv-grid{display:grid;grid-template-columns:1.3fr 1fr;gap:14px}@media (max-width:760px){.lv-grid{grid-template-columns:1fr}}
+    .lv-prev{width:100%;aspect-ratio:16/9;background:#000;border:1px solid #000;border-radius:8px}
+    .lv-f{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin:6px 0;font-weight:700;font-size:.85rem}.lv-f>span{flex:0 0 140px}
+    .lv-f select,.lv-f input[type=text],.lv-f input[type=url],.lv-f input[type=password]{flex:1 1 200px;min-height:48px;font-size:1rem;padding:0 10px}
+    .lv-f.chk input{width:26px;height:26px}
+    .lv-acts{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}.lv-acts .btn{min-height:48px}
+    .lv-status{min-height:1.5em;color:#3dff88;font-weight:700}.lv-status.bad{color:#ff8a8a}
+    .lv-how{font-weight:800;color:#fbbf24;margin:.4rem 0}.lv-note{font-size:.8rem;color:#b7bcc8;line-height:1.45}
+    .lv-guide li{margin:4px 0;line-height:1.4}
+    #saved{color:#3dff88;min-height:1.4em}
+  </style>
+</head>
+<body>
+  <header class="topbar"><div class="brand"><a href="./?hub=1" class="back" aria-label="Back to Island Beats Hub">←</a><span class="logo">GO <b>LIVE</b></span></div></header>
+  <main class="set lv">
+    <h1>🔴 Go Live <span class="beta-badge">BETA</span></h1>
+    <p class="sub">Build your picture here (camera, screen, or screen with camera in the corner), then go live. Honest limits: a web page can't send RTMP, so YouTube, Facebook, TikTok and most platforms go out through the free <b>Larix Broadcaster</b> app. WHIP servers (Twitch, your own) can take the stream straight from this browser. Your stream keys stay on this device and are never sent anywhere by this page.</p>
+    <p id="lv-status" class="lv-status" role="status">Ready.</p>
+    <section class="grp"><h2>Picture</h2>
+      <div class="lv-grid"><video id="lv-preview" class="lv-prev" autoplay muted playsinline></video><canvas id="lv-canvas" width="1280" height="720" hidden></canvas>
+      <div class="lv-ctl">
+        <label class="lv-f"><span>Source</span><select id="lv-src"><option value="cam">Camera</option><option value="screen">Screen</option><option value="pip">Screen + camera (picture-in-picture)</option></select></label>
+        <label class="lv-f"><span>Camera</span><select id="lv-face"><option value="user">Front</option><option value="environment">Back</option></select></label>
+        <label class="lv-f"><span>Camera corner</span><select id="lv-pip"><option value="br">Bottom right</option><option value="bl">Bottom left</option><option value="tr">Top right</option><option value="tl">Top left</option></select></label>
+        <label class="lv-f"><span>Quality</span><select id="lv-q"><option value="480">480p · 1,000 kbps (weak data)</option><option value="720" selected>720p · 2,500 kbps</option><option value="1080">1080p · 4,500 kbps (strong Wi-Fi)</option></select></label>
+        <label class="lv-f"><span>Title on screen</span><input id="lv-title" type="text" maxlength="60" placeholder="e.g. DJ Psycho Fingers LIVE"></label>
+        <label class="lv-f chk"><input id="lv-mic" type="checkbox" checked> <span>Mic audio (raw, no processing)</span></label>
+        <div class="lv-acts"><button type="button" id="lv-start" class="btn primary">▶ Start preview</button><button type="button" id="lv-stop" class="btn">■ Stop</button><button type="button" id="lv-rec" class="btn rec">● Record clip</button><a id="lv-clip" class="btn" hidden>⬇ Save clip</a></div>
+      </div></div>
+      <p class="lv-note">Larix uses its own camera — the composite picture here goes out over WHIP or into a recorded clip. Screen capture needs a browser that supports it (desktop Chrome; most Android tablets can't).</p>
+    </section>
+    <section class="grp"><h2>Stream to platform</h2>
+      <label class="lv-f"><span>Platform</span><select id="lv-plat"></select></label>
+      <div id="lv-dest"></div>
+      <p class="lv-note">Get the free <a href="https://play.google.com/store/apps/details?id=com.wmspanel.larix_broadcaster" target="_blank" rel="noopener">Larix Broadcaster on Google Play</a>. “Open in Larix” adds this destination to Larix with your quality settings.</p>
+      <button type="button" id="lv-clearall" class="btn ghost">🗑 Clear all saved keys on this device</button>
+    </section>
+  </main>
+  <script src="live.js?v=20261020h"></script>
+</body>
+</html>
+
