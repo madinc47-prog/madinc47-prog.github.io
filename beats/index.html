@@ -16,8 +16,8 @@
   try{var q=new URLSearchParams(location.search),t=(q.get("tab")||q.get("page")||location.hash.replace(/^#/,"")||"").toLowerCase();q.delete("tab");q.delete("page");var rest=q.toString();var real=[...q.keys()].some(function(k){return !/^(nosw|noupdate|_v|build|hub|utm_.*|fbclid)$/.test(k)});
   if(P[t]||real){location.replace((P[t]||"beats")+".html"+(rest?"?"+rest:""));return;}
   var st=JSON.parse(localStorage.getItem("ipb_start_page_v1")||"null");if(st&&P[st]&&!q.has("hub")&&!location.hash)location.replace(P[st]+".html");}catch(e){}})();</script>
-  <link rel="stylesheet" href="styles.css?v=20261020f">
-  <link rel="stylesheet" href="rack.css?v=20261020f">
+  <link rel="stylesheet" href="styles.css?v=20261020g">
+  <link rel="stylesheet" href="rack.css?v=20261020g">
   <style>
     body{min-height:100vh}
     .hub{max-width:1100px;margin:0 auto;padding:16px 16px 40px}
@@ -35,7 +35,7 @@
 </head>
 <body>
   <header class="topbar"><div class="brand"><a href="../" class="back" aria-label="Back to IslePin">←</a><span class="logo">ISLAND <b>BEATS HUB</b></span><span class="beta-badge">BETA</span></div>
-  <div class="transport"><span class="build-version" id="build-version">v20261020f</span><a href="check/" class="sound-check-link">Sound check</a></div></header>
+  <div class="transport"><span class="build-version" id="build-version">v20261020g</span><a href="check/" class="sound-check-link">Sound check</a></div></header>
   <main class="hub">
     <h1>Pick a tool</h1>
     <p class="sub">Every tool has its own page. Your beat, songs, takes and Vault are shared — make a beat on one page and it's there on the others.</p>
@@ -52,6 +52,7 @@
       <a class="tile" href="mixer.html"><i class="ic">🎛</i><b>Mixer</b><span>Levels, mute/solo, FX, reference channel.</span></a>
       <a class="tile" href="master.html"><i class="ic">📈</i><b>Master</b><span>EQ, compression, limiter, loudness, final export.</span></a>
       <a class="tile" href="lyrics.html"><i class="ic">📝</i><b>Lyrics</b><span>Write bars, teleprompter.</span></a>
+      <a class="tile" href="splits.html"><i class="ic">📄</i><b>Royalty Splits <span class="beta-badge">BETA</span></b><span>Who gets what on each song: master % and publishing % — checks they total 100%.</span></a>
       <a class="tile" href="vault.html"><i class="ic">🗄</i><b>Vault</b><span>All saved recordings on this device.</span></a>
       <a class="tile" href="video.html"><i class="ic">🎬</i><b>Video</b><span>Visualizer for YouTube, Shorts, Reels, TikTok.</span></a>
     </nav>

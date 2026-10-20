@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <title>Royalty Splits (Beta) · Island Beats Hub</title>
+  <meta name="theme-color" content="#0b0d12"><meta name="color-scheme" content="dark">
+  <link rel="icon" href="icons/icon-192.png"><link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="styles.css?v=20261020g"><link rel="stylesheet" href="rack.css?v=20261020g">
+  <script src="prefs.js?v=20261020g"></script>
+  <style>
+    .set{max-width:760px;margin:0 auto;padding:14px 16px 60px}
+    .set h1{font-size:1.2rem;margin:.3rem 0 .8rem}
+    .grp{border:1px solid #000;border-radius:10px;background:linear-gradient(#22242b,#17181d);box-shadow:inset 0 1px 0 #3d3e46;padding:12px 14px;margin:0 0 12px}
+    .grp h2{font-size:.8rem;letter-spacing:.12em;text-transform:uppercase;color:#fbbf24;margin:0 0 8px}
+    .r{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;min-height:52px;border-top:1px solid #2a2d36;padding:6px 0}
+    .r:first-of-type{border-top:0}
+    .r label{flex:1 1 220px;font-weight:700}.r small{display:block;font-weight:400;color:#9aa0ad}
+    .r select,.r input[type=number]{min-height:48px;min-width:160px;font-size:1rem}
+    .r input[type=color]{width:64px;height:48px;border:0;background:none}
+    .r input[type=checkbox]{width:28px;height:28px}
+    .links a{min-height:48px;display:inline-flex;align-items:center;margin:4px 8px 4px 0}
+    .beta-badge{margin-left:8px;padding:2px 7px;border-radius:5px;background:#f59e0b;color:#111;font:800 .65rem/1.4 system-ui;letter-spacing:.08em}
+    .note{font-size:.85rem;color:#c9cdd6;line-height:1.45}
+    .songbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+    .songbar select{flex:1 1 220px;min-height:48px;font-size:1rem}
+    .f{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
+    .f label{display:flex;flex-direction:column;gap:4px;font-weight:700;font-size:.85rem}
+    .f input{min-height:48px;font-size:1rem;padding:0 10px}
+    .c{display:grid;grid-template-columns:2fr 1.4fr 1fr 1fr 48px;gap:8px;align-items:end;border-top:1px solid #2a2d36;padding:8px 0}
+    .c label{display:flex;flex-direction:column;gap:3px;font-size:.72rem;color:#9aa0ad;font-weight:700}
+    .c input,.c select{min-height:48px;font-size:1rem;padding:0 8px;width:100%;box-sizing:border-box}
+    .c .x{min-height:48px;min-width:44px}
+    .tot{display:flex;flex-wrap:wrap;gap:12px;margin-top:8px;font-weight:800}
+    .tot span{padding:8px 12px;border-radius:8px;background:#2a1515;color:#ff8a8a}.tot span.ok{background:#12301f;color:#3dff88}
+    .acts{display:flex;flex-wrap:wrap;gap:8px}.acts .btn{min-height:48px}
+    #saved{color:#3dff88;min-height:1.4em}
+    @media (max-width:560px){.c{grid-template-columns:1fr 1fr}.c .nm{grid-column:1/-1}.c .x{grid-column:1/-1}}
+    @media print{.topbar,.acts,.songbar,.x,.noprint,#saved{display:none!important}body,main,.grp{background:#fff!important;color:#000!important;box-shadow:none!important}.c input,.c select,.f input{border:0;background:none;color:#000}}
+  </style>
+</head>
+<body>
+  <header class="topbar"><div class="brand"><a href="./?hub=1" class="back" aria-label="Back to Island Beats Hub">←</a><span class="logo">ROYALTY <b>SPLITS</b></span><span class="beta-badge">BETA</span></div></header>
+  <main class="set" id="sp"></main>
+  <script src="splits.js?v=20261020g"></script>
+</body>
+</html>
+
