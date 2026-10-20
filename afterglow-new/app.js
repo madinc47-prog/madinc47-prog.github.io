@@ -63,7 +63,7 @@
 
   function esc(s){ return String(s == null ? "" : s).replace(/[&<>"']/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
   function rightsOf(it){ return it.kind === "open-movie" ? "cc" : (it.kind === "public-domain-gov" || it.kind === "public-domain") ? "pd" : "official"; }
-  function rightsBadge(it){ var r = rightsOf(it); return r === "cc" ? it.license : r === "pd" ? "Public domain" : "Official free"; }
+  function rightsBadge(it){ if (it.kind === "local") return "Local film"; var r = rightsOf(it); return r === "cc" ? it.license : r === "pd" ? "Public domain" : "Official free"; }
   function studioShort(it){
     if (it.badge) return it.badge;
     var s = it.studio || "";
@@ -73,6 +73,7 @@
   }
   function licenseLine(it){
     var r = rightsOf(it);
+    if (it.kind === "local") return "Local film · shown with the filmmaker's permission";
     if (r === "cc") return it.license + " · open movie";
     if (r === "pd") return it.kind === "public-domain" ? "Public domain · Internet Archive" : "Public domain · U.S. Government work";
     if (it.badge === "Filmmaker") return "Free, posted by the filmmaker";
@@ -238,7 +239,8 @@
     $("p-title").textContent = it.title;
     $("p-meta").textContent = it.year + " · " + it.runtime + " · " + it.license + " · " + it.studio;
     $("p-syn").textContent = it.synopsis;
-    $("p-note").textContent = (it.note ? it.note + " " : "") + "Playing from: " + it.source + ".";
+    $("p-note").textContent = (it.note ? it.note + " " : "") + "Playing from: " + it.source + "." +
+      (rightsOf(it) === "cc" ? " Credit: \u201c" + it.title + "\u201d by " + it.studio + ", licensed " + it.license + "." : "");
     var links = ['<a href="' + esc(it.licenseUrl) + '" target="_blank" rel="noopener">License: ' + esc(it.license) + '</a>'];
     it.licenseProof.forEach(function(u, i){ if (u !== it.licenseUrl) links.push('<a href="' + esc(u) + '" target="_blank" rel="noopener">Source ' + (i + 1) + '</a>'); });
     if (it.play.watchUrl) links.push('<a href="' + esc(it.play.watchUrl) + '" target="_blank" rel="noopener">Open on ' + (it.play.type === "archive" ? "Internet Archive" : "YouTube") + '</a>');
@@ -265,6 +267,7 @@
   function startPlayback(it){
     if (it.play.type === "mp4") playMp4(it, it.play.src);
     else if (it.play.type === "archive") playArchive(it);
+    else if (it.play.type === "iframe" && /^https:\/\/(player\.vimeo\.com|drive\.google\.com)\//.test(it.play.src)) { $("screen-inner").innerHTML = '<iframe src="' + esc(it.play.src) + '" title="' + esc(it.title) + '" allow="autoplay; fullscreen" allowfullscreen></iframe>'; setState("ready"); }
     else playYT(it, it.play.id);
   }
   function close(){
@@ -314,9 +317,21 @@
     });
   }, 30000);
   function boot(){ hero(); render(); fromHash(); }
+  // Local Films whose makers ticked the rotation box join Now Showing (they also stay on the Local Films page).
+  function addLocal(j){
+    (j && j.items || []).forEach(function(x){
+      if (x.rotation !== true || x.rating === "mature" || !x.embed) return;
+      var t = x.embed.host === "youtube" ? {type: "youtube", id: x.embed.id} : x.embed.host === "archive" ? {type: "archive", id: x.embed.id} : {type: "iframe", src: x.embed.url};
+      t.watchUrl = x.link;
+      all.push({id: x.id, local: true, rotation: true, shelf: "local", title: x.title, year: x.year, runtime: x.runtime + " min", genres: [x.genre || "local", "local"],
+        synopsis: x.description, studio: x.filmmaker, license: "Shown with the filmmaker's permission", licenseUrl: "community/local-films.html", licenseProof: [x.link],
+        play: t, poster: x.poster, source: "the filmmaker's own upload", kind: "local", badge: "Local", mediaType: "movie"});
+    });
+  }
   fetch("now-showing.json?v=" + ymd(Date.now()), {cache: "no-cache"})
     .then(function(r){ if (!r.ok) throw 0; return r.json(); })
     .then(function(j){ if (j && j.windows) ROT = j; }, function(){ ROT = null; })
+    .then(function(){ return fetch("community/community.json", {cache: "no-cache"}).then(function(r){ return r.ok ? r.json() : null; }).then(addLocal, function(){}); })
     .then(boot);
   window.addEventListener("hashchange", fromHash);
 })();

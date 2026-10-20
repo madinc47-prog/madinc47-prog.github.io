@@ -236,7 +236,7 @@
         runtime: parseInt(val("runtime"), 10), genre: val("genre"), rating: rating,
         country: val("country"), parish: val("parish"), description: val("description"),
         embed: {host: p.host, id: p.id, url: p.embed}, link: p.watch,
-        poster: safeHttpsUrl(val("poster")) || p.poster, approvedDate: "YYYY-MM-DD"
+        poster: safeHttpsUrl(val("poster")) || p.poster, rotation: !!(form.elements.rotation && form.elements.rotation.checked), approvedDate: "YYYY-MM-DD"
       };
       var payload = {
         _subject: SITE_NAME + " submission: " + entry.title + " (" + entry.year + ")",
@@ -258,6 +258,7 @@
         video_host: HOST_LABEL[p.host],
         embed_url: p.embed,
         poster_link: val("poster") || "(none: host thumbnail will be used)",
+        rotation_permission: entry.rotation ? "YES: OK to include in the Now Showing rotation" : "NO: keep on the Local Films shelf only",
         rights_confirmed: "YES: I made this film or own the rights, and I allow Afterglow to show it free",
         submitted_at: new Date().toISOString(),
         page: location.href.split("#")[0],

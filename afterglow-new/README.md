@@ -19,3 +19,12 @@ Files:
 
 The page has no build step and doesn't need a server. YouTube titles play through youtube-nocookie embeds; Sprite Fright plays from its Internet Archive MP4, and Wing It! falls back to its MP4 if YouTube fails.
 Once the repo is published, it will be at https://madinc47-prog.github.io/afterglow-new/.
+
+## Front door, rotation and DVR (Oct 2026)
+
+- This page is now Afterglow's home. Shelves: My DVR, Now Showing, New & Recent, 2026 Action, 80s Action, Local Films, Vintage Vault (Archive public-domain titles in the Archive's own player), Watch free elsewhere (Tubi / Pluto TV link-outs only).
+- Embed-only: every title plays from its owner's official upload (YouTube nocookie or the Internet Archive embed). Nothing is re-hosted.
+- `tools/check-embeds` checks every title still embeds (`--apply` removes dead ones and regenerates `catalog.js`). Run it from Dominica if you can: region locks only show up where you are.
+- `tools/rotate.py` writes `now-showing.json` (21 days on air, 14 off, staggered, 20 weeks ahead). Re-run it weekly or after adding titles.
+- Badges: New this week, Leaving in N days (3 or fewer), Last chance (last day). Pressing play starts a 48-hour window (or until the title leaves, if sooner). My DVR saves titles and clears them when they expire.
+- Honest limits: timers live in localStorage, so clearing site data resets them. It's programming, not copy protection.

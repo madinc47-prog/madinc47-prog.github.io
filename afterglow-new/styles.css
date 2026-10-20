@@ -107,3 +107,7 @@ a{color:inherit}
 .dvr-btn{background:var(--elevated);color:var(--fg);border:0;border-radius:999px;padding:.4rem .8rem;font:500 .8rem var(--sans);cursor:pointer;box-shadow:0 0 0 1px var(--border)}
 .dvr-btn[aria-pressed="true"]{background:var(--accent);color:#10231a}
 .note a{color:var(--accent)}
+.out-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:1rem}
+.out-card{display:flex;flex-direction:column;gap:.3rem;padding:1.1rem 1.2rem;border-radius:14px;background:var(--elevated);box-shadow:0 0 0 1px var(--border);text-decoration:none}
+.out-card span{color:var(--accent);font-size:.85rem}
+.out-card:hover{box-shadow:0 0 0 1px rgba(243,230,200,.3)}

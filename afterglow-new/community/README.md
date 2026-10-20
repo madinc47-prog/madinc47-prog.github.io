@@ -192,3 +192,11 @@ email tells you which id to delete.
 - Is it plausibly the submitter's own work? If in doubt, reply and ask.
 - No hate, harassment, illegal content, or other people's copyrighted music or
   footage used without permission.
+
+## Now Showing rotation (optional for filmmakers)
+
+The submit form has an optional box: "also put my film in the Now Showing rotation".
+It arrives in the email as `rotation_permission` and in `entry_json` as `"rotation": true`.
+Only approved films with `"rotation": true` (and not rated mature) join the rotation:
+after adding the film to `community.json`, run `python3 ../tools/rotate.py` to give it
+on-air dates. Every approved film stays on the Local Films shelf either way.
