@@ -1,0 +1,5 @@
+{
+  "_howto": "Emmanuel approves videos by adding entries to 'videos'. Fields: id (short, unique, a-z0-9-), title, creator, creatorId, category (music|live|behind|tutorials|culture), kind (video|past-live), url (YouTube, Vimeo or archive.org link), thumb (optional https image), description, date (YYYY-MM-DD). Set live.active true and live.url to a YouTube/Twitch live link to show the Live Now banner.",
+  "live": { "active": false, "title": "", "creator": "", "url": "" },
+  "videos": []
+}
