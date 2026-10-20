@@ -6708,6 +6708,31 @@
 
   /* read-only status for automated tests / debugging */
   window.IPBBeats = {
+    /* MIDI keyboard bridge (midi.js): direct audio triggers (no timers) + record into the drum grid / Piano Roll */
+    midi: {
+      pad: function (i, vel) { if (i < 0 || i > 15) return; triggerPad(i, 0, vel == null ? null : Math.max(0.05, Math.min(1, vel))); },
+      key: function (m, vel) { pianoPreview(m, vel == null ? 0.8 : vel); },
+      playing: function () { return playing; },
+      drumStep: function () { var L = plen(); return playing ? Math.round(currentPosK()) % L : -1; },
+      drumWrite: function (i, s, vel) {
+        var L = plen(); if (i < 0 || i > 15 || !S.pattern[i]) return -1; s = ((s % L) + L) % L;
+        S.pattern[i][s] = 1; S.vel[i][s] = Math.max(0.05, Math.min(1, vel == null ? 0.8 : vel));
+        paintCell(i, s); if (i === S.sel) buildLane(); saveSession(); return s;
+      },
+      drumLen: function () { return plen(); },
+      pianoTick: function () { var p = pianoPat(); if (!playing) return -1; return Math.floor(currentPosK() * PD.STEP) % PD.lenTicks(p); },
+      pianoLen: function () { return PD.lenTicks(pianoPat()); },
+      pianoGrid: function () { var p = pianoPat(); return PD.GRIDS[p.grid] || PD.STEP; },
+      pianoWrite: function (m, t, len, vel) {
+        var p = pianoPat(), L = PD.lenTicks(p), g = PD.GRIDS[p.grid] || PD.STEP;
+        var s = Math.max(0, Math.min(L - 1, Math.round(t / g) * g % L)); m = Math.max(PD.LOW, Math.min(PD.HIGH, m));
+        var n = { p: m, s: s, l: Math.max(1, Math.min(L - s, Math.round(len || g))), v: Math.max(0.05, Math.min(1, vel == null ? 0.8 : vel)) };
+        var put = function (pp) { pp.notes = pp.notes.filter(function (x) { return !(x.p === n.p && x.s === n.s); }); pp.notes.push(n); };
+        if (pianoEd) pianoEd.edit(function (pp) { put(pp); }, "midi"); else { put(p); PD.sortNotes && PD.sortNotes(p.notes); saveSession(); }
+        return n;
+      },
+      tab: function () { return activeTab; }
+    },
     sections: {
       select: function (i) { selectSec(i); return edSec; }, whole: function () { leaveEdit(); return edSec; },
       reset: function () { secReset(); }, copy: function () { secCopyToSame(); },

@@ -6,3 +6,10 @@
 .midi-learn-row{display:flex;gap:6px;align-items:center;justify-content:space-between;border-top:1px solid #262626;padding:5px 0}
 .midi-learn-row .cc{font-family:monospace;opacity:.85}.midi-learn-row.learning{outline:1px solid #f59e0b}
 #midi-log{font-size:12px;max-height:120px;overflow:auto;margin:6px 0;padding-left:18px}
+.midi-chip{position:fixed;left:8px;bottom:calc(66px + env(safe-area-inset-bottom,0px));z-index:900;display:flex;gap:6px;align-items:center;background:#141414ee;border:1px solid #333;border-radius:24px;padding:4px 6px 4px 12px;font:13px system-ui;color:#ddd;max-width:calc(100vw - 16px)}
+.midi-chip.ok{border-color:#22c55e}.midi-chip.warn{border-color:#f59e0b}
+.midi-chip button{min-height:44px;min-width:44px;border-radius:22px;border:1px solid #444;background:#222;color:#eee;font:600 14px system-ui;padding:0 14px}
+.midi-chip #mc-rec.on{background:#b91c1c;border-color:#ef4444}
+.midi-chip .mc-st{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mp-learn{min-height:44px}.mp-learn.learning{outline:2px solid #f59e0b}
+.pad.midi-hit{filter:brightness(1.6)}
