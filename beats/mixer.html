@@ -15,21 +15,21 @@
   <meta name="theme-color" content="#0b0d12">
   <meta name="color-scheme" content="dark"><!-- the app is already dark: stops Samsung Internet / Chrome "force dark" from re-colouring it -->
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="styles.css?v=20261020b">
-  <link rel="stylesheet" href="rack.css?v=20261020b">
-  <link rel="stylesheet" href="sing-my-voice.css?v=20261020b">
-  <link rel="stylesheet" href="usb-audio.css?v=20261020b">
-  <link rel="stylesheet" href="midi.css?v=20261020b">
-  <link rel="stylesheet" href="auth.css?v=20261020b">
-  <link rel="stylesheet" href="ai-panel.css?v=20261020b">
+  <link rel="stylesheet" href="styles.css?v=20261020c">
+  <link rel="stylesheet" href="rack.css?v=20261020c">
+  <link rel="stylesheet" href="sing-my-voice.css?v=20261020c">
+  <link rel="stylesheet" href="usb-audio.css?v=20261020c">
+  <link rel="stylesheet" href="midi.css?v=20261020c">
+  <link rel="stylesheet" href="auth.css?v=20261020c">
+  <link rel="stylesheet" href="ai-panel.css?v=20261020c">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Island Pin Beats — Free Beat Maker">
   <meta name="twitter:description" content="Make boom-bap, trap, drill, afrobeats, amapiano, house and bouyon beats in your browser. Free, from Dominica.">
   <script src="/shared/share.js" defer data-title="Island Pin Beats — Free Beat Maker" data-text="Make beats, record vocals and export WAV free in your browser. From Dominica." data-keep="beat" data-tab-selector=".tab.active[data-tab]" data-tab-default="beats" data-position="inline" data-target=".topbar .brand" data-compact="700"></script>
-  <link rel="stylesheet" href="pages.css?v=20261020b">
+  <link rel="stylesheet" href="pages.css?v=20261020c">
 </head>
 <body>
-  <div id="boot" role="status" style="padding:10px 14px;background:#14161c;color:#e8eaf0;font:14px system-ui">Loading Island Pin Beats 20261020b…</div>
+  <div id="boot" role="status" style="padding:10px 14px;background:#14161c;color:#e8eaf0;font:14px system-ui">Loading Island Pin Beats 20261020c…</div>
   <script>setTimeout(function(){var b=document.getElementById("boot");if(b&&!window.__ipbReady){b.textContent="Beats is taking long to load. Check your connection, then reload. If it keeps failing, open Sound check from a fresh tab.";b.style.background="#3a1515";}},12000);</script>
   <header class="topbar">
     <div class="brand">
@@ -42,7 +42,7 @@
       <button id="btn-play" class="tbtn play" aria-label="Play pattern">▶</button>
       <button id="btn-stop" class="tbtn" aria-label="Stop pattern">■</button>
       <label class="bpm">BPM <input id="bpm" type="number" min="60" max="200" value="140"></label>
-      <span id="audio-state" class="audio-state">Tap any pad to start audio</span> <span id="build-version" class="build-version" title="Beats build">v20261020b</span>
+      <span id="audio-state" class="audio-state">Tap any pad to start audio</span> <span id="build-version" class="build-version" title="Beats build">v20261020c</span>
       <details class="more-menu"><summary class="sound-check-link" title="Sound check, storage, start fresh">⋯ More</summary><div class="more-pop"><a href="check/" class="sound-check-link" title="No sound or no mic? Run the Sound check and send us the report">Sound check</a>
       <a href="check/#s-storage" class="sound-check-link storage-link" id="storage-line" title="Storage used on this device (tap for the breakdown, copy report and Keep Beat data safe)" hidden>Storage</a>
       <a href="?fresh=1" class="sound-check-link fresh-link" id="fresh-link" title="Delete all Beats + Studio data on this device and start like a new install (asks first)">Start fresh</a></div></details>
@@ -50,7 +50,7 @@
     </div>
   </header>
 
-  <nav class="tabs pg-bar" aria-label="Pages"><a class="tab pg-hub" href="./" title="All pages">⌂ All pages</a><a class="tab" href="beats.html">Beats</a><a class="tab" href="record.html">Record</a><a class="tab" href="studio.html">Studio</a><a class="tab" href="loops.html">Loops</a><button class="tab active" role="tab" data-tab="mixer" aria-selected="true" aria-current="page">Mixer</button><a class="tab" href="master.html">Master</a></nav>
+  <nav class="tabs pg-bar" aria-label="Pages"><a class="tab pg-hub" href="./" title="All pages">⌂ All pages</a><a class="tab" href="beats.html">Beats</a><a class="tab" href="record.html">Record</a><a class="tab" href="midi.html">MIDI</a><a class="tab" href="studio.html">Studio</a><a class="tab" href="loops.html">Loops</a><button class="tab active" role="tab" data-tab="mixer" aria-selected="true" aria-current="page">Mixer</button><a class="tab" href="master.html">Master</a></nav>
 
   <main>
     <!-- BEATS -->
@@ -792,34 +792,34 @@
 
   <footer class="foot">Free · runs in your browser · synthesized drums + CC0 one-shots (<a href="samples/CREDITS.md">credits</a>), no paid APIs · <a href="./">All pages</a> · <a href="studio.html">Studio</a> · <a href="../dj/">DJ booth</a> · <a href="check/">Sound check</a> · <a href="../">IslePin</a></footer>
 
-  <script src="fresh.js?v=20261020b"></script>
-  <script src="storage.js?v=20261020b"></script>
-  <script src="helper.js?v=20261020b"></script>
+  <script src="fresh.js?v=20261020c"></script>
+  <script src="storage.js?v=20261020c"></script>
+  <script src="helper.js?v=20261020c"></script>
   <script>setTimeout(function () { if (window.IPBStorage) IPBStorage.line().then(function (t) { var a = document.getElementById("storage-line"); if (a && t) { a.textContent = t; a.hidden = false; } }); }, 2500);</script>
-  <script src="humanize.js?v=20261020b"></script>
-  <script src="layers.js?v=20261020b"></script>
-  <script src="library.js?v=20261020b"></script>
-  <script src="drums.js?v=20261020b"></script>
-  <script src="keys-instruments.js?v=20261020b"></script>
-  <script src="pianoroll-data.js?v=20261020b"></script>
-  <script src="keys-loops.js?v=20261020b"></script>
-  <script src="pianoroll.js?v=20261020b"></script>
-  <script src="fx-chain.js?v=20261020b"></script>
-  <script src="match.js?v=20261020b"></script>
-  <script src="vocal-clean-client.js?v=20261020b"></script>
-<script src="midi.js?v=20261020b"></script>
-  <script src="usb-audio.js?v=20261020b"></script>
-  <script src="app.js?v=20261020b"></script>
-  <script src="sampler.js?v=20261020b"></script>
-  <script src="sing-my-voice.js?v=20261020b"></script>
-  <script src="master/master-dsp.js?v=20261020b"></script>
-  <script src="master/master.js?v=20261020b"></script>
-  <script src="auth-config.js?v=20261020b"></script>
-  <script src="auth.js?v=20261020b"></script>
-  <script src="ai-panel.js?v=20261020b"></script>
+  <script src="humanize.js?v=20261020c"></script>
+  <script src="layers.js?v=20261020c"></script>
+  <script src="library.js?v=20261020c"></script>
+  <script src="drums.js?v=20261020c"></script>
+  <script src="keys-instruments.js?v=20261020c"></script>
+  <script src="pianoroll-data.js?v=20261020c"></script>
+  <script src="keys-loops.js?v=20261020c"></script>
+  <script src="pianoroll.js?v=20261020c"></script>
+  <script src="fx-chain.js?v=20261020c"></script>
+  <script src="match.js?v=20261020c"></script>
+  <script src="vocal-clean-client.js?v=20261020c"></script>
+<script src="midi.js?v=20261020c"></script>
+  <script src="usb-audio.js?v=20261020c"></script>
+  <script src="app.js?v=20261020c"></script>
+  <script src="sampler.js?v=20261020c"></script>
+  <script src="sing-my-voice.js?v=20261020c"></script>
+  <script src="master/master-dsp.js?v=20261020c"></script>
+  <script src="master/master.js?v=20261020c"></script>
+  <script src="auth-config.js?v=20261020c"></script>
+  <script src="auth.js?v=20261020c"></script>
+  <script src="ai-panel.js?v=20261020c"></script>
   <script type="module" src="../shared/ecosystem-nav.js"></script><!-- Beats | DJ Booth | Player switcher (shared/README.md) -->
 <script>/* offline app (sw.js): after the first visit Beat works with no connection. ?nosw=1 skips it. */
 if ("serviceWorker" in navigator && !/[?&]nosw/.test(location.search) && !(window.parent !== window && /\/beats\/studio\//.test(location.pathname))) addEventListener("load", function () { setTimeout(function () { navigator.serviceWorker.register("sw.js", { scope: "./" }).catch(function () {}); }, 1500); });</script>
-<script>(function(){var sh=document.getElementById("studio-host");if(sh&&document.documentElement.getAttribute("data-solo")==="studio")document.body.appendChild(sh);function f(){var h=document.getElementById("studio-host");if(h)document.documentElement.style.setProperty("--pg-top",Math.round(h.getBoundingClientRect().top+scrollY)+"px");}addEventListener("load",f);addEventListener("resize",f);setTimeout(f,1500);})();</script>
+<script>(function(){var sh=document.getElementById("studio-host");if(sh&&document.documentElement.getAttribute("data-solo")==="studio")document.body.appendChild(sh);function f(){var h=document.getElementById("studio-host");if(h)document.documentElement.style.setProperty("--pg-top",Math.round(h.getBoundingClientRect().top+scrollY)+"px");}addEventListener("load",f);addEventListener("resize",f);setTimeout(f,1500);if(document.documentElement.getAttribute("data-part")==="beats"){(function m(n){var hd=document.querySelector("#midi-panel .midi-head");if(!hd){if(n<80)setTimeout(function(){m(n+1)},100);return;}var a=document.createElement("a");a.href="midi.html";a.className="btn small midi-open";a.textContent="Open MIDI page →";hd.appendChild(a);})(0);}})();</script>
 </body>
 </html>

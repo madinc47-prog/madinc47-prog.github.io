@@ -45,3 +45,15 @@ html[data-solo] .seq-row .rname,html[data-solo] .seq-row .rhead{min-height:40px}
 html[data-solo] .seq-row button{min-height:40px}
 html[data-solo] .foot{margin-bottom:150px}
 html[data-solo] .ai-fab{bottom:calc(84px + env(safe-area-inset-bottom))}
+/* MIDI page (midi.html): only the full MIDI panel; MIDI notes still play pads/keys (engine runs) so you can test */
+html[data-part="midi"] #tab-beats>*:not(.midi-panel){display:none!important}
+html[data-part="midi"] .midi-panel{font-size:1.02rem;padding:14px 16px}
+html[data-part="midi"] .midi-panel select,html[data-part="midi"] .midi-panel input,html[data-part="midi"] .midi-panel .btn{min-height:48px;font-size:1rem}
+html[data-part="midi"] #midi-base{width:90px!important}
+html[data-part="midi"] .midi-led{width:18px;height:18px}
+html[data-part="midi"] .midi-learn-row{min-height:56px}
+html[data-part="midi"] #midi-log{max-height:40vh;overflow:auto;font-size:.9rem}
+/* Beats page: compact MIDI strip (status + Enable + device/channel/base) — full panel on midi.html */
+html[data-part="beats"] #midi-panel>.hint,html[data-part="beats"] #midi-learn,html[data-part="beats"] #midi-panel>div.midi-row:nth-of-type(4),html[data-part="beats"] #midi-log{display:none}
+html[data-part="beats"] .midi-panel{padding:6px 10px}
+.midi-open{margin-left:auto;min-height:44px;display:inline-flex;align-items:center;text-decoration:none}
