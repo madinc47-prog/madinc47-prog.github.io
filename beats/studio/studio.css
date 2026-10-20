@@ -195,3 +195,32 @@ body.embed .st-standalone { display: none; }
 .fx-auto-pre .btn.on { border-color: var(--accent, #22d3ee); color: var(--accent, #22d3ee); }
 .fx-ab .vx-ab { min-height: 44px; min-width: 84px; font-weight: 800; }
 .fx-ab .vx-ab.on { background: rgba(250,204,21,.18); border-color: rgba(250,204,21,.75); color: #fef08a; }
+/* Tablet / touch (Oct 2026 split pages): timeline fills the frame height, bigger track controls */
+body.embed .mt{min-height:calc(100dvh - 140px)}
+body.embed{padding-bottom:70px}
+@media (pointer:coarse){
+  .mt{--th:104px}
+  .mini{width:44px;height:44px;font-size:.8rem;border-radius:7px}
+  .trk .sl input[type=range]{height:30px}
+  .trk .sl{font-size:.72rem}
+  .tbtn.sm{width:44px;height:44px}
+}
+@media (pointer:coarse){
+  .btn.small,.btn,.tog,select{min-height:44px;padding-left:.75rem;padding-right:.75rem}
+  .tbtn{min-width:52px;min-height:52px}
+  .st-tools,.st-transport,.st-top .row,.st-top>div{flex-wrap:wrap;gap:8px}
+  .tab[data-view]{min-height:48px}
+}
+/* the Step 1/2 hint card never swallows the timeline: taps go through to lanes/clips except on its own buttons, and it docks small */
+.mt-empty{pointer-events:none;opacity:.92;max-width:min(560px,calc(100% - 2rem))}
+.mt-empty button,.mt-empty a{pointer-events:auto}
+/* full width workspace: no side margins, horizontal swipe on the timeline; pan stays visible on phone (nothing removed) */
+body.embed .st-main{padding:.4rem .4rem 1rem}
+.mt-lanes-wrap{-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain}
+@media (max-width:760px){ .trk .sl.pan{display:flex} .mt{--hw:138px} }
+/* grouped toolbars: each cluster reads as one unit */
+@media (pointer:coarse){ .st-tools>*{margin:0} .st-tools .sep,.st-transport .sep{width:1px;align-self:stretch;background:var(--line);margin:0 4px} }
+/* embedded/full screen: the transport scrolls with the page instead of sticking over the project row and lanes */
+body.embed .st-transport{position:relative;top:auto}
+@media (max-width:760px) and (pointer:coarse){ .mt{--hw:184px} .mini{width:36px;height:44px} .trk input.tname{font-size:.78rem} }
+body.embed .st-top{position:relative;top:auto}

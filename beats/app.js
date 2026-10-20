@@ -3050,7 +3050,7 @@
         b.addEventListener("click", function () {
           st.querySelectorAll(".ins").forEach(function (x) { x.classList.remove("on"); }); b.classList.add("on");
           if (g.id === "vocal") { var fx = $("vx-fx"); if (fx) { fx.open = true; fx.scrollIntoView({ block: "start", behavior: "smooth" }); } }
-          else if (g.id === "master") { var mt = document.querySelector('button[data-tab="master"]'); if (mt) mt.click(); }
+          else if (g.id === "master") { showTab("master"); }
           else { showTab("beats"); var pe = document.querySelector(".pad-edit"); if (pe) setTimeout(function () { pe.scrollIntoView({ block: "center", behavior: "smooth" }); }, 60); }
         });
       });
@@ -6387,14 +6387,21 @@
       f = document.createElement("iframe");
       f.id = "studio-frame"; f.className = "studio-frame"; f.title = "Island Pin Studio multitrack";
       f.setAttribute("allow", "microphone; autoplay; fullscreen");
-      f.src = "studio/?embed=1";
+      var vq = ""; try { vq = new URLSearchParams(location.search).get("vault") || ""; } catch (e) { vq = ""; }
+      f.src = "studio/?embed=1" + (vq ? "&vault=" + encodeURIComponent(vq) : "");
       $("studio-host").appendChild(f);
     }
     return new Promise(function (res) {
       (function wait(n) { var w = studioWin(); if (w && w.IPBStudio.ready) res(w); else if (n > 300) res(null); else setTimeout(function () { wait(n + 1); }, 50); })(0);
     });
   }
+  // Split pages (Oct 2026): each section is its own page (beats.html, studio.html, …). <html data-solo="x"> pins this page to
+  // one panel; asking for another panel saves the session and goes to that page (same-origin storage keeps the beat).
+  var SOLO = document.documentElement.getAttribute("data-solo") || "";
+  var PAGE_OF = { beats: "beats.html", piano: "piano.html", loops: "loops.html", studio: "studio.html", lyrics: "lyrics.html", mixer: "mixer.html", master: "master.html", video: "video.html", vault: "vault.html" };
+  function goPage(name, qs) { if (playing) stop(); try { saveSession(); } catch (e) { /* storage */ } location.href = PAGE_OF[name] + (qs || ""); }
   function showTab(name) {
+    if (SOLO && name !== SOLO && PAGE_OF[name]) { goPage(name); return; }
     if (!document.querySelector('.tab[data-tab="' + name + '"]')) return;
     var prev = activeTab;
     activeTab = name;
@@ -6415,6 +6422,7 @@
     if (activeTab === "mixer") updateLatencyLabel();
     if (activeTab === "piano") pianoShown();
     if (name === "loops") klOpen(true, "loops");
+    if (SOLO) return;
     try { localStorage.setItem("ipb_page_v1", name); var q = new URLSearchParams(location.search); q.set("tab", name); q.delete("page"); history.replaceState(null, "", location.pathname + "?" + q.toString() + location.hash); } catch (e) { /* private mode */ }
   }
   function bounceForStudio(bars) { // called by the embedded Studio: bounce the current beat → Vault id
@@ -6433,7 +6441,7 @@
     if (stLink) stLink.addEventListener("click", function (e) { if (e.ctrlKey || e.metaKey || e.shiftKey) return; e.preventDefault(); showTab("studio"); });
     var tabQ = null;
     try { var sp = new URLSearchParams(location.search); tabQ = (sp.get("tab") || sp.get("page") || location.hash.replace(/^#/, "") || localStorage.getItem("ipb_page_v1") || "").toLowerCase(); } catch (e) { tabQ = null; }
-    if (tabQ && TAB_ALIAS[tabQ]) showTab(TAB_ALIAS[tabQ]);
+    if (SOLO) showTab(SOLO); else if (tabQ && TAB_ALIAS[tabQ]) showTab(TAB_ALIAS[tabQ]);
     $("btn-play").addEventListener("click", togglePlay);
     $("btn-stop").addEventListener("click", function () {
       if (vox.state !== "idle") { stopVocalTake(); return; }
@@ -6531,6 +6539,7 @@
     $("btn-to-studio").addEventListener("click", function () {
       stop();
       bounce($("bounce-bars").value, function (id) {
+        if (SOLO && SOLO !== "studio") { goPage("studio", "?vault=" + encodeURIComponent(id)); return; }
         showTab("studio");
         studioEnsure().then(function (w) {
           if (!w) { location.href = "studio/?vault=" + encodeURIComponent(id); return; }

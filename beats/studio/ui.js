@@ -1147,6 +1147,17 @@
     document.querySelectorAll("#cl-ab [data-ab]").forEach(function (b) { b.addEventListener("click", function () { clSetAB(b.dataset.ab); if (E.bufferPos() != null) clPlay(); }); });
     $("rs-nudge-m").addEventListener("click", function () { nudgeTake(-0.005); });
     $("rs-nudge-p").addEventListener("click", function () { nudgeTake(0.005); });
+    (function () { // two-finger pinch on the timeline = zoom (one finger still swipes / drags clips)
+      var p0 = 0, z0 = 0;
+      function dist(t) { return Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY); }
+      lw.addEventListener("touchstart", function (e) { if (e.touches.length === 2) { p0 = dist(e.touches); z0 = pps; } }, { passive: true });
+      lw.addEventListener("touchmove", function (e) {
+        if (e.touches.length !== 2 || !p0) return; e.preventDefault();
+        var r = $("lanes").getBoundingClientRect(), cx = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+        zoomTo(z0 * dist(e.touches) / p0, (cx - r.left) / pps);
+      }, { passive: false });
+      lw.addEventListener("touchend", function (e) { if (e.touches.length < 2) p0 = 0; }, { passive: true });
+    })();
     lw.addEventListener("wheel", function (e) { if (e.ctrlKey || e.metaKey) { e.preventDefault(); var r = $("lanes").getBoundingClientRect(); zoomTo(pps * (e.deltaY < 0 ? 1.25 : 0.8), (e.clientX - r.left) / pps); } }, { passive: false });
     waveEd = new S.WaveEditor($("wave"), { onSel: waveInfo });
     document.querySelectorAll("#view-wave [data-op]").forEach(function (b) { b.addEventListener("click", function () { waveOp(b.dataset.op); }); });
