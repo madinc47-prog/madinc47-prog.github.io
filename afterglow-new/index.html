@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&display=swap">
-<link rel="stylesheet" href="styles.css?v=20261020i">
+<link rel="stylesheet" href="styles.css?v=20261020j">
 <meta property="og:title" content="Afterglow — New &amp; Recent">
 <meta property="og:description" content="Recent films that are free and legal to watch: open movies, official free releases and NASA documentaries, plus 80s and 2026 action shelves.">
 <meta property="og:url" content="https://madinc47-prog.github.io/afterglow-new/">
@@ -44,6 +44,17 @@
     <div class="chips" role="group" aria-label="Rights"><span class="chip-label">Rights</span><div id="rights" class="chip-row"></div></div>
   </section>
 
+  <section class="wrap shelf" id="shelf-dvr" hidden aria-labelledby="dvr-h">
+    <div class="shelf-head"><h2 id="dvr-h">My DVR</h2><p class="muted x-count"></p></div>
+    <p class="muted small shelf-sub">Titles you saved. Each one clears itself when its 48-hour window or its rotation ends. Saved on this device only.</p>
+    <p class="muted small" id="dvr-gone" hidden></p>
+    <div class="grid"></div>
+  </section>
+  <section class="wrap shelf" id="shelf-now" hidden aria-labelledby="now-h">
+    <div class="shelf-head"><h2 id="now-h">Now Showing <span class="soft">this week</span></h2><p class="muted x-count"></p></div>
+    <p class="muted small shelf-sub">Afterglow runs as a rotation, like a TV channel. Titles arrive, stay about three weeks, then rest before coming back. Once you press play you get 48 hours to finish.</p>
+    <div class="grid"></div>
+  </section>
   <div id="shelves"></div>
   <p id="empty" class="muted empty wrap" hidden>Nothing matches that. Try another search or genre.</p>
 
@@ -52,6 +63,8 @@
   <div id="shelves-late"></div>
 
   <section class="wrap note">
+    <h3>How the rotation works</h3>
+    <p>Titles come and go on a published schedule (<a href="now-showing.json">now-showing.json</a>). "New this week", "Leaving in 3 days" and "Last chance" tell you where each one is. Your 48-hour watch window starts the first time you press play. Honestly: these timers live only in this browser. They're a way of programming the channel, not copy protection, and they don't mean Afterglow owns the films. Every film stays free on its owner's own channel, and the owner can remove or region-lock it at any time.</p>
     <h3>Why these are on air</h3>
     <p>Every film here is free and legal to show: <strong>Creative Commons</strong> open movies (Blender Studio, CC BY 4.0), <strong>U.S. Government works</strong> (NASA, public domain in the U.S.), or <strong>full films the rights holder posted free</strong> on its own verified channel, embedded as-is. Afterglow does not re-host copyrighted studio films. Each card links to its source and license.</p>
     <p>The <strong>Vintage Vault</strong> holds older films from the Internet Archive that the uploader marked public domain, played in the Archive's own embedded player.</p>
@@ -76,13 +89,14 @@
       <p class="meta" id="p-meta"></p>
       <p id="p-syn" class="syn"></p>
       <p id="p-note" class="muted small"></p>
+      <p class="dvr-line small" id="p-dvr"></p>
       <p class="links" id="p-links"></p>
     </div>
   </div>
 </div>
 
-<script src="catalog.js?v=20261020i"></script>
-<script src="app.js?v=20261020i"></script>
-<script src="community/home-shelf.js?v=20261020i" defer></script>
+<script src="catalog.js?v=20261020j"></script>
+<script src="app.js?v=20261020j"></script>
+<script src="community/home-shelf.js?v=20261020j" defer></script>
 </body>
 </html>

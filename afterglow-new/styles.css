@@ -92,3 +92,18 @@ a{color:inherit}
 @media (max-width:360px){.grid{grid-template-columns:1fr}}
 /* Share button (shared/share.js): on phones it sits at the right end of the brand row instead of taking its own row */
 @media (max-width:860px){.top-inner{position:relative}.top-inner>islepin-share{position:absolute;top:.6rem;right:1.25rem}}
+/* rotation + DVR */
+.badge.rot{background:var(--onair)}
+.badge.rot.soon{background:#e8664b;color:#fff}
+.badge.rot.timer{background:var(--accent);color:#10231a}
+.badge.rot.gone{background:#3a3128;color:var(--muted)}
+.card.is-expired .thumb img{filter:grayscale(1) brightness(.55)}
+.card.is-expired h3{color:var(--muted)}
+.gate{position:absolute;inset:0;display:grid;place-items:center;text-align:center;padding:1.5rem;color:var(--muted);background:radial-gradient(circle at 50% 40%,#2a2016,#000)}
+.gate .gate-h{font-family:var(--display);font-size:1.5rem;color:var(--fg);margin:0 0 .5rem}
+.gate .small{max-width:30rem;margin:.8rem auto 0;opacity:.85}
+.dvr-line{display:flex;flex-wrap:wrap;align-items:center;gap:.5rem;margin:.2rem 0 .7rem}
+.dvr-line .timer{color:var(--accent);font-weight:600}
+.dvr-btn{background:var(--elevated);color:var(--fg);border:0;border-radius:999px;padding:.4rem .8rem;font:500 .8rem var(--sans);cursor:pointer;box-shadow:0 0 0 1px var(--border)}
+.dvr-btn[aria-pressed="true"]{background:var(--accent);color:#10231a}
+.note a{color:var(--accent)}

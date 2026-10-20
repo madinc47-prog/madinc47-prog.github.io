@@ -12,6 +12,50 @@
     {key: "vault", host: "shelves-late", title: "Vintage Vault", sub: "Older films from the Internet Archive, marked public domain by the uploader and played in the Archive's own player."}
   ];
   function shelfOf(x){ return x.shelf || "recent"; }
+
+  // ---------- rotation + DVR (all on this device; programming, not copy protection) ----------
+  var ROT = null;                 // now-showing.json, or null = no schedule (everything on air)
+  var ROTATING = {"recent": 1, "action-2026": 1, "action-80s": 1};
+  var WINDOW_MS = 48 * 3600 * 1000, DAY = 86400000;
+  var DVR_KEY = "ag.dvr.v1";
+  function dvr(){ try { var d = JSON.parse(localStorage.getItem(DVR_KEY)); if (d && d.watch && d.rec) return d; } catch(e){} return {watch: {}, rec: []}; }
+  function saveDvr(d){ try { localStorage.setItem(DVR_KEY, JSON.stringify(d)); } catch(e){} }
+  function ymd(t){ var d = new Date(t); return d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2); }
+  function dayStart(s){ var p = s.split("-"); return new Date(+p[0], p[1] - 1, +p[2]).getTime(); }
+  function rotates(it){ return !!ROT && (ROTATING[shelfOf(it)] || it.rotation === true); }
+  function rotKey(it){ return it.local ? "local:" + it.id : it.id; }
+  function slot(it){
+    // current window {from, until} or null; next window for off-air titles
+    var today = ymd(Date.now()), cur = null, next = null;
+    ROT.windows.forEach(function(w){
+      if (w.id !== rotKey(it)) return;
+      if (w.from <= today && today <= w.until) cur = w;
+      else if (w.from > today && (!next || w.from < next.from)) next = w;
+    });
+    return {cur: cur, next: next};
+  }
+  // status: always | on | off | expired ; with ends (ms) and badge text
+  function status(it){
+    if (!rotates(it)) return {s: "always"};
+    var sl = slot(it);
+    if (!sl.cur) return {s: "off", next: sl.next};
+    var leaves = dayStart(sl.cur.until) + DAY, now = Date.now();
+    var daysLeft = Math.ceil((leaves - now) / DAY);
+    var w = dvr().watch[rotKey(it)], ends = leaves, started = false;
+    if (w && w.from === sl.cur.from) {
+      started = true;
+      ends = Math.min(leaves, w.first + WINDOW_MS);
+      if (now >= ends) return {s: "expired", next: sl.next, cur: sl.cur};
+    }
+    var badge = null;
+    if (daysLeft <= 1) badge = "Last chance";
+    else if (daysLeft <= 3) badge = "Leaving in " + daysLeft + " days";
+    else if (now - dayStart(sl.cur.from) < 7 * DAY) badge = "New this week";
+    return {s: "on", cur: sl.cur, leaves: leaves, ends: ends, started: started, daysLeft: daysLeft, badge: badge, next: sl.next};
+  }
+  function left(ms){ var h = Math.floor(ms / 3600000), m = Math.floor(ms % 3600000 / 60000); return h >= 24 ? Math.floor(h / 24) + "d " + (h % 24) + "h" : h + "h " + m + "m"; }
+  function niceDate(s){ return new Date(dayStart(s)).toLocaleDateString(undefined, {weekday: "short", month: "short", day: "numeric"}); }
+  function playable(it){ var s = status(it).s; return s === "always" || s === "on"; }
   var THIS_YEAR = 2026;
   var state = {q: "", genre: "all", rights: "all"};
   var $ = function(id){ return document.getElementById(id); };
@@ -57,10 +101,15 @@
   }
 
   function card(it){
-    return '<button class="card" type="button" data-id="' + esc(it.id) + '" aria-label="Play ' + esc(it.title) + ', ' + it.year + ', ' + esc(it.runtime) + '">' +
+    var st = status(it), cls = st.s === "expired" ? " is-expired" : "", ribbon = "";
+    if (st.s === "expired") ribbon = '<span class="badge new rot gone">Expired</span>';
+    else if (st.s === "on" && st.started) ribbon = '<span class="badge new rot timer" data-ends="' + st.ends + '">⏱ ' + left(st.ends - Date.now()) + ' left</span>';
+    else if (st.s === "on" && st.badge) ribbon = '<span class="badge new rot' + (st.daysLeft <= 3 ? " soon" : "") + '">' + st.badge + '</span>';
+    else if (it.year >= THIS_YEAR) ribbon = '<span class="badge new">New</span>';
+    return '<button class="card' + cls + '" type="button" data-id="' + esc(it.id) + '" aria-label="Play ' + esc(it.title) + ', ' + it.year + ', ' + esc(it.runtime) + '">' +
       '<div class="thumb"><img loading="lazy" src="' + esc(it.poster) + '" alt="" onerror="this.onerror=null;this.src=this.src.replace(\'maxresdefault\',\'hqdefault\')">' +
       '<span class="badge l">' + esc(rightsBadge(it)) + '</span><span class="badge r">' + esc(studioShort(it)) + '</span>' +
-      (it.year >= THIS_YEAR ? '<span class="badge new">New</span>' : '') + '</div>' +
+      ribbon + '</div>' +
       '<h3>' + esc(it.title) + '</h3><p class="sub">' + it.year + ' · ' + esc(it.runtime) + '</p><p class="lic">' + esc(licenseLine(it)) + '</p></button>';
   }
 
@@ -77,20 +126,46 @@
     var filtered = state.q.trim() !== "" || state.genre !== "all" || state.rights !== "all", total = 0;
     SHELVES.forEach(function(sh){
       var pool = all.filter(function(x){ return shelfOf(x) === sh.key; });
+      var hidden = pool.filter(function(x){ return status(x).s === "off"; }).length;
+      pool = pool.filter(function(x){ return status(x).s !== "off"; });
       var hits = pool.filter(match); total += hits.length;
       var sec = $("shelf-" + sh.key);
       sec.hidden = hits.length === 0;
       sec.querySelector(".grid").innerHTML = hits.map(card).join("");
-      sec.querySelector(".x-count").textContent = (filtered ? hits.length + " of " : "") + pool.length + (pool.length === 1 ? " film" : " films");
+      sec.querySelector(".x-count").textContent = (filtered ? hits.length + " of " : "") + pool.length + (ROT && ROTATING[sh.key] ? " on air" : (pool.length === 1 ? " film" : " films")) + (hidden ? " · " + hidden + " more rotating back in" : "");
     });
+    renderSpecial(filtered);
     $("empty").hidden = total > 0;
   }
 
+  function renderSpecial(filtered){
+    // Now Showing: what's new this week and what's leaving, soonest first
+    var ns = all.filter(function(x){ var s = status(x); return s.s === "on" && s.badge; })
+      .sort(function(a, b){ return status(a).leaves - status(b).leaves; });
+    var sec = $("shelf-now");
+    sec.hidden = filtered || !ns.length;
+    sec.querySelector(".grid").innerHTML = ns.map(card).join("");
+    sec.querySelector(".x-count").textContent = ns.length + " titles";
+    // My DVR
+    var d = dvr(), keep = [], gone = 0;
+    d.rec.forEach(function(id){ var it = byId(id); if (!it) return; var s = status(it).s; if (s === "on" || s === "always") keep.push(id); else gone++; });
+    if (gone) { d.rec = keep; saveDvr(d); }
+    var recs = keep.map(byId);
+    var ds = $("shelf-dvr");
+    ds.hidden = filtered || (!recs.length && !gone);
+    ds.querySelector(".grid").innerHTML = recs.map(card).join("");
+    ds.querySelector(".x-count").textContent = recs.length + " saved";
+    $("dvr-gone").hidden = !gone;
+    $("dvr-gone").textContent = gone + (gone === 1 ? " title" : " titles") + " left your DVR because the watch window or rotation ended.";
+  }
+  function byId(id){ return all.filter(function(x){ return x.id === id; })[0]; }
   function hero(){
-    var it = items.filter(function(x){ return x.mediaType === "movie"; })[0] || items[0];
+    var pool = items.filter(function(x){ return x.mediaType === "movie" && status(x).s === "on"; });
+    var fresh = pool.filter(function(x){ return status(x).badge === "New this week"; });
+    var it = fresh[0] || pool[0] || items.filter(function(x){ return status(x).s !== "off"; })[0] || items[0];
     if (!it) return;
     $("hero").innerHTML =
-      '<div><p class="eyebrow">New &amp; Recent · Free &amp; legal</p><h1>' + esc(it.title) + '</h1>' +
+      '<div><p class="eyebrow">' + (status(it).s === "on" ? "Now showing · leaves " + esc(niceDate(status(it).cur.until)) : "New &amp; Recent · Free &amp; legal") + '</p><h1>' + esc(it.title) + '</h1>' +
       '<p class="syn">' + esc(it.synopsis) + '</p>' +
       '<p class="meta">' + it.year + ' · ' + esc(it.runtime) + ' · ' + esc(it.license) + ' · ' + esc(it.studio) + '</p>' +
       '<div class="btns"><button class="btn btn-primary" type="button" data-play="' + esc(it.id) + '">▶ Play now</button>' +
@@ -169,11 +244,28 @@
     if (it.play.watchUrl) links.push('<a href="' + esc(it.play.watchUrl) + '" target="_blank" rel="noopener">Open on ' + (it.play.type === "archive" ? "Internet Archive" : "YouTube") + '</a>');
     $("p-links").innerHTML = links.join("");
     $("player").hidden = false; document.body.style.overflow = "hidden";
+    var st = status(it);
+    $("p-dvr").innerHTML = "";
+    if (st.s === "off" || st.s === "expired") {
+      setState("blocked", st.s);
+      var back = st.next ? "It's scheduled back on " + niceDate(st.next.from) + "." : "It may come back in a future rotation.";
+      $("screen-inner").innerHTML = '<div class="gate"><div><p class="gate-h">' + (st.s === "expired" ? "Your 48-hour window has ended" : "Off air right now") + '</p><p>' +
+        (st.s === "expired" ? "You started this one more than 48 hours ago. " : "This title is resting between rotations. ") + esc(back) + '</p>' +
+        '<p class="small">Afterglow is a rotation, like a TV channel: titles come and go on a schedule. Timers live only on this device. The film itself stays free on its owner\'s channel.</p></div></div>';
+    } else {
+      if (st.s === "on" && !st.started) { var d = dvr(); d.watch[rotKey(it)] = {first: Date.now(), from: st.cur.from}; saveDvr(d); st = status(it); }
+      if (st.s === "on") $("p-dvr").innerHTML = '<span class="timer" data-ends="' + st.ends + '">⏱ ' + left(st.ends - Date.now()) + ' left</span> to watch, from your first play' + (st.ends === st.leaves ? " (leaves the rotation " + esc(niceDate(st.cur.until)) + ")" : "") + '.';
+      var inRec = dvr().rec.indexOf(it.id) >= 0;
+      $("p-dvr").innerHTML += ' <button type="button" class="dvr-btn" data-rec="' + esc(it.id) + '" aria-pressed="' + inRec + '">' + (inRec ? "✓ In My DVR" : "＋ Add to My DVR") + '</button>';
+      startPlayback(it);
+    }
+    if (!fromHash) history.replaceState(null, "", "#watch/" + it.id);
+    document.querySelector("#player .close").focus();
+  }
+  function startPlayback(it){
     if (it.play.type === "mp4") playMp4(it, it.play.src);
     else if (it.play.type === "archive") playArchive(it);
     else playYT(it, it.play.id);
-    if (!fromHash) history.replaceState(null, "", "#watch/" + it.id);
-    document.querySelector("#player .close").focus();
   }
   function close(){
     if ($("player").hidden) return;
@@ -181,12 +273,17 @@
     ytPlayer = null; $("screen-inner").innerHTML = "";
     $("player").hidden = true; document.body.style.overflow = "";
     window.__agPlayer = {id: null, state: "idle", error: null};
+    render();
     history.replaceState(null, "", location.pathname + location.search);
     if (lastFocus && lastFocus.focus) lastFocus.focus();
   }
 
   document.addEventListener("click", function(e){
     var c = e.target.closest("[data-close]"); if (c) { close(); return; }
+    var r = e.target.closest("[data-rec]");
+    if (r) { var d = dvr(), id = r.getAttribute("data-rec"), i = d.rec.indexOf(id);
+      if (i >= 0) d.rec.splice(i, 1); else d.rec.unshift(id); saveDvr(d);
+      r.setAttribute("aria-pressed", String(i < 0)); r.textContent = i < 0 ? "✓ In My DVR" : "＋ Add to My DVR"; return; }
     var p = e.target.closest("[data-play]"); if (p) { open(p.getAttribute("data-play")); return; }
     var k = e.target.closest(".card"); if (k) open(k.getAttribute("data-id"));
   });
@@ -208,6 +305,18 @@
   $("q").addEventListener("input", function(e){ state.q = e.target.value; render(); });
   chips($("genres"), GENRES, "genre");
   chips($("rights"), RIGHTS, "rights");
-  buildShelves(); hero(); render(); fromHash();
+  buildShelves();
+  setInterval(function(){
+    Array.prototype.forEach.call(document.querySelectorAll(".timer[data-ends]"), function(t){
+      var ms = +t.getAttribute("data-ends") - Date.now();
+      if (ms <= 0) { if ($("player").hidden) render(); return; }
+      t.textContent = (t.classList.contains("badge") ? "⏱ " + left(ms) + " left" : "⏱ " + left(ms) + " left");
+    });
+  }, 30000);
+  function boot(){ hero(); render(); fromHash(); }
+  fetch("now-showing.json?v=" + ymd(Date.now()), {cache: "no-cache"})
+    .then(function(r){ if (!r.ok) throw 0; return r.json(); })
+    .then(function(j){ if (j && j.windows) ROT = j; }, function(){ ROT = null; })
+    .then(boot);
   window.addEventListener("hashchange", fromHash);
 })();
