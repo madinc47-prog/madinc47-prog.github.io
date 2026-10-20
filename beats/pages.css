@@ -30,3 +30,18 @@ html[data-solo="studio"] .studio-frame{position:absolute;inset:0;width:100%;heig
 html[data-solo="studio"] .pg-bar{position:fixed;left:auto;right:8px;top:auto;bottom:calc(8px + env(safe-area-inset-bottom));width:auto;padding:0;background:none;border:0;box-shadow:none;z-index:72}
 html[data-solo="studio"] .pg-bar .pg-hub{min-width:52px;min-height:48px;border-radius:999px;font-size:.8rem}
 html[data-solo="studio"] .ai-fab{top:auto;bottom:calc(64px + env(safe-area-inset-bottom));right:8px}
+/* device-check fixes (Oct 20) */
+.more-menu{position:relative;display:inline-block}
+.more-menu>summary{list-style:none;cursor:pointer;min-height:44px;display:inline-flex;align-items:center}
+.more-menu>summary::-webkit-details-marker{display:none}
+.more-pop{position:absolute;right:0;top:100%;z-index:90;display:flex;flex-direction:column;gap:6px;padding:8px;background:#14161c;border:1px solid #3a3f4a;border-radius:8px;box-shadow:0 8px 24px #000a;min-width:200px}
+.more-pop a{min-height:44px;display:flex!important;align-items:center}
+html[data-solo] .audio-state{white-space:normal;overflow:visible;text-overflow:clip;max-width:none}
+html[data-solo] .topbar .brand{flex-wrap:wrap}
+@media (max-height:820px){ html[data-solo] .topbar{position:relative;top:auto} }
+html[data-solo] .panel>*{scroll-margin-top:90px}
+html[data-solo] .seq-row .ms{min-width:40px;min-height:40px}
+html[data-solo] .seq-row .rname,html[data-solo] .seq-row .rhead{min-height:40px}
+html[data-solo] .seq-row button{min-height:40px}
+html[data-solo] .foot{margin-bottom:150px}
+html[data-solo] .ai-fab{bottom:calc(84px + env(safe-area-inset-bottom))}

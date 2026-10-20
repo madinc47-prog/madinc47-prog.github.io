@@ -11,8 +11,8 @@
   (function(){var P={beats:"beats",daw:"beats",arrange:"beats",piano:"piano","piano-roll":"piano",pianoroll:"piano",loops:"loops","keys-loops":"loops",keysloops:"loops",studio:"studio",multitrack:"studio",lyrics:"lyrics",mixer:"mixer",master:"master",mastering:"master",video:"video",visualizer:"video",capture:"video",vault:"vault",record:"record",vocals:"record"};
   try{var q=new URLSearchParams(location.search),t=(q.get("tab")||q.get("page")||location.hash.replace(/^#/,"")||"").toLowerCase();q.delete("tab");q.delete("page");var rest=q.toString();var real=[...q.keys()].some(function(k){return !/^(nosw|noupdate|_v|build|utm_.*|fbclid)$/.test(k)});
   if(P[t]||real){location.replace((P[t]||"beats")+".html"+(rest?"?"+rest:""));}}catch(e){}})();</script>
-  <link rel="stylesheet" href="styles.css?v=20261020a">
-  <link rel="stylesheet" href="rack.css?v=20261020a">
+  <link rel="stylesheet" href="styles.css?v=20261020b">
+  <link rel="stylesheet" href="rack.css?v=20261020b">
   <style>
     body{min-height:100vh}
     .hub{max-width:1100px;margin:0 auto;padding:16px 16px 40px}
@@ -29,7 +29,7 @@
 </head>
 <body>
   <header class="topbar"><div class="brand"><a href="../" class="back" aria-label="Back to IslePin">←</a><span class="logo">ISLAND PIN <b>BEATS</b></span></div>
-  <div class="transport"><span class="build-version" id="build-version">v20261020a</span><a href="check/" class="sound-check-link">Sound check</a></div></header>
+  <div class="transport"><span class="build-version" id="build-version">v20261020b</span><a href="check/" class="sound-check-link">Sound check</a></div></header>
   <main class="hub">
     <h1>Pick a tool</h1>
     <p class="sub">Every tool has its own page. Your beat, songs, takes and Vault are shared — make a beat on one page and it's there on the others.</p>

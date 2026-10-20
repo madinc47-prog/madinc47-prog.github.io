@@ -6409,7 +6409,7 @@
     document.querySelectorAll(".tab[data-tab]").forEach(function (x) {
       var on = x.dataset.tab === name;
       x.classList.toggle("active", on);
-      x.setAttribute("aria-selected", on ? "true" : "false"); if(on && x.scrollIntoView) try{x.scrollIntoView({inline:"center",block:"nearest"});}catch(e){}
+      x.setAttribute("aria-selected", on ? "true" : "false"); if(on) try{var nv=x.parentNode;nv.scrollLeft=x.offsetLeft-(nv.clientWidth-x.offsetWidth)/2;}catch(e){} /* never scrollIntoView: it scrolled the whole page to the bottom on load */
     });
     document.querySelectorAll(".panel").forEach(function (p) {
       p.classList.toggle("active", p.id === "tab-" + activeTab);
