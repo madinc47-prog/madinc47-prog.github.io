@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <title>⚙ Settings · Island Beats Hub</title>
+  <meta name="theme-color" content="#0b0d12"><meta name="color-scheme" content="dark">
+  <link rel="icon" href="icons/icon-192.png"><link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="styles.css?v=20261020f"><link rel="stylesheet" href="rack.css?v=20261020f">
+  <script src="prefs.js?v=20261020f"></script>
+  <style>
+    .set{max-width:760px;margin:0 auto;padding:14px 16px 60px}
+    .set h1{font-size:1.2rem;margin:.3rem 0 .8rem}
+    .grp{border:1px solid #000;border-radius:10px;background:linear-gradient(#22242b,#17181d);box-shadow:inset 0 1px 0 #3d3e46;padding:12px 14px;margin:0 0 12px}
+    .grp h2{font-size:.8rem;letter-spacing:.12em;text-transform:uppercase;color:#fbbf24;margin:0 0 8px}
+    .r{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;min-height:52px;border-top:1px solid #2a2d36;padding:6px 0}
+    .r:first-of-type{border-top:0}
+    .r label{flex:1 1 220px;font-weight:700}.r small{display:block;font-weight:400;color:#9aa0ad}
+    .r select,.r input[type=number]{min-height:48px;min-width:160px;font-size:1rem}
+    .r input[type=color]{width:64px;height:48px;border:0;background:none}
+    .r input[type=checkbox]{width:28px;height:28px}
+    .links a{min-height:48px;display:inline-flex;align-items:center;margin:4px 8px 4px 0}
+    #saved{color:#3dff88;min-height:1.4em}
+  </style>
+</head>
+<body>
+  <header class="topbar"><div class="brand"><a href="./?hub=1" class="back" aria-label="Back to Island Beats Hub">←</a><span class="logo">⚙ <b>SETTINGS</b></span></div></header>
+  <main class="set">
+    <h1>Settings — saved on this device</h1>
+    <p id="saved" role="status"></p>
+    <section class="grp"><h2>Start</h2>
+      <div class="r"><label for="s-start">Open on start<small>What the hub opens when you launch the app. “⌂ All pages” always shows the hub.</small></label>
+        <select id="s-start"><option value="">Hub (all pages)</option><option value="beats">Beats</option><option value="studio">Studio</option><option value="record">Record Vocals</option><option value="loops">Keys Loops</option><option value="midi">MIDI</option><option value="master">Master</option></select></div>
+    </section>
+    <section class="grp"><h2>Beat</h2>
+      <div class="r"><label for="s-bpm">BPM of the current beat<small>Same as the BPM box on the Beats page.</small></label><input id="s-bpm" type="number" min="60" max="200" step="1"></div>
+      <div class="r"><label>Metronome &amp; count-in<small>Set per project in Studio → 🎧 Rec setup (count-in) and ♩ Click (metronome).</small></label><a class="btn" href="studio.html">Open Studio</a></div>
+    </section>
+    <section class="grp"><h2>MIDI</h2>
+      <div class="r"><label for="s-midi">Auto-enable MIDI<small>Turns MIDI on by itself on every page once Chrome has allowed it (no surprise prompt).</small></label><input id="s-midi" type="checkbox"></div>
+      <div class="r"><label>Channel, pad base note, knob Learn</label><a class="btn" href="midi.html">Open MIDI page</a></div>
+    </section>
+    <section class="grp"><h2>Look</h2>
+      <div class="r"><label for="s-pad">Pad size</label><select id="s-pad"><option value="s">Small</option><option value="m">Normal</option><option value="l">Large</option><option value="xl">Extra large</option></select></div>
+      <div class="r"><label for="s-accent">Accent colour<small>Rack look stays; this changes the highlight colour.</small></label><span><input id="s-accent" type="color"> <button type="button" class="btn small" id="s-accent-reset">Reset</button></span></div>
+      <div class="r"><label for="s-ai">Show the ✨ Ask AI button</label><input id="s-ai" type="checkbox"></div>
+    </section>
+    <section class="grp"><h2>Shout-outs</h2>
+      <div class="r"><label>DJ shout-outs, density and DJ choice<small>These live in the DJ Psycho Fingers player.</small></label><a class="btn" href="../player/#settings">Player settings</a></div>
+    </section>
+    <section class="grp links"><h2>Storage</h2>
+      <a class="btn" href="check/#s-storage">Storage used &amp; keep data safe</a><a class="btn" href="check/">Sound check</a><a class="btn rec" href="beats.html?fresh=1">Start fresh (asks first)</a>
+    </section>
+  </main>
+  <script src="settings.js?v=20261020f"></script>
+</body>
+</html>

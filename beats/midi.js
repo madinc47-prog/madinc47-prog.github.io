@@ -133,6 +133,7 @@ function build(){
   $("midi-test-cc").addEventListener("click",function(){ var v=0; var iv=setInterval(function(){ inject([0xB0,70,v]); v+=16; if(v>127)clearInterval(iv); },90); });
   $("midi-test-song").addEventListener("click",function(){ inject([0xC0,1]); });
   renderLearn(); log("panel built v"+VERSION);
+  if(settings.autoEnable && navigator.requestMIDIAccess && navigator.permissions && navigator.permissions.query) navigator.permissions.query({name:"midi"}).then(function(st){ if(st.state==="granted") enable(); }).catch(function(){}); // ⚙ Settings: auto-enable only if already allowed (no surprise prompt)
 }
 window.IPBMidi={version:VERSION,enabled:function(){return enabled;},init:enable,enable:enable,inject:inject,handle:handle,
  settings:function(){return JSON.parse(JSON.stringify(settings));},learnMap:function(){return JSON.parse(JSON.stringify(learnMap));},

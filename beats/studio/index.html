@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob: data:; connect-src 'self' blob: data: https://*.supabase.co; worker-src 'self' blob:; frame-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Island Pin Studio: Free Multitrack Recorder &amp; Editor</title>
   <meta name="description" content="Island Pin Studio: free multitrack audio studio in your browser. Record vocals over a beat, edit clips (move, trim, split, fade, copy and paste), Cool Edit-style waveform editing, per-track EQ, compressor, reverb, delay and noise gate, mixer with meters, master limiter, export WAV and MP3.">
@@ -14,10 +15,10 @@
   <meta name="twitter:card" content="summary">
   <script src="/shared/share.js" defer data-title="Island Pin Studio — Free Multitrack Recorder" data-text="Record vocals over your beat, edit, mix and export free in your browser." data-position="inline" data-target=".topbar .brand" data-compact="700"></script>
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="../styles.css?v=20261020e">
-  <link rel="stylesheet" href="studio.css?v=20261020e">
-  <link rel="stylesheet" href="../rack.css?v=20261020e">
-  <link rel="stylesheet" href="../usb-audio.css?v=20261020e">
+  <link rel="stylesheet" href="../styles.css?v=20261020f">
+  <link rel="stylesheet" href="studio.css?v=20261020f">
+  <link rel="stylesheet" href="../rack.css?v=20261020f">
+  <link rel="stylesheet" href="../usb-audio.css?v=20261020f">
   <link rel="manifest" href="../manifest.webmanifest">
   <link rel="apple-touch-icon" href="../icons/apple-touch-icon.png">
 </head>
@@ -238,16 +239,16 @@
   </div>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
-  <script src="core.js?v=20261020e"></script>
-  <script src="../fx-chain.js?v=20261020e"></script>
-  <script src="../match.js?v=20261020e"></script>
-  <script src="../usb-audio.js?v=20261020e"></script>
-  <script src="audio.js?v=20261020e"></script>
-  <script src="wave.js?v=20261020e"></script>
-  <script src="../vocal-clean-client.js?v=20261020e"></script>
-  <script src="ui.js?v=20261020e"></script>
-  <script src="tablet.js?v=20261020e"></script>
-  <script src="../helper.js?v=20261020e"></script>
+  <script src="core.js?v=20261020f"></script>
+  <script src="../fx-chain.js?v=20261020f"></script>
+  <script src="../match.js?v=20261020f"></script>
+  <script src="../usb-audio.js?v=20261020f"></script>
+  <script src="audio.js?v=20261020f"></script>
+  <script src="wave.js?v=20261020f"></script>
+  <script src="../vocal-clean-client.js?v=20261020f"></script>
+  <script src="ui.js?v=20261020f"></script>
+  <script src="tablet.js?v=20261020f"></script>
+  <script src="../helper.js?v=20261020f"></script>
   <script>/* Beats | DJ Booth | Player switcher on the stand-alone Studio page (inside the Beats tab, Beats shows it) */
     if (!/[?&]embed=1/.test(location.search)) { var nav = document.createElement("script"); nav.type = "module"; nav.src = "../../shared/ecosystem-nav.js?mode=pill&pos=bl"; document.body.appendChild(nav); }
   </script>

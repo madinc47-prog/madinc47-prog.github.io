@@ -1,7 +1,7 @@
 {
-  "name": "Psycho Fingers Player",
-  "short_name": "PF Player",
-  "description": "A music player that performs like a DJ \u2014 record pulls, needle drops, beat-reactive lights, lasers and a spectrum visualizer.",
+  "name": "DJ Psycho Fingers Beta audio player",
+  "short_name": "PF Beta",
+  "description": "A music player that performs like a DJ — record pulls, needle drops, beat-reactive lights, lasers and a spectrum visualizer.",
   "id": "/player/",
   "start_url": "./",
   "scope": "./",

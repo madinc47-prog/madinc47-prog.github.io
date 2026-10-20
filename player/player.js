@@ -2,20 +2,20 @@
 // Every module URL carries the same ?v= tag as player.js in index.html (and sw.js SHELL), so a deploy can never mix
 // old and new modules from the HTTP cache. Bump all of them together.
 import { saveTrack, listTracks, getTrack, deleteTrack, onMediaChange } from '../shared/media-store.js';
-import { createScene } from './scene.js?v=30';
-import { createViz, THEMES } from './viz.js?v=30';
-import { OUTFITS, OUTFIT_FOR_THEME } from './outfits.js?v=30';
-import { createEQ } from './eq.js?v=30';
-import { createHype } from './hype.js?v=30';
-import { createLadies } from './ladies.js?v=30';
-import { createShout } from './shout.js?v=30';
-import { initPhoto } from './photo.js?v=30';
-import { initRec } from './rec.js?v=30';
-import { createIsle } from './isle.js?v=30';
-import { createPop } from './pop.js?v=30';
-import { createDates } from './dates.js?v=30';
-import { td, TD } from './td.js?v=30';
-import { fmt, hash, isAudioFile, titleFromName, makeCover, makeLabel, readTags, probeDuration, probeMedia, computePeaks, notMusicReason } from './util.js?v=30';
+import { createScene } from './scene.js?v=31';
+import { createViz, THEMES } from './viz.js?v=31';
+import { OUTFITS, OUTFIT_FOR_THEME } from './outfits.js?v=31';
+import { createEQ } from './eq.js?v=31';
+import { createHype } from './hype.js?v=31';
+import { createLadies } from './ladies.js?v=31';
+import { createShout } from './shout.js?v=31';
+import { initPhoto } from './photo.js?v=31';
+import { initRec } from './rec.js?v=31';
+import { createIsle } from './isle.js?v=31';
+import { createPop } from './pop.js?v=31';
+import { createDates } from './dates.js?v=31';
+import { td, TD } from './td.js?v=31';
+import { fmt, hash, isAudioFile, titleFromName, makeCover, makeLabel, readTags, probeDuration, probeMedia, computePeaks, notMusicReason } from './util.js?v=31';
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -696,7 +696,7 @@ async function updateNowPlaying(it, { loading } = {}) {
   $('#npArt').src = coverOf(it); $('#npArt').alt = 'Artwork: ' + it.title;
   $('#likeBtn').classList.toggle('on', S.liked.has(it.key)); $('#likeBtn').setAttribute('aria-pressed', S.liked.has(it.key));
   $('#tDur').textContent = fmt(it.duration); $('#tCur').textContent = '0:00';
-  document.title = `${it.title} — Psycho Fingers Player`;
+  document.title = `${it.title} — DJ Psycho Fingers Beta`;
   if ('mediaSession' in navigator) {
     const src = await artDataUrl(it);
     try {

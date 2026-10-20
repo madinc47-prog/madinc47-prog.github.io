@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob: data:; connect-src 'self' blob: data: https://*.supabase.co; worker-src 'self' blob:; frame-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Island Beats Hub (Beta) — Island Pin Beats</title>
   <meta name="description" content="Island Pin Beats: free browser beat maker. Hip-hop drum kits, pads, sequencer, keys loops, piano roll, vocal recording, multitrack studio, mixer, mastering, DJ booth. Each tool on its own page.">
@@ -12,10 +13,11 @@
   <meta name="apple-mobile-web-app-title" content="Island Beats Hub"><meta name="apple-mobile-web-app-capable" content="yes">
   <script>/* old deep links (?tab=…, #mixer, ?beat=…, ?studio=1, ?fresh=1) go to the matching page; params are kept */
   (function(){var P={beats:"beats",daw:"beats",arrange:"beats",piano:"piano","piano-roll":"piano",pianoroll:"piano",loops:"loops","keys-loops":"loops",keysloops:"loops",studio:"studio",multitrack:"studio",lyrics:"lyrics",mixer:"mixer",master:"master",mastering:"master",video:"video",visualizer:"video",capture:"video",vault:"vault",record:"record",vocals:"record",midi:"midi"};
-  try{var q=new URLSearchParams(location.search),t=(q.get("tab")||q.get("page")||location.hash.replace(/^#/,"")||"").toLowerCase();q.delete("tab");q.delete("page");var rest=q.toString();var real=[...q.keys()].some(function(k){return !/^(nosw|noupdate|_v|build|utm_.*|fbclid)$/.test(k)});
-  if(P[t]||real){location.replace((P[t]||"beats")+".html"+(rest?"?"+rest:""));}}catch(e){}})();</script>
-  <link rel="stylesheet" href="styles.css?v=20261020e">
-  <link rel="stylesheet" href="rack.css?v=20261020e">
+  try{var q=new URLSearchParams(location.search),t=(q.get("tab")||q.get("page")||location.hash.replace(/^#/,"")||"").toLowerCase();q.delete("tab");q.delete("page");var rest=q.toString();var real=[...q.keys()].some(function(k){return !/^(nosw|noupdate|_v|build|hub|utm_.*|fbclid)$/.test(k)});
+  if(P[t]||real){location.replace((P[t]||"beats")+".html"+(rest?"?"+rest:""));return;}
+  var st=JSON.parse(localStorage.getItem("ipb_start_page_v1")||"null");if(st&&P[st]&&!q.has("hub")&&!location.hash)location.replace(P[st]+".html");}catch(e){}})();</script>
+  <link rel="stylesheet" href="styles.css?v=20261020f">
+  <link rel="stylesheet" href="rack.css?v=20261020f">
   <style>
     body{min-height:100vh}
     .hub{max-width:1100px;margin:0 auto;padding:16px 16px 40px}
@@ -33,7 +35,7 @@
 </head>
 <body>
   <header class="topbar"><div class="brand"><a href="../" class="back" aria-label="Back to IslePin">←</a><span class="logo">ISLAND <b>BEATS HUB</b></span><span class="beta-badge">BETA</span></div>
-  <div class="transport"><span class="build-version" id="build-version">v20261020e</span><a href="check/" class="sound-check-link">Sound check</a></div></header>
+  <div class="transport"><span class="build-version" id="build-version">v20261020f</span><a href="check/" class="sound-check-link">Sound check</a></div></header>
   <main class="hub">
     <h1>Pick a tool</h1>
     <p class="sub">Every tool has its own page. Your beat, songs, takes and Vault are shared — make a beat on one page and it's there on the others.</p>
@@ -53,7 +55,7 @@
       <a class="tile" href="vault.html"><i class="ic">🗄</i><b>Vault</b><span>All saved recordings on this device.</span></a>
       <a class="tile" href="video.html"><i class="ic">🎬</i><b>Video</b><span>Visualizer for YouTube, Shorts, Reels, TikTok.</span></a>
     </nav>
-    <div class="row"><button type="button" class="btn primary" id="install-btn" hidden>⬇ Install app</button><button type="button" class="btn" id="share-btn">↗ Share Island Beats Hub</button><a class="btn ghost" href="app.html">All-in-one (classic)</a><a class="btn ghost" href="check/">Sound check</a><a class="btn ghost" href="beats.html?fresh=1">Start fresh</a></div>
+    <div class="row"><button type="button" class="btn primary" id="install-btn" hidden>⬇ Install app</button><button type="button" class="btn" id="share-btn">↗ Share Island Beats Hub</button><a class="btn" href="settings.html">⚙ Settings</a><a class="btn ghost" href="app.html">All-in-one (classic)</a><a class="btn ghost" href="check/">Sound check</a><a class="btn ghost" href="beats.html?fresh=1">Start fresh</a></div>
   </main>
   <p class="sub" id="install-hint" hidden></p>
   <script type="module" src="../shared/ecosystem-nav.js"></script>

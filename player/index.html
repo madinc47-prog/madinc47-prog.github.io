@@ -2,8 +2,9 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="object-src 'none'; base-uri 'self'; form-action 'self'">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Psycho Fingers Player — DJ Psycho Fingers</title>
+  <title>DJ Psycho Fingers Beta audio player</title>
   <meta name="description" content="Psycho Fingers Player: a free music player that performs like a DJ — record pulls, needle drops, beat-reactive lights, lasers and a spectrum visualizer. Plays your own files, folders, URLs and tracks from Beats and the DJ Booth. Works offline.">
   <link rel="canonical" href="https://madinc47-prog.github.io/player/">
   <meta property="og:title" content="Psycho Fingers Player">
@@ -18,7 +19,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
-  <link rel="stylesheet" href="player.css?v=30">
+  <link rel="stylesheet" href="player.css?v=31">
 </head>
 <body data-theme="club">
   <canvas id="viz" aria-hidden="true"></canvas>
@@ -26,7 +27,7 @@
   <div class="app" id="app">
     <header class="top">
       <div class="brand">
-        <h1>Psycho Fingers Player</h1>
+        <h1>DJ Psycho Fingers<span class="beta-badge" style="display:inline-block;margin-left:6px;padding:1px 6px;border-radius:5px;background:#f59e0b;color:#111;font:800 10px/1.5 system-ui,sans-serif;letter-spacing:.08em;vertical-align:middle">BETA</span></h1><p class="pf-sub" style="margin:0;font-size:.75rem;opacity:.75">Beta audio player</p>
         <p class="sub"><span class="eqicon" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>DJ Psycho Fingers</p>
       </div>
       <nav class="links" aria-label="Apps">
@@ -198,6 +199,7 @@
   <input type="file" id="photoIn" accept="image/*" hidden>
 
   <script type="module" src="../shared/ecosystem-nav.js"></script>
-  <script type="module" src="player.js?v=30"></script>
+  <script type="module" src="player.js?v=31"></script>
+  <script type="module" src="settings.js?v=31"></script>
 </body>
 </html>

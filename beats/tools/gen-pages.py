@@ -24,7 +24,7 @@ BAR = ['beats.html', 'record.html', 'studio.html', 'loops.html', 'master.html', 
 ver = re.search(r'app\.js\?v=([0-9a-z]+)', src).group(1)
 nav_re = re.compile(r'<nav class="tabs" role="tablist">.*?</nav>', re.S)
 for f, solo, part, title, short in PAGES:
-    links = ['<a class="tab pg-hub" href="./" title="All pages">⌂ All pages</a>']
+    links = ['<a class="tab pg-hub" href="./?hub=1" title="All pages">⌂ All pages</a>']
     for g, s2, p2, t2, sh in PAGES:
         if g not in BAR and g != f: continue
         if g == f:
