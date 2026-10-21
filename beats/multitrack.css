@@ -51,3 +51,4 @@ input,select{min-height:44px;background:#171c28;color:#e8ecf3;border:1px solid #
 .toast{pointer-events:none;position:fixed;left:50%;bottom:16px;transform:translateX(-50%);background:#232b3d;border:1px solid #3d4760;padding:10px 14px;border-radius:12px;z-index:30;max-width:92vw}
 :root{--hw:176px}
 @media (max-width:520px){:root{--hw:156px}.hint{display:none}.top .ttl{font-size:15px}.time{min-width:96px;font-size:13px}}
+.btn.save{background:#1f4f8a;border-color:#3a7bd5}

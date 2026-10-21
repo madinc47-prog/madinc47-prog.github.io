@@ -1,4 +1,4 @@
-/* Island Pin Beats · Multitrack recorder + basic timeline (Studio step 1). Session lives in memory only. */
+/* Island Pin Beats · Multitrack recorder + basic timeline (Studio step 1). Session autosaves to IndexedDB until Save & exit. */
 (function () {
   "use strict";
   var $ = function (id) { return document.getElementById(id); };
@@ -26,17 +26,17 @@
       ctx = new (window.AudioContext || window.webkitAudioContext)({ latencyHint: "interactive" });
       master = ctx.createGain(); master.connect(ctx.destination);
       S.tracks.forEach(trackNodes);
-      workletReady = ctx.audioWorklet ? ctx.audioWorklet.addModule("multitrack-worklet.js?v=20261021b") : Promise.reject(new Error("AudioWorklet not supported"));
+      workletReady = ctx.audioWorklet ? ctx.audioWorklet.addModule("multitrack-worklet.js?v=20261021c") : Promise.reject(new Error("AudioWorklet not supported"));
       workletReady.catch(function () { toast("This browser cannot record here (no AudioWorklet). Update Chrome.", 5000); });
       latHint();
     }
     if (ctx.state === "suspended") ctx.resume();
     return ctx;
   }
-  function trackNodes(t) { if (!ctx || t.gain) return; t.gain = ctx.createGain(); t.gain.connect(master); }
+  function trackNodes(t) { if (!ctx || t.gain) return; t.gain = ctx.createGain(); t.pan = ctx.createStereoPanner ? ctx.createStereoPanner() : null; if (t.pan) { t.gain.connect(t.pan); t.pan.connect(master); } else t.gain.connect(master); }
   function applyMS() {
     var anySolo = S.tracks.some(function (t) { return t.solo; });
-    S.tracks.forEach(function (t) { if (t.gain) t.gain.gain.value = t.mute ? 0 : (anySolo && !t.solo ? 0 : 1); });
+    S.tracks.forEach(function (t) { if (t.gain) t.gain.gain.value = t.mute ? 0 : (anySolo && !t.solo ? 0 : (t.vol == null ? 1 : t.vol)); if (t.pan) t.pan.pan.value = t.pn || 0; }); save();
   }
   function addBuf(buf) {
     var id = uid("b"), pps = 200, n = Math.ceil(buf.duration * pps), pk = new Float32Array(n), d0 = buf.getChannelData(0), d1 = buf.numberOfChannels > 1 ? buf.getChannelData(1) : null, step = buf.sampleRate / pps;
@@ -45,8 +45,8 @@
   }
 
   /* ---------- model / undo ---------- */
-  function newTrack(name, kind) { var t = { id: uid("t"), name: name, kind: kind || "audio", arm: false, mute: false, solo: false, dev: "", ch: "L", clips: [], takes: [] }; trackNodes(t); return t; }
-  function snapshot() { return JSON.stringify({ bpm: S.bpm, tracks: S.tracks.map(function (t) { return { id: t.id, name: t.name, kind: t.kind, arm: t.arm, mute: t.mute, solo: t.solo, dev: t.dev, ch: t.ch, clips: t.clips, takes: t.takes }; }) }); }
+  function newTrack(name, kind) { var t = { id: uid("t"), name: name, kind: kind || "audio", arm: false, mute: false, solo: false, dev: "", ch: "L", vol: 1, pn: 0, clips: [], takes: [] }; trackNodes(t); return t; }
+  function snapshot() { return JSON.stringify({ bpm: S.bpm, tracks: S.tracks.map(function (t) { return { id: t.id, name: t.name, kind: t.kind, arm: t.arm, mute: t.mute, solo: t.solo, dev: t.dev, ch: t.ch, vol: t.vol, pn: t.pn, clips: t.clips, takes: t.takes }; }) }); }
   function restore(js) {
     var o = JSON.parse(js), old = {}; S.tracks.forEach(function (t) { old[t.id] = t; });
     S.bpm = o.bpm; $("bpm").value = S.bpm;
@@ -55,7 +55,7 @@
     if (S.sel && !clipById(S.sel)) S.sel = null;
     applyMS(); render();
   }
-  function edit() { undoS.push(snapshot()); if (undoS.length > 200) undoS.shift(); redoS = []; dirty = true; }
+  function edit() { undoS.push(snapshot()); if (undoS.length > 200) undoS.shift(); redoS = []; dirty = true; save(); }
   function undo() { if (!undoS.length) return toast("Nothing to undo"); redoS.push(snapshot()); restore(undoS.pop()); toast("Undo"); }
   function redo() { if (!redoS.length) return toast("Nothing to redo"); undoS.push(snapshot()); restore(redoS.pop()); toast("Redo"); }
   var dirty = false;
@@ -125,7 +125,7 @@
     clearInterval(play.timer); play.srcs.forEach(function (s) { try { s.stop(); } catch (e) {} });
     var r = play.rec; play = null;
     if (r) endRec(r);
-    S.playhead = Math.max(0, p); $("play").textContent = "▶"; $("play").classList.remove("on"); $("rec").classList.remove("on"); drawPH();
+    S.playhead = Math.max(0, p); save(); $("play").textContent = "▶"; $("play").classList.remove("on"); $("rec").classList.remove("on"); drawPH();
   }
   function tick() {
     if (!play) return; var p = posNow(); drawPH(p);
@@ -217,7 +217,7 @@
 
   /* ---------- latency calibration ---------- */
   function latHint() { if (!ctx) return; var o = ((ctx.outputLatency || 0) + (ctx.baseLatency || 0)) * 1000; $("lat-hint").textContent = "This Tab reports ~" + Math.round(o) + " ms output delay; calibrate to measure the real round trip."; }
-  function setLat(v) { latMs = Math.max(0, Math.min(1000, Math.round(v))); $("lat").value = latMs; localStorage.setItem("ipb_mt_latency_ms", latMs); }
+  function setLat(v) { latMs = Math.max(0, Math.min(1000, Math.round(v))); $("lat").value = latMs; localStorage.setItem("ipb_mt_latency_ms", latMs); save(); }
   function calibrate(clap) {
     var t = S.tracks.filter(function (x) { return x.id === $("cal-trk").value; })[0]; if (!t) return;
     if (play) stop(); ac(); $("cal-out").textContent = clap ? "Get ready… clap on every click." : "Listening…";
@@ -250,7 +250,7 @@
   function placeBeat(buf, name, bpm) {
     ac(); edit(); var t = beatTrack(), id = addBuf(buf);
     if (bpm && bpm >= 40 && bpm <= 240) { S.bpm = bpm; $("bpm").value = bpm; }
-    t.clips = [mkClip(id, 0, 0, buf.duration, name)]; render(); toast("Beat loaded: " + name + " (" + buf.duration.toFixed(1) + " s). Select it and press Loop + to repeat it.", 4000);
+    t.clips = [mkClip(id, 0, 0, buf.duration, name)]; S.beatName = name; render(); toast("Beat loaded: " + name + " (" + buf.duration.toFixed(1) + " s). Select it and press Loop + to repeat it.", 4000);
   }
   function decode(ab) { ac(); return new Promise(function (res, rej) { ctx.decodeAudioData(ab, res, rej); }); }
   function bpmOf(name) { var m = /(\d{2,3})\s*bpm/i.exec(name || ""); return m ? +m[1] : null; }
@@ -316,7 +316,7 @@
     else $("rangeinfo").textContent = "No range";
     $("undo").disabled = !undoS.length; $("redo").disabled = !redoS.length;
     $("addtrk").disabled = S.tracks.filter(function (t) { return t.kind === "audio"; }).length >= MAXT;
-    clipBar(); drawPH();
+    clipBar(); drawPH(); save();
   }
   function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
   function clipEl(c) {
@@ -376,11 +376,12 @@
   var rd = null;
   $("ruler").addEventListener("pointerdown", function (e) { rd = { a: snap(lanePos(e)), id: e.pointerId, moved: false, x: e.clientX }; try { $("ruler").setPointerCapture(e.pointerId); } catch (er) {} });
   $("ruler").addEventListener("pointermove", function (e) { if (!rd || e.pointerId !== rd.id) return; if (Math.abs(e.clientX - rd.x) > 8) rd.moved = true; if (rd.moved) { var b = snap(lanePos(e)); S.range = b > rd.a ? [rd.a, b] : b < rd.a ? [b, rd.a] : null; render(); } });
-  $("ruler").addEventListener("pointerup", function (e) { if (!rd) return; if (!rd.moved) { var p = Math.max(0, lanePos(e)); S.playhead = snap(p); if (play) { start(!!play.rec); } else drawPH(); } rd = null; });
+  $("ruler").addEventListener("pointerup", function (e) { if (!rd) return; if (!rd.moved) { var p = Math.max(0, lanePos(e)); S.playhead = snap(p); if (play) { start(!!play.rec); } else drawPH(); save(); } rd = null; });
   // pinch zoom (two fingers anywhere on the timeline)
   var pin = null;
   $("tl").addEventListener("touchstart", function (e) { if (e.touches.length === 2) { var a = e.touches[0], b = e.touches[1]; pin = { d: Math.abs(a.clientX - b.clientX) + 1, z: pxs, cx: (a.clientX + b.clientX) / 2 }; pin.t = (pin.cx - $("ruler").getBoundingClientRect().left) / pxs; drag = null; } }, { passive: true });
   $("tl").addEventListener("touchmove", function (e) { if (pin && e.touches.length === 2) { e.preventDefault(); var a = e.touches[0], b = e.touches[1], d = Math.abs(a.clientX - b.clientX) + 1; zoomTo(pin.z * d / pin.d, pin.t, pin.cx); } }, { passive: false });
+  $("tl").addEventListener("scroll", function () { save(); }, { passive: true });
   $("tl").addEventListener("touchend", function (e) { if (e.touches.length < 2) pin = null; });
   function zoomTo(z, tAt, clientX) {
     z = Math.max(8, Math.min(800, z)); if (Math.abs(z - pxs) < 0.01) return; var tl = $("tl"), r = tl.getBoundingClientRect();
@@ -399,7 +400,7 @@
   });
   var curT = null;
   function openTrk(t) {
-    curT = t; $("tk-ttl").textContent = t.kind === "beat" ? "Beat track" : "Track settings"; $("tk-name").value = t.name; renderDevs(); $("tk-dev").value = t.dev; $("tk-ch").value = t.ch;
+    curT = t; $("tk-ttl").textContent = t.kind === "beat" ? "Beat track" : "Track settings"; $("tk-name").value = t.name; renderDevs(); $("tk-dev").value = t.dev; $("tk-ch").value = t.ch; $("tk-vol").value = t.vol == null ? 1 : t.vol; $("tk-pan").value = t.pn || 0;
     $("tk-dev").disabled = $("tk-ch").disabled = t.kind === "beat"; $("tk-del").hidden = t.kind === "beat";
     var L = $("tk-takes"); L.innerHTML = t.takes.length ? "" : "<li>No takes yet.</li>";
     t.takes.forEach(function (k) { var li = document.createElement("li"), b = document.createElement("button"); li.innerHTML = "<span></span>"; li.firstChild.textContent = k.name + " · " + k.dur.toFixed(1) + " s"; b.className = "btn"; b.textContent = "Put back"; b.onclick = function () { edit(); carve(t, k.at, k.at + k.dur); t.clips.push(mkClip(k.buf, k.at, 0, k.dur, k.name)); $("sh-trk").hidden = true; render(); toast(k.name + " is back on the timeline."); }; li.appendChild(b); L.appendChild(li); });
@@ -408,15 +409,17 @@
   $("tk-name").onchange = function () { if (!curT) return; edit(); curT.name = this.value.trim() || curT.name; render(); };
   $("tk-dev").onchange = function () { if (!curT) return; curT.dev = this.value; if (curT.arm) tapFor(curT).catch(function (e) { toast("Mic error: " + e.message); }); render(); };
   $("tk-ch").onchange = function () { if (!curT) return; curT.ch = this.value; if (curT.arm) tapFor(curT).then(function (tp) { if (curT.ch !== "L" && tp.o.chans < 2) toast("This input is mono, so Left is used. Pick the USB mixer input for 2 channels.", 4500); }); render(); };
+  $("tk-vol").oninput = function () { if (curT) { curT.vol = +this.value; applyMS(); } };
+  $("tk-pan").oninput = function () { if (curT) { curT.pn = +this.value; applyMS(); } };
   $("tk-del").onclick = function () { if (!curT) return; edit(); S.tracks = S.tracks.filter(function (t) { return t !== curT; }); if (curT.gain) curT.gain.disconnect(); $("sh-trk").hidden = true; render(); };
   document.querySelectorAll("[data-close]").forEach(function (b) { b.onclick = function () { b.closest(".sheet").hidden = true; }; });
   document.querySelectorAll(".sheet").forEach(function (s) { s.addEventListener("click", function (e) { if (e.target === s) s.hidden = true; }); });
   $("play").onclick = function () { if (play) stop(); else start(false); };
   $("rec").onclick = recBtn;
-  $("home").onclick = function () { if (play && play.rec) return; var p = S.range && S.playhead > S.range[0] + 0.01 ? S.range[0] : 0; S.playhead = p; if (play) start(false); drawPH(); $("tl").scrollLeft = Math.max(0, p * pxs - 40); };
-  $("loop").onclick = function () { if (!loopOn && !S.range) return toast("Drag on the ruler to pick a loop range first."); loopOn = !loopOn; this.classList.toggle("on", loopOn); if (play && !play.rec) start(false); render(); };
-  $("punch").onclick = function () { if (!punchOn && !S.range) return toast("Drag on the ruler to pick the punch range first."); punchOn = !punchOn; this.classList.toggle("on", punchOn); toast(punchOn ? "Punch on: ● records only inside the range (starts 1 bar before)." : "Punch off."); };
-  $("click").onclick = function () { clickOn = !clickOn; this.classList.toggle("on", clickOn); };
+  $("home").onclick = function () { if (play && play.rec) return; var p = S.range && S.playhead > S.range[0] + 0.01 ? S.range[0] : 0; S.playhead = p; if (play) start(false); drawPH(); save(); $("tl").scrollLeft = Math.max(0, p * pxs - 40); };
+  $("loop").onclick = function () { if (!loopOn && !S.range) return toast("Drag on the ruler to pick a loop range first."); loopOn = !loopOn; this.classList.toggle("on", loopOn); save(); if (play && !play.rec) start(false); render(); };
+  $("punch").onclick = function () { if (!punchOn && !S.range) return toast("Drag on the ruler to pick the punch range first."); punchOn = !punchOn; this.classList.toggle("on", punchOn); save(); toast(punchOn ? "Punch on: ● records only inside the range (starts 1 bar before)." : "Punch off."); };
+  $("click").onclick = function () { clickOn = !clickOn; this.classList.toggle("on", clickOn); save(); };
   $("undo").onclick = undo; $("redo").onclick = redo;
   $("zin").onclick = function () { zoomTo(pxs * 1.5); }; $("zout").onclick = function () { zoomTo(pxs / 1.5); };
   $("bpm").onchange = function () { var v = Math.max(40, Math.min(240, +this.value || 90)); edit(); S.bpm = v; this.value = v; render(); };
@@ -447,11 +450,98 @@
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z") { e.preventDefault(); e.shiftKey ? redo() : undo(); }
     else if (e.key === " ") { e.preventDefault(); $("play").click(); }
   });
-  window.addEventListener("beforeunload", function (e) { if (dirty || projEnd() > 0) { e.preventDefault(); e.returnValue = "Your multitrack session is only in memory. Leave and lose it?"; return e.returnValue; } });
   window.addEventListener("resize", function () { render(); });
   if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(function () {});
 
-  S.tracks = [newTrack("Beat", "beat"), newTrack("Mic 1"), newTrack("Mic 2")]; S.tracks[2].ch = "R";
-  $("bpm").value = S.bpm; render(); requestAnimationFrame(meters);
-  window.IPBMultitrack = { S: S, bufs: bufs, undo: undo, redo: redo, splitClip: splitClip, render: render, start: start, stop: stop, recBtn: recBtn, setLat: setLat, posNow: posNow, placeBeat: placeBeat, zoomTo: zoomTo, ctx: function () { return ctx; } };
+  /* ---------- persistence (IndexedDB) ---------- */
+  var DBN = "ipb_multitrack", db = null, saveT = null, booting = true, savedBufs = {}, booted;
+  function idb() {
+    if (db) return Promise.resolve(db);
+    return new Promise(function (res, rej) {
+      var r = indexedDB.open(DBN, 1);
+      r.onupgradeneeded = function () { var d = r.result; ["meta", "bufs", "sessions"].forEach(function (n) { if (!d.objectStoreNames.contains(n)) d.createObjectStore(n); }); };
+      r.onsuccess = function () { db = r.result; res(db); }; r.onerror = function () { rej(r.error); };
+    });
+  }
+  function tx(stores, mode, fn) { return idb().then(function (d) { return new Promise(function (res, rej) { var t = d.transaction(stores, mode), out = fn(t); t.oncomplete = function () { res(out && out.v); }; t.onerror = t.onabort = function () { rej(t.error); }; }); }); }
+  function rawOf(id) { var b = bufs[id].buf, ch = []; for (var i = 0; i < b.numberOfChannels; i++) ch.push(b.getChannelData(i).slice()); return { sr: b.sampleRate, ch: ch }; }
+  function bufFrom(r) { var b = new AudioBuffer({ length: r.ch[0].length, numberOfChannels: r.ch.length, sampleRate: r.sr }); r.ch.forEach(function (d, i) { b.copyToChannel(d, i); }); return b; }
+  function usedBufs() { var u = {}; S.tracks.forEach(function (t) { t.clips.forEach(function (c) { u[c.buf] = 1; }); t.takes.forEach(function (k) { u[k.buf] = 1; }); }); return Object.keys(u).filter(function (k) { return bufs[k]; }); }
+  function state() {
+    var o = JSON.parse(snapshot()); o.v = 1; o.nid = nid; o.beatName = S.beatName || ""; o.range = S.range; o.playhead = play ? posNow() : S.playhead;
+    o.pxs = pxs; o.scroll = $("tl").scrollLeft; o.loopOn = loopOn; o.punchOn = punchOn; o.clickOn = clickOn; o.snap = $("snap").value; o.latMs = latMs; o.bufs = usedBufs(); o.saved = Date.now();
+    return o;
+  }
+  function save() { if (booting) return; clearTimeout(saveT); saveT = setTimeout(saveNow, 600); }
+  function saveNow() {
+    if (booting) return Promise.resolve(); clearTimeout(saveT); var st = state();
+    return tx(["meta", "bufs"], "readwrite", function (t) {
+      var bs = t.objectStore("bufs");
+      st.bufs.forEach(function (id) { if (!savedBufs[id]) { bs.put(rawOf(id), id); savedBufs[id] = 1; } });
+      Object.keys(savedBufs).forEach(function (id) { if (st.bufs.indexOf(id) < 0) { bs.delete(id); delete savedBufs[id]; } });
+      t.objectStore("meta").put(st, "active");
+    }).catch(function (e) { toast("Could not autosave: " + (e && e.message || e) + " (storage full?)", 5000); });
+  }
+  function apply(st, raws) {
+    ac(); Object.keys(raws).forEach(function (id) { var b = bufFrom(raws[id]); var nid0 = nid; var nb = addBuf(b); nid = nid0; if (nb !== id) { bufs[id] = bufs[nb]; delete bufs[nb]; } });
+    S.tracks.forEach(function (t) { if (t.gain) t.gain.disconnect(); });
+    S.tracks = []; restore(JSON.stringify(st)); nid = Math.max(nid, st.nid || 1);
+    S.beatName = st.beatName; S.range = st.range || null; S.playhead = st.playhead || 0; S.sel = null;
+    loopOn = !!st.loopOn && !!S.range; punchOn = !!st.punchOn && !!S.range; clickOn = !!st.clickOn;
+    $("loop").classList.toggle("on", loopOn); $("punch").classList.toggle("on", punchOn); $("click").classList.toggle("on", clickOn);
+    if (st.snap != null) $("snap").value = st.snap; if (st.latMs != null) setLat(st.latMs);
+    pxs = st.pxs || pxs; S.tracks.forEach(function (t) { t.arm = false; }); undoS = []; redoS = []; applyMS(); render(); $("tl").scrollLeft = st.scroll || 0; drawPH(S.playhead);
+  }
+  function loadActive() {
+    return tx(["meta", "bufs"], "readonly", function (t) {
+      var out = { v: null }, q = t.objectStore("meta").get("active");
+      q.onsuccess = function () { var st = q.result; if (!st) return; out.v = { st: st, raws: {} }; (st.bufs || []).forEach(function (id) { var g = t.objectStore("bufs").get(id); g.onsuccess = function () { if (g.result) out.v.raws[id] = g.result; }; }); };
+      return out;
+    });
+  }
+  function fresh() { S.tracks.forEach(function (t) { if (t.gain) t.gain.disconnect(); }); Object.keys(bufs).forEach(function (k) { delete bufs[k]; }); S.tracks = [newTrack("Beat", "beat"), newTrack("Mic 1"), newTrack("Mic 2")]; S.tracks[2].ch = "R"; S.bpm = 90; S.range = null; S.sel = null; S.playhead = 0; S.beatName = ""; undoS = []; redoS = []; $("bpm").value = S.bpm; render(); }
+  function clearActive() { savedBufs = {}; return tx(["meta", "bufs"], "readwrite", function (t) { t.objectStore("meta").delete("active"); t.objectStore("bufs").clear(); }); }
+  function saveExit() {
+    if (play) stop(); var nm = prompt("Name this session:", (S.beatName || "Session") + " · " + new Date().toLocaleDateString()); if (nm === null) return;
+    booting = true; var st = state(), raws = {}; st.bufs.forEach(function (id) { raws[id] = rawOf(id); });
+    var id = "s" + Date.now();
+    tx(["sessions"], "readwrite", function (t) { t.objectStore("sessions").put({ id: id, name: nm || "Session", saved: Date.now(), st: st, raws: raws }, id); })
+      .then(clearActive).then(function () { location.href = "./?hub=1"; })
+      .catch(function (e) { booting = false; toast("Save failed: " + (e && e.message || e) + ". Session still kept.", 6000); });
+  }
+  function listSessions() { return tx(["sessions"], "readonly", function (t) { var o = { v: [] }, c = t.objectStore("sessions").openCursor(); c.onsuccess = function () { var r = c.result; if (r) { o.v.push({ id: r.key, name: r.value.name, saved: r.value.saved }); r.continue(); } }; return o; }); }
+  function renderSessions() {
+    listSessions().then(function (L) {
+      var ul = $("ss-list"); ul.innerHTML = L.length ? "" : "<li>No saved sessions yet. Use 💾 Save &amp; exit.</li>";
+      L.sort(function (a, b) { return b.saved - a.saved; }).forEach(function (s) {
+        var li = document.createElement("li"), o = document.createElement("button"), d = document.createElement("button");
+        li.innerHTML = "<span></span>"; li.firstChild.textContent = s.name + " · " + new Date(s.saved).toLocaleString();
+        o.className = d.className = "btn"; o.textContent = "Open"; d.textContent = "🗑";
+        o.onclick = function () { if (projEnd() > 0 && !confirm("Open this session? Your current work will be replaced (save it first with Save & exit).")) return; openSession(s.id); };
+        d.onclick = function () { if (!confirm("Delete saved session \"" + s.name + "\"?")) return; tx(["sessions"], "readwrite", function (t) { t.objectStore("sessions").delete(s.id); }).then(renderSessions); };
+        li.appendChild(o); li.appendChild(d); ul.appendChild(li);
+      });
+    });
+  }
+  function openSession(id) {
+    if (play) stop();
+    tx(["sessions"], "readonly", function (t) { var o = { v: null }, q = t.objectStore("sessions").get(id); q.onsuccess = function () { o.v = q.result; }; return o; }).then(function (s) {
+      if (!s) return; booting = true; Object.keys(bufs).forEach(function (k) { delete bufs[k]; });
+      return clearActive().then(function () { apply(s.st, s.raws); booting = false; return saveNow(); }).then(function () { $("sh-sess").hidden = true; toast("Opened: " + s.name); });
+    }).catch(function (e) { booting = false; toast("Could not open: " + (e && e.message || e)); });
+  }
+  $("saveexit").onclick = saveExit;
+  $("sessions").onclick = function () { renderSessions(); $("sh-sess").hidden = false; };
+  $("newsess").onclick = function () { if (!confirm("Start a new empty session? Everything not saved with Save & exit will be lost.")) return; if (play) stop(); booting = true; clearActive().then(function () { fresh(); booting = false; saveNow(); $("sh-sess").hidden = true; toast("New session"); }); };
+  $("snap").addEventListener("change", function () { save(); });
+  document.addEventListener("visibilitychange", function () { if (document.visibilityState === "hidden") saveNow(); });
+  window.addEventListener("pagehide", function () { saveNow(); });
+  window.addEventListener("beforeunload", function () { saveNow(); });
+  if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(function () {});
+
+  fresh(); requestAnimationFrame(meters);
+  booted = loadActive().then(function (r) {
+    if (r && r.st) { apply(r.st, r.raws); Object.keys(r.raws).forEach(function (k) { savedBufs[k] = 1; }); toast("Session restored" + (r.st.beatName ? ": " + r.st.beatName : ""), 3000); }
+  }).catch(function (e) { toast("Could not restore session: " + (e && e.message || e), 5000); }).then(function () { booting = false; });
+  window.IPBMultitrack = { S: S, bufs: bufs, undo: undo, redo: redo, splitClip: splitClip, render: render, start: start, stop: stop, recBtn: recBtn, setLat: setLat, posNow: posNow, placeBeat: placeBeat, saveNow: function () { return saveNow(); }, ready: function () { return booted; }, zoomTo: zoomTo, ctx: function () { return ctx; } };
 })();
