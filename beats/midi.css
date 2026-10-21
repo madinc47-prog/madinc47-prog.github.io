@@ -13,3 +13,4 @@
 .midi-chip .mc-st{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .mp-learn{min-height:44px}.mp-learn.learning{outline:2px solid #f59e0b}
 .pad.midi-hit{filter:brightness(1.6)}
+body.sw-open .midi-chip,body.ly-open .midi-chip{display:none}

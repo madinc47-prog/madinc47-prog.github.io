@@ -1102,7 +1102,10 @@
     var ls = libSnd(cfg); // swapped in from the instrument library (not loaded / offline → the kit's own sound)
     if (ls && ls.it.k === "preset") { libPresetPad(c, G, i, when, o, ls, cfg, def); return; }
     if (ls && ls.zones.length) {
-      var it = ls.it, base = def.tuned && def.p && def.p.note ? def.p.note : (it.r != null ? it.r : 60), z = LIB.zone(ls, base + (o.semi || 0), o.vel);
+      var it = ls.it, own = it.r != null ? it.r : (ls.zones.length > 1 ? ls.zones[ls.zones.length >> 1].root : null);
+      /* v20261020n: a pad plays a swapped sound in its OWN range. Only 808 / bass sounds follow a tuned pad's note
+         (before, a Glockenspiel on "808 Sub" played 43 semitones down at 0.08x speed and sounded like the old 808). */
+      var base = def.tuned && def.p && def.p.note && (it.c === "808" || it.c === "bass" || own == null) ? def.p.note : (own != null ? own : 60), z = LIB.zone(ls, base + (o.semi || 0), o.vel);
       buf = z.buf; lrate = Math.pow(2, (base - z.root) / 12);
       if (it.k === "loop") { var lp = loopPlay(it, buf); buf = lp.buf; lrate = lp.rate; }
     }
@@ -6092,7 +6095,7 @@
       });
       $("pn-" + k).addEventListener("change", function () { saveSession(); pianoUI(false); pianoAudition(); });
     });
-    /* Quick instrument strip (v20261020m): big chips under Sound; tap = switch the Piano Roll / keys / MIDI keyboard instrument */
+    /* Quick instrument strip (v20261020n): big chips under Sound; tap = switch the Piano Roll / keys / MIDI keyboard instrument */
     (function () {
       var lbl = isel.closest("label"); if (!lbl || $("pn-quick")) return;
       var strip = document.createElement("div"); strip.id = "pn-quick"; strip.className = "pn-quick"; strip.setAttribute("role", "group"); strip.setAttribute("aria-label", "Quick instrument switch");

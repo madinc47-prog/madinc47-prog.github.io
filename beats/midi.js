@@ -7,7 +7,7 @@
 (function(){
 "use strict";
 if(window.IPBMidi && window.IPBMidi.version) return;
-var VERSION="20261020m";
+var VERSION="20261020n";
 var LS_PADS="ipb_midi_pads_v1";
 var LS_SET="ipb_midi_settings_v2", LS_LEARN="ipb_midi_learn_v2";
 var $=function(id){return document.getElementById(id)};
