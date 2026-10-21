@@ -1528,7 +1528,7 @@
           flashPad(i);
           selectPad(i);
         });
-        onLongPress(el, function () { selectPad(i); if (window.IPBPadAssign) IPBPadAssign.openPanel(i); else { lyOpen({ kind: "drum", pad: i }); swOpen({ kind: "drum", pad: i }); } });
+        onLongPress(el, function () { selectPad(i); lyOpen({ kind: "drum", pad: i }); swOpen({ kind: "drum", pad: i }); });
         wrap.appendChild(el);
         padEls.push(el);
       })(i);
@@ -1753,6 +1753,11 @@
       b.title = "Knobs for this layer: pitch, length, filter, volume, pan, grit, swing push, mute / solo";
       b.addEventListener("click", function () { lyOpen(T); lyBar(); });
       bar.appendChild(b);
+      var w = document.createElement("button");
+      w.type = "button"; w.className = "btn small lyr-chip lyr-swapchip";
+      w.textContent = "⇄"; w.title = "Swap this layer's sound from the library"; w.setAttribute("aria-label", "Swap " + (T.kind === "chord" ? "chord loop" : klInstName(T.inst)) + " sound");
+      w.addEventListener("click", function () { lyOpen(T); swOpen(T); lyBar(); });
+      bar.appendChild(w);
     });
   }
   /* ---------------- Instrument library + Swap (library.js) ----------------
@@ -1845,7 +1850,7 @@
     if (T.kind === "chord") return { cats: ["keys", "synth", "orch"], subs: null, label: "Keys, synths & strings" };
     if (T.kind !== "drum") return { cats: ["keys", "synth", "orch", "bass", "808"], subs: null, label: "Instruments" };
     var d = kitDef(T.kit || S.kit).pads[T.pad], v = d.v, n = (d.n || "").toLowerCase();
-    if (v === "kick") return { cats: ["drums"], subs: ["kick"], label: "Kicks" };
+    if (v === "kick") return { cats: ["drums", "808"], subs: ["kick", "808"], label: "Kicks & 808s" };
     if (v === "snare") return { cats: ["drums"], subs: ["snare", "clap"], label: "Snares & claps" };
     if (v === "clap" || v === "snap") return { cats: ["drums"], subs: ["clap", "snare"], label: "Claps & snares" };
     if (v === "rim") return { cats: ["drums"], subs: ["rim"], label: "Rims" };
@@ -2162,7 +2167,10 @@
         var so = document.createElement("button");
         so.type = "button"; so.className = "ms ms-s"; so.textContent = "S"; so.title = "Solo row";
         so.addEventListener("click", function () { toggleMS("s", p); });
-        head.appendChild(nm); head.appendChild(m); head.appendChild(so);
+        var sw = document.createElement("button");
+        sw.type = "button"; sw.className = "ms ms-sw"; sw.textContent = "⇄"; sw.title = "Swap this row's sound (808, hat, kick…)"; sw.setAttribute("aria-label", "Swap " + padLabel(p) + " sound");
+        sw.addEventListener("click", function () { selectPad(p); lyOpen({ kind: "drum", pad: p }); swOpen({ kind: "drum", pad: p }); });
+        head.appendChild(nm); head.appendChild(sw); head.appendChild(m); head.appendChild(so);
         row.appendChild(head);
         var cells = [];
         for (var s = 0; s < MAXLEN; s++) {
@@ -6495,6 +6503,7 @@
     });
     $("btn-pad-reset").addEventListener("click", function () { resetPad(S.sel); });
     $("btn-pad-layer").addEventListener("click", function () { lyOpen({ kind: "drum", pad: S.sel }); });
+    if ($("btn-pad-swap")) $("btn-pad-swap").addEventListener("click", function () { lyOpen({ kind: "drum", pad: S.sel }); swOpen({ kind: "drum", pad: S.sel }); });
     $("cl-layer").addEventListener("click", function () { lyOpen({ kind: "chord" }); });
     PE.forEach(function (pe) {
       var el = $("pad-" + pe.id);

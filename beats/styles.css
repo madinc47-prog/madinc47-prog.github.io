@@ -1110,3 +1110,9 @@ body, main, .panel {
   -webkit-overflow-scrolling: touch;
   will-change: transform;
 }
+/* swap buttons (v20261020l) */
+.seq-row .ms-sw { color: var(--accent); }
+.lyr-swapchip { min-width: 44px; margin-left: -2px; }
+@media (pointer: coarse) { .seq-row .ms-sw { min-width: 34px; min-height: 34px; } }
+#btn-pad-swap { min-height: 44px; color: var(--accent); }
+@media (max-width: 600px) { .seq-row .ms-sw { display: none; } }
