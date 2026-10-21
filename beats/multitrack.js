@@ -25,15 +25,15 @@
     if (!ctx) {
       ctx = new (window.AudioContext || window.webkitAudioContext)({ latencyHint: "interactive" });
       master = ctx.createGain(); master.connect(ctx.destination);
-      S.tracks.forEach(trackNodes);
-      workletReady = ctx.audioWorklet ? ctx.audioWorklet.addModule("multitrack-worklet.js?v=20261021c") : Promise.reject(new Error("AudioWorklet not supported"));
+      S.tracks.forEach(trackNodes); S.tracks.forEach(rebuildFx);
+      workletReady = ctx.audioWorklet ? ctx.audioWorklet.addModule("multitrack-worklet.js?v=20261021d") : Promise.reject(new Error("AudioWorklet not supported"));
       workletReady.catch(function () { toast("This browser cannot record here (no AudioWorklet). Update Chrome.", 5000); });
       latHint();
     }
     if (ctx.state === "suspended") ctx.resume();
     return ctx;
   }
-  function trackNodes(t) { if (!ctx || t.gain) return; t.gain = ctx.createGain(); t.pan = ctx.createStereoPanner ? ctx.createStereoPanner() : null; if (t.pan) { t.gain.connect(t.pan); t.pan.connect(master); } else t.gain.connect(master); }
+  function trackNodes(t) { if (!ctx || t.gain) return; t.gain = ctx.createGain(); t.fxIn = ctx.createGain(); t.fxIn.connect(t.gain); t.pan = ctx.createStereoPanner ? ctx.createStereoPanner() : null; if (t.pan) { t.gain.connect(t.pan); t.pan.connect(master); } else t.gain.connect(master); }
   function applyMS() {
     var anySolo = S.tracks.some(function (t) { return t.solo; });
     S.tracks.forEach(function (t) { if (t.gain) t.gain.gain.value = t.mute ? 0 : (anySolo && !t.solo ? 0 : (t.vol == null ? 1 : t.vol)); if (t.pan) t.pan.pan.value = t.pn || 0; }); save();
@@ -45,15 +45,15 @@
   }
 
   /* ---------- model / undo ---------- */
-  function newTrack(name, kind) { var t = { id: uid("t"), name: name, kind: kind || "audio", arm: false, mute: false, solo: false, dev: "", ch: "L", vol: 1, pn: 0, clips: [], takes: [] }; trackNodes(t); return t; }
-  function snapshot() { return JSON.stringify({ bpm: S.bpm, tracks: S.tracks.map(function (t) { return { id: t.id, name: t.name, kind: t.kind, arm: t.arm, mute: t.mute, solo: t.solo, dev: t.dev, ch: t.ch, vol: t.vol, pn: t.pn, clips: t.clips, takes: t.takes }; }) }); }
+  function newTrack(name, kind) { var t = { id: uid("t"), name: name, kind: kind || "audio", arm: false, mute: false, solo: false, dev: "", ch: "L", vol: 1, pn: 0, ins: [], mon: false, clips: [], takes: [] }; trackNodes(t); return t; }
+  function snapshot() { return JSON.stringify({ bpm: S.bpm, tracks: S.tracks.map(function (t) { return { id: t.id, name: t.name, kind: t.kind, arm: t.arm, mute: t.mute, solo: t.solo, dev: t.dev, ch: t.ch, vol: t.vol, pn: t.pn, ins: (t.ins || []).map(function (s) { return { pid: s.pid, on: s.on, k: JSON.parse(JSON.stringify(s.k || {})) }; }), clips: t.clips, takes: t.takes }; }) }); }
   function restore(js) {
     var o = JSON.parse(js), old = {}; S.tracks.forEach(function (t) { old[t.id] = t; });
     S.bpm = o.bpm; $("bpm").value = S.bpm;
     S.tracks = o.tracks.map(function (x) { var t = old[x.id] || newTrack(x.name, x.kind); for (var k in x) t[k] = x[k]; trackNodes(t); return t; });
     Object.keys(old).forEach(function (k) { if (!S.tracks.some(function (t) { return t.id === k; }) && old[k].gain) old[k].gain.disconnect(); });
     if (S.sel && !clipById(S.sel)) S.sel = null;
-    applyMS(); render();
+    S.tracks.forEach(rebuildFx); applyMS(); render();
   }
   function edit() { undoS.push(snapshot()); if (undoS.length > 200) undoS.shift(); redoS = []; dirty = true; save(); }
   function undo() { if (!undoS.length) return toast("Nothing to undo"); redoS.push(snapshot()); restore(undoS.pop()); toast("Undo"); }
@@ -88,7 +88,7 @@
         var B = bufs[c.buf]; if (!B) return; var cs = c.start, ce = clipEnd(c);
         for (var i = 0; i < c.reps; i++) {
           var s = cs + i * c.dur, e = s + c.dur, a = Math.max(s, from), b = Math.min(e, to); if (b - a < 0.002) continue;
-          var src = ctx.createBufferSource(), g = ctx.createGain(); src.buffer = B.buf; src.connect(g); g.connect(t.gain);
+          var src = ctx.createBufferSource(), g = ctx.createGain(); src.buffer = B.buf; src.connect(g); g.connect(t.fxIn || t.gain);
           var when = at + (a - from), env = function (x) { var v = 1; if (c.fi && x < cs + c.fi) v = Math.min(v, (x - cs) / c.fi); if (c.fo && x > ce - c.fo) v = Math.min(v, (ce - x) / c.fo); return Math.max(0, v); };
           g.gain.setValueAtTime(env(a), when);
           if (c.fi && cs + c.fi > a && cs + c.fi <= b) g.gain.linearRampToValueAtTime(1, at + (cs + c.fi - from));
@@ -164,7 +164,7 @@
       return workletReady.then(function () {
         var n = new AudioWorkletNode(ctx, "mt-rec", { numberOfInputs: 1, numberOfOutputs: 1, outputChannelCount: [1], channelCount: 1, channelCountMode: "explicit" });
         var z = ctx.createGain(); z.gain.value = 0; g.connect(n); n.connect(z); z.connect(ctx.destination);
-        t.tap.node = n; return t.tap;
+        t.tap.node = n; monitor(t); return t.tap;
       });
     });
   }
@@ -400,7 +400,7 @@
   });
   var curT = null;
   function openTrk(t) {
-    curT = t; $("tk-ttl").textContent = t.kind === "beat" ? "Beat track" : "Track settings"; $("tk-name").value = t.name; renderDevs(); $("tk-dev").value = t.dev; $("tk-ch").value = t.ch; $("tk-vol").value = t.vol == null ? 1 : t.vol; $("tk-pan").value = t.pn || 0;
+    curT = t; $("tk-ttl").textContent = t.kind === "beat" ? "Beat track" : "Track settings"; $("tk-name").value = t.name; renderDevs(); $("tk-dev").value = t.dev; $("tk-ch").value = t.ch; $("tk-vol").value = t.vol == null ? 1 : t.vol; $("tk-pan").value = t.pn || 0; renderIns(t); $("tk-mon").hidden = t.kind === "beat";
     $("tk-dev").disabled = $("tk-ch").disabled = t.kind === "beat"; $("tk-del").hidden = t.kind === "beat";
     var L = $("tk-takes"); L.innerHTML = t.takes.length ? "" : "<li>No takes yet.</li>";
     t.takes.forEach(function (k) { var li = document.createElement("li"), b = document.createElement("button"); li.innerHTML = "<span></span>"; li.firstChild.textContent = k.name + " · " + k.dur.toFixed(1) + " s"; b.className = "btn"; b.textContent = "Put back"; b.onclick = function () { edit(); carve(t, k.at, k.at + k.dur); t.clips.push(mkClip(k.buf, k.at, 0, k.dur, k.name)); $("sh-trk").hidden = true; render(); toast(k.name + " is back on the timeline."); }; li.appendChild(b); L.appendChild(li); });
@@ -422,7 +422,7 @@
   $("click").onclick = function () { clickOn = !clickOn; this.classList.toggle("on", clickOn); save(); };
   $("undo").onclick = undo; $("redo").onclick = redo;
   $("zin").onclick = function () { zoomTo(pxs * 1.5); }; $("zout").onclick = function () { zoomTo(pxs / 1.5); };
-  $("bpm").onchange = function () { var v = Math.max(40, Math.min(240, +this.value || 90)); edit(); S.bpm = v; this.value = v; render(); };
+  $("bpm").onchange = function () { var v = Math.max(40, Math.min(240, +this.value || 90)); edit(); S.bpm = v; this.value = v; rebuildAll(); render(); };
   $("addtrk").onclick = function () { var n = S.tracks.filter(function (t) { return t.kind === "audio"; }).length; if (n >= MAXT) return; edit(); var t = newTrack("Track " + (n + 1)); t.ch = n % 2 ? "R" : "L"; S.tracks.push(t); render(); };
   $("setup").onclick = function () { ac(); latHint(); $("lat").value = latMs; $("cal-trk").innerHTML = S.tracks.filter(function (t) { return t.kind === "audio"; }).map(function (t) { return '<option value="' + t.id + '">' + esc(t.name) + "</option>"; }).join(""); renderDevs(); $("sh-setup").hidden = false; };
   $("perm").onclick = function () { openDev("").then(function () { return listDevs(); }).then(function () { renderDevs(); render(); toast(devices.length + " input" + (devices.length === 1 ? "" : "s") + " found."); }).catch(function (e) { toast("Mic blocked: " + (e && e.message || e), 4500); }); };
@@ -453,13 +453,124 @@
   window.addEventListener("resize", function () { render(); });
   if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(function () {});
 
+  /* ---------- plugins (data-only, see mt-plugins.js) ---------- */
+  var PL = window.IPBPlugins, LIB = {}, MAXINS = 4, pick = null, edDef = null;
+  PL.BUILTIN.forEach(function (d) { LIB[d.id] = d; });
+  function rebuildFx(t) {
+    if (!ctx || !t.fxIn) return;
+    (t.fx || []).forEach(function (x) { x.dispose(); }); t.fx = []; try { t.fxIn.disconnect(); } catch (e) {}
+    var at = t.fxIn; (t.ins || []).forEach(function (s) {
+      var d = s && LIB[s.pid]; if (!d || !s.on) { if (s) Object.defineProperty(s, "inst", { value: null, writable: true, configurable: true, enumerable: false }); return; }
+      var x = PL.build(ctx, d, s.k, S.bpm); at.connect(x.inp); at = x.out; t.fx.push(x); Object.defineProperty(s, "inst", { value: x, writable: true, configurable: true, enumerable: false });
+    });
+    at.connect(t.gain);
+  }
+  function rebuildAll() { S.tracks.forEach(rebuildFx); }
+  function monitor(t) { if (!t.tap) return; try { t.tap.g.disconnect(t.fxIn); } catch (e) {} if (t.mon && t.fxIn) t.tap.g.connect(t.fxIn); }
+  function knobUI(k, val, onv) {
+    var w = document.createElement("label"), r = document.createElement("input"), o = document.createElement("output"); w.className = "knob";
+    r.type = "range"; r.min = 0; r.max = 1000; var L = k.log && k.min > 0;
+    function toS(v) { return L ? Math.log(v / k.min) / Math.log(k.max / k.min) * 1000 : (v - k.min) / (k.max - k.min) * 1000; }
+    function toV(s) { return L ? k.min * Math.pow(k.max / k.min, s / 1000) : k.min + (k.max - k.min) * s / 1000; }
+    function show(v) { o.textContent = (Math.abs(v) >= 100 ? Math.round(v) : Math.round(v * 100) / 100) + " " + (k.unit || ""); }
+    r.value = toS(val); show(val);
+    r.oninput = function () { var v = toV(+r.value); show(v); onv(v, false); }; r.onchange = function () { onv(toV(+r.value), true); };
+    w.appendChild(document.createTextNode(k.label)); w.appendChild(r); w.appendChild(o); return w;
+  }
+  function renderIns(t) {
+    var box = $("tk-ins"); box.innerHTML = ""; t.ins = t.ins || [];
+    for (var i = 0; i < MAXINS; i++) (function (i) {
+      var s = t.ins[i], d = s && LIB[s.pid], div = document.createElement("div"); div.className = "slot";
+      if (!s) { var b = document.createElement("button"); b.className = "btn"; b.textContent = "＋ Insert " + (i + 1); b.onclick = function () { pick = { t: t, i: i }; openPlugins(); }; div.appendChild(b); box.appendChild(div); return; }
+      var h = document.createElement("div"); h.className = "slothd"; var nm = document.createElement("b"); nm.textContent = (i + 1) + ". " + (d ? d.name : "Missing plugin"); h.appendChild(nm);
+      [["on", s.on ? "On" : "Bypassed"], ["up", "↑"], ["dn", "↓"], ["rm", "✕"]].forEach(function (a) {
+        var b = document.createElement("button"); b.className = "btn" + (a[0] === "on" && s.on ? " on" : ""); b.textContent = a[1];
+        b.onclick = function () {
+          edit();
+          if (a[0] === "on") s.on = !s.on;
+          else if (a[0] === "rm") t.ins.splice(i, 1);
+          else { var j = a[0] === "up" ? i - 1 : i + 1; if (j < 0 || j >= t.ins.length) return; var x = t.ins[j]; t.ins[j] = s; t.ins[i] = x; }
+          t.ins = t.ins.filter(Boolean); rebuildFx(t); renderIns(t); save();
+        };
+        h.appendChild(b);
+      });
+      div.appendChild(h);
+      if (d) { var kd = document.createElement("div"); kd.className = "knobs"; d.knobs.forEach(function (k) { var v = s.k[k.id] != null ? s.k[k.id] : k.value; kd.appendChild(knobUI(k, v, function (v, fin) { s.k[k.id] = v; if (s.inst) s.inst.set(k.id, v); if (fin) save(); })); }); div.appendChild(kd); }
+      box.appendChild(div);
+    })(i);
+    $("tk-mon").classList.toggle("on", !!t.mon); $("tk-mon").textContent = t.mon ? "🎧 Monitoring through inserts" : "🎧 Monitor off";
+  }
+  function slug(s) { return s.toLowerCase().replace(/[^a-z0-9]+/g, "-").slice(0, 30); }
+  function addUser(d, quiet) { d = PL.validate(d); d.id = "u:" + slug(d.name) + "-" + Date.now().toString(36); LIB[d.id] = d; return tx(["plugins"], "readwrite", function (t) { t.objectStore("plugins").put(d, d.id); }).then(function () { if (!quiet) toast("Plugin saved: " + d.name); return d; }); }
+  function loadUser() { return tx(["plugins"], "readonly", function (t) { var o = { v: [] }, c = t.objectStore("plugins").openCursor(); c.onsuccess = function () { var r = c.result; if (r) { try { var d = PL.validate(r.value); d.id = r.key; LIB[d.id] = d; } catch (e) {} r.continue(); } }; return o; }).catch(function () {}); }
+  function exportDef(d) { var c = JSON.parse(JSON.stringify(d)); delete c.id; var url = URL.createObjectURL(new Blob([JSON.stringify(c, null, 2)], { type: "application/json" })), a = document.createElement("a"); a.href = url; a.download = slug(d.name) + ".ipbplug.json"; document.body.appendChild(a); a.click(); a.remove(); setTimeout(function () { URL.revokeObjectURL(url); }, 5000); }
+  function openPlugins() {
+    var L = $("pl-list"); L.innerHTML = ""; $("pl-ttl").textContent = pick ? "Pick a plugin for insert " + (pick.i + 1) : "Plugins";
+    var ids = Object.keys(LIB), cats = {}; ids.forEach(function (id) { var d = LIB[id], c = id[0] === "u" ? "★ Yours" : d.category; (cats[c] = cats[c] || []).push(d); });
+    Object.keys(cats).sort(function (a, b) { return a[0] === "★" ? -1 : b[0] === "★" ? 1 : a < b ? -1 : 1; }).forEach(function (c) {
+      var h = document.createElement("li"); h.className = "cat"; h.textContent = c; L.appendChild(h);
+      cats[c].forEach(function (d) {
+        var li = document.createElement("li"), sp = document.createElement("span"); sp.innerHTML = "<b></b><small></small>"; sp.firstChild.textContent = d.name; sp.lastChild.textContent = " " + d.about; li.appendChild(sp);
+        function btn(txt, fn) { var b = document.createElement("button"); b.className = "btn"; b.textContent = txt; b.onclick = fn; li.appendChild(b); }
+        if (pick) btn("Insert", function () { var t = pick.t; edit(); t.ins = t.ins || []; t.ins.splice(Math.min(pick.i, t.ins.length), 0, { pid: d.id, on: true, k: {} }); t.ins = t.ins.slice(0, MAXINS); rebuildFx(t); pick = null; $("sh-plug").hidden = true; renderIns(t); save(); });
+        btn("✎ Copy", function () { var c = JSON.parse(JSON.stringify(d)); delete c.id; c.name = (d.name + " copy").slice(0, 40); openEditor(c); });
+        btn("⬇", function () { exportDef(d); });
+        if (d.id[0] === "u") btn("🗑", function () { if (!confirm("Delete plugin \"" + d.name + "\"? Tracks using it go silent-through (bypassed).")) return; delete LIB[d.id]; tx(["plugins"], "readwrite", function (t) { t.objectStore("plugins").delete(d.id); }).then(function () { rebuildAll(); openPlugins(); }); });
+        L.appendChild(li);
+      });
+    });
+    $("sh-plug").hidden = false;
+  }
+  /* simple editor: nodes in series (in → 1 → 2 → … → out); Advanced JSON for any graph */
+  function serialWires(d) { var ids = ["in"].concat(d.nodes.map(function (n) { return n.id; })).concat(["out"]), w = []; for (var i = 0; i < ids.length - 1; i++) w.push(ids[i] + ">" + ids[i + 1]); return w; }
+  function isSerial(d) { return JSON.stringify(d.wires) === JSON.stringify(serialWires(d)); }
+  var DEFP = { compressor: { threshold: -20, ratio: 4, knee: 6, attack: 0.01, release: 0.15 }, biquad: { type: "peaking", frequency: 1000, Q: 1, gain: 0 }, gain: { gain: 1 }, panner: { pan: 0 }, delay: { delayTime: 0.25 }, shaper: { curve: "tape", amount: 30 }, convolver: { kind: "room", seconds: 1 } };
+  function openEditor(d) {
+    edDef = d || { format: "ipbplug", v: 1, name: "My plugin", category: "Custom", about: "", nodes: [], wires: [], knobs: [] };
+    edSer = !edDef.nodes.length || isSerial(edDef); $("pe-name").value = edDef.name; $("pe-json").value = JSON.stringify(edDef, null, 2); renderEditor(); $("sh-ped").hidden = false;
+  }
+  function renderEditor() {
+    var box = $("pe-nodes"), ser = edSer; box.innerHTML = "";
+    $("pe-simple").hidden = !ser; $("pe-note").textContent = ser ? "Signal flows top to bottom. Tick ⦿ to give a setting a knob on the track." : "This plugin has a custom wiring graph: edit it in Advanced JSON below.";
+    if (!ser) return;
+    edDef.nodes.forEach(function (n, i) {
+      var div = document.createElement("div"), h = document.createElement("div"); div.className = "slot"; h.className = "slothd"; h.innerHTML = "<b></b>"; h.firstChild.textContent = (i + 1) + ". " + n.type + " (" + n.id + ")";
+      [["↑", -1], ["↓", 1], ["✕", 0]].forEach(function (a) { var b = document.createElement("button"); b.className = "btn"; b.textContent = a[0]; b.onclick = function () { if (!a[1]) { edDef.nodes.splice(i, 1); edDef.knobs = edDef.knobs.filter(function (k) { return k.to.every(function (t) { return t.n !== n.id; }); }); } else { var j = i + a[1]; if (j < 0 || j >= edDef.nodes.length) return; edDef.nodes[i] = edDef.nodes[j]; edDef.nodes[j] = n; } syncEd(); }; h.appendChild(b); });
+      div.appendChild(h);
+      var g = document.createElement("div"); g.className = "knobs";
+      Object.keys(PL.ENUMS[n.type] || {}).forEach(function (k) { var l = document.createElement("label"), s = document.createElement("select"); l.className = "knob"; l.textContent = k; PL.ENUMS[n.type][k].forEach(function (v) { var o = document.createElement("option"); o.textContent = v; s.appendChild(o); }); s.value = n.params[k] || PL.ENUMS[n.type][k][0]; s.onchange = function () { n.params[k] = s.value; syncEd(); }; l.appendChild(s); g.appendChild(l); });
+      Object.keys(PL.RANGES[n.type]).forEach(function (k) {
+        var r = PL.RANGES[n.type][k], l = document.createElement("label"), inp = document.createElement("input"), cb = document.createElement("button"), kid = n.id + "_" + k, has = edDef.knobs.some(function (q) { return q.id === kid; });
+        l.className = "knob"; l.textContent = k + " (" + r[0] + "…" + r[1] + ")"; inp.type = "number"; inp.step = "any"; inp.value = n.params[k] != null ? n.params[k] : "";
+        inp.onchange = function () { if (inp.value === "") delete n.params[k]; else n.params[k] = Math.max(r[0], Math.min(r[1], +inp.value)); syncEd(); };
+        cb.className = "btn" + (has ? " on" : ""); cb.textContent = "⦿"; cb.title = "Expose as a knob";
+        cb.onclick = function () { if (has) edDef.knobs = edDef.knobs.filter(function (q) { return q.id !== kid; }); else { var lo = r[0], hi = r[1]; if (k === "frequency") { lo = 20; hi = 20000; } if (k === "threshold" && n.type === "compressor") lo = -60; edDef.knobs.push({ id: kid, label: (n.type + " " + k).slice(0, 24), min: lo, max: hi, value: n.params[k] != null ? n.params[k] : lo, log: k === "frequency", to: [{ n: n.id, p: k }] }); } syncEd(); };
+        l.appendChild(inp); if ((PL.LIVE[n.type] || []).concat(PL.KNOBP[n.type] || []).indexOf(k) >= 0) l.appendChild(cb); g.appendChild(l);
+      });
+      div.appendChild(g); box.appendChild(div);
+    });
+  }
+  var edSer = true;
+  function syncEd() { edDef.name = $("pe-name").value.trim() || "My plugin"; if (edSer) edDef.wires = serialWires(edDef); $("pe-json").value = JSON.stringify(edDef, null, 2); renderEditor(); }
+  $("pe-add").onclick = function () { var ty = $("pe-type").value, n = 1; while (edDef.nodes.some(function (x) { return x.id === ty + n; })) n++; if (!edSer) return toast("Custom graph: add nodes in Advanced JSON."); edDef.nodes.push({ id: ty + n, type: ty, params: JSON.parse(JSON.stringify(DEFP[ty] || {})) }); syncEd(); };
+  $("pe-name").onchange = function () { edDef.name = this.value.trim() || "My plugin"; $("pe-json").value = JSON.stringify(edDef, null, 2); };
+  $("pe-apply").onclick = function () { try { var d = PL.validate($("pe-json").value); edDef = d; edSer = !d.nodes.length || isSerial(d); $("pe-name").value = d.name; renderEditor(); toast("JSON OK"); } catch (e) { toast("Not valid: " + e.message, 6000); } };
+  function edValid() { try { var d = PL.validate($("pe-json").value); if (d.name !== ($("pe-name").value.trim() || d.name)) d.name = $("pe-name").value.trim().slice(0, 40); return d; } catch (e) { toast("Not valid: " + e.message, 6000); return null; } }
+  $("pe-save").onclick = function () { var d = edValid(); if (!d) return; addUser(d).then(function () { $("sh-ped").hidden = true; openPlugins(); }).catch(function (e) { toast("Save failed: " + e.message); }); };
+  $("pe-export").onclick = function () { var d = edValid(); if (d) exportDef(d); };
+  $("pe-test").onclick = function () { var d = edValid(); if (!d) return; ac(); try { var x = PL.build(ctx, d, {}, S.bpm); x.dispose(); toast("Builds OK ✓"); } catch (e) { toast("Build error: " + e.message, 6000); } };
+  $("plugbtn").onclick = function () { pick = null; openPlugins(); };
+  $("pl-new").onclick = function () { openEditor(null); };
+  $("pl-up").onclick = function () { $("pl-file").click(); };
+  $("pl-file").onchange = function () { var f = this.files[0]; this.value = ""; if (!f) return; if (f.size > 65536) return toast("Too big: plugin files are max 64 KB."); f.text().then(function (s) { return addUser(PL.validate(s)); }).then(function () { openPlugins(); }).catch(function (e) { toast("Rejected: " + (e && e.message || e), 7000); }); };
+  $("tk-mon").onclick = function () { if (!curT || curT.kind === "beat") return; curT.mon = !curT.mon; if (curT.mon) { ac(); tapFor(curT).then(function () { monitor(curT); }).catch(function (e) { curT.mon = false; toast("Mic error: " + e.message); renderIns(curT); }); toast("Use headphones while monitoring. Recording stays raw."); } else monitor(curT); renderIns(curT); };
   /* ---------- persistence (IndexedDB) ---------- */
   var DBN = "ipb_multitrack", db = null, saveT = null, booting = true, savedBufs = {}, booted;
   function idb() {
     if (db) return Promise.resolve(db);
     return new Promise(function (res, rej) {
-      var r = indexedDB.open(DBN, 1);
-      r.onupgradeneeded = function () { var d = r.result; ["meta", "bufs", "sessions"].forEach(function (n) { if (!d.objectStoreNames.contains(n)) d.createObjectStore(n); }); };
+      var r = indexedDB.open(DBN, 2);
+      r.onupgradeneeded = function () { var d = r.result; ["meta", "bufs", "sessions", "plugins"].forEach(function (n) { if (!d.objectStoreNames.contains(n)) d.createObjectStore(n); }); };
       r.onsuccess = function () { db = r.result; res(db); }; r.onerror = function () { rej(r.error); };
     });
   }
@@ -469,7 +580,7 @@
   function usedBufs() { var u = {}; S.tracks.forEach(function (t) { t.clips.forEach(function (c) { u[c.buf] = 1; }); t.takes.forEach(function (k) { u[k.buf] = 1; }); }); return Object.keys(u).filter(function (k) { return bufs[k]; }); }
   function state() {
     var o = JSON.parse(snapshot()); o.v = 1; o.nid = nid; o.beatName = S.beatName || ""; o.range = S.range; o.playhead = play ? posNow() : S.playhead;
-    o.pxs = pxs; o.scroll = $("tl").scrollLeft; o.loopOn = loopOn; o.punchOn = punchOn; o.clickOn = clickOn; o.snap = $("snap").value; o.latMs = latMs; o.bufs = usedBufs(); o.saved = Date.now();
+    o.pxs = pxs; o.scroll = $("tl").scrollLeft; o.loopOn = loopOn; o.punchOn = punchOn; o.clickOn = clickOn; o.snap = $("snap").value; o.latMs = latMs; o.bufs = usedBufs(); o.saved = Date.now(); o.plugs = []; S.tracks.forEach(function (t) { (t.ins || []).forEach(function (s) { if (s.pid[0] === "u" && LIB[s.pid] && !o.plugs.some(function (q) { return q.id === s.pid; })) o.plugs.push(LIB[s.pid]); }); });
     return o;
   }
   function save() { if (booting) return; clearTimeout(saveT); saveT = setTimeout(saveNow, 600); }
@@ -483,6 +594,7 @@
     }).catch(function (e) { toast("Could not autosave: " + (e && e.message || e) + " (storage full?)", 5000); });
   }
   function apply(st, raws) {
+    (st.plugs || []).forEach(function (d) { try { var v = PL.validate(d); v.id = d.id; if (!LIB[v.id]) { LIB[v.id] = v; tx(["plugins"], "readwrite", function (t) { t.objectStore("plugins").put(v, v.id); }); } } catch (e) {} });
     ac(); Object.keys(raws).forEach(function (id) { var b = bufFrom(raws[id]); var nid0 = nid; var nb = addBuf(b); nid = nid0; if (nb !== id) { bufs[id] = bufs[nb]; delete bufs[nb]; } });
     S.tracks.forEach(function (t) { if (t.gain) t.gain.disconnect(); });
     S.tracks = []; restore(JSON.stringify(st)); nid = Math.max(nid, st.nid || 1);
@@ -490,7 +602,7 @@
     loopOn = !!st.loopOn && !!S.range; punchOn = !!st.punchOn && !!S.range; clickOn = !!st.clickOn;
     $("loop").classList.toggle("on", loopOn); $("punch").classList.toggle("on", punchOn); $("click").classList.toggle("on", clickOn);
     if (st.snap != null) $("snap").value = st.snap; if (st.latMs != null) setLat(st.latMs);
-    pxs = st.pxs || pxs; S.tracks.forEach(function (t) { t.arm = false; }); undoS = []; redoS = []; applyMS(); render(); $("tl").scrollLeft = st.scroll || 0; drawPH(S.playhead);
+    pxs = st.pxs || pxs; S.tracks.forEach(function (t) { t.arm = false; t.mon = false; }); undoS = []; redoS = []; applyMS(); render(); $("tl").scrollLeft = st.scroll || 0; drawPH(S.playhead);
   }
   function loadActive() {
     return tx(["meta", "bufs"], "readonly", function (t) {
@@ -540,7 +652,7 @@
   if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(function () {});
 
   fresh(); requestAnimationFrame(meters);
-  booted = loadActive().then(function (r) {
+  booted = loadUser().then(loadActive).then(function (r) {
     if (r && r.st) { apply(r.st, r.raws); Object.keys(r.raws).forEach(function (k) { savedBufs[k] = 1; }); toast("Session restored" + (r.st.beatName ? ": " + r.st.beatName : ""), 3000); }
   }).catch(function (e) { toast("Could not restore session: " + (e && e.message || e), 5000); }).then(function () { booting = false; });
   window.IPBMultitrack = { S: S, bufs: bufs, undo: undo, redo: redo, splitClip: splitClip, render: render, start: start, stop: stop, recBtn: recBtn, setLat: setLat, posNow: posNow, placeBeat: placeBeat, saveNow: function () { return saveNow(); }, ready: function () { return booted; }, zoomTo: zoomTo, ctx: function () { return ctx; } };

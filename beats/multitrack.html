@@ -7,7 +7,7 @@
   <title>Multitrack Recorder · Island Pin Beats</title>
   <meta name="theme-color" content="#0b0d12"><meta name="color-scheme" content="dark">
   <link rel="icon" href="icons/icon-192.png"><link rel="manifest" href="manifest.webmanifest">
-  <link rel="stylesheet" href="multitrack.css?v=20261021c">
+  <link rel="stylesheet" href="multitrack.css?v=20261021d">
 </head>
 <body>
   <header class="top">
@@ -29,6 +29,7 @@
     <button class="btn" id="setup" title="Inputs, raw check and latency">🎤 Inputs &amp; latency</button>
     <button class="btn" id="beat" title="Load the beat">🥁 Beat</button>
     <button class="btn" id="addtrk" title="Add an audio track">＋ Track</button>
+    <button class="btn" id="plugbtn" title="Browse, create and upload plugins">🎛 Plugins</button>
     <button class="btn" id="sessions" title="Saved sessions / new session">📁 Sessions</button>
     <button class="btn save" id="saveexit" title="Save as a named session and go back to the hub">💾 Save &amp; exit</button>
   </div>
@@ -77,6 +78,8 @@
     <label class="full">Channel <select id="tk-ch"><option value="L">Left (input 1)</option><option value="R">Right (input 2)</option><option value="M">Left + Right (mono sum)</option></select></label>
     <label class="full">Volume <input id="tk-vol" type="range" min="0" max="1.5" step="0.01" value="1"></label>
     <label class="full">Pan <input id="tk-pan" type="range" min="-1" max="1" step="0.01" value="0"></label>
+    <h3>Inserts <small>(playback &amp; monitoring only, takes stay raw)</small></h3><div id="tk-ins"></div>
+    <button class="btn" id="tk-mon">🎧 Monitor off</button>
     <h3>Raw takes on this track</h3><ul id="tk-takes" class="devs"></ul>
     <div class="latrow"><button class="btn" id="tk-del">🗑 Remove track</button><button class="btn" data-close>Done</button></div>
   </div></div>
@@ -86,8 +89,24 @@
     <ul id="ss-list" class="devs"></ul>
     <div class="latrow"><button class="btn" id="newsess">＋ New session</button><button class="btn" data-close>Close</button></div>
   </div></div>
+  <div class="sheet" id="sh-plug" hidden><div class="card wide">
+    <h2 id="pl-ttl">Plugins</h2>
+    <p class="kb">Plugins here are settings files (.ipbplug.json) built from the app's own audio blocks. They can't run code.</p>
+    <div class="latrow"><button class="btn" id="pl-new">＋ Create plugin</button><button class="btn" id="pl-up">⬆ Upload .ipbplug.json</button><input id="pl-file" type="file" accept=".json,application/json" hidden><button class="btn" data-close>Close</button></div>
+    <ul id="pl-list" class="devs plist"></ul>
+  </div></div>
+  <div class="sheet" id="sh-ped" hidden><div class="card wide">
+    <h2>Create plugin</h2>
+    <label class="full">Name <input id="pe-name" maxlength="40"></label>
+    <p class="kb" id="pe-note"></p>
+    <div id="pe-nodes"></div>
+    <div class="latrow" id="pe-simple"><select id="pe-type"><option value="biquad">EQ / filter band</option><option value="compressor">Compressor</option><option value="gain">Gain</option><option value="panner">Pan</option><option value="delay">Delay</option><option value="shaper">Saturation / crush</option><option value="convolver">Reverb (generated)</option></select><button class="btn" id="pe-add">＋ Add block</button></div>
+    <details><summary>Advanced JSON (LFOs, splits, parallel wiring)</summary><textarea id="pe-json" rows="14" spellcheck="false"></textarea><button class="btn" id="pe-apply">Check &amp; use JSON</button></details>
+    <div class="latrow"><button class="btn" id="pe-test">▶ Test build</button><button class="btn save" id="pe-save">💾 Save</button><button class="btn" id="pe-export">⬇ Export file</button><button class="btn" data-close>Close</button></div>
+  </div></div>
   <div class="toast" id="toast" hidden></div>
   <iframe id="beatfr" title="beat maker (hidden, for bouncing)" hidden></iframe>
-  <script src="multitrack.js?v=20261021c"></script>
+  <script src="mt-plugins.js?v=20261021d"></script>
+  <script src="multitrack.js?v=20261021d"></script>
 </body>
 </html>
