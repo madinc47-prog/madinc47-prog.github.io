@@ -5900,7 +5900,7 @@
     document.querySelectorAll("#pn-bars button").forEach(function (b) { b.classList.toggle("on", +b.dataset.bars === p.bars); });
     document.querySelectorAll("#pn-grid button").forEach(function (b) { b.classList.toggle("on", b.dataset.grid === p.grid); });
     document.querySelectorAll("#pn-tool button").forEach(function (b) { b.classList.toggle("on", b.dataset.tool === pianoEd.tool()); });
-    $("pn-inst").value = PK.BY_ID[p.inst] ? p.inst : PK.DEFAULT;
+    $("pn-inst").value = PK.BY_ID[p.inst] ? p.inst : PK.DEFAULT; pnQuickSync();
     pianoToneUI(p);
     $("pn-key").value = String(p.key);
     $("pn-scale").value = p.scale;
@@ -6037,6 +6037,7 @@
     pianoUI(true, true);
     toast("Chord loop written into pattern " + S.piano.slot + " · " + CT.prog.map(function (i) { return CHORDS[i] ? CHORDS[i].n : "—"; }).join(" – "));
   }
+  function pnQuickSync() { var q = $("pn-quick"), v = $("pn-inst") && $("pn-inst").value; if (q) q.querySelectorAll(".pnq[data-inst]").forEach(function (b) { b.classList.toggle("on", b.dataset.inst === v); }); }
   function pianoInit() {
     pianoLib = new PD.Library(PIANO_LIB_KEY, instOk);
     var isel = $("pn-inst"), cats = {};
@@ -6091,6 +6092,24 @@
       });
       $("pn-" + k).addEventListener("change", function () { saveSession(); pianoUI(false); pianoAudition(); });
     });
+    /* Quick instrument strip (v20261020m): big chips under Sound; tap = switch the Piano Roll / keys / MIDI keyboard instrument */
+    (function () {
+      var lbl = isel.closest("label"); if (!lbl || $("pn-quick")) return;
+      var strip = document.createElement("div"); strip.id = "pn-quick"; strip.className = "pn-quick"; strip.setAttribute("role", "group"); strip.setAttribute("aria-label", "Quick instrument switch");
+      var seen = {}, picks = [];
+      PK.INSTRUMENTS.forEach(function (ins) { if ((seen[ins.cat] || 0) < 2 && picks.length < 14) { seen[ins.cat] = (seen[ins.cat] || 0) + 1; picks.push(ins); } });
+      picks.forEach(function (ins) {
+        var b = document.createElement("button"); b.type = "button"; b.className = "btn small pnq"; b.dataset.inst = ins.id; b.textContent = ins.name; b.title = ins.cat + " · " + ins.name;
+        b.addEventListener("click", function () { isel.value = ins.id; isel.dispatchEvent(new Event("change")); pnQuickSync(); toast("Instrument: " + ins.name); });
+        strip.appendChild(b);
+      });
+      var more = document.createElement("button"); more.type = "button"; more.className = "btn small pnq pnq-more"; more.textContent = "⇄ More sounds";
+      more.title = "Swap this instrument's sound from the 432-sound library";
+      more.addEventListener("click", function () { var T = { kind: "mel", slot: S.piano.slot, inst: isel.value }; lyOpen(T); swOpen(T); });
+      strip.appendChild(more);
+      lbl.parentNode.insertBefore(strip, lbl.nextSibling);
+      isel.addEventListener("change", pnQuickSync);
+    })();
     isel.addEventListener("change", function () {
       pianoPat().inst = isel.value; delete pianoPat().tone; saveSession(); pianoUI(false); // new sound starts from its own default drive / glide
       pianoAudition();

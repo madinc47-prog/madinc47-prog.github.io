@@ -1110,9 +1110,13 @@ body, main, .panel {
   -webkit-overflow-scrolling: touch;
   will-change: transform;
 }
-/* swap buttons (v20261020l) */
+/* swap buttons (v20261020m) */
 .seq-row .ms-sw { color: var(--accent); }
 .lyr-swapchip { min-width: 44px; margin-left: -2px; }
 @media (pointer: coarse) { .seq-row .ms-sw { min-width: 34px; min-height: 34px; } }
 #btn-pad-swap { min-height: 44px; color: var(--accent); }
 @media (max-width: 600px) { .seq-row .ms-sw { display: none; } }
+.pn-quick { display: flex; flex-wrap: wrap; gap: 6px; width: 100%; margin: 6px 0; }
+.pn-quick .pnq { min-height: 44px; min-width: 64px; }
+.pn-quick .pnq.on { background: var(--accent); color: #000; font-weight: 700; }
+.pn-quick .pnq-more { color: var(--accent); }

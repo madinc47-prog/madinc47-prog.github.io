@@ -16,8 +16,8 @@
   try{var q=new URLSearchParams(location.search),t=(q.get("tab")||q.get("page")||location.hash.replace(/^#/,"")||"").toLowerCase();q.delete("tab");q.delete("page");var rest=q.toString();var real=[...q.keys()].some(function(k){return !/^(nosw|noupdate|_v|build|hub|utm_.*|fbclid)$/.test(k)});
   if(P[t]||real){location.replace((P[t]||"beats")+".html"+(rest?"?"+rest:""));return;}
   var st=JSON.parse(localStorage.getItem("ipb_start_page_v1")||"null");if(st&&P[st]&&!q.has("hub")&&!location.hash)location.replace(P[st]+".html");}catch(e){}})();</script>
-  <link rel="stylesheet" href="styles.css?v=20261020l">
-  <link rel="stylesheet" href="rack.css?v=20261020l">
+  <link rel="stylesheet" href="styles.css?v=20261020m">
+  <link rel="stylesheet" href="rack.css?v=20261020m">
   <style>
     body{min-height:100vh}
     .hub{max-width:1100px;margin:0 auto;padding:16px 16px 40px}
@@ -35,7 +35,7 @@
 </head>
 <body>
   <header class="topbar"><div class="brand"><a href="../" class="back" aria-label="Back to IslePin">←</a><span class="logo">ISLAND <b>BEATS HUB</b></span><span class="beta-badge">BETA</span></div>
-  <div class="transport"><span class="build-version" id="build-version">v20261020l</span><a href="check/" class="sound-check-link">Sound check</a></div></header>
+  <div class="transport"><span class="build-version" id="build-version">v20261020m</span><a href="check/" class="sound-check-link">Sound check</a></div></header>
   <main class="hub">
     <h1>Pick a tool</h1>
     <p class="sub">Every tool has its own page. Your beat, songs, takes and Vault are shared — make a beat on one page and it's there on the others.</p>
