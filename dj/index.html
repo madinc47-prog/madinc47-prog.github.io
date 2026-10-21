@@ -13,7 +13,7 @@
   <meta property="og:type" content="website">
   <meta name="theme-color" content="#0b0d12">
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="dj.css">
+  <link rel="stylesheet" href="dj.css?v=20261021a">
   <meta name="twitter:card" content="summary">
   <script src="/shared/share.js" defer data-title="DJ Psycho Fingers — Island Pin DJ Booth" data-text="Two scratchable decks, sampler, mic and Auto DJ: a free DJ booth in your browser." data-position="inline" data-target=".topbar .brand" data-compact="700"></script>
 </head>
@@ -32,7 +32,7 @@
     </div>
     <div class="top-right">
       <span id="audio-state" class="audio-state">Tap ▶ or load a track to start audio</span>
-      <button type="button" id="vdj-toggle" class="toplink vdj-tg" title="Video DJ: mix music videos">🎬 VDJ</button>
+      <a id="vdj-link" class="toplink vdj-tg" href="video.html" title="Video DJ has its own page: mix music videos">🎬 Video DJ</a>
       <select id="rec-fmt" class="rec-fmt" aria-label="Recording format" title="WAV = lossless (~11 MB/min) · Opus = compressed (~1.2 MB/min) for long shows"><option value="wav">WAV</option><option value="webm">Opus</option></select>
       <button type="button" id="rec" class="rec-btn" title="Record the whole show (decks, sampler, mic) from the master output">● REC</button>
       <span id="rec-time" class="mono rec-time" hidden>0:00</span>
@@ -72,6 +72,7 @@
     <div class="ad-live" id="ad-live" hidden role="status" aria-live="polite"><span class="ad-dot"></span><span id="ad-live-msg" class="ad-live-msg"></span><button type="button" class="mini ad-resume" id="ad-resume" hidden>▶ Resume Auto DJ</button><button type="button" class="mini" id="ad-live-x" aria-label="Turn Auto DJ off">✕</button></div>
   </div>
 
+  <div class="yt-dock" id="yt-dock" hidden aria-label="YouTube decks"></div>
   <div class="pads-mic">
   <section class="sampler" id="sampler" aria-label="Sampler">
     <div class="smp-head">
@@ -160,20 +161,6 @@
       <button type="button" class="btn" id="st-savepad">Save to pad</button><button type="button" class="btn" id="st-savelib" title="Saves it to My recordings here">Save to library</button></div>
   </section>
 
-  <section class="vdj" id="vdj" aria-label="Video DJ" hidden>
-    <div class="vdj-head"><h2>Video DJ</h2>
-      <label class="ad-set">Transition <select id="vdj-trans" class="btn small"><option value="fade">Fade</option><option value="cut">Cut</option><option value="wipe">Wipe</option></select></label>
-      <label class="ad-set"><input type="checkbox" id="vdj-ovl"> Overlay</label><input type="text" id="vdj-text" class="search vdj-text" maxlength="60" aria-label="Overlay text">
-      <button type="button" class="btn small" id="vdj-fs">⛶ Fullscreen</button><button type="button" class="btn small" id="vdj-pop">⧉ Pop-out</button>
-      <button type="button" class="rec-btn" id="vdj-rec">● REC VIDEO</button><span class="mono rec-time" id="vdj-rect"></span>
-    </div>
-    <div class="vdj-grid">
-      <div class="vdj-deck" data-deck="A"><video id="vdj-vA" muted playsinline></video><div class="vdj-ctl"><b>A</b><span id="vdj-nA" class="muted">No video — shows a visualizer</span><label class="btn small file-btn">Video…<input type="file" id="vdj-fA" accept="video/*,.mp4,.webm,.mov,.m4v" hidden></label><button type="button" class="btn small" id="vdj-uA">URL</button></div></div>
-      <div class="vdj-prog" id="vdj-progwrap"><canvas id="vdj-prog" width="1280" height="720" aria-label="Program output"></canvas></div>
-      <div class="vdj-deck" data-deck="B"><video id="vdj-vB" muted playsinline></video><div class="vdj-ctl"><b>B</b><span id="vdj-nB" class="muted">No video — shows a visualizer</span><label class="btn small file-btn">Video…<input type="file" id="vdj-fB" accept="video/*,.mp4,.webm,.mov,.m4v" hidden></label><button type="button" class="btn small" id="vdj-uB">URL</button></div></div>
-    </div>
-    <p class="lib-note">The video's sound plays through the deck (EQ, filter, pitch, keylock, loops and scratching all work on it). The picture follows the deck: it plays at the deck's speed and is scrubbed by seeking while you scratch or reverse — expect it to be choppier than the sound. The program output follows the crossfader. Only play videos you have the rights to.</p>
-  </section>
 
   <section class="library" aria-label="Track library">
     <div class="lib-head">
@@ -200,19 +187,19 @@
   </footer>
   <div class="eco-offer" id="eco-offer" hidden role="status"><span id="eco-msg"></span><button type="button" class="btn small" id="eco-send">Send to Player</button><a class="btn small" id="eco-open" href="../player/" target="psycho-fingers-player" hidden>Open in Player ↗</a><button type="button" class="mini" aria-label="Dismiss" onclick="this.parentNode.hidden=true">✕</button></div>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
-  <script src="dj.js?v=20261011g1"></script>
-  <script src="dj-voicefx.js"></script>
-  <script src="dj-sampler.js"></script>
-  <script src="dj-studio.js"></script>
-  <script src="dj-mic.js"></script>
-  <script src="dj-video.js"></script>
-  <script src="dj-library.js"></script>
-  <script src="dj-automatch.js"></script>
-  <script src="dj-autodj.js"></script>
-  <script src="dj-eco.js"></script>
-  <script src="dj-psychoeq.js"></script>
-  <script src="dj-youtube.js"></script>
-  <script src="dj-crate.js?v=20261011g1"></script>
+  <script src="dj.js?v=20261021a"></script>
+  <script src="dj-voicefx.js?v=20261021a"></script>
+  <script src="dj-sampler.js?v=20261021a"></script>
+  <script src="dj-studio.js?v=20261021a"></script>
+  <script src="dj-mic.js?v=20261021a"></script>
+  <script src="dj-video.js?v=20261021a"></script>
+  <script src="dj-library.js?v=20261021a"></script>
+  <script src="dj-automatch.js?v=20261021a"></script>
+  <script src="dj-autodj.js?v=20261021a"></script>
+  <script src="dj-eco.js?v=20261021a"></script>
+  <script src="dj-psychoeq.js?v=20261021a"></script>
+  <script src="dj-youtube.js?v=20261021a"></script>
+  <script src="dj-crate.js?v=20261021a"></script>
   <script type="module" src="../shared/ecosystem-nav.js"></script>
 </body>
 </html>

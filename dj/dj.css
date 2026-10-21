@@ -666,3 +666,31 @@ select.btn { appearance: auto; }
 .cr-src { font-size: 11px; color: var(--muted); text-decoration: none; }
 .cr-src:hover { color: var(--accent); }
 .crate-row.pf { border-color: #6b3fa0; box-shadow: inset 3px 0 0 #c084fc; }
+
+/* ---------- v20261021a: Video DJ page + phone/tablet fit ---------- */
+html, body { overflow-x: hidden; max-width: 100%; }
+.toplink, .rec-btn, .rec-fmt, .lib-tab, .btn, .pill, .mini, .smp-bank { min-height: 44px; }
+.mini { min-width: 44px; }
+a.vdj-tg { display: inline-flex; align-items: center; text-decoration: none; }
+.yt-dock { max-width: 1400px; width: calc(100% - 24px); margin: 10px auto; display: grid; gap: 8px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+.yt-dock[hidden] { display: none; }
+.yt-dock .vdj-yt { position: relative; left: auto !important; top: auto !important; width: 100% !important; height: 220px !important; }
+.xf-cue { flex: 0 0 auto; min-width: 64px; min-height: 52px; border-radius: 12px; border: 1px solid var(--line); background: var(--bg3); color: var(--warn, #fbbf24); font-weight: 800; touch-action: manipulation; user-select: none; -webkit-user-select: none; }
+.vdj-page .vdj { margin-top: 8px; }
+.vdj-page .vdj-head .btn, .vdj-page .vdj-head select, .vdj-page .vdj-head .rec-btn, .vdj-page .vdj-ctl .btn { min-height: 44px; }
+.vdj-page .vdj-text { min-height: 44px; }
+.vdj-page .xfbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; width: 100%; max-width: none; margin: 0; border-radius: 14px 14px 0 0; border-left: 0; border-right: 0; border-bottom: 0; padding: 8px 8px calc(8px + env(safe-area-inset-bottom)); background: rgba(18,21,29,.97); backdrop-filter: blur(8px); flex-wrap: nowrap; }
+.vdj-page .xfbar .xf-play { min-height: 56px; min-width: 60px; }
+.vdj-page .xf-wrap .ctl.xf { min-height: 48px; }
+.vdj-page .ad-live { position: absolute; left: 8px; right: 8px; bottom: 100%; margin-bottom: 4px; }
+.vdj-page { padding-bottom: calc(110px + env(safe-area-inset-bottom)); }
+@media (max-width: 560px) {
+  .vdj-page .xfbar { flex-wrap: wrap; gap: 6px; }
+  .vdj-page .xf-wrap { order: -1; flex: 1 1 100%; }
+  .vdj-page .xf-cue, .vdj-page .xf-play { flex: 1 1 0; min-width: 0; }
+  .vdj-page { padding-bottom: calc(160px + env(safe-area-inset-bottom)); }
+  .vdj-page .vdj { width: calc(100% - 12px); padding: 8px; }
+  .vdj-page .vdj-grid { grid-template-columns: 1fr 1fr; }
+}
+.topbar .back { min-width: 44px; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; }
+#vdj-rec { min-height: 44px; }

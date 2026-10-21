@@ -34,7 +34,7 @@
     return P.loadInto(d, item).then(function (ok) {
       if (!ok) { vids[d.id] = null; v.removeAttribute("src"); v.load(); return; }
       vids[d.id].ready = true; vids[d.id].pending = false; d.video = v;
-      $("vdj-n" + d.id).textContent = name;
+      if ($("vdj-n" + d.id)) $("vdj-n" + d.id).textContent = name;
       if (!open) setOpen(true);
     });
   }
@@ -45,7 +45,7 @@
       .then(function (b) { if (!/^video\/|^audio\/|octet-stream/.test(b.type || "video/mp4")) throw new Error("not a video file"); return loadVideo(d, b, decodeURIComponent(url.split("/").pop().split("?")[0] || "Video").slice(0, 60)); })
       .catch(function (e) { P.toast("Couldn't load that link (" + (e.message || "blocked") + "). The site must allow CORS — otherwise download the file and load it from your device."); });
   }
-  P.on("loaded", function (d, item) { if (!item || !item.isVideo) { if (d.video) { d.video = null; var v = vEl(d.id); v.pause(); v.removeAttribute("src"); v.load(); $("vdj-n" + d.id).textContent = "No video — shows a visualizer"; } } });
+  P.on("loaded", function (d, item) { if (!item || !item.isVideo) { if (d.video) { d.video = null; var v = vEl(d.id); v.pause(); v.removeAttribute("src"); v.load(); if ($("vdj-n" + d.id)) $("vdj-n" + d.id).textContent = "No video — shows a visualizer"; } } });
 
   /* keep each video glued to its deck */
   function follow(d) {
@@ -119,8 +119,9 @@
   function schedule() { if (!raf) raf = requestAnimationFrame(draw); }
   setInterval(function () { if (!open && !rec) P.DECKS.forEach(follow); }, 120);    // keep videos in step even with the panel closed
   function setOpen(v) {
-    open = v; $("vdj").hidden = !v; $("vdj-toggle").classList.toggle("on", v);
-    if (v) { schedule(); setTimeout(function () { $("vdj").scrollIntoView({ behavior: "smooth", block: "start" }); }, 50); }
+    if (!$("vdj")) { if (v) location.href = "video.html"; return; }
+    open = v; $("vdj").hidden = !v; if ($("vdj-toggle")) $("vdj-toggle").classList.toggle("on", v);
+    if (v) { schedule(); if (!document.body.classList.contains("vdj-page")) setTimeout(function () { $("vdj").scrollIntoView({ behavior: "smooth", block: "start" }); }, 50); }
   }
   function popOut() {
     if (pop && !pop.closed) { pop.focus(); return; }
@@ -158,7 +159,8 @@
     cv = $("vdj-prog"); if (!cv) return;
     if (window.innerWidth < 600) { W = 960; H = 540; }
     cv.width = W; cv.height = H; g = cv.getContext("2d");
-    $("vdj-toggle").addEventListener("click", function () { setOpen(!open); });
+    if ($("vdj-toggle")) $("vdj-toggle").addEventListener("click", function () { setOpen(!open); });
+    if (document.body.classList.contains("vdj-page")) setOpen(true);
     P.DECKS.forEach(function (d) {
       $("vdj-f" + d.id).addEventListener("change", function (e) { var f = e.target.files[0]; e.target.value = ""; if (f) loadVideo(d, f, f.name.replace(/\.[a-z0-9]+$/i, "")); });
       $("vdj-u" + d.id).addEventListener("click", function () { var u = prompt("Video URL for deck " + d.id + " (mp4/webm file link from a site that allows CORS, and that you have the rights to play):"); if (u) loadUrl(d, u.trim()); });

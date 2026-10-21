@@ -77,7 +77,7 @@
   function holder(d) {
     var id = "vdj-yt" + d.id, h = $(id);
     if (!h) {
-      var grid = document.querySelector(".vdj-grid"); if (!grid) return null;
+      var grid = document.querySelector(".vdj-grid") || $("yt-dock"); if (!grid) return null; grid.hidden = false;
       h = document.createElement("div"); h.className = "vdj-yt"; h.id = id; h.dataset.deck = d.id; h.hidden = true;
       h.innerHTML = '<div id="vdj-ytp' + d.id + '"></div><span class="vdj-ytbadge">' + d.id + ' · YouTube</span>';
       grid.appendChild(h);
@@ -224,7 +224,7 @@
   /* ---------- Video DJ placement: deck slot ⇄ program screen ---------- */
   var progDeck = null, fsOn = false;
   function vdjOpen() { var v = $("vdj"); return v && !v.hidden; }
-  function openVDJ() { if (!vdjOpen() && window.PFVDJ) window.PFVDJ.open(true); }
+  function openVDJ() { if ($("vdj") && !vdjOpen() && window.PFVDJ) window.PFVDJ.open(true); }
   function mixAmount() { var xg = P.xfGains(), A = P.DECKS[0], B = P.DECKS[1]; var a = xg[0] * Math.pow(A.vol, 0.7) * (A.buf ? 1 : 1e-4), b = xg[1] * Math.pow(B.vol, 0.7) * (B.buf ? 1 : 1e-4); return a + b < 1e-6 ? 0.5 : b / (a + b); }
   function place() {
     var grid = document.querySelector(".vdj-grid"); if (!grid) return;
