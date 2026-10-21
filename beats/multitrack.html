@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob: data:; connect-src 'self' blob: data:; worker-src 'self' blob:; frame-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Multitrack Recorder · Island Pin Beats</title>
+  <meta name="theme-color" content="#0b0d12"><meta name="color-scheme" content="dark">
+  <link rel="icon" href="icons/icon-192.png"><link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="multitrack.css?v=20261021b">
+</head>
+<body>
+  <header class="top">
+    <a class="btn" href="./?hub=1" title="Back to the Beats hub">← Hub</a>
+    <b class="ttl">🎚 Multitrack</b>
+    <label class="bpm">BPM <input id="bpm" type="number" min="40" max="240" step="1" value="90" inputmode="numeric"></label>
+    <label class="snap">Snap <select id="snap"><option value="0">Off</option><option value="4">Bar</option><option value="1" selected>Beat</option><option value="0.5">1/2</option><option value="0.25">1/4</option></select></label>
+    <button class="btn" id="undo" title="Undo">↶</button><button class="btn" id="redo" title="Redo">↷</button>
+    <button class="btn" id="zout" title="Zoom out">−</button><button class="btn" id="zin" title="Zoom in">+</button>
+  </header>
+  <div class="transport">
+    <button class="btn" id="home" title="Back to start (or the range start)">⏮</button>
+    <button class="btn play" id="play" title="Play / stop">▶</button>
+    <button class="btn rec" id="rec" title="Record armed tracks">●</button>
+    <button class="btn tog" id="loop" title="Loop the selected range">⟳ Loop</button>
+    <button class="btn tog" id="punch" title="Record only inside the selected range">Punch</button>
+    <button class="btn tog" id="click" title="Metronome click">Click</button>
+    <span class="time" id="time">1.1 · 0:00.00</span>
+    <button class="btn" id="setup" title="Inputs, raw check and latency">🎤 Inputs &amp; latency</button>
+    <button class="btn" id="beat" title="Load the beat">🥁 Beat</button>
+    <button class="btn" id="addtrk" title="Add an audio track">＋ Track</button>
+  </div>
+  <p class="hint" id="hint">Drag on the ruler to select a range (for Loop and Punch). Tap the ruler to move the playhead. Arm <b>R</b> on a track, then press <b>●</b>.</p>
+  <main class="tl" id="tl">
+    <div class="ruler-row"><div class="corner" id="rangeinfo">No range</div><div class="ruler" id="ruler"></div></div>
+    <div id="rows"></div>
+    <div class="playhead" id="ph"></div>
+  </main>
+  <div class="clipbar" id="clipbar" hidden>
+    <b id="cb-name">Clip</b>
+    <button class="btn" id="cb-split">✂ Split at playhead</button>
+    <label>Fade in <input id="cb-fi" type="range" min="0" max="1" step="0.01" value="0"><span id="cb-fiv">0 ms</span></label>
+    <label>Fade out <input id="cb-fo" type="range" min="0" max="1" step="0.01" value="0"><span id="cb-fov">0 ms</span></label>
+    <span class="loopctl">Loop <button class="btn" id="cb-lm">−</button><span id="cb-reps">×1</span><button class="btn" id="cb-lp">+</button></span>
+    <button class="btn" id="cb-del">🗑 Delete</button>
+    <button class="btn" id="cb-x">Done</button>
+  </div>
+  <div class="sheet" id="sh-setup" hidden><div class="card">
+    <h2>Inputs, raw check &amp; latency</h2>
+    <p>Takes are recorded <b>raw</b>: echo cancellation, noise suppression and auto gain are off and nothing is processed. Plug your USB mixer into the Tab (OTG / powered hub), then press Allow.</p>
+    <button class="btn" id="perm">🎤 Allow mic &amp; list inputs</button>
+    <ul id="devs" class="devs"></ul>
+    <h3>Latency compensation</h3>
+    <p>Moves every new take earlier by this amount so it lines up with the beat. <span id="lat-hint"></span></p>
+    <div class="latrow"><button class="btn" id="lat-m10">−10</button><button class="btn" id="lat-m1">−1</button><input id="lat" type="number" step="1" min="0" max="1000" value="0"> ms<button class="btn" id="lat-p1">+1</button><button class="btn" id="lat-p10">+10</button></div>
+    <p>Calibrate with the input of track: <select id="cal-trk"></select></p>
+    <div class="latrow"><button class="btn" id="cal-loop">🔁 Loopback test</button><button class="btn" id="cal-clap">👏 Clap test</button></div>
+    <p class="kb">Loopback: hold a mic in front of a monitor (or patch the mixer out back to an input), keep the room quiet, press the button. Clap: press, then clap exactly on the 8 clicks.</p>
+    <p id="cal-out" class="kb"></p>
+    <button class="btn" data-close>Close</button>
+  </div></div>
+  <div class="sheet" id="sh-beat" hidden><div class="card">
+    <h2>Beat track</h2>
+    <p>Bounce the beat that is open in the beat maker, pick a bounce from your Vault, or load any audio file.</p>
+    <div class="latrow"><label>Bars <select id="bb-bars"><option>4</option><option selected>8</option><option>16</option><option>32</option></select></label><button class="btn" id="bb-now">🥁 Bounce current beat</button></div>
+    <div class="latrow"><button class="btn" id="bb-file">📂 Audio file…</button><input id="bb-input" type="file" accept="audio/*" hidden></div>
+    <h3>Vault</h3><ul id="vault" class="devs"><li>Loading…</li></ul>
+    <p id="bb-out" class="kb"></p>
+    <button class="btn" data-close>Close</button>
+  </div></div>
+  <div class="sheet" id="sh-trk" hidden><div class="card">
+    <h2 id="tk-ttl">Track</h2>
+    <label class="full">Name <input id="tk-name" maxlength="24"></label>
+    <label class="full">Input <select id="tk-dev"></select></label>
+    <label class="full">Channel <select id="tk-ch"><option value="L">Left (input 1)</option><option value="R">Right (input 2)</option><option value="M">Left + Right (mono sum)</option></select></label>
+    <h3>Raw takes on this track</h3><ul id="tk-takes" class="devs"></ul>
+    <div class="latrow"><button class="btn" id="tk-del">🗑 Remove track</button><button class="btn" data-close>Done</button></div>
+  </div></div>
+  <div class="toast" id="toast" hidden></div>
+  <iframe id="beatfr" title="beat maker (hidden, for bouncing)" hidden></iframe>
+  <script src="multitrack.js?v=20261021b"></script>
+</body>
+</html>
