@@ -31,7 +31,7 @@
   /* ---------------- prefs ---------------- */
   function loadPrefs() {
     var d = { xf: 0, curve: "smooth", ham: false, recFmt: "webm", master: 0.85, decks: { A: {}, B: {} } };
-    try { var s = JSON.parse(localStorage.getItem(PREFS_KEY) || "null"); if (s && typeof s === "object") { d.xf = clamp(+s.xf || 0, -1, 1); d.curve = s.curve === "cut" || s.curve === "scratch" ? s.curve : "smooth"; d.ham = s.ham === true; d.recFmt = s.recFmt === "wav" ? "wav" : "webm"; if (isFinite(+s.master)) d.master = clamp(+s.master, 0, 1); if (s.decks) { d.decks.A = s.decks.A || {}; d.decks.B = s.decks.B || {}; } } } catch (e) { /* ignore */ }
+    try { var s = JSON.parse(localStorage.getItem(PREFS_KEY) || "null"); if (s && typeof s === "object") { d.xf = 0; /* v20261022t: crossfader always starts centered (Auto DJ left it at one side) */ d.curve = s.curve === "cut" || s.curve === "scratch" ? s.curve : "smooth"; d.ham = s.ham === true; d.recFmt = s.recFmt === "wav" ? "wav" : "webm"; if (isFinite(+s.master) && +s.master >= 0.3) d.master = clamp(+s.master, 0, 1); /* v20261022t: never restore a stuck-low master */ if (s.decks) { d.decks.A = s.decks.A || {}; d.decks.B = s.decks.B || {}; } } } catch (e) { /* ignore */ }
     return d;
   }
   var saveT = null;
@@ -52,7 +52,7 @@
       id: id, buf: null, name: "", src: null, srcTok: 0, playing: false, pos: 0, anchor: null,
       bpm: null, grid: 0, bpmSrc: "", pitch: 0, range: p.range === 16 ? 16 : 8, keylock: p.keylock === true, bend: 0,
       cue: 0, hot: [null, null, null, null], loop: { in: null, out: null, on: false },
-      sync: false, trimDb: 0, autoDb: 0, vol: isFinite(+p.vol) ? clamp(+p.vol, 0, 1) : 0.8,
+      sync: false, trimDb: 0, autoDb: 0, vol: isFinite(+p.vol) && +p.vol >= 0.3 ? clamp(+p.vol, 0, 1) : 0.8,
       eq: Array.isArray(p.eq) && p.eq.length === 3 ? p.eq.map(function (v) { return clamp(+v || 0, -26, 6); }) : [0, 0, 0], kill: [false, false, false],
       filter: isFinite(+p.filter) ? clamp(+p.filter, -1, 1) : 0, peaks: null, detail: null, taps: [], loading: false, n: null,
       vinyl: p.vinyl !== false, wl: null, wlBuf: null, scr: null, scrRep: null, tt: { hand: null, hp: 0, bendT: null }
@@ -76,7 +76,7 @@
     M.lim.threshold.value = -3; M.lim.knee.value = 0; M.lim.ratio.value = 20; M.lim.attack.value = 0.001; M.lim.release.value = 0.12;
     M.clip = ctx.createWaveShaper(); M.clip.curve = clipCurve(); M.clip.oversample = "none"; // no oversampling: its resampling filter could overshoot the ceiling
     M.an = ctx.createAnalyser(); M.an.fftSize = 1024;
-    M.music = ctx.createGain();                                      // decks → music bus (mic talkover ducks this) → master bus
+    M.music = ctx.createGain(); M.music.gain.value = 1;                                      // decks → music bus (mic talkover ducks this) → master bus
     M.music.connect(M.bus);
     M.bus.connect(M.vol); M.vol.connect(M.lim); M.lim.connect(M.clip); M.clip.connect(ctx.destination); M.clip.connect(M.an);
     // recorder tap (ScriptProcessor: supported everywhere; muted output keeps it running)

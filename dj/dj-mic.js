@@ -100,7 +100,7 @@
     }).catch(function (e) { starting = false; on = false; blocked = /NotAllowed|Security/.test(e && e.name || ""); ui(); P.toast("Mic blocked or unavailable" + (e && e.name ? " (" + e.name + ")" : "") + " — allow the microphone for this site."); });
   }
   function stopStream() { if (N && N.src) { try { N.src.disconnect(); } catch (e) { /* ignore */ } N.src = null; } if (stream) { stream.getTracks().forEach(function (t) { t.stop(); }); stream = null; } }
-  function stop() { stopStream(); on = false; apply(); ui(); setDuck(false); if (N) { gateOpen = false; N.gate.gain.value = 0.06; } }
+  function stop() { stopStream(); on = false; apply(); ui(); duckOn = true; setDuck(false); holdUntil = 0; if (N) { gateOpen = false; N.gate.gain.value = 0.06; } }
   function setDuck(v) {
     if (v === duckOn || !P.M) return; duckOn = v;
     var g = P.M.music.gain, t = P.ctx.currentTime;
@@ -167,5 +167,6 @@
     P.on("play", function () { if (N) apply(); });
   }
   build();
+  window.addEventListener("pagehide", function () { stopStream(); });
   window.PFMIC = { stream: function () { return stream; }, nohp: nohp, start: start, stop: stop, state: state, route: route, info: function () { return { on: on, state: state(), phones: phones, speakers: toSpeakers(), gate: gateOpen, C: C, duck: duckOn, music: P.M ? P.M.music.gain.value : 1, level: on ? level() : null }; } };
 })();

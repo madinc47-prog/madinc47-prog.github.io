@@ -17,7 +17,7 @@
     if (recording()) { P.toast("Change this between recordings."); return; }
     try { localStorage.setItem(K, v ? "1" : "0"); } catch (e) { /* ignore */ }
     ui();
-    var M = window.PFMIC; if (M) { M.route(); if (M.info().on) M.start(true); }
+    var M = window.PFMIC; if (M) { M.route(); } /* v20261022t: no mic re-open (re-open put Android in call-volume mode) */
     P.toast(v ? "No headphones ON: raw mic also saved as its own Voice only track while recording" : "No headphones OFF: mic unchanged (raw)");
   }
   function button() {
