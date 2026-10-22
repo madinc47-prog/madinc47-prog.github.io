@@ -705,3 +705,21 @@ a.vdj-tg { display: inline-flex; align-items: center; text-decoration: none; }
 .talk-btn[data-state=muted] { background: #5a4a10; border-color: var(--warn, #fbbf24); }
 .talk-btn[data-state=blocked] { background: #333; border-color: #888; }
 .talk-mute { min-height: 48px; min-width: 110px; border-radius: 24px; border: 2px solid var(--warn, #fbbf24); background: #221a05; color: #fff; font-weight: 800; }
+
+/* v20261022a: Auto DJ stays on until switched off — big clear ON indicator */
+.mini.autodj { min-width: 108px; }
+.mini.autodj.on { font-size: 14px; box-shadow: 0 0 0 3px rgba(52,211,153,.45), 0 0 16px rgba(52,211,153,.6); }
+body.autodj-on .ad-live { font-size: 14px; font-weight: 800; background: rgba(52,211,153,.18); border-width: 2px; border-color: var(--ok); }
+body.autodj-on .ad-live .ad-dot { width: 12px; height: 12px; }
+
+/* v20261022c: Live Freestyle */
+.freestyle { background: var(--bg2); border: 1px solid var(--line); border-radius: 14px; padding: 12px; margin: 12px 0; }
+.fs-head { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; } .fs-head h2 { margin: 0; font-size: 18px; }
+.fs-go { width: 100%; min-height: 84px; margin: 10px 0; border-radius: 18px; border: 3px solid var(--ok); background: #062a1e; color: #fff; font-size: 26px; font-weight: 900; letter-spacing: .05em; touch-action: manipulation; }
+.fs-go.on { background: var(--hot, #f43f5e); border-color: var(--hot, #f43f5e); animation: pulse 1.6s infinite; }
+.fs-big { display: flex; gap: 18px; flex-wrap: wrap; font-size: 34px; font-weight: 900; font-variant-numeric: tabular-nums; } .fs-rec { color: var(--hot, #f43f5e); }
+.fs-beat { margin: 4px 0 8px; opacity: .8; }
+.fs-drops { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; } .fs-drops .btn { min-height: 64px; font-size: 17px; font-weight: 800; }
+.fs-list { display: flex; flex-direction: column; gap: 8px; } .fs-row { border: 1px solid var(--line); border-radius: 12px; padding: 8px; }
+.fs-main { display: flex; flex-direction: column; } .fs-row audio { width: 100%; margin: 6px 0; }
+.fs-acts { display: flex; flex-wrap: wrap; gap: 6px; } .fs-acts .btn { min-height: 48px; min-width: 64px; }
