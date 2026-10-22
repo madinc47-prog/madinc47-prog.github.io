@@ -585,8 +585,10 @@
     o.pxs = pxs; o.scroll = $("tl").scrollLeft; o.loopOn = loopOn; o.punchOn = punchOn; o.clickOn = clickOn; o.snap = $("snap").value; o.latMs = latMs; o.bufs = usedBufs(); o.saved = Date.now(); o.mvol = S.mvol == null ? 1 : S.mvol; o.plugs = []; S.tracks.forEach(function (t) { (t.ins || []).forEach(function (s) { if (s.pid[0] === "u" && LIB[s.pid] && !o.plugs.some(function (q) { return q.id === s.pid; })) o.plugs.push(LIB[s.pid]); }); });
     return o;
   }
-  function save() { if (booting) return; clearTimeout(saveT); saveT = setTimeout(saveNow, 600); }
-  function saveNow() {
+  // No auto-save (Emmanuel, Oct 22): the live session is not written to IndexedDB; only 💾 Save & exit keeps it (Sessions list).
+  function save() { }
+  function saveNow() { return Promise.resolve(); }
+  function saveNowOld() {
     if (booting) return Promise.resolve(); clearTimeout(saveT); var st = state();
     return tx(["meta", "bufs"], "readwrite", function (t) {
       var bs = t.objectStore("bufs");
@@ -648,15 +650,12 @@
   $("sessions").onclick = function () { renderSessions(); $("sh-sess").hidden = false; };
   $("newsess").onclick = function () { if (!confirm("Start a new empty session? Everything not saved with Save & exit will be lost.")) return; if (play) stop(); booting = true; clearActive().then(function () { fresh(); booting = false; saveNow(); $("sh-sess").hidden = true; toast("New session"); }); };
   $("snap").addEventListener("change", function () { save(); });
-  document.addEventListener("visibilitychange", function () { if (document.visibilityState === "hidden") saveNow(); });
-  window.addEventListener("pagehide", function () { saveNow(); });
-  window.addEventListener("beforeunload", function () { saveNow(); });
+  window.addEventListener("beforeunload", function (e) { if (booting || play || !dirty || !projEnd()) return; e.preventDefault(); e.returnValue = ""; }); // unsaved takes: browser asks once
   if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(function () {});
 
   fresh(); requestAnimationFrame(meters);
-  booted = loadUser().then(loadActive).then(function (r) {
-    if (r && r.st) { apply(r.st, r.raws); Object.keys(r.raws).forEach(function (k) { savedBufs[k] = 1; }); toast("Session restored" + (r.st.beatName ? ": " + r.st.beatName : ""), 3000); }
-  }).catch(function (e) { toast("Could not restore session: " + (e && e.message || e), 5000); }).then(function () { booting = false; }).then(importInbox);
+  booted = loadUser().then(function () { return clearActive().catch(function () {}); }) // each open starts fresh; old autosave wiped
+  .catch(function () {}).then(function () { booting = false; }).then(importInbox);
   /* Inbox: audio sent from other apps (Lyrics Lab, My Freestyles) lands on the first empty audio track at 0:00 */
   function importInbox() {
     if (!window.indexedDB) return;

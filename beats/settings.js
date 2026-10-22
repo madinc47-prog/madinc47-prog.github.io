@@ -1,8 +1,9 @@
 /* ⚙ Settings page logic (Island Beats Hub). Reads/writes existing keys only where they exist: ipb_session_v1.bpm,
    ipb_midi_settings_v2.autoEnable; new: ipb_ui_v1 (look) and ipb_start_page_v1. Values are set with .value / textContent only. */
 (function () {
-  function get(k, d) { try { var v = JSON.parse(localStorage.getItem(k)); return v == null ? d : v; } catch (e) { return d; } }
-  function put(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); flash(); } catch (e) { flash("Could not save (private mode?)"); } }
+  function st(k) { try { return k === "ipb_session_v1" ? sessionStorage : localStorage; } catch (e) { return localStorage; } }
+  function get(k, d) { try { var v = JSON.parse(st(k).getItem(k)); return v == null ? d : v; } catch (e) { return d; } }
+  function put(k, v) { try { st(k).setItem(k, JSON.stringify(v)); flash(); } catch (e) { flash("Could not save (private mode?)"); } }
   var $ = function (id) { return document.getElementById(id); }, t;
   function flash(m) { $("saved").textContent = m || "Saved ✓"; clearTimeout(t); t = setTimeout(function () { $("saved").textContent = ""; }, 1800); }
   var ui = get("ipb_ui_v1", {}), ses = get("ipb_session_v1", null), midi = get("ipb_midi_settings_v2", {});

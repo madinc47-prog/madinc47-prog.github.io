@@ -123,6 +123,10 @@
   var STEPS = 16;          // steps per bar (16ths)
   var MAXLEN = 32;         // a pattern holds up to 2 bars
   var SESSION_KEY = "ipb_session_v1";
+  // No auto-save between opens (Emmanuel, Oct 22): the working beat lives in sessionStorage (shared by the Beat pages in this tab,
+  // gone when the app is closed). Saved songs, Vault, pads, settings stay. One-time wipe of the old localStorage autosave.
+  var SS = (function () { try { sessionStorage.setItem("ipb_ss_t", "1"); sessionStorage.removeItem("ipb_ss_t"); return sessionStorage; } catch (e) { var m = {}; return { getItem: function (k) { return k in m ? m[k] : null; }, setItem: function (k, v) { m[k] = String(v); }, removeItem: function (k) { delete m[k]; } }; } })();
+  try { localStorage.removeItem(SESSION_KEY); } catch (e) { /* ignore */ }
   var GROUPS = [
     { id: "drums", name: "Drums" },
     { id: "bass", name: "808" },
@@ -359,7 +363,7 @@
     var pc = curCtx;
     useCtx(-1); // the song's own fields (a section being edited is kept in S.secOv)
     try {
-      localStorage.setItem(SESSION_KEY, JSON.stringify({
+      SS.setItem(SESSION_KEY, JSON.stringify({
         secOv: secOvSave(),
         fmt: 2, kit: S.kit, bpm: S.bpm, swing: S.swing, slot: S.slot, slots: S.slots,
         padCfg: S.padCfg, kitSwing: S.kitSwing, mute: S.mute, solo: S.solo, mixer: S.mixer, sel: S.sel,
@@ -376,7 +380,7 @@
   }
   function loadSession() {
     try {
-      var raw = localStorage.getItem(SESSION_KEY);
+      var raw = SS.getItem(SESSION_KEY);
       try { var pd0 = JSON.parse(raw || "null"); if (pd0 && pd0.padAssign) window.__ipbPadAssignSaved = pd0.padAssign; } catch (e) { /* ignore */ }
       if (!raw) return false;
       var d = JSON.parse(raw);
@@ -6791,7 +6795,7 @@
       },
       hasVocal: function () { return !!vox.last; }, hasSong: function () { return !!arrangement(); },
       /* signature of what the Beat mix would contain: changes after an edit → Master offers "Refresh from current song" */
-      songSig: function () { var d = ""; try { d = localStorage.getItem(SESSION_KEY) || ""; var o = JSON.parse(d); delete o.master; delete o.tab; d = JSON.stringify(o); } catch (e) { /* private */ } var h = 0; for (var i = 0; i < d.length; i++) h = (h * 31 + d.charCodeAt(i)) | 0; return h + ":" + d.length + ":" + (vox.last ? vox.last.frames : 0); },
+      songSig: function () { var d = ""; try { d = SS.getItem(SESSION_KEY) || ""; var o = JSON.parse(d); delete o.master; delete o.tab; d = JSON.stringify(o); } catch (e) { /* private */ } var h = 0; for (var i = 0; i < d.length; i++) h = (h * 31 + d.charCodeAt(i)) | 0; return h + ":" + d.length + ":" + (vox.last ? vox.last.frames : 0); },
       vocalMix: function () {
         var t = vox.last; if (!t) return Promise.resolve(null);
         return vocalMixFx(t).then(function (mx) { return { L: mx.L, R: mx.R, sr: t.sr, name: "Last vocal take" + (t.title ? " · " + t.title : "") }; });

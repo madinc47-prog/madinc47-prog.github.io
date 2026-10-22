@@ -936,14 +936,13 @@
 
   /* ---------------- save / open / export ---------------- */
   function scheduleSave() {
-    clearTimeout(saveTimer);
-    $("save-state").textContent = "Saving…"; $("save-state").classList.remove("ok");
-    saveTimer = setTimeout(saveNow, 900);
+    // No auto-save (Emmanuel, Oct 22): edits only mark the project unsaved; 💾 Save (or New/Open/Master) saves it.
+    $("save-state").textContent = "Unsaved · tap 💾 Save"; $("save-state").classList.remove("ok");
   }
   function saveNow() {
     clearTimeout(saveTimer); saveTimer = null;
     return S.saveProject(P).then(function () {
-      try { localStorage.setItem("ipbs_last", P.id); } catch (e) { /* ignore */ }
+      try { sessionStorage.setItem("ipbs_last", P.id); } catch (e) { /* ignore */ } // same-tab handoff only (Master / Beats round trip)
       var d = new Date(); $("save-state").textContent = "Saved ✓ " + d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }); $("save-state").classList.add("ok");
     }).catch(function (e) { $("save-state").textContent = "Not saved (storage blocked or full)"; console.warn(e); });
   }
@@ -1180,6 +1179,7 @@
     $("ex-player").addEventListener("click", function () { sendMix("player"); });
     $("ex-dj").addEventListener("click", function () { sendMix("dj"); });
     $("btn-open").addEventListener("click", openList);
+    if ($("btn-save")) $("btn-save").addEventListener("click", function () { saveNow().then(function () { toast("Project saved. Find it under Open…"); }); });
     $("btn-new").addEventListener("click", function () { saveNow().then(function () { setProject(S.newProject()); saveNow(); toast("New project. Your previous one is saved under Open…"); }); });
     $("btn-save-file").addEventListener("click", function () {
       if (!P.clips.length) { toast("Add some audio first."); return; }
@@ -1225,7 +1225,7 @@
     if (EMBED) document.body.classList.add("embed");
     bind();
     try { if (localStorage.getItem("ipbs_howto") !== "0" && window.innerWidth > 1100) $("howto").hidden = false; } catch (e) { /* ignore */ }
-    var last = null; try { last = localStorage.getItem("ipbs_last"); } catch (e) { /* ignore */ }
+    var last = null; try { localStorage.removeItem("ipbs_last"); last = sessionStorage.getItem("ipbs_last"); } catch (e) { /* ignore */ } // each open starts fresh
     var q = new URLSearchParams(location.search);
     (last ? S.loadProject(last).catch(function () { return S.newProject(); }) : Promise.resolve(S.newProject())).then(function (p) {
       setProject(p);
