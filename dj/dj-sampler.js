@@ -8,7 +8,7 @@
   var P = window.PFDJ; if (!P) return;
   var $ = function (id) { return document.getElementById(id); };
   var KEYS = ["e", "r", "t", "y", "d", "f", "g", "h", "c", "v", "b", "n", "u", "i", "j", "k"];
-  var BANKS = ["A", "B", "C", "D"];
+  var BANKS = ["A", "B", "C", "D", "E"];  // v20261022i: bank E (sirens, gun FX, staples)
   var CAT = { voice: "#f59e0b", fx: "#22d3ee", scratch: "#f43f5e", hit: "#a78bfa", user: "#34d399" };
   var PK = "pfdj_sampler_v1";
   var pr = {}; try { pr = JSON.parse(localStorage.getItem(PK) || "{}") || {}; } catch (e) { pr = {}; }
@@ -59,12 +59,12 @@
     render(p); if (S.sel === k) select(k);
   }
   function clearAll() {
-    if (!confirm("Clear all 64 pads (banks A–D)? Pack sounds stay in the Sample Browser; your Sample Studio recordings stay in My recordings.")) return;
+    if (!confirm("Clear all 80 pads (banks A–E)? Pack sounds stay in the Sample Browser; your Sample Studio recordings stay in My recordings.")) return;
     Object.keys(S.pads).forEach(function (k) { clearPad(k, true); });
     idbDo("readwrite", function (st) { return st.clear(); }).catch(function () { /* ignore */ });
     P.toast("All pads cleared — load sounds from the Sample Browser or make one in the Sample Studio");
   }
-  function firstEmpty() { for (var bi = 0; bi < 4; bi++) { var b = BANKS[(BANKS.indexOf(S.bank) + bi) % 4]; for (var i = 0; i < 16; i++) { var p = S.pads[key(b, i)]; if (!p.file && !p.user) return p.k; } } return null; }
+  function firstEmpty() { for (var bi = 0; bi < BANKS.length; bi++) { var b = BANKS[(BANKS.indexOf(S.bank) + bi) % BANKS.length]; for (var i = 0; i < 16; i++) { var p = S.pads[key(b, i)]; if (!p.file && !p.user) return p.k; } } return null; }
   function trimLead(buf) { // drop codec padding / leading silence so pads hit on time
     var c = buf.getChannelData(0), n = c.length, i = 0, lim = Math.min(n, Math.round(buf.sampleRate * 0.12));
     while (i < lim && Math.abs(c[i]) < 0.0015) i++;
@@ -76,7 +76,7 @@
   function load(p) {
     if (p.buf) return Promise.resolve(p.buf);
     if (p.loading) return p.loading;
-    var get = p.user ? Promise.resolve(p.blob.arrayBuffer()) : p.file ? fetch(p.file).then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.arrayBuffer(); }) : Promise.reject(new Error("empty"));
+    var get = p.user ? Promise.resolve(p.blob.arrayBuffer()) : p.file ? fetch(p.file).then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.arrayBuffer(); }).catch(function (e) { if (!window.caches) throw e; return caches.match(p.file).then(function (r) { if (!r) throw e; return r.arrayBuffer(); }); }) : Promise.reject(new Error("empty"));
     p.loading = get.then(function (ab) { return P.decode(ab); }).then(function (b) { p.buf = trimLead(b); p.loading = null; render(p); return p.buf; })
       .catch(function (e) { p.loading = null; p.err = true; render(p); throw e; });
     render(p);
@@ -216,7 +216,7 @@
   }
   function build() {
     var root = $("sampler"); if (!root) return;
-    for (var bi = 0; bi < 4; bi++) for (var i = 0; i < 16; i++) makePad(BANKS[bi], i, null);
+    for (var bi = 0; bi < BANKS.length; bi++) for (var i = 0; i < 16; i++) makePad(BANKS[bi], i, null);
     root.querySelectorAll(".smp-bank").forEach(function (b) { b.addEventListener("click", function () { setBank(b.dataset.b); }); });
     $("smp-q").classList.toggle("on", S.q);
     $("smp-q").addEventListener("click", function () { S.q = !S.q; $("smp-q").classList.toggle("on", S.q); save(); P.toast(S.q ? "Quantize on — pads land on the next " + divName() + " of the deck you're hearing" : "Quantize off — pads fire instantly"); });
@@ -241,6 +241,7 @@
         render(p);
       });
       if (P.ctx) { S.loadedAll = false; loadAll(); }
+      preload();
     }).catch(function () { /* no IDB */ });
     $("smp-clear").addEventListener("click", clearAll);
     $("smp-browse").addEventListener("click", function () { toggleBrowser(); });
@@ -252,7 +253,7 @@
       if (e.target && /INPUT|SELECT|TEXTAREA/.test(e.target.tagName) || e.metaKey || e.ctrlKey || e.altKey) return;
       var k = e.key.toLowerCase(), i = KEYS.indexOf(k);
       if (i >= 0) { e.preventDefault(); if (!e.repeat) fire(key(S.bank, i), true); var el = $("smp-grid").children[i]; el && el.classList.add("kdown"); return; }
-      if (k === "[" || k === "]") { var bi2 = (BANKS.indexOf(S.bank) + (k === "]" ? 1 : 3)) % 4; setBank(BANKS[bi2]); e.preventDefault(); return; }
+      if (k === "[" || k === "]") { var bi2 = (BANKS.indexOf(S.bank) + (k === "]" ? 1 : BANKS.length - 1)) % BANKS.length; setBank(BANKS[bi2]); e.preventDefault(); return; }
       if (e.key === "Escape") stopAll();
     });
     document.addEventListener("keyup", function (e) {
@@ -297,13 +298,31 @@
       B.prev = s; s.start();
     }).catch(function () { B.prevKey = null; renderBrowser(); P.toast("Couldn't preview " + it.name); });
   }
+  /* v20261022i: ready out of the box — fill EMPTY pads with the pack layout (banks A–E), once per pack version.
+     Pads he customised (or cleared after a preload) are never touched; the Sample Studio / browser swap path is unchanged. */
+  var PRE_K = "pfdj_pads_preload", PRE_V = "e1", PCACHE = "pfdj-pads-v1";
+  function preload() {
+    var done = ""; try { done = localStorage.getItem(PRE_K) || ""; } catch (e) { /* ignore */ }
+    if (done === PRE_V) return;
+    fetch("samples/manifest.json").then(function (r) { return r.json(); }).then(function (m) {
+      var keep = S.bank, urls = [], n = 0, banks = done ? ["E"] : BANKS;   // earlier preload already filled A–D: only add the new bank
+      banks.forEach(function (b) { (m.banks[b] || []).forEach(function (e) {
+        var url = "samples/" + e.file; urls.push(url);
+        var p = S.pads[key(b, e.pad)]; if (!p || p.file || p.user) return;
+        assign(p.k, { name: e.name, url: url, cat: e.cat }); n++;
+      }); });
+      try { localStorage.setItem(PRE_K, PRE_V); } catch (e) { /* ignore */ }
+      if (window.caches) caches.open(PCACHE).then(function (c) { return c.addAll(urls); }).catch(function () { /* offline */ });
+      if (n) setBank(keep);
+    }).catch(function () { /* offline: try again next visit */ });
+  }
   function loadPackLayout() {
     if (!B.man) return;
     var used = Object.keys(S.pads).some(function (k) { return S.pads[k].file || S.pads[k].user; });
-    if (used && !confirm("Put the DJ Psycho Fingers pack on all 64 pads in its original layout? Pads you filled will be replaced.")) return;
+    if (used && !confirm("Put the DJ Psycho Fingers pack on all 80 pads in its original layout? Pads you filled will be replaced.")) return;
     P.ensureCtx();
     BANKS.forEach(function (b) { for (var i = 0; i < 16; i++) clearPad(key(b, i), true); (B.man.banks[b] || []).forEach(function (e) { assign(key(b, e.pad), { name: e.name, url: "samples/" + e.file, cat: e.cat }); }); });
-    renderBank(); P.toast("DJ Psycho Fingers pack loaded on banks A–D");
+    renderBank(); P.toast("DJ Psycho Fingers pack loaded on banks A–E");
   }
   function renderBrowser() {
     var box = $("smpb-list"); if (!box || !B.open) return;

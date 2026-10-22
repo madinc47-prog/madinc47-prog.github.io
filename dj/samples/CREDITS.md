@@ -104,3 +104,21 @@ python3 -m venv venv && ./venv/bin/pip install numpy scipy soundfile piper-tts
 # download en_US-norman-medium.onnx + .onnx.json into voices/ (rhasspy/piper-voices)
 ./venv/bin/python generate_pack.py   # needs ffmpeg with librubberband + libmp3lame
 ```
+
+## Bank E — sirens, gun FX & staples (added 22 Oct 2026)
+
+All original, made on 22 Oct 2026. **No recordings, no third-party samples** — the effects are synthesized from scratch in numpy (script: [`generate_bank_e.py`](generate_bank_e.py)); the gun sounds are synthetic noise/thump bursts, not recordings of real gunfire. Same ownership as the rest of the pack (Emmanuel Griffith / DJ Psycho Fingers).
+
+| Pad | Sample | File | How it was made |
+|---|---|---|---|
+| E1 | Psycho Fingers drop — "DJ Psycho Fingers is the greatest DJ that I've ever known." | `e01-psycho-fingers-drop.mp3` | Kokoro-82M TTS (kokoro-onnx, Apache-2.0 model + code), voice `af_bella` (picked over af_heart / af_nova: loudest, tightest); FFmpeg chain ([`make_drop_e01.sh`](make_drop_e01.sh)): high-pass 100 Hz, +4 dB at 4 kHz, de-ess, 4:1 compression, echo throw on "known", short plate-style multi-tap reverb, loudness-normalised, limited to about −1 dBFS peak, silence trimmed |
+| E2 | Police siren (wail) | `e02-police-wail.mp3` | square/sine blend swept 550–1450 Hz, reverb |
+| E3 | Police siren (yelp) | `e03-police-yelp.mp3` | fast 3.3 Hz yelp sweep |
+| E4 | European two-tone siren | `e04-euro-two-tone.mp3` | alternating 440 / 587 Hz |
+| E5 | Gunshot (single) | `e05-gunshot-single.mp3` | high-passed noise crack + body + pitched thump, saturation, reverb |
+| E6 | Gunshot (rapid burst) | `e06-gunshot-burst.mp3` | 6 synthetic shots, 85 ms apart |
+| E7 | Gun finger 'pull up' shots | `e07-gun-finger.mp3` | 3 shots + dotted echo + reverb (dancehall style) |
+| E8 | Reload / cock | `e08-reload-cock.mp3` | two resonant metallic clicks + slide noise |
+| E9 | Orchestra hit | `e09-orchestra-hit.mp3` | stacked detuned saw chord (C minor) + sub + noise attack, hall reverb |
+| E10 | Crowd cheer | `e10-crowd-cheer.mp3` | band-passed noise with random swells + synthetic whistles |
+| E11 | Record stop | `e11-record-stop.mp3` | saw chord with vinyl-brake pitch fall to zero |

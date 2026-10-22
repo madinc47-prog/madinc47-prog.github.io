@@ -27,7 +27,7 @@
   function close() { stopPlay(); stopRec(true); ST.open = false; $("studio").hidden = true; }
   function fillPads() {
     var sel = $("st-pad"), S = window.PFSAMPLER; if (!S) return;
-    if (!sel.options.length) ["A", "B", "C", "D"].forEach(function (b) { var g = document.createElement("optgroup"); g.label = "Bank " + b; for (var i = 0; i < 16; i++) { var op = document.createElement("option"); op.value = b + i; g.appendChild(op); } sel.appendChild(g); });
+    if (!sel.options.length) ["A", "B", "C", "D", "E"].forEach(function (b) { var g = document.createElement("optgroup"); g.label = "Bank " + b; for (var i = 0; i < 16; i++) { var op = document.createElement("option"); op.value = b + i; g.appendChild(op); } sel.appendChild(g); });
     Array.prototype.forEach.call(sel.options, function (op) { var p = S.S.pads[op.value]; op.textContent = op.value[0] + (+op.value.slice(1) + 1) + " · " + (p && (p.file || p.user) ? p.name : "empty"); });
     if (!ST.pad) ST.pad = S.firstEmpty() || "A0";
     sel.value = ST.pad;
