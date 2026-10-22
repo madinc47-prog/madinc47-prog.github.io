@@ -24,7 +24,7 @@
   function ac() {
     if (!ctx) {
       ctx = new (window.AudioContext || window.webkitAudioContext)({ latencyHint: "interactive" });
-      master = ctx.createGain(); master.connect(ctx.destination);
+      master = ctx.createGain(); master.gain.value = S.mvol == null ? 1 : S.mvol; master.connect(ctx.destination);
       S.tracks.forEach(trackNodes); S.tracks.forEach(rebuildFx);
       workletReady = ctx.audioWorklet ? ctx.audioWorklet.addModule("multitrack-worklet.js?v=20261021d") : Promise.reject(new Error("AudioWorklet not supported"));
       workletReady.catch(function () { toast("This browser cannot record here (no AudioWorklet). Update Chrome.", 5000); });
@@ -36,7 +36,9 @@
   function trackNodes(t) { if (!ctx || t.gain) return; t.gain = ctx.createGain(); t.fxIn = ctx.createGain(); t.fxIn.connect(t.gain); t.pan = ctx.createStereoPanner ? ctx.createStereoPanner() : null; if (t.pan) { t.gain.connect(t.pan); t.pan.connect(master); } else t.gain.connect(master); }
   function applyMS() {
     var anySolo = S.tracks.some(function (t) { return t.solo; });
-    S.tracks.forEach(function (t) { if (t.gain) t.gain.gain.value = t.mute ? 0 : (anySolo && !t.solo ? 0 : (t.vol == null ? 1 : t.vol)); if (t.pan) t.pan.pan.value = t.pn || 0; }); save();
+    S.tracks.forEach(function (t) { if (t.gain) t.gain.gain.value = t.mute ? 0 : (anySolo && !t.solo ? 0 : (t.vol == null ? 1 : t.vol)); if (t.pan) t.pan.pan.value = t.pn || 0; }); if (master) master.gain.value = S.mvol == null ? 1 : S.mvol;
+    if (curT && !$("sh-trk").hidden && document.activeElement !== $("tk-vol") && document.activeElement !== $("tk-pan")) { $("tk-vol").value = curT.vol == null ? 1 : curT.vol; $("tk-pan").value = curT.pn || 0; }
+    if (window.IPBMixerSync) window.IPBMixerSync(); save();
   }
   function addBuf(buf) {
     var id = uid("b"), pps = 200, n = Math.ceil(buf.duration * pps), pk = new Float32Array(n), d0 = buf.getChannelData(0), d1 = buf.numberOfChannels > 1 ? buf.getChannelData(1) : null, step = buf.sampleRate / pps;
@@ -316,7 +318,7 @@
     else $("rangeinfo").textContent = "No range";
     $("undo").disabled = !undoS.length; $("redo").disabled = !redoS.length;
     $("addtrk").disabled = S.tracks.filter(function (t) { return t.kind === "audio"; }).length >= MAXT;
-    clipBar(); drawPH(); save();
+    clipBar(); drawPH(); if (window.IPBMixerSync) window.IPBMixerSync(true); save();
   }
   function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
   function clipEl(c) {
@@ -580,7 +582,7 @@
   function usedBufs() { var u = {}; S.tracks.forEach(function (t) { t.clips.forEach(function (c) { u[c.buf] = 1; }); t.takes.forEach(function (k) { u[k.buf] = 1; }); }); return Object.keys(u).filter(function (k) { return bufs[k]; }); }
   function state() {
     var o = JSON.parse(snapshot()); o.v = 1; o.nid = nid; o.beatName = S.beatName || ""; o.range = S.range; o.playhead = play ? posNow() : S.playhead;
-    o.pxs = pxs; o.scroll = $("tl").scrollLeft; o.loopOn = loopOn; o.punchOn = punchOn; o.clickOn = clickOn; o.snap = $("snap").value; o.latMs = latMs; o.bufs = usedBufs(); o.saved = Date.now(); o.plugs = []; S.tracks.forEach(function (t) { (t.ins || []).forEach(function (s) { if (s.pid[0] === "u" && LIB[s.pid] && !o.plugs.some(function (q) { return q.id === s.pid; })) o.plugs.push(LIB[s.pid]); }); });
+    o.pxs = pxs; o.scroll = $("tl").scrollLeft; o.loopOn = loopOn; o.punchOn = punchOn; o.clickOn = clickOn; o.snap = $("snap").value; o.latMs = latMs; o.bufs = usedBufs(); o.saved = Date.now(); o.mvol = S.mvol == null ? 1 : S.mvol; o.plugs = []; S.tracks.forEach(function (t) { (t.ins || []).forEach(function (s) { if (s.pid[0] === "u" && LIB[s.pid] && !o.plugs.some(function (q) { return q.id === s.pid; })) o.plugs.push(LIB[s.pid]); }); });
     return o;
   }
   function save() { if (booting) return; clearTimeout(saveT); saveT = setTimeout(saveNow, 600); }
@@ -598,7 +600,7 @@
     ac(); Object.keys(raws).forEach(function (id) { var b = bufFrom(raws[id]); var nid0 = nid; var nb = addBuf(b); nid = nid0; if (nb !== id) { bufs[id] = bufs[nb]; delete bufs[nb]; } });
     S.tracks.forEach(function (t) { if (t.gain) t.gain.disconnect(); });
     S.tracks = []; restore(JSON.stringify(st)); nid = Math.max(nid, st.nid || 1);
-    S.beatName = st.beatName; S.range = st.range || null; S.playhead = st.playhead || 0; S.sel = null;
+    S.mvol = st.mvol == null ? 1 : st.mvol; S.beatName = st.beatName; S.range = st.range || null; S.playhead = st.playhead || 0; S.sel = null;
     loopOn = !!st.loopOn && !!S.range; punchOn = !!st.punchOn && !!S.range; clickOn = !!st.clickOn;
     $("loop").classList.toggle("on", loopOn); $("punch").classList.toggle("on", punchOn); $("click").classList.toggle("on", clickOn);
     if (st.snap != null) $("snap").value = st.snap; if (st.latMs != null) setLat(st.latMs);
@@ -611,7 +613,7 @@
       return out;
     });
   }
-  function fresh() { S.tracks.forEach(function (t) { if (t.gain) t.gain.disconnect(); }); Object.keys(bufs).forEach(function (k) { delete bufs[k]; }); S.tracks = [newTrack("Beat", "beat"), newTrack("Mic 1"), newTrack("Mic 2")]; S.tracks[2].ch = "R"; S.bpm = 90; S.range = null; S.sel = null; S.playhead = 0; S.beatName = ""; undoS = []; redoS = []; $("bpm").value = S.bpm; render(); }
+  function fresh() { S.tracks.forEach(function (t) { if (t.gain) t.gain.disconnect(); }); Object.keys(bufs).forEach(function (k) { delete bufs[k]; }); S.tracks = [newTrack("Beat", "beat"), newTrack("Mic 1"), newTrack("Mic 2")]; S.tracks[2].ch = "R"; S.bpm = 90; S.range = null; S.sel = null; S.playhead = 0; S.beatName = ""; S.mvol = 1; undoS = []; redoS = []; $("bpm").value = S.bpm; render(); }
   function clearActive() { savedBufs = {}; return tx(["meta", "bufs"], "readwrite", function (t) { t.objectStore("meta").delete("active"); t.objectStore("bufs").clear(); }); }
   function saveExit() {
     if (play) stop(); var nm = prompt("Name this session:", (S.beatName || "Session") + " · " + new Date().toLocaleDateString()); if (nm === null) return;
@@ -677,5 +679,5 @@
       };
     };
   }
-  window.IPBMultitrack = { S: S, bufs: bufs, undo: undo, redo: redo, splitClip: splitClip, render: render, start: start, stop: stop, recBtn: recBtn, setLat: setLat, posNow: posNow, placeBeat: placeBeat, saveNow: function () { return saveNow(); }, ready: function () { return booted; }, zoomTo: zoomTo, ctx: function () { return ctx; } };
+  window.IPBMultitrack = { S: S, bufs: bufs, undo: undo, redo: redo, splitClip: splitClip, render: render, start: start, stop: stop, recBtn: recBtn, setLat: setLat, posNow: posNow, placeBeat: placeBeat, saveNow: function () { return saveNow(); }, ready: function () { return booted; }, zoomTo: zoomTo, ctx: function () { return ctx; }, master: function () { return master; }, ac: ac, applyMS: applyMS, openTrk: openTrk, save: save, renderIns: renderIns };
 })();
