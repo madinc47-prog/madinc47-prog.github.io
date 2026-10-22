@@ -16,7 +16,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="apple-touch-icon" href="icons/dj-apple-180.png">
   <meta name="mobile-web-app-capable" content="yes">
-  <link rel="stylesheet" href="dj.css?v=20261022n">
+  <link rel="stylesheet" href="dj.css?v=20261022o">
   <meta name="twitter:card" content="summary">
   <script src="/shared/share.js" defer data-title="DJ Psycho Fingers — Island Pin DJ Booth" data-text="Two scratchable decks, sampler, mic and Auto DJ: a free DJ booth in your browser." data-position="inline" data-target=".topbar .brand" data-compact="700"></script>
 </head>
@@ -42,6 +42,12 @@
     </div>
   </header>
 
+  <section class="waves" aria-label="Waveforms">
+    <canvas id="zoom-A" class="zoom" data-deck="A" height="64"></canvas>
+    <canvas id="zoom-B" class="zoom" data-deck="B" height="64"></canvas>
+  </section>
+
+
   <section class="booth" aria-label="DJ Psycho Fingers">
     <div class="booth-mark" aria-hidden="true"><span>PF</span></div>
     <div class="booth-text">
@@ -52,11 +58,6 @@
     <a class="yt-btn" href="https://www.youtube.com/@emmanuelgriffith4650" target="_blank" rel="noopener noreferrer">
       <span class="yt-ico" aria-hidden="true">▶</span> YouTube <span class="yt-handle">@emmanuelgriffith4650</span>
     </a>
-  </section>
-
-  <section class="waves" aria-label="Waveforms">
-    <canvas id="zoom-A" class="zoom" data-deck="A" height="64"></canvas>
-    <canvas id="zoom-B" class="zoom" data-deck="B" height="64"></canvas>
   </section>
 
   <main class="console">
@@ -193,25 +194,25 @@
   </footer>
   <div class="eco-offer" id="eco-offer" hidden role="status"><span id="eco-msg"></span><button type="button" class="btn small" id="eco-send">Send to Player</button><a class="btn small" id="eco-open" href="../player/" target="psycho-fingers-player" hidden>Open in Player ↗</a><button type="button" class="mini" aria-label="Dismiss" onclick="this.parentNode.hidden=true">✕</button></div>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
-  <script src="dj.js?v=20261022n"></script>
-  <script src="dj-voicefx.js?v=20261022n"></script>
-  <script src="dj-sampler.js?v=20261022n"></script>
-  <script src="dj-studio.js?v=20261022n"></script>
-  <script src="dj-mic.js?v=20261022n"></script>
-  <script src="dj-video.js?v=20261022n"></script>
-  <script src="dj-library.js?v=20261022n"></script>
-  <script src="dj-automatch.js?v=20261022n"></script>
-  <script src="dj-autodj.js?v=20261022n"></script>
-  <script src="dj-eco.js?v=20261022n"></script>
-  <script src="dj-psychoeq.js?v=20261022n"></script>
-  <script src="dj-youtube.js?v=20261022n"></script>
-  <script src="dj-crate.js?v=20261022n"></script>
-  <script src="dj-freestyle.js?v=20261022n"></script>
-  <script src="dj-recordings.js?v=20261022n"></script>
-  <script src="dj-layout.js?v=20261022n"></script>
-  <script src="dj-hw-maps.js?v=20261022n"></script>
-  <script src="dj-hw.js?v=20261022n"></script>
+  <script src="dj.js?v=20261022o"></script>
+  <script src="dj-voicefx.js?v=20261022o"></script>
+  <script src="dj-sampler.js?v=20261022o"></script>
+  <script src="dj-studio.js?v=20261022o"></script>
+  <script src="dj-mic.js?v=20261022o"></script>
+  <script src="dj-video.js?v=20261022o"></script>
+  <script src="dj-library.js?v=20261022o"></script>
+  <script src="dj-automatch.js?v=20261022o"></script>
+  <script src="dj-autodj.js?v=20261022o"></script>
+  <script src="dj-eco.js?v=20261022o"></script>
+  <script src="dj-psychoeq.js?v=20261022o"></script>
+  <script src="dj-youtube.js?v=20261022o"></script>
+  <script src="dj-crate.js?v=20261022o"></script>
+  <script src="dj-freestyle.js?v=20261022o"></script>
+  <script src="dj-recordings.js?v=20261022o"></script>
+  <script src="dj-layout.js?v=20261022o"></script>
+  <script src="dj-hw-maps.js?v=20261022o"></script>
+  <script src="dj-hw.js?v=20261022o"></script>
   <script type="module" src="../shared/ecosystem-nav.js"></script>
-  <script src="dj-pwa.js?v=20261022n" defer></script>
+  <script src="dj-pwa.js?v=20261022o" defer></script>
 </body>
 </html>

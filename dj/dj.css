@@ -905,3 +905,28 @@ body:not(.vdj-page) .talk-dock { bottom: 124px; }
 .hw-st, .hw-log { font-size: 11px; color: var(--muted); margin: 4px 0; word-break: break-word; }
 .hw-note { font-size: 11px; color: var(--muted); }
 .lib-row.hw-sel { outline: 2px solid #22d3ee; }
+
+/* v20261022o: Serato-style wheels — a little larger (80%→88% of the deck square), solid/opaque, floating above the deck, with finger room around them */
+.d-tt { gap: 14px; margin-bottom: 14px; }
+.tt { background: linear-gradient(145deg, #171b25, #0d1016); padding: 0; }
+.platter {
+  left: 6%; top: 5%; width: 88%; padding: 3%;
+  background: radial-gradient(circle, #20242e 0 62%, #2c3240 63% 66%, #15181f 67% 100%);
+  box-shadow: 0 0 0 2px #05060a, 0 0 0 4px #2a3142, 0 14px 22px -4px rgba(0,0,0,.85), 0 26px 40px -12px rgba(0,0,0,.7);
+  transform: translateY(-3px);
+}
+.platter::before { content: ""; position: absolute; inset: 0; border-radius: 50%; pointer-events: none; z-index: 2;
+  background: repeating-conic-gradient(from -1deg, rgba(255,255,255,.55) 0 2deg, transparent 2deg 30deg);
+  -webkit-mask: radial-gradient(circle, transparent 0 94%, #000 95% 98%, transparent 99%); mask: radial-gradient(circle, transparent 0 94%, #000 95% 98%, transparent 99%); }
+.platter.grab { box-shadow: 0 0 0 2px var(--dc), 0 0 0 4px #2a3142, 0 0 24px -4px var(--dc), 0 10px 18px -4px rgba(0,0,0,.85); transform: translateY(-1px); }
+.disc, .sheen { inset: 3%; }
+.disc { background: #0a0b0e; }
+.arm { display: none; }
+.deck.line .platter { opacity: 1; filter: saturate(.4) brightness(.7); }
+.d-tt .d-pitch { margin-left: 4px; }
+/* v20261022o: Serato layout — both scrolling waveforms stacked at the top of the screen, always visible */
+body:not(.vdj-page) .waves { display: grid !important; position: sticky; top: 0; z-index: 30; gap: 3px; padding: 4px 0; margin: 0 auto 8px; background: rgba(11,13,18,.96); }
+body:not(.vdj-page) .zoom { height: 44px; }
+@media (min-width: 900px) and (orientation: landscape) { body:not(.vdj-page) .zoom { height: 34px; } }
+@media (max-width: 560px) { body:not(.vdj-page) .zoom { height: 40px; } }
+@media (min-width: 900px) and (orientation: landscape) { .d-tt { gap: 8px; margin-bottom: 10px; } .d-tt .d-pitch { margin-left: 0; } }
