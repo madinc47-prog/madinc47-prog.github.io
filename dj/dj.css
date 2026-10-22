@@ -817,3 +817,15 @@ body.autodj-on .ad-live .ad-dot { width: 12px; height: 12px; }
   #mixer .strip > .strip-letter { flex: 0 0 100%; text-align: center; }
   #mixer .strip > .fader-row { flex: 0 0 auto; height: 120px; }
 }
+/* crossfader + play always on screen (all sizes) */
+body:not(.vdj-page) .xfbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; max-width: none; width: 100%; margin: 0; border-radius: 14px 14px 0 0; background: rgba(18,21,29,.97); backdrop-filter: blur(8px); padding-bottom: calc(6px + env(safe-area-inset-bottom)); }
+body:not(.vdj-page) { padding-bottom: 120px; }
+body:not(.vdj-page) .talk-dock { bottom: 124px; }
+@media (min-width: 900px) and (orientation: landscape) { body:not(.vdj-page) { padding-bottom: 76px; } body:not(.vdj-page) .talk-dock { bottom: 80px; } }
+@media (min-width: 700px) and (max-width: 1099px) and (orientation: portrait) {
+  .tt { max-width: min(230px, 12vh); }
+  .xfbar .xf-wrap { display: flex; align-items: center; gap: 8px; } .xfbar .xf-wrap > .ctl.xf { flex: 1 1 auto; min-width: 160px; } .xfbar .xf-labels { flex: 0 0 auto; gap: 4px; }
+  body:not(.vdj-page) { padding-bottom: 80px; } body:not(.vdj-page) .talk-dock { bottom: 84px; }
+}
+@media (min-width: 700px) and (max-width: 1099px) and (orientation: portrait) { #mixer .strips { zoom: .72; } }
+@media (min-width: 900px) and (orientation: landscape) { .vdj-page .vdj-prog canvas { max-height: 30vh; } .vdj-page .vdj-deck video { max-height: 16vh; } }
