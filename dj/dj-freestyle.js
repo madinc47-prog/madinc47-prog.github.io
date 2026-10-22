@@ -38,9 +38,9 @@
     return getAll("chunks").then(function (cs) {
       var ids = {}; cs.forEach(function (c) { ids[c.sid] = 1; });
       return Promise.all(Object.keys(ids).filter(function (s) { return !S || S.sid !== s; }).map(function (s) { return finalize(s, null); }));
-    }).then(function (r) { if (r.filter(Boolean).length) P.toast("Recovered " + r.filter(Boolean).length + " unfinished freestyle(s) into My Freestyles"); });
+    }).then(function (r) { if (r.filter(Boolean).length) P.toast("Recovered " + r.filter(Boolean).length + " unfinished freestyle(s) into My Recordings"); });
   }
-  function load() { return getAll("takes").then(function (l) { LIST = l.sort(function (a, b) { return b.created - a.created; }); render(); }); }
+  function load() { return getAll("takes").then(function (l) { LIST = l.sort(function (a, b) { return b.created - a.created; }); render(); if (window.PFREC) window.PFREC.load(); }); }
 
   /* ---------- session ---------- */
   function cur() { var A = window.PFAUTODJ && window.PFAUTODJ.A; return (A && A.cur) || P.DECKS.filter(function (d) { return d.playing; })[0] || null; }
@@ -72,7 +72,7 @@
     clearInterval(s.timer);
     s.mr.onstop = function () {
       setTimeout(function () {
-        finalize(s.sid, { dur: (Date.now() - s.t0) / 1000, bpm: s.bpm }).then(function (t) { load(); if (t) P.toast("Saved “" + t.name + "” to My Freestyles"); });
+        finalize(s.sid, { dur: (Date.now() - s.t0) / 1000, bpm: s.bpm }).then(function (t) { load(); if (t) P.toast("Saved to My Recordings · " + t.name); });
       }, 300);
     };
     try { s.mr.stop(); } catch (e) { /* ignore */ }
@@ -156,5 +156,5 @@
   }
   build();
   recover().then(load).catch(function () { render(); });
-  window.PFFREESTYLE = { start: start, stop: stop, list: function () { return LIST; }, get on() { return !!S; }, horn: horn, nextBeat: nextBeat };
+  window.PFFREESTYLE = { put: put, del: function (t) { return tx(["takes"], "readwrite", function (x) { x.objectStore("takes").delete(t.id); }).then(load); }, start: start, stop: stop, list: function () { return LIST; }, get on() { return !!S; }, horn: horn, nextBeat: nextBeat };
 })();

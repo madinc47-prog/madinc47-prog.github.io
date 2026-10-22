@@ -118,7 +118,7 @@
   function startMix(cur, inc) {
     A.inc = inc; A.phase = "mixing";
     var mp = mixPoint(cur), incLen = inc.buf ? (inc.buf.duration - inc.pos) * 0.45 * P.rate(cur) : mp.len;
-    A.mix = { t0: P.pos(cur), len: Math.max(4, Math.min(mp.len, incLen, cur.buf.duration - P.pos(cur) - 0.3)), swapped: false, curLow: P.CTL[cur.id + ".eqLow"].get(), from: side(cur), to: side(inc) };
+    A.mix = { t0: P.pos(cur), len: Math.max(Math.min(8, cur.buf.duration - P.pos(cur) - 0.3), Math.min(mp.len, incLen, cur.buf.duration - P.pos(cur) - 0.3)), swapped: false, curLow: P.CTL[cur.id + ".eqLow"].get(), from: side(cur), to: side(inc) };
     A.mix.volOnly = !!(cur.ext || inc.ext);                                   // YouTube involved → volume crossfade only (no sync / EQ)
     if (cur.bpm && inc.bpm && !A.mix.volOnly) { inc.sync = false; P.doSync(inc); }
     if (A.mix.volOnly) eqLow(inc, 0);
@@ -126,9 +126,19 @@
     P.play(inc, true);
     P.toast("Auto DJ: mixing in " + inc.name + " over " + A.bars + " bars");
   }
+  /* v20261022n: equal-power transition. Auto DJ drives both crossfader gains itself (cos / sin, ramped every tick,
+     no zipper) regardless of the fader-curve setting or a manual fader position, then hard-stops the outgoing deck. */
+  function adGains(cur, u) {
+    var go = Math.cos(u * Math.PI / 2), gi = Math.sin(u * Math.PI / 2);
+    P.X.adOv = cur === P.DECKS[0] ? [go, gi] : [gi, go];
+  }
+  function clearOv() { if (P.X.adOv) { P.X.adOv = null; } }
   function finishMix() {
     var cur = A.cur, inc = A.inc;
-    P.pause(cur, true); eqLow(cur, A.mix.curLow || 0); eqLow(inc, 0); setXf(side(inc));
+    adGains(cur, 1); P.applyXf();
+    if (cur.loop && cur.loop.on && P.setLoopOn) P.setLoopOn(cur, false);
+    P.pause(cur, true); if (cur.playing) P.pause(cur, true);
+    clearOv(); eqLow(cur, A.mix.curLow || 0); eqLow(inc, 0); setXf(side(inc));
     inc.sync = false; P.ui(inc);
     if (Math.abs(inc.pitch) > 0.05) A.glide = { d: inc, from: inc.pitch, t0: P.pos(inc), len: inc.bpm ? 8 * 240 / inc.bpm : 16 };
     A.cur = inc; A.inc = null; A.mix = null; A.phase = "playing"; A.prepped = null; cur.adItem = null;
@@ -182,8 +192,8 @@
     } else if (A.phase === "mixing") {
       var m = A.mix, inc = A.inc, uu = P.clamp((P.pos(cur) - m.t0) / m.len, 0, 1);
       if (!cur.playing) uu = 1;
-      var sm = uu * uu * (3 - 2 * uu);
-      setXf(m.from + (m.to - m.from) * sm);
+      adGains(cur, uu);
+      setXf(m.from + (m.to - m.from) * uu);                                   // on-screen fader follows; audio = equal power
       if (A.bassSwap && !m.volOnly && !m.swapped && uu >= 0.5) { m.swapped = true; eqLow(cur, -26); eqLow(inc, 0); }
       A.msg = "Mixing into " + inc.name + " · " + Math.round(uu * 100) + "%" + (m.volOnly ? " · volume crossfade (YouTube)" : A.bassSwap ? (m.swapped ? " · bass swapped" : " · bass swap at 50%") : "");
       if (uu >= 1) finishMix();
@@ -207,6 +217,7 @@
     A.on = false; clearInterval(timer); timer = null;
     if (wasMixing && A.inc) { A.inc.sync = false; }
     if (A.prepped && !wasMixing) { var idle = A.cur ? P.other(A.cur) : null; if (idle && idle.buf === A.prepped && !idle.playing) eqLow(idle, 0); }
+    if (wasMixing) { var gx = P.X.adOv; clearOv(); if (gx) setXf(side(gx[0] >= gx[1] ? P.DECKS[0] : P.DECKS[1])); }
     A.phase = "idle"; A.mix = null; A.glide = null; A.prepped = null;
     A.paused = !!pause; A.msg = pause ? "Auto DJ paused — you have control" : "";
     render(); if (msg) P.toast(msg);

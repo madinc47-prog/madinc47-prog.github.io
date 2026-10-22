@@ -30,8 +30,8 @@
 
   /* ---------------- prefs ---------------- */
   function loadPrefs() {
-    var d = { xf: 0, curve: "smooth", ham: false, recFmt: "wav", master: 0.85, decks: { A: {}, B: {} } };
-    try { var s = JSON.parse(localStorage.getItem(PREFS_KEY) || "null"); if (s && typeof s === "object") { d.xf = clamp(+s.xf || 0, -1, 1); d.curve = s.curve === "cut" || s.curve === "scratch" ? s.curve : "smooth"; d.ham = s.ham === true; d.recFmt = s.recFmt === "webm" ? "webm" : "wav"; if (isFinite(+s.master)) d.master = clamp(+s.master, 0, 1); if (s.decks) { d.decks.A = s.decks.A || {}; d.decks.B = s.decks.B || {}; } } } catch (e) { /* ignore */ }
+    var d = { xf: 0, curve: "smooth", ham: false, recFmt: "webm", master: 0.85, decks: { A: {}, B: {} } };
+    try { var s = JSON.parse(localStorage.getItem(PREFS_KEY) || "null"); if (s && typeof s === "object") { d.xf = clamp(+s.xf || 0, -1, 1); d.curve = s.curve === "cut" || s.curve === "scratch" ? s.curve : "smooth"; d.ham = s.ham === true; d.recFmt = s.recFmt === "wav" ? "wav" : "webm"; if (isFinite(+s.master)) d.master = clamp(+s.master, 0, 1); if (s.decks) { d.decks.A = s.decks.A || {}; d.decks.B = s.decks.B || {}; } } } catch (e) { /* ignore */ }
     return d;
   }
   var saveT = null;
@@ -85,9 +85,9 @@
     M.recMix = ctx.createGain(); M.clip.connect(M.recMix);                 // recorder mix: master + speaker-safe mic (not sent to the speakers)
     M.recMix.connect(M.tap); M.tap.connect(M.tapOut); M.tapOut.connect(ctx.destination);
     M.tap.onaudioprocess = function (e) {
-      if (!X.rec || !X.rec.on || !X.rec.L) return;
+      if (!X.rec || !X.rec.on || !X.rec.pcm) return;
       var L = e.inputBuffer.getChannelData(0), R = e.inputBuffer.numberOfChannels > 1 ? e.inputBuffer.getChannelData(1) : L;
-      X.rec.L.push(new Float32Array(L)); X.rec.R.push(new Float32Array(R)); X.rec.n += L.length;
+      pcmPush(X.rec, L, R);
     };
     DECKS.forEach(buildDeckGraph);
     applyXf();
@@ -182,6 +182,7 @@
   /* curves: smooth = equal power; cut = full volume until the last 6 %; scratch = razor cut in the last 1.5 % (fast attack).
      Hamster reverses the fader direction. */
   function xfGains() {
+    if (X.adOv) return X.adOv;                                       // v20261022n: Auto DJ transition owns the gains (equal power)
     var x = ((X.ham ? -X.xf : X.xf) + 1) / 2, w = X.curve === "scratch" ? 0.015 : 0.06;
     if (X.curve !== "smooth") return [x > 1 - w ? Math.max(0, (1 - x) / w) : 1, x < w ? Math.max(0, x / w) : 1];
     return [Math.cos(x * Math.PI / 2), Math.sin(x * Math.PI / 2)];
@@ -190,6 +191,7 @@
     DECKS.forEach(extVol);
     if (!ctx) return;
     var g = xfGains(), t = ctx.currentTime, tc = X.curve === "scratch" ? 0.0012 : 0.006;
+    if (X.adOv) { DECKS.forEach(function (d, i) { var p = d.n.xf.gain; p.cancelScheduledValues(t); p.setValueAtTime(p.value, t); p.linearRampToValueAtTime(g[i], t + 0.1); }); return; }
     DECKS[0].n.xf.gain.setTargetAtTime(g[0], t, tc);
     DECKS[1].n.xf.gain.setTargetAtTime(g[1], t, tc);
   }
@@ -738,43 +740,61 @@
     MIXES.unshift(item); showLib("mixes"); setTimeout(function () { emit("mix", item); }, 0); return item;
   }
   function fmtSize(b) { return b > 1073741824 ? (b / 1073741824).toFixed(2) + " GB" : b < 1048576 ? Math.max(1, Math.round(b / 1024)) + " KB" : (b / 1048576).toFixed(1) + " MB"; }
+  /* v20261022n: REC streams to IndexedDB (window.PFREC, dj-recordings.js) in ~3 s chunks — flat memory, 5 h+ shows,
+     recovered after a crash. WAV = 16-bit PCM chunks (header added on download); Opus = MediaRecorder chunks. */
+  function pcmPush(r, L, R) {
+    for (var i = 0; i < L.length; i++) {
+      var l = L[i] > 1 ? 1 : L[i] < -1 ? -1 : L[i], rr = R[i] > 1 ? 1 : R[i] < -1 ? -1 : R[i], a = l < 0 ? -l : l, b = rr < 0 ? -rr : rr;
+      if (a > r.peak) r.peak = a; if (b > r.peak) r.peak = b;
+      r.pcm[r.k++] = l < 0 ? l * 0x8000 : l * 0x7fff; r.pcm[r.k++] = rr < 0 ? rr * 0x8000 : rr * 0x7fff;
+      if (r.k >= r.pcm.length) pcmFlush(r);
+    }
+    r.n += L.length;
+  }
+  function pcmFlush(r) {
+    if (!r.k) return;
+    var part = r.k === r.pcm.length ? r.pcm : r.pcm.slice(0, r.k);
+    window.PFREC.chunk(r.id, new Blob([part], { type: "application/octet-stream" }));
+    r.pcm = new Int16Array(r.pcm.length); r.k = 0;
+  }
+  function recDone(item) {
+    recUI(false);
+    if (item) toast("Saved to My Recordings · " + item.name + " · " + fmtTime(item.dur) + " · " + fmtSize(item.bytes || 0));
+    else toast("Recording stopped — nothing was captured");
+  }
   function toggleRec() {
     if (!ensureCtx()) return;
-    if (X.rec && X.rec.on && X.rec.mr) { X.rec.on = false; try { X.rec.mr.stop(); } catch (e) { /* ignore */ } return; }
-    if (!(X.rec && X.rec.on) && X.recFmt === "webm") {
-      var mime = pickMime(["audio/webm;codecs=opus", "audio/ogg;codecs=opus", "audio/mp4", "audio/webm"]);
-      if (!mime) { toast("This browser can't record compressed audio — using WAV."); X.recFmt = "wav"; $("rec-fmt").value = "wav"; }
-      else {
-        var mr = new MediaRecorder(audioStream(), { mimeType: mime, audioBitsPerSecond: 160000 }), chunks = [], r = { on: true, mr: mr, bytes: 0, t0: performance.now(), mime: mime };
-        mr.ondataavailable = function (e) { if (e.data && e.data.size) { chunks.push(e.data); r.bytes += e.data.size; } };
-        mr.onstop = function () {
-          var blob = new Blob(chunks, { type: mime.split(";")[0] }), dur = (performance.now() - r.t0) / 1000;
-          X.rec = null; recUI(false);
-          addMix(blob, dur, /ogg/.test(mime) ? "ogg" : /mp4/.test(mime) ? "m4a" : "webm");
-          toast("Show recorded · " + fmtTime(dur) + " · " + fmtSize(blob.size) + " · download it in the crate below");
-        };
-        mr.start(1000); X.rec = r; recUI(true);
-        toast("Recording the whole show (decks, sampler, mic) — compressed Opus ~1.2 MB/min");
-        return;
-      }
-    }
+    var PR = window.PFREC;
+    if (!PR) { toast("Recorder is still loading — try again in a second"); return; }
     if (X.rec && X.rec.on) {
-      X.rec.on = false;
-      var r = X.rec, sr = ctx.sampleRate, blob = encodeWav(r.L, r.R, r.n, sr), dur = r.n / sr;
-      X.rec = null; recUI(false);
-      var item = addMix(blob, dur, "wav"); item.peak = r.peak;
-      toast("Show recorded · " + fmtTime(dur) + " · " + fmtSize(blob.size) + " WAV · download it in the crate below");
+      var r = X.rec; r.on = false; X.rec = null;
+      if (r.mr) { r.mr.onstop = function () { PR.end(r.id, (performance.now() - r.t0) / 1000, null).then(recDone); }; try { r.mr.stop(); } catch (e) { PR.end(r.id, (performance.now() - r.t0) / 1000, null).then(recDone); } }
+      else { pcmFlush(r); PR.end(r.id, r.n / r.sr, r.peak).then(recDone); }
       return;
     }
-    X.rec = { on: true, L: [], R: [], n: 0, t0: ctx.currentTime };
+    var mime = X.recFmt === "webm" ? pickMime(["audio/webm;codecs=opus", "audio/ogg;codecs=opus", "audio/mp4", "audio/webm"]) : null;
+    if (X.recFmt === "webm" && !mime) { toast("This browser can't record compressed audio — using WAV."); X.recFmt = "wav"; $("rec-fmt").value = "wav"; }
+    if (mime) {
+      var mr = new MediaRecorder(audioStream(), { mimeType: mime, audioBitsPerSecond: 160000 });
+      var rr = { on: true, mr: mr, bytes: 0, t0: performance.now(), mime: mime };
+      rr.id = PR.begin("opus", mime, ctx.sampleRate);
+      mr.ondataavailable = function (e) { if (e.data && e.data.size) { rr.bytes += e.data.size; PR.chunk(rr.id, e.data); } };
+      mr.start(3000); X.rec = rr; recUI(true);
+      toast("Recording the whole show to My Recordings (Opus ~1.2 MB/min · saved every 3 s)");
+      return;
+    }
+    var sr = ctx.sampleRate;
+    X.rec = { on: true, pcm: new Int16Array(Math.round(sr * 3) * 2), k: 0, n: 0, peak: 0, sr: sr, t0: ctx.currentTime };
+    X.rec.id = PR.begin("wav", "audio/wav", sr);
     recUI(true);
-    toast("Recording the whole show (decks, sampler, mic) to WAV — ~10 MB/min");
+    toast("Recording the whole show to My Recordings as WAV (~11 MB/min · saved every 3 s)");
   }
+  function stopRecIfOn() { if (X.rec && X.rec.on) toggleRec(); }
   function recUI(on) { $("rec").classList.toggle("on", on); $("rec").textContent = on ? "■ STOP" : "● REC"; $("rec-time").hidden = !on; $("rec-fmt").disabled = on; }
   function recStatus() {
     var r = X.rec; if (!r || !r.on) return "";
-    if (r.mr) { var el = (performance.now() - r.t0) / 1000; return fmtTime(el) + " · " + fmtSize(Math.max(r.bytes, el * 20000)); }
-    return fmtTime(r.n / ctx.sampleRate) + " · " + fmtSize(44 + r.n * 4);
+    if (r.mr) { var el = (performance.now() - r.t0) / 1000; return fmtTime(el) + " · " + fmtSize(Math.max(r.bytes, 1)); }
+    return fmtTime(r.n / r.sr) + " · " + fmtSize(44 + r.n * 4);
   }
   var MIXES = [];
   function encodeWav(Ls, Rs, n, sr) {
@@ -991,7 +1011,7 @@
     $("xf-ham").classList.toggle("on", X.ham);
     $("xf-ham").addEventListener("click", function () { X.ham = !X.ham; $("xf-ham").classList.toggle("on", X.ham); applyXf(); savePrefs(); toast(X.ham ? "Hamster on: crossfader reversed" : "Hamster off"); });
     $("rec-fmt").value = X.recFmt;
-    $("rec-fmt").addEventListener("change", function () { X.recFmt = $("rec-fmt").value === "webm" ? "webm" : "wav"; savePrefs(); });
+    $("rec-fmt").addEventListener("change", function () { X.recFmt = $("rec-fmt").value === "webm" ? "webm" : "wav"; savePrefs(); if (X.recFmt === "wav") toast("WAV is ~660 MB per hour (~3.2 GB for 5 h). For long shows pick Opus (~72 MB/hour)."); });
     $("rec").addEventListener("click", toggleRec);
     document.querySelectorAll(".lib-tab").forEach(function (b) { b.addEventListener("click", function () { showLib(b.dataset.lib); }); });
     $("lib-file").addEventListener("change", function (e) {
@@ -1035,7 +1055,7 @@
     var list = $("lib-list"); list.innerHTML = "";
     if (tab === "beats") BUILTIN.forEach(function (it) { list.appendChild(row(it)); });
     else if (tab === "mixes") {
-      if (!MIXES.length) list.innerHTML = '<p class="empty">Press ● REC in the top bar to record your mix (master output, after the limiter). Recordings stay in this tab until you leave the page — download them to keep.</p>';
+      if (!MIXES.length) list.innerHTML = '<p class="empty">Press ● REC in the top bar to record your mix (master output, after the limiter). REC shows and freestyles save automatically to 📁 My Recordings. Video shows listed here stay until you leave the page — download them to keep.</p>';
       MIXES.forEach(function (m) { list.appendChild(row({ name: m.name, sub: fmtTime(m.dur) + " · " + (m.ext || "wav").toUpperCase() + " · " + fmtSize(m.blob.size), url: m.url, ext: m.ext, noDeck: m.video, mix: m, get: function () { return m.blob.arrayBuffer(); } })); });
     } else if (LIBTABS[tab]) { LIBTABS[tab](list);
     } else {
@@ -1193,7 +1213,7 @@
     on: on, emit: emit, ensureCtx: ensureCtx, toast: toast, fmtTime: fmtTime, fmtSize: fmtSize, clamp: clamp, db2g: db2g, decode: decode,
     loadInto: loadInto, play: play, pause: pause, toggle: toggle, seek: seek, cue: cue, doSync: doSync, setPitch: setPitch, rewind: rewind,
     pos: pos, rawPos: rawPos, rate: rate, effBpm: effBpm, beatLen: beatLen, estimateBpm: estimateBpm, applyDeckMix: applyDeckMix, applyXf: applyXf, xfGains: xfGains,
-    ui: ui, other: other, showLib: showLib, LIBTABS: LIBTABS, addMix: addMix, audioStream: audioStream, pickMime: pickMime, bpmFromName: bpmFromName, isMaster: isMaster,
+    ui: ui, other: other, showLib: showLib, LIBTABS: LIBTABS, addMix: addMix, stopRec: stopRecIfOn, setLoopOn: setLoopOn, audioStream: audioStream, pickMime: pickMime, bpmFromName: bpmFromName, isMaster: isMaster,
     control: control, savePrefs: savePrefs, setKeyShift: setKeyShift, applyKeylock: applyKeylock, KL_D: KL_D, nowPlaying: nowPlaying,
     hotCue: hotCue, setBend: setBend, jogTouch: jogTouch, jogTurn: jogTurn, setExt: setExt, extEnded: extEnded, extState: extState, extVol: extVol,
     get libTab() { return libTab; }, get recording() { return !!(X.rec && X.rec.on); }

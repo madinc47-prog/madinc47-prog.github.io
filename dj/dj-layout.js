@@ -21,7 +21,7 @@
   q("qb-fx", "🎛 FX / EQ", function () { go("#mixer"); });
   if ($("sampler")) q("qb-pads", "🥁 Pads", function () { go("#sampler"); });
   q("qb-lib", "📚 Library", function () { go(".lib-tabs"); });
-  if ($("freestyle")) q("qb-myfs", "📼 My Freestyles", function () { go("#fs-list"); });
+  q("qb-recs", "📁 My Recordings", function () { go("#my-recs"); });
   q("qb-more", "⋯ More", function () { var m = $("more"); m.hidden = !m.hidden; B["qb-more"].classList.toggle("on", !m.hidden); if (!m.hidden) go(m); });
   if (top && top.parentNode) top.parentNode.insertBefore(qb, top.nextSibling);
 
