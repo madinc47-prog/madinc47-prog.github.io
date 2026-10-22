@@ -1,0 +1,19 @@
+{
+  "id": "./",
+  "name": "DJ Psycho Fingers – DJ Decks",
+  "short_name": "DJ Decks",
+  "description": "Two scratchable turntables, mixer, sampler, mic, Auto DJ and show recording — DJ Psycho Fingers' booth.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "display_override": ["fullscreen", "standalone"],
+  "orientation": "any",
+  "theme_color": "#0b0d12",
+  "background_color": "#0b0d12",
+  "categories": ["music", "entertainment"],
+  "icons": [
+    { "src": "icons/dj-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/dj-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/dj-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
