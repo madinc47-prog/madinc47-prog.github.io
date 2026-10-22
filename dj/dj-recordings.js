@@ -44,9 +44,9 @@
   }
 
   /* ---------- REC API (used by dj.js) ---------- */
-  function begin(kind, mime, sr) {
+  function begin(kind, mime, sr, label) {
     var now = Date.now(), id = "mix_" + now.toString(36);
-    var m = { id: id, type: "mix", name: MIX + " · " + stamp(now), created: now, kind: kind, mime: mime, sr: sr, done: false, bytes: 0, dur: 0 };
+    var m = { id: id, type: "mix", name: (label || MIX) + " · " + stamp(now), created: now, kind: kind, mime: mime, sr: sr, done: false, bytes: 0, dur: 0 };
     Q[id] = { i: 0, bytes: 0, p: putMeta(m).catch(function () { P.toast("Couldn't open storage — this recording can't be saved here."); }), meta: m };
     warned = false; checkSpace(); clearInterval(watch); watch = setInterval(checkSpace, 20000);
     return id;

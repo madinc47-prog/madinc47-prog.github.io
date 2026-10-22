@@ -1,0 +1,62 @@
+/* DJ Psycho Fingers — v20261022q "No headphones — voice only" (modeled on Beat Studio's toggle). OFF by default = mic unchanged.
+ * ON: mic opens with echoCancellation ONLY (no noise suppression, no auto-gain, mono, 48 kHz ideal) so the browser cancels the
+ * beat coming out of the speaker; the mic never goes to the speaker; and while ● REC or Live Freestyle runs, the mic is ALSO
+ * recorded on its own straight from the mic stream (no Web Audio, no gain, no filters → no resampling, no clipping added) as
+ * Opus 192 kbps → "Voice only" in My Recordings. The show recording keeps the beat digitally from the internal bus. Only the
+ * setting is stored. */
+(function () {
+  "use strict";
+  var P = window.PFDJ; if (!P) return;
+  var K = "pfdj_nohp", V = null;
+  function on() { try { return localStorage.getItem(K) === "1"; } catch (e) { return false; } }
+  function recording() { var r = document.getElementById("rec"); return !!((r && r.classList.contains("on")) || (window.PFFREESTYLE && window.PFFREESTYLE.on)); }
+  function ui() {
+    var v = on();
+    document.querySelectorAll(".js-nohp").forEach(function (b) { b.classList.toggle("on", v); b.setAttribute("aria-pressed", String(v)); b.querySelector(".nh-s").textContent = v ? "ON · voice only, beat cancelled" : "OFF · raw mic"; });
+  }
+  function set(v) {
+    if (recording()) { P.toast("Change this between recordings."); return; }
+    try { localStorage.setItem(K, v ? "1" : "0"); } catch (e) { /* ignore */ }
+    ui();
+    var M = window.PFMIC; if (M) { M.route(); if (M.info().on) M.start(true); }
+    P.toast(v ? "No headphones ON: mic echo-cancel only (cancels the speaker beat), voice also saved on its own while recording" : "No headphones OFF: mic unchanged (raw)");
+  }
+  function button() {
+    var b = document.createElement("button"); b.type = "button"; b.className = "nohp-btn js-nohp"; b.setAttribute("aria-pressed", "false");
+    b.title = "Recording with friends on the speaker? ON = the mic catches voices, not the beat (browser echo-cancel only, nothing else). OFF = raw mic.";
+    b.innerHTML = '<span class="nh-l">🔇 No headphones</span><span class="nh-s"></span>';
+    b.addEventListener("click", function () { set(!on()); });
+    return b;
+  }
+  function place() {
+    var dock = document.querySelector(".talk-dock"); if (dock && !dock.querySelector(".js-nohp")) dock.appendChild(button());
+    var fs = document.getElementById("freestyle"); if (fs && !fs.querySelector(".js-nohp")) { var h = fs.querySelector(".fs-head"); (h || fs).insertAdjacentElement("afterend", button()); }
+    var rec = document.getElementById("rec"); if (rec && !document.getElementById("nohp-rec")) { var b = button(); b.id = "nohp-rec"; b.classList.add("nohp-sm"); rec.parentNode.insertBefore(b, rec.nextSibling); }
+    ui();
+  }
+  /* separate clean voice track while recording */
+  function startVoice(st) {
+    var mime = P.pickMime(["audio/webm;codecs=opus", "audio/ogg;codecs=opus", "audio/mp4"]); if (!mime || !window.PFREC) return;
+    var tr = st.getAudioTracks()[0], sr = (tr && tr.getSettings && tr.getSettings().sampleRate) || 48000;
+    var mr; try { mr = new MediaRecorder(st, { mimeType: mime, audioBitsPerSecond: 192000 }); } catch (e) { return; }
+    var id = window.PFREC.begin("opus", mime, sr, "Voice only (no headphones)");
+    V = { mr: mr, id: id, st: st, t0: performance.now() };
+    mr.ondataavailable = function (e) { if (e.data && e.data.size) window.PFREC.chunk(id, e.data); };
+    mr.onstop = function () { setTimeout(function () { window.PFREC.end(id, (performance.now() - V0.t0) / 1000, null).then(function (m) { if (m) P.toast("Voice-only track saved to My Recordings"); }); }, 200); };
+    var V0 = V; mr.start(3000);
+  }
+  function stopVoice() {
+    var v = V; V = null; if (!v) return;
+    if (v.mr.state !== "inactive") try { v.mr.stop(); } catch (e) { /* onstop finalizes */ }
+  }
+  if (window.PFFREESTYLE) { var fsStop = window.PFFREESTYLE.stop; window.PFFREESTYLE.stop = function () { stopVoice(); return fsStop.apply(this, arguments); }; }
+  setInterval(function () {
+    var M = window.PFMIC, st = M && M.stream && M.stream(), want = on() && recording() && st && st.active;
+    if (V && (!want || V.st !== st)) stopVoice();
+    if (want && !V) startVoice(st);
+  }, 400);
+  window.addEventListener("pagehide", function () { if (V) try { V.mr.requestData(); } catch (e) { /* ignore */ } });
+  window.addEventListener("storage", function (e) { if (e.key === K) ui(); });
+  place(); setTimeout(place, 1500); setTimeout(place, 4000);
+  window.PFNOHP = { on: on, set: set, info: function () { return { on: on(), voiceRec: !!V }; } };
+})();

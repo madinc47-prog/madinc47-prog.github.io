@@ -38,7 +38,8 @@
     return N;
   }
   /* speakers vs headphones: with no headphones the mic goes ONLY into the show recording (never out of the speaker) → no howl, no echo */
-  function toSpeakers() { return C.hp === "on" || (C.hp === "auto" && phones); }
+  function nohp() { try { return localStorage.getItem("pfdj_nohp") === "1"; } catch (e) { return false; } }
+  function toSpeakers() { if (nohp()) return false; return C.hp === "on" || (C.hp === "auto" && phones); }
   function route() {
     if (!N || !P.M) return;
     try { N.post.disconnect(); } catch (e) { /* ignore */ }
@@ -79,7 +80,7 @@
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { P.toast("This browser can't use the microphone here (needs HTTPS and mic permission)."); return; }
     if (!graph()) return;
     starting = true;
-    navigator.mediaDevices.getUserMedia({ audio: (function () { var raw = window.PFDJ_MICDEV && window.PFDJ_MICRAW, c = { echoCancellation: raw ? false : C.ec, noiseSuppression: raw ? false : C.ns, autoGainControl: raw ? false : C.agc, channelCount: 1 }; if (window.PFDJ_MICDEV) c.deviceId = { exact: window.PFDJ_MICDEV }; return c; })(), video: false }).then(function (st) {
+    navigator.mediaDevices.getUserMedia({ audio: (function () { var raw = window.PFDJ_MICDEV && window.PFDJ_MICRAW, c = { echoCancellation: raw ? false : C.ec, noiseSuppression: raw ? false : C.ns, autoGainControl: raw ? false : C.agc, channelCount: 1 }; if (nohp()) c = { echoCancellation: true, noiseSuppression: false, autoGainControl: false, channelCount: 1, sampleRate: { ideal: 48000 } }; /* v20261022q No headphones: echo-cancel only */ if (window.PFDJ_MICDEV) c.deviceId = { exact: window.PFDJ_MICDEV }; return c; })(), video: false }).then(function (st) {
       starting = false;
       stopStream();
       stream = st; N.src = P.ctx.createMediaStreamSource(st); N.src.connect(N.inG);
@@ -159,5 +160,5 @@
     P.on("play", function () { if (N) apply(); });
   }
   build();
-  window.PFMIC = { start: start, stop: stop, state: state, route: route, info: function () { return { on: on, state: state(), phones: phones, speakers: toSpeakers(), gate: gateOpen, C: C, duck: duckOn, music: P.M ? P.M.music.gain.value : 1, level: on ? level() : null }; } };
+  window.PFMIC = { stream: function () { return stream; }, nohp: nohp, start: start, stop: stop, state: state, route: route, info: function () { return { on: on, state: state(), phones: phones, speakers: toSpeakers(), gate: gateOpen, C: C, duck: duckOn, music: P.M ? P.M.music.gain.value : 1, level: on ? level() : null }; } };
 })();
