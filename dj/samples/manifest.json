@@ -1,111 +1,118 @@
 {
- "pack": "DJ Psycho Fingers sample pack v1 (generated 2026-10-03 with free TTS + synthesis)",
+ "pack": "DJ Psycho Fingers sample pack v2 (2026-10-22): universal DJ one-shots, elderly-woman voice tags",
  "banks": {
   "A": [
    {
     "pad": 0,
-    "file": "a01-dj-psycho-fingers.mp3",
-    "name": "DJ Psycho Fingers!",
+    "file": "a01-dj-psycho-fingers-gran.mp3",
+    "name": "DJ Psycho Fingers! (Gran)",
     "cat": "voice",
-    "dur": 8.25
+    "dur": 2.01
    },
    {
     "pad": 1,
-    "file": "a02-on-the-decks.mp3",
-    "name": "Psycho Fingers on the decks",
+    "file": "a02-on-the-decks-gran.mp3",
+    "name": "On the decks (Gran)",
     "cat": "voice",
-    "dur": 2.48
+    "dur": 2.22
    },
    {
     "pad": 2,
-    "file": "a03-dominica-stand-up.mp3",
-    "name": "Dominica stand up!",
+    "file": "a03-yeah.mp3",
+    "name": "Yeah!",
     "cat": "voice",
-    "dur": 3.76
+    "dur": 0.89
    },
    {
     "pad": 3,
-    "file": "a04-nature-isle.mp3",
-    "name": "Nature Isle",
+    "file": "a04-hey.mp3",
+    "name": "Hey!",
     "cat": "voice",
-    "dur": 3.01
+    "dur": 1.04
    },
    {
     "pad": 4,
-    "file": "a05-island-pin.mp3",
-    "name": "Island Pin",
+    "file": "a05-come-on.mp3",
+    "name": "Come on!",
+    "cat": "voice",
+    "dur": 1.02
+   },
+   {
+    "pad": 5,
+    "file": "a06-make-some-noise.mp3",
+    "name": "Make some noise!",
+    "cat": "voice",
+    "dur": 1.49
+   },
+   {
+    "pad": 6,
+    "file": "a07-rewind-gran.mp3",
+    "name": "Rewind!",
+    "cat": "voice",
+    "dur": 1.07
+   },
+   {
+    "pad": 7,
+    "file": "a08-run-it-back-gran.mp3",
+    "name": "Run it back!",
+    "cat": "voice",
+    "dur": 1.2
+   },
+   {
+    "pad": 8,
+    "file": "a09-big-tune-gran.mp3",
+    "name": "Big tune!",
+    "cat": "voice",
+    "dur": 1.2
+   },
+   {
+    "pad": 9,
+    "file": "a10-lets-go.mp3",
+    "name": "Let's go!",
+    "cat": "voice",
+    "dur": 1.54
+   },
+   {
+    "pad": 10,
+    "file": "a11-hands-up.mp3",
+    "name": "Put your hands up!",
+    "cat": "voice",
+    "dur": 1.49
+   },
+   {
+    "pad": 11,
+    "file": "a12-one-more-time.mp3",
+    "name": "One more time!",
+    "cat": "voice",
+    "dur": 1.41
+   },
+   {
+    "pad": 12,
+    "file": "a13-turn-it-up.mp3",
+    "name": "Turn it up!",
+    "cat": "voice",
+    "dur": 1.28
+   },
+   {
+    "pad": 13,
+    "file": "a14-oh-yeah.mp3",
+    "name": "Oh yeah!",
+    "cat": "voice",
+    "dur": 1.2
+   },
+   {
+    "pad": 14,
+    "file": "a15-in-the-mix-gran.mp3",
+    "name": "In the mix (Gran)",
     "cat": "voice",
     "dur": 2.12
    },
    {
-    "pad": 5,
-    "file": "a06-wheel-it-up.mp3",
-    "name": "Wheel it up!",
+    "pad": 15,
+    "file": "a16-laugh.mp3",
+    "name": "Laugh",
     "cat": "voice",
-    "dur": 3.59
-   },
-   {
-    "pad": 6,
-    "file": "a07-rewind.mp3",
-    "name": "Rewind!",
-    "cat": "voice",
-    "dur": 3.03
-   },
-   {
-    "pad": 7,
-    "file": "a08-run-it-back.mp3",
-    "name": "Run it back",
-    "cat": "voice",
-    "dur": 1.78
-   },
-   {
-    "pad": 8,
-    "file": "a09-big-tune.mp3",
-    "name": "Big tune!",
-    "cat": "voice",
-    "dur": 3.07
-   },
-   {
-    "pad": 9,
-    "file": "a10-selector.mp3",
-    "name": "Selector!",
-    "cat": "voice",
-    "dur": 3.3
-   },
-   {
-    "pad": 10,
-    "file": "a11-boo-yaka.mp3",
-    "name": "Boo-yaka! shout",
-    "cat": "voice",
-    "dur": 3.65
-   },
-   {
-    "pad": 11,
-    "file": "a12-pull-up.mp3",
-    "name": "Pull up! Pull up!",
-    "cat": "voice",
-    "dur": 2.17
-   },
-   {
-    "pad": 12,
-    "file": "a13-come-again.mp3",
-    "name": "Come again!",
-    "cat": "voice",
-    "dur": 2.09
-   },
-   {
-    "pad": 13,
-    "file": "a14-big-up-dominica.mp3",
-    "name": "Big up Dominica!",
-    "cat": "voice",
-    "dur": 2.57
-   },
-   {
-    "pad": 14,
-    "file": "a15-in-the-mix.mp3",
-    "name": "Psycho Fingers in the mix",
-    "cat": "voice",
-    "dur": 4.06
+    "dur": 1.67
    }
   ],
   "B": [
@@ -267,24 +274,24 @@
    },
    {
     "pad": 6,
-    "file": "c07-fresh-stab.mp3",
-    "name": "'Fresh' stab",
-    "cat": "scratch",
-    "dur": 1.01
+    "file": "c07-fresh-stab-gran.mp3",
+    "name": "'Fresh!' stab",
+    "cat": "voice",
+    "dur": 0.91
    },
    {
     "pad": 7,
-    "file": "c08-yeah-stab.mp3",
+    "file": "c08-yeah-stab-gran.mp3",
     "name": "'Yeah!' stab",
     "cat": "voice",
-    "dur": 1.2
+    "dur": 0.89
    },
    {
     "pad": 8,
-    "file": "c09-hey-stab.mp3",
+    "file": "c09-hey-stab-gran.mp3",
     "name": "'Hey!' stab",
     "cat": "voice",
-    "dur": 2.95
+    "dur": 1.04
    },
    {
     "pad": 9,
@@ -309,10 +316,10 @@
    },
    {
     "pad": 12,
-    "file": "c13-reverse-rewind.mp3",
+    "file": "c13-rewind-swell-gran.mp3",
     "name": "Reverse 'Rewind' swell",
     "cat": "voice",
-    "dur": 2.58
+    "dur": 1.44
    },
    {
     "pad": 13,
@@ -367,31 +374,31 @@
    },
    {
     "pad": 6,
-    "file": "d07-dancehall-kick.mp3",
-    "name": "Dancehall kick",
-    "cat": "hit",
-    "dur": 0.7
+    "file": "d07-whistle.mp3",
+    "name": "Whistle",
+    "cat": "fx",
+    "dur": 0.94
    },
    {
     "pad": 7,
-    "file": "d08-dancehall-snare.mp3",
-    "name": "Dancehall snare + rim",
+    "file": "d08-bell.mp3",
+    "name": "Bell",
     "cat": "hit",
-    "dur": 0.35
+    "dur": 2.53
    },
    {
     "pad": 8,
-    "file": "d09-timbale-fill.mp3",
-    "name": "Timbale fill",
+    "file": "d09-dubstep-wobble.mp3",
+    "name": "Dubstep wobble hit",
     "cat": "hit",
-    "dur": 1.25
+    "dur": 1.65
    },
    {
     "pad": 9,
-    "file": "d10-steel-pan-stab.mp3",
-    "name": "Steel pan stab",
+    "file": "d10-snap.mp3",
+    "name": "Finger snap",
     "cat": "hit",
-    "dur": 1.91
+    "dur": 0.34
    },
    {
     "pad": 10,

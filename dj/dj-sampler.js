@@ -280,7 +280,7 @@
       (rows || []).forEach(function (r) {
         var p = S.pads[r.key]; if (!p || !(r.blob || r.url)) return;
         p.name = r.name || "Sample"; p.buf = null; p.loopS = +r.loopS || 0; p.loopE = +r.loopE || 0;
-        if (r.blob) { p.user = true; p.blob = r.blob; p.cat = "user"; } else { p.user = false; p.file = r.url; p.cat = r.cat || ""; }
+        if (r.blob) { p.user = true; p.blob = r.blob; p.cat = "user"; } else { p.user = false; p.file = r.url; p.cat = r.cat || ""; if (typeof OLDV1 !== "undefined" && OLDV1.indexOf(String(r.url).replace(/^.*samples\//, "")) >= 0) { p.file = null; p.name = ""; } }
         render(p);
       });
       if (P.ctx) { S.loadedAll = false; loadAll(); }
@@ -343,15 +343,20 @@
   }
   /* v20261022i: ready out of the box — fill EMPTY pads with the pack layout (banks A–E), once per pack version.
      Pads he customised (or cleared after a preload) are never touched; the Sample Studio / browser swap path is unchanged. */
-  var PRE_K = "pfdj_pads_preload", PRE_V = "e1", PCACHE = "pfdj-pads-v1";
+  var PRE_K = "pfdj_pads_preload", PRE_V = "p2", PCACHE = "pfdj-pads-v2";
+  /* v2 pack (20261022m): old island-specific files → universal one-shots. Pads still pointing at an old pack file are
+     moved to the v2 sample on the same pad; his own pads (blobs / other URLs) are never touched. */
+  var OLDV1 = ["a01-dj-psycho-fingers.mp3", "a02-on-the-decks.mp3", "a03-dominica-stand-up.mp3", "a04-nature-isle.mp3", "a05-island-pin.mp3", "a06-wheel-it-up.mp3", "a07-rewind.mp3", "a08-run-it-back.mp3", "a09-big-tune.mp3", "a10-selector.mp3", "a11-boo-yaka.mp3", "a12-pull-up.mp3", "a13-come-again.mp3", "a14-big-up-dominica.mp3", "a15-in-the-mix.mp3", "c07-fresh-stab.mp3", "c08-yeah-stab.mp3", "c09-hey-stab.mp3", "c13-reverse-rewind.mp3", "d07-dancehall-kick.mp3", "d08-dancehall-snare.mp3", "d09-timbale-fill.mp3", "d10-steel-pan-stab.mp3"];
+  if (window.caches) caches.delete("pfdj-pads-v1").catch(function () { /* ignore */ });
   function preload() {
     var done = ""; try { done = localStorage.getItem(PRE_K) || ""; } catch (e) { /* ignore */ }
     if (done === PRE_V) return;
     fetch("samples/manifest.json").then(function (r) { return r.json(); }).then(function (m) {
-      var keep = S.bank, urls = [], n = 0, banks = done ? ["E"] : BANKS;   // earlier preload already filled A–D: only add the new bank
+      var keep = S.bank, urls = [], n = 0, banks = BANKS;
       banks.forEach(function (b) { (m.banks[b] || []).forEach(function (e) {
         var url = "samples/" + e.file; urls.push(url);
-        var p = S.pads[key(b, e.pad)]; if (!p || p.file || p.user) return;
+        var p = S.pads[key(b, e.pad)]; if (!p || p.user) return;
+        if (p.file && OLDV1.indexOf(String(p.file).replace(/^.*samples\//, "")) < 0) return;
         assign(p.k, { name: e.name, url: url, cat: e.cat }); n++;
       }); });
       try { localStorage.setItem(PRE_K, PRE_V); } catch (e) { /* ignore */ }

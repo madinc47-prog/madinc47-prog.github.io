@@ -1,11 +1,11 @@
 /* DJ Psycho Fingers PWA service worker (scope /dj/). Network-first for the app shell so updates always arrive;
- * falls back to cache offline. Pad samples: served from the existing "pfdj-pads-v1" cache (cache-first).
+ * falls back to cache offline. Pad samples: served from the "pfdj-pads-v2" cache (cache-first).
  * User music never touches this worker (it lives in IndexedDB / blob: URLs); media, ranges and cross-origin are passed through. */
-var VER = "20261022l", SHELL = "pfdj-shell-" + VER, PADS = "pfdj-pads-v1";
+var VER = "20261022m", SHELL = "pfdj-shell-" + VER, PADS = "pfdj-pads-v2";
 var CORE = ["./", "index.html", "video.html", "dj.css", "manifest.webmanifest", "video.webmanifest", "icons/dj-192.png", "icons/vdj-192.png", "samples/manifest.json"];
 self.addEventListener("install", function (e) { e.waitUntil(caches.open(SHELL).then(function (c) { return c.addAll(CORE); }).catch(function () {}).then(function () { return self.skipWaiting(); })); });
 self.addEventListener("activate", function (e) {
-  e.waitUntil(caches.keys().then(function (ks) { return Promise.all(ks.filter(function (k) { return k.indexOf("pfdj-shell-") === 0 && k !== SHELL; }).map(function (k) { return caches.delete(k); })); }).then(function () { return self.clients.claim(); }));
+  e.waitUntil(caches.keys().then(function (ks) { return Promise.all(ks.filter(function (k) { return (k.indexOf("pfdj-shell-") === 0 && k !== SHELL) || (k.indexOf("pfdj-pads-") === 0 && k !== PADS); }).map(function (k) { return caches.delete(k); })); }).then(function () { return self.clients.claim(); }));
 });
 self.addEventListener("fetch", function (e) {
   var r = e.request, u = new URL(r.url);
