@@ -22,3 +22,28 @@ Optional: the free plan's built-in email sender is limited to a few sign-in emai
 - `profiles` — display name (≤24), tagline (≤40, user-written), role, village name + village centre (coords limited to Dominica, rounded), `visible` (default **off**), WhatsApp (stored only while "show" is on), avatar URL, last_seen. Readable only when visible (or your own); writable only by the owner.
 - `messages` — DMs readable only by sender/recipient; sender forced to the signed-in user; 1–1000 chars; rate limit 20/min and 300/day; realtime enabled.
 - Storage bucket `avatars` — public read, JPEG/WebP only, max 300 KB, each user can write only `avatars/<their-id>.jpg`.
+
+---
+# Collab Room (1-to-1 calls) — extra steps before launch
+
+The room page (`/collab/room.html`) stays **"not launched"** until a TURN relay is in `collab/config.js`.
+Without TURN, calls fail on many mobile-carrier, hotel and work networks (symmetric NAT). The page has a
+**Test my connection** button that tells you whether a relay is reachable.
+
+The SQL above already creates `rooms` + `room_signals` (step 2 — re-run it if you ran an older copy).
+Rooms are strictly **1-to-1**: only the inviter and the accepted invitee can read/write them; members can't be
+changed; nobody else can join or watch. Invites must be accepted.
+
+## Pick ONE free TURN (do not paste any secret/API key into config.js other than what's described)
+**Option A — Metered "Open Relay" (simplest).** Free: **20 GB TURN relay per month** (ports 80/443, TCP/UDP, TLS).
+1. Sign up free at https://www.metered.ca/tools/openrelay/ → dashboard → **TURN Server** → create credential.
+2. Copy the `iceServers` array it shows (turn: URLs + username + credential) into `iceServers` in `collab/config.js`.
+   Note: that credential is public in the page; others could use your 20 GB. Set a usage cap in the dashboard.
+
+**Option B — Cloudflare Realtime TURN.** Free: **1,000 GB/month** (shared with Cloudflare's SFU), then $0.05/GB.
+1. Free Cloudflare account → Dashboard → **Realtime → TURN Server** → Create → note the Token ID + API token.
+2. Cloudflare credentials are short-lived and must be minted server-side with the API token (never put the API token
+   in the page). This needs one tiny Supabase Edge Function (`turn-creds`) — ask Grok Bot to add it once you have the token.
+
+Rough usage: an audio-only call relayed ≈ 50–100 MB/hour; with video ≈ 0.5–1 GB/hour. Most calls connect directly
+and use no TURN at all.

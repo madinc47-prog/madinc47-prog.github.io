@@ -108,6 +108,10 @@ function openCard(p){
   $("card-meta").textContent=[$("f-role").querySelector('option[value="'+(p.role||"other").replace(/[^a-z]/g,"")+'"]')?.textContent||"",p.village,online(p)?"🟢 online now":""].filter(Boolean).join(" · ");
   var wa=$("card-wa"); if(p.show_whatsapp&&/^[0-9]{7,15}$/.test(p.whatsapp||"")){ wa.href="https://wa.me/"+p.whatsapp+"?text="+encodeURIComponent("Hi "+p.display_name+", saw you on Island Pin Collab Map — let's collab!"); wa.hidden=false } else wa.hidden=true;
   $("card-msg").hidden=!!(me&&me.id===p.id);
+  $("card-room").hidden=!!(me&&me.id===p.id);
+  $("card-room").onclick=async function(){ if(!me){ hide("card"); openMe(); return }
+    if(!window.CollabCore.turnConfigured()){ status("Collab Room isn't launched yet (needs a TURN relay) — opening the connection test."); location.href="room.html"; return }
+    try{ await window.CollabCore.me(); var r=await window.CollabCore.invite(p.id,"collab-room"); await sendMsg(p.id,"🎧 I invited you to a 1-to-1 Collab Room — open the Collab Map to accept."); location.href="room.html?id="+r.id }catch(x){ status("Invite failed: "+x.message) } };
   $("card-msg").onclick=function(){ if(!me){ hide("card"); openMe(); status("Sign in to message."); return } hide("card"); openThread(p.id) };
   show("card");
 }
@@ -177,6 +181,9 @@ async function start(){
   if(session){ try{ await loadMe(); $("me-label").textContent=(myProfile&&myProfile.display_name)||"My profile"; $("btn-inbox").hidden=false; if(!myProfile) openMe() }catch(e){ session=null; me=null; saveS(); status("Please sign in again.") } }
   try{ await loadPeople() }catch(e){ status("Couldn't load the map people: "+e.message) }
   if(me){ heartbeat(); setInterval(heartbeat,60000); loadMsgs().catch(function(){}); connectRT(); setInterval(function(){loadMsgs().catch(function(){})},20000) }
+  if(me){ var checkInv=async function(){ try{ await window.CollabCore.me(); var inv=await window.CollabCore.myInvites(), box=$("invites"); box.textContent=""; box.hidden=!inv.length;
+      inv.forEach(function(r){ var a=document.createElement("a"); a.className="btn primary"; a.href="room.html?id="+encodeURIComponent(r.id); a.textContent="🎧 "+nameOf(r.host)+" invited you to a Collab Room — open"; box.appendChild(a) }) }catch(e){} };
+    checkInv(); setInterval(checkInv,20000) }
   setInterval(function(){ if(!document.hidden) loadPeople().catch(function(){}) },60000);
   document.addEventListener("visibilitychange",function(){ if(!document.hidden){ heartbeat(); loadPeople().catch(function(){}) } });
 }

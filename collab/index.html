@@ -7,7 +7,7 @@
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <title>Collab Map · Island Pin</title>
 <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
-<link rel="stylesheet" href="collab.css?v=20261022a">
+<link rel="stylesheet" href="collab.css?v=20261022b">
 </head>
 <body>
 <header class="top">
@@ -22,6 +22,7 @@
   <b>Setup pending.</b> The Collab Map needs its free shared database switched on before anyone can sign in or appear on it.
   Nobody is shown yet — no fake users. (Owner: see <a href="SETUP.md">SETUP.md</a>.)
 </div>
+<div id="invites" class="pending" hidden></div>
 <div id="status" class="status" role="status" aria-live="polite"></div>
 <main id="map" aria-label="Map of Dominica with collaborators by village"></main>
 <p class="legend">Only villages are shown — never an exact address. People appear only if they turn sharing on. <span class="ring-demo"></span> online now</p>
@@ -34,6 +35,7 @@
     <div class="row">
       <a id="card-wa" class="btn wa" target="_blank" rel="noopener noreferrer" hidden>🟢 WhatsApp</a>
       <button id="card-msg" class="btn primary">💬 Message</button>
+      <button id="card-room" class="btn">🎧 Invite to room</button>
     </div>
   </div>
 </div>
@@ -86,6 +88,7 @@
 <script src="config.js"></script>
 <script src="villages.js"></script>
 <script src="vendor/leaflet/leaflet.js"></script>
-<script src="collab.js?v=20261022a"></script>
+<script src="../shared/collab-core.js?v=20261022b"></script>
+<script src="collab.js?v=20261022b"></script>
 </body>
 </html>

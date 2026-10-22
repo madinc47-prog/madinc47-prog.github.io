@@ -97,3 +97,85 @@ create policy "avatars owner update" on storage.objects for update to authentica
 drop policy if exists "avatars owner delete" on storage.objects;
 create policy "avatars owner delete" on storage.objects for delete to authenticated
   using (bucket_id = 'avatars' and split_part(name, '.', 1) = auth.uid()::text);
+
+-- =====================================================================
+-- 1-to-1 ROOMS (shared by every collab feature in the suite — see /shared/COLLAB-POLICY.md)
+-- Exactly two people: host (inviter) + guest (invitee). Invite must be accepted. No third party, no observers.
+-- =====================================================================
+create table if not exists public.rooms (
+  id          uuid primary key default gen_random_uuid(),
+  app         text not null default 'collab-room' check (app ~ '^[a-z0-9-]{2,32}$'),
+  host        uuid not null references auth.users(id) on delete cascade default auth.uid(),
+  guest       uuid not null references auth.users(id) on delete cascade,
+  status      text not null default 'invited' check (status in ('invited','active','declined','ended')),
+  created_at  timestamptz not null default now(),
+  updated_at  timestamptz not null default now(),
+  check (host <> guest)
+);
+create index if not exists rooms_guest on public.rooms (guest, status);
+create index if not exists rooms_host on public.rooms (host, status);
+
+create or replace function public.is_room_member(r uuid) returns boolean language sql stable security definer set search_path = public as $$
+  select exists (select 1 from public.rooms where id = r and auth.uid() in (host, guest));
+$$;
+create or replace function public.is_room_active_member(r uuid) returns boolean language sql stable security definer set search_path = public as $$
+  select exists (select 1 from public.rooms where id = r and status = 'active' and auth.uid() in (host, guest));
+$$;
+
+create or replace function public.rooms_guard() returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  if tg_op = 'INSERT' then
+    new.host := auth.uid(); new.status := 'invited'; new.created_at := now();
+    if (select count(*) from public.rooms where host = new.host and created_at > now() - interval '1 hour') >= 30
+      then raise exception 'Too many invites — try again later'; end if;
+  else
+    -- members can never be changed => nobody can be swapped in or added
+    if new.host <> old.host or new.guest <> old.guest or new.app <> old.app or new.id <> old.id then raise exception 'Room members are fixed'; end if;
+    if old.status in ('ended','declined') then raise exception 'Room is closed'; end if;
+    if new.status in ('active','declined') and old.status = 'invited' and auth.uid() <> old.guest then raise exception 'Only the invitee can accept or decline'; end if;
+    if new.status = 'active' and old.status <> 'invited' and old.status <> 'active' then raise exception 'Bad state'; end if;
+  end if;
+  new.updated_at := now();
+  return new;
+end $$;
+drop trigger if exists rooms_guard on public.rooms;
+create trigger rooms_guard before insert or update on public.rooms for each row execute function public.rooms_guard();
+
+alter table public.rooms enable row level security;
+drop policy if exists "room members read" on public.rooms;
+create policy "room members read" on public.rooms for select using (auth.uid() in (host, guest));
+drop policy if exists "invite as host" on public.rooms;
+create policy "invite as host" on public.rooms for insert to authenticated with check (auth.uid() = host and guest <> auth.uid());
+drop policy if exists "members update" on public.rooms;
+create policy "members update" on public.rooms for update to authenticated using (auth.uid() in (host, guest)) with check (auth.uid() in (host, guest));
+
+-- Signaling (WebRTC offer/answer/ICE, beat-sync, lyrics) — only the two members of an ACTIVE room.
+create table if not exists public.room_signals (
+  id          bigint generated always as identity primary key,
+  room_id     uuid not null references public.rooms(id) on delete cascade,
+  sender      uuid not null references auth.users(id) on delete cascade default auth.uid(),
+  kind        text not null check (kind in ('hello','offer','answer','ice','bye','sync','lyrics','chat','ctl')),
+  payload     jsonb not null default '{}'::jsonb check (pg_column_size(payload) <= 16000),
+  created_at  timestamptz not null default now()
+);
+create index if not exists room_signals_room on public.room_signals (room_id, id);
+create or replace function public.room_signals_guard() returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  new.sender := auth.uid(); new.created_at := now();
+  if (select count(*) from public.room_signals where sender = new.sender and created_at > now() - interval '1 minute') >= 600
+    then raise exception 'Signal rate limit'; end if;
+  return new;
+end $$;
+drop trigger if exists room_signals_guard on public.room_signals;
+create trigger room_signals_guard before insert on public.room_signals for each row execute function public.room_signals_guard();
+alter table public.room_signals enable row level security;
+drop policy if exists "members read signals" on public.room_signals;
+create policy "members read signals" on public.room_signals for select using (public.is_room_member(room_id));
+drop policy if exists "active members send" on public.room_signals;
+create policy "active members send" on public.room_signals for insert to authenticated with check (sender = auth.uid() and public.is_room_active_member(room_id));
+-- old signals are useless; anyone in the room may clear them
+drop policy if exists "members clear" on public.room_signals;
+create policy "members clear" on public.room_signals for delete using (public.is_room_member(room_id));
+
+do $$ begin alter publication supabase_realtime add table public.rooms; exception when duplicate_object then null; end $$;
+do $$ begin alter publication supabase_realtime add table public.room_signals; exception when duplicate_object then null; end $$;
