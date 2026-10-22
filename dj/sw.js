@@ -1,7 +1,7 @@
 /* DJ Psycho Fingers PWA service worker (scope /dj/). Network-first for the app shell so updates always arrive;
  * falls back to cache offline. Pad samples: served from the existing "pfdj-pads-v1" cache (cache-first).
  * User music never touches this worker (it lives in IndexedDB / blob: URLs); media, ranges and cross-origin are passed through. */
-var VER = "20261022k2", SHELL = "pfdj-shell-" + VER, PADS = "pfdj-pads-v1";
+var VER = "20261022l", SHELL = "pfdj-shell-" + VER, PADS = "pfdj-pads-v1";
 var CORE = ["./", "index.html", "video.html", "dj.css", "manifest.webmanifest", "video.webmanifest", "icons/dj-192.png", "icons/vdj-192.png", "samples/manifest.json"];
 self.addEventListener("install", function (e) { e.waitUntil(caches.open(SHELL).then(function (c) { return c.addAll(CORE); }).catch(function () {}).then(function () { return self.skipWaiting(); })); });
 self.addEventListener("activate", function (e) {

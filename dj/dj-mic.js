@@ -79,7 +79,7 @@
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { P.toast("This browser can't use the microphone here (needs HTTPS and mic permission)."); return; }
     if (!graph()) return;
     starting = true;
-    navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: C.ec, noiseSuppression: C.ns, autoGainControl: C.agc, channelCount: 1 }, video: false }).then(function (st) {
+    navigator.mediaDevices.getUserMedia({ audio: (function () { var raw = window.PFDJ_MICDEV && window.PFDJ_MICRAW, c = { echoCancellation: raw ? false : C.ec, noiseSuppression: raw ? false : C.ns, autoGainControl: raw ? false : C.agc, channelCount: 1 }; if (window.PFDJ_MICDEV) c.deviceId = { exact: window.PFDJ_MICDEV }; return c; })(), video: false }).then(function (st) {
       starting = false;
       stopStream();
       stream = st; N.src = P.ctx.createMediaStreamSource(st); N.src.connect(N.inG);

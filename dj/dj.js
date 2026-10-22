@@ -384,6 +384,19 @@
     d.wl.port.postMessage({ t: "rate", rate: d.playing ? rate(d) : 0, tau: d.playing ? 0.085 : 0.05 });
     d.scr.want = d.playing ? rate(d) : 0;
   }
+  /* v20261022l: hardware jog (MIDI). touch=true → vinyl scratch from the wheel top; jogTurn(ticks) scratches while touched, else nudges */
+  var JOG_TICKS = 512;                  // ~ticks per platter revolution on 4-6" controller jogs
+  function jogTouch(d, on) {
+    if (!d.buf || d.ext || !ensureCtx()) return;
+    if (on) { if (!d.vinyl || !scratchOK(d)) return; var p = rawPos(d), sc = scrBegin(d); sc.gen++; sc.hold = false; d.jogH = { p: p }; d.wl.port.postMessage({ t: "pos", pos: p, tau: 0.012 }); emit("manual", d); }
+    else if (d.jogH) { d.jogH = null; if (d.scr) { d.wl.port.postMessage({ t: "rate", rate: d.playing ? rate(d) : 0, tau: d.playing ? 0.085 : 0.05 }); d.scr.want = d.playing ? rate(d) : 0; } }
+  }
+  function jogTurn(d, ticks) {
+    if (!d.buf || d.ext) return;
+    if (d.jogH && d.scr) { d.jogH.p = Math.max(0, d.jogH.p + ticks / JOG_TICKS * SEC_PER_REV); d.wl.port.postMessage({ t: "pos", pos: d.jogH.p, tau: 0.012 }); return; }
+    if (!d.playing) { seek(d, Math.max(0, pos(d) + ticks / JOG_TICKS * SEC_PER_REV)); return; }
+    setBend(d, clamp(ticks * 0.01, -0.2, 0.2)); clearTimeout(d.jogBT); d.jogBT = setTimeout(function () { setBend(d, 0); }, 90);
+  }
   /* CDJ cue: paused → set the cue here; playing → jump back to the cue and stop */
   function cue(d) {
     if (!d.buf) return;
@@ -1182,7 +1195,7 @@
     pos: pos, rawPos: rawPos, rate: rate, effBpm: effBpm, beatLen: beatLen, estimateBpm: estimateBpm, applyDeckMix: applyDeckMix, applyXf: applyXf, xfGains: xfGains,
     ui: ui, other: other, showLib: showLib, LIBTABS: LIBTABS, addMix: addMix, audioStream: audioStream, pickMime: pickMime, bpmFromName: bpmFromName, isMaster: isMaster,
     control: control, savePrefs: savePrefs, setKeyShift: setKeyShift, applyKeylock: applyKeylock, KL_D: KL_D, nowPlaying: nowPlaying,
-    setExt: setExt, extEnded: extEnded, extState: extState, extVol: extVol,
+    hotCue: hotCue, setBend: setBend, jogTouch: jogTouch, jogTurn: jogTurn, setExt: setExt, extEnded: extEnded, extState: extState, extVol: extVol,
     get libTab() { return libTab; }, get recording() { return !!(X.rec && X.rec.on); }
   };
   buildUI();

@@ -895,3 +895,13 @@ body:not(.vdj-page) .talk-dock { bottom: 124px; }
 .pad.looping .pad-loop { animation: padspin 1.6s linear infinite; }
 @keyframes padloop { 0%,100% { box-shadow: 0 0 8px -2px var(--pc); } 50% { box-shadow: 0 0 22px 2px var(--pc); } }
 @keyframes padspin { to { transform: rotate(360deg); } }
+
+/* v20261022l: hardware panel */
+.hw-panel { margin: 10px; padding: 12px; border: 1px solid var(--line); border-radius: 12px; background: #10131a; }
+.hw-head { display: flex; justify-content: space-between; align-items: center; }
+.hw-sec { margin-top: 10px; } .hw-sec h3 { font-size: 13px; margin: 0 0 6px; color: var(--muted); }
+.hw-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 4px 0; font-size: 13px; }
+.hw-row select { max-width: 100%; }
+.hw-st, .hw-log { font-size: 11px; color: var(--muted); margin: 4px 0; word-break: break-word; }
+.hw-note { font-size: 11px; color: var(--muted); }
+.lib-row.hw-sel { outline: 2px solid #22d3ee; }
