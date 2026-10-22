@@ -6,6 +6,7 @@
   "use strict";
   var P = window.PFDJ; if (!P) return;
   var $ = function (id) { return document.getElementById(id); };
+  var WAITQ = "Waiting for tracks — queue more and it carries on";
   var AK = "pfdj_autodj_v1", CK = "pfdj_anal_v1";
   var A = { on: false, paused: false, played: [], loop: true, queue: [], bars: 16, shuffle: false, order: "queue", bassSwap: true, phase: "idle", cur: null, inc: null, mix: null, glide: null, prepped: null, loadingNext: false, nextItem: null, analyzing: 0, msg: "" };
   try { var s = JSON.parse(localStorage.getItem(AK) || "null"); if (s) { A.bars = [4, 8, 16, 32].indexOf(s.bars) >= 0 ? s.bars : 16; A.shuffle = !!s.shuffle; A.order = s.order === "bpm" ? "bpm" : "queue"; A.bassSwap = s.bassSwap !== false; } } catch (e) { /* ignore */ }
@@ -144,7 +145,7 @@
         if (ready) { prep(ready); eqLow(ready, 0); setXf(side(ready)); P.play(ready, true); A.cur = ready; A.phase = "playing"; A.prepped = null; render(); return; }
         var d0 = D[0], it = pickNext();
         if (!it && fillQueue()) it = pickNext();
-        if (!it) { stop("Auto DJ: nothing to play — add tracks from your library or the crate."); return; }
+        if (!it) { if (A.msg !== WAITQ) { A.msg = WAITQ; P.toast("Auto DJ is ON and waiting — add tracks from your library or the crate."); } renderStatus(); return; }  // stays ON (only the switch turns it off)
         A.phase = "starting"; A.msg = "Loading " + it.name + "…"; renderStatus();
         var a = anaOf(it), li = Object.assign({}, it); if (a && a.bpm) { li.bpm = a.bpm; li.grid = a.grid; }
         P.loadInto(d0, li, true).then(function (ok) {
@@ -162,7 +163,7 @@
     if (A.phase === "playing") {
       if (!idle.playing && !A.loadingNext && (!idle.adItem || !idle.buf)) {
         if (!A.queue.length && !A.played.length) fillQueue();
-        if (!loadNext(idle)) { A.msg = "Playing " + cur.name + " — queue is empty"; if (P.pos(cur) > cur.buf.duration - 1) stop("Auto DJ: end of the queue."); }
+        if (!loadNext(idle)) { A.msg = "Playing " + cur.name + " — queue is empty"; if (P.pos(cur) > cur.buf.duration - 1) { A.cur = null; A.msg = WAITQ; } }
       }
       if (A.loadingNext && A.nextItem) A.msg = "Loading next: " + A.nextItem.name + "…";
       else if (idle.buf && idle.adItem && A.prepped !== idle.buf) A.msg = "Analyzing " + idle.name + "…";
@@ -197,7 +198,7 @@
     A.msg = A.cur ? "Taking over from " + A.cur.name + "…" : "Starting…";
     if (!timer) timer = setInterval(tick, 80);
     tick(); pump(); render();
-    P.toast("Auto DJ on" + (added ? " — queued " + added + " track" + (added === 1 ? "" : "s") + " from the crate" : "") + " · touch any deck, EQ or the crossfader to take over");
+    P.toast("Auto DJ on" + (added ? " — queued " + added + " track" + (added === 1 ? "" : "s") + " from the crate" : "") + " · stays on until you switch it off");
   }
   function stop(msg, pause) {
     var wasMixing = A.phase === "mixing";
@@ -208,21 +209,17 @@
     A.paused = !!pause; A.msg = pause ? "Auto DJ paused — you have control" : "";
     render(); if (msg) P.toast(msg);
   }
-  // manual takeover: any touch on the decks, mixer strips or crossfader (not the master knob, not the Auto DJ button)
-  document.addEventListener("pointerdown", function (e) {
-    if (!A.on || !e.isTrusted) return;
-    var t = e.target;
-    if (t.closest && t.closest(".console, .xfbar, .waves") && !t.closest("#autodj-btn, .master, .xf-play, #ad-live")) stop("Auto DJ paused — you've got the controls (tap Resume to hand back)", true);
-  }, true);
-  P.on("manual", function () { if (A.on) stop("Auto DJ paused — you've got the controls (tap Resume to hand back)", true); });
+  /* v20261022: NO manual takeover. Touches, scratches, faders, crossfader, cue/play, pads and keys never switch
+     Auto DJ off — manual tweaks just apply and Auto DJ keeps going. Only the AUTO DJ switch (or its ✕ / Stop) turns it off. */
 
   /* ---------- UI ---------- */
   function renderStatus() {
-    var b = $("autodj-btn"); if (b) { b.classList.toggle("on", A.on); b.textContent = A.on ? "AUTO DJ ●" : "AUTO DJ"; }
+    var b = $("autodj-btn"); if (b) { b.classList.toggle("on", A.on); b.textContent = A.on ? "AUTO DJ: ON ●" : "AUTO DJ: OFF"; b.setAttribute("aria-pressed", A.on ? "true" : "false"); }
+    document.body.classList.toggle("autodj-on", A.on);
     var lv = $("ad-live");
     if (lv) {
       lv.hidden = !A.on && !A.paused;
-      $("ad-live-msg").textContent = A.on ? "Auto DJ · " + (A.msg || "Running…") + (A.analyzing && !/Analyzing/.test(A.msg) ? " · analysing " + A.analyzing + "…" : "") : A.msg;
+      $("ad-live-msg").textContent = A.on ? "● AUTO DJ ON · " + (A.msg || "Running…") + (A.analyzing && !/Analyzing/.test(A.msg) ? " · analysing " + A.analyzing + "…" : "") : A.msg;
       $("ad-resume").hidden = A.on || !A.paused;
       $("ad-live").classList.toggle("paused", !A.on && A.paused);
     }
@@ -253,7 +250,7 @@
       '<button type="button" class="pill small" id="ad-shuffle">SHUFFLE</button><button type="button" class="pill small" id="ad-bass">BASS SWAP</button>' +
       '<button type="button" class="btn small" id="ad-builtins">+ His beats &amp; demos</button><button type="button" class="btn small ghost" id="ad-clear">Clear</button></div>' +
       '<p class="ad-status mono" id="ad-status"></p><div id="ad-queue" class="lib-list"></div>' +
-      '<p class="lib-note">Auto DJ detects each track\'s BPM, beat grid and outro (cached), syncs the next track, starts the blend ' + '<b>N bars</b> before the music ends (on a 4-bar phrase), crossfades with a bass swap halfway, then glides the tempo back to the track\'s own BPM. Touch any deck, EQ, fader or the crossfader to take over.</p>';
+      '<p class="lib-note">Auto DJ detects each track\'s BPM, beat grid and outro (cached), syncs the next track, starts the blend ' + '<b>N bars</b> before the music ends (on a 4-bar phrase), crossfades with a bass swap halfway, then glides the tempo back to the track\'s own BPM. Once on, it stays on through any touch, scratch, fader or crossfader move — only the AUTO DJ switch turns it off.</p>';
     var sb = $("ad-start"); sb.textContent = A.on ? "■ Stop Auto DJ" : "▶ Start Auto DJ"; sb.onclick = function () { if (A.on) stop("Auto DJ off"); else start(); tab(list); };
     $("ad-bars").value = String(A.bars); $("ad-bars").onchange = function () { A.bars = +$("ad-bars").value; save(); };
     $("ad-order").value = A.order; $("ad-order").onchange = function () { A.order = $("ad-order").value; save(); };
