@@ -654,6 +654,28 @@
   fresh(); requestAnimationFrame(meters);
   booted = loadUser().then(loadActive).then(function (r) {
     if (r && r.st) { apply(r.st, r.raws); Object.keys(r.raws).forEach(function (k) { savedBufs[k] = 1; }); toast("Session restored" + (r.st.beatName ? ": " + r.st.beatName : ""), 3000); }
-  }).catch(function (e) { toast("Could not restore session: " + (e && e.message || e), 5000); }).then(function () { booting = false; });
+  }).catch(function (e) { toast("Could not restore session: " + (e && e.message || e), 5000); }).then(function () { booting = false; }).then(importInbox);
+  /* Inbox: audio sent from other apps (Lyrics Lab, My Freestyles) lands on the first empty audio track at 0:00 */
+  function importInbox() {
+    if (!window.indexedDB) return;
+    var r; try { r = indexedDB.open("ipb_inbox", 1); } catch (e) { return; }
+    r.onupgradeneeded = function () { r.result.createObjectStore("items", { keyPath: "id" }); };
+    r.onsuccess = function () {
+      var d = r.result, q = d.transaction("items").objectStore("items").getAll();
+      q.onsuccess = function () {
+        var items = (q.result || []).filter(function (x) { return x.to === "multitrack" && x.blob; }); if (!items.length) { d.close(); return; }
+        items.reduce(function (pr, it) {
+          return pr.then(function () { return it.blob.arrayBuffer(); }).then(decode).then(function (buf) {
+            var t = S.tracks.filter(function (x) { return x.kind !== "beat" && !x.clips.length; })[0] || S.tracks.filter(function (x) { return x.kind !== "beat"; })[0]; if (!t) return;
+            edit(); var id = addBuf(buf), c = mkClip(id, 0, 0, buf.duration, it.name || "Imported");
+            carve(t, 0, buf.duration); t.clips.push(c); t.takes.push({ buf: id, name: c.name, at: 0, dur: buf.duration });
+            render(); toast("Added “" + (it.name || "audio") + "” to " + t.name);
+          }).catch(function () { toast("Could not import " + (it.name || "audio")); }).then(function () {
+            return new Promise(function (res) { var x = d.transaction("items", "readwrite"); x.objectStore("items").delete(it.id); x.oncomplete = res; x.onerror = res; });
+          });
+        }, Promise.resolve()).then(function () { d.close(); });
+      };
+    };
+  }
   window.IPBMultitrack = { S: S, bufs: bufs, undo: undo, redo: redo, splitClip: splitClip, render: render, start: start, stop: stop, recBtn: recBtn, setLat: setLat, posNow: posNow, placeBeat: placeBeat, saveNow: function () { return saveNow(); }, ready: function () { return booted; }, zoomTo: zoomTo, ctx: function () { return ctx; } };
 })();
