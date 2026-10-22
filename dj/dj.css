@@ -694,3 +694,14 @@ a.vdj-tg { display: inline-flex; align-items: center; text-decoration: none; }
 }
 .topbar .back { min-width: 44px; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; }
 #vdj-rec { min-height: 44px; }
+
+/* v20261022b: one-tap TALK (voiceover) */
+.talk-dock { position: fixed; right: 12px; bottom: 12px; z-index: 60; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+.vdj-page .talk-dock { bottom: 96px; }
+.talk-btn { min-width: 150px; min-height: 76px; border-radius: 40px; border: 3px solid var(--hot, #f43f5e); background: #1a0b10; color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 8px 18px; font: inherit; cursor: pointer; box-shadow: 0 6px 20px rgba(0,0,0,.5); touch-action: manipulation; }
+.talk-l { font-size: 20px; font-weight: 900; letter-spacing: .04em; }
+.talk-s { font-size: 11px; opacity: .85; }
+.talk-btn[data-state=live] { background: var(--hot, #f43f5e); animation: pulse 1.6s infinite; }
+.talk-btn[data-state=muted] { background: #5a4a10; border-color: var(--warn, #fbbf24); }
+.talk-btn[data-state=blocked] { background: #333; border-color: #888; }
+.talk-mute { min-height: 48px; min-width: 110px; border-radius: 24px; border: 2px solid var(--warn, #fbbf24); background: #221a05; color: #fff; font-weight: 800; }

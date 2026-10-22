@@ -82,7 +82,8 @@
     // recorder tap (ScriptProcessor: supported everywhere; muted output keeps it running)
     M.tap = ctx.createScriptProcessor(4096, 2, 2);
     M.tapOut = ctx.createGain(); M.tapOut.gain.value = 0;
-    M.clip.connect(M.tap); M.tap.connect(M.tapOut); M.tapOut.connect(ctx.destination);
+    M.recMix = ctx.createGain(); M.clip.connect(M.recMix);                 // recorder mix: master + speaker-safe mic (not sent to the speakers)
+    M.recMix.connect(M.tap); M.tap.connect(M.tapOut); M.tapOut.connect(ctx.destination);
     M.tap.onaudioprocess = function (e) {
       if (!X.rec || !X.rec.on || !X.rec.L) return;
       var L = e.inputBuffer.getChannelData(0), R = e.inputBuffer.numberOfChannels > 1 ? e.inputBuffer.getChannelData(1) : L;
@@ -715,7 +716,7 @@
   /* ---------------- mix recorder ---------------- */
   function audioStream() {           // master output as a MediaStream (for compressed / video recording)
     if (!ensureCtx()) return null;
-    if (!M.dest) { M.dest = ctx.createMediaStreamDestination(); M.clip.connect(M.dest); }
+    if (!M.dest) { M.dest = ctx.createMediaStreamDestination(); M.recMix.connect(M.dest); }
     return M.dest.stream;
   }
   function pickMime(list) { if (!window.MediaRecorder) return null; for (var i = 0; i < list.length; i++) if (MediaRecorder.isTypeSupported(list[i])) return list[i]; return null; }
