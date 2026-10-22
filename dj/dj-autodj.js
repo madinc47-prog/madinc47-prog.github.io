@@ -106,7 +106,17 @@
     d.pos = d.bpm ? g : 0; d.cue = d.pos; d.loop.on = false;
     eqLow(d, A.bassSwap ? -26 : 0); A.prepped = d.buf; P.ui(d);
   }
+  /* v20261022u: decks view (index.html) only — fixed 6 s overlap: next track starts 6 s before the outgoing music ends
+     (nearest beat), 6 s equal-power fade, outgoing fully out + stopped at 6 s. Other views keep the bars setting. */
+  var SIX = !/video\.html$/.test(location.pathname), FADE = 6;
   function mixPoint(d) {
+    if (SIX) {
+      var it6 = d.adItem, a6 = it6 && anaOf(it6), dur6 = d.buf.duration, bar6 = d.bpm ? 240 / d.bpm : 0, len6 = FADE * (d.ext ? 1 : P.rate(d));
+      var end6 = a6 && a6.end ? Math.min(dur6, a6.end) : dur6, st6 = end6 - len6;
+      if (d.bpm) st6 = d.grid + Math.round((st6 - d.grid) / (bar6 / 4)) * (bar6 / 4);
+      st6 = Math.max(Math.min(30, dur6 * 0.4), Math.min(st6, dur6 - len6 - 0.3));
+      return { start: st6, len: Math.max(0.5, Math.min(len6, dur6 - st6 - 0.3)) };
+    }
     var it = d.adItem, a = it && anaOf(it), dur = d.buf.duration, bar = d.bpm ? 240 / d.bpm : 8, len = A.bars * bar;
     if (d.ext || P.other(d).ext) len = Math.min(len, 12);                      // YouTube: plain volume crossfade, ~12 s
     var end = a && a.end ? Math.min(dur, a.end) : dur, outro = a && a.outro ? a.outro : end;
@@ -118,13 +128,13 @@
   function startMix(cur, inc) {
     A.inc = inc; A.phase = "mixing";
     var mp = mixPoint(cur), incLen = inc.buf ? (inc.buf.duration - inc.pos) * 0.45 * P.rate(cur) : mp.len;
-    A.mix = { t0: P.pos(cur), len: Math.max(Math.min(8, cur.buf.duration - P.pos(cur) - 0.3), Math.min(mp.len, incLen, cur.buf.duration - P.pos(cur) - 0.3)), swapped: false, curLow: P.CTL[cur.id + ".eqLow"].get(), from: side(cur), to: side(inc) };
+    A.mix = { t0: P.pos(cur), len: SIX ? Math.max(0.5, Math.min(FADE * (cur.ext ? 1 : P.rate(cur)), cur.buf.duration - P.pos(cur) - 0.3)) : Math.max(Math.min(8, cur.buf.duration - P.pos(cur) - 0.3), Math.min(mp.len, incLen, cur.buf.duration - P.pos(cur) - 0.3)), swapped: false, curLow: P.CTL[cur.id + ".eqLow"].get(), from: side(cur), to: side(inc) };
     A.mix.volOnly = !!(cur.ext || inc.ext);                                   // YouTube involved → volume crossfade only (no sync / EQ)
     if (cur.bpm && inc.bpm && !A.mix.volOnly) { inc.sync = false; P.doSync(inc); }
     if (A.mix.volOnly) eqLow(inc, 0);
     if (window.PFMATCH && window.PFMATCH.on && !A.mix.volOnly) window.PFMATCH.keyMatch(inc, true);   // AUTO MATCH: shift the incoming track to a compatible key (≤ 3 st)
     P.play(inc, true);
-    P.toast("Auto DJ: mixing in " + inc.name + " over " + A.bars + " bars");
+    P.toast("Auto DJ: mixing in " + inc.name + " over " + (SIX ? "6 s" : A.bars + " bars"));
   }
   /* v20261022n: equal-power transition. Auto DJ drives both crossfader gains itself (cos / sin, ramped every tick,
      no zipper) regardless of the fader-curve setting or a manual fader position, then hard-stops the outgoing deck. */
