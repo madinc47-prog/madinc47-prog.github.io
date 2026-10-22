@@ -829,3 +829,36 @@ body:not(.vdj-page) .talk-dock { bottom: 124px; }
 }
 @media (min-width: 700px) and (max-width: 1099px) and (orientation: portrait) { #mixer .strips { zoom: .72; } }
 @media (min-width: 900px) and (orientation: landscape) { .vdj-page .vdj-prog canvas { max-height: 30vh; } .vdj-page .vdj-deck video { max-height: 16vh; } }
+
+/* v20261022f: TALK lives in the quick bar (no floating button over the decks); Shuffle toggle; tidy top links */
+.quickbar .talk-dock.in-qb { position: static; flex: 0 0 auto; flex-direction: row; align-items: stretch; gap: 6px; z-index: auto; }
+.quickbar .talk-dock.in-qb .talk-btn { min-width: 0; min-height: 44px; border-radius: 12px; border-width: 2px; padding: 0 14px; flex-direction: row; gap: 6px; box-shadow: none; }
+.quickbar .talk-dock.in-qb .talk-l { font-size: 14px; }
+.quickbar .talk-dock.in-qb .talk-s { display: none; }
+.quickbar .talk-dock.in-qb .talk-mute { min-height: 44px; min-width: 0; padding: 0 12px; border-radius: 12px; }
+.qb-shuf.on { background: #7c3aed; color: #fff; border-color: #7c3aed; }
+.toplink { display: inline-flex; align-items: center; }
+@media (max-width: 1099px) { .quickbar .talk-dock.in-qb { flex: 1 1 auto; } .quickbar .talk-dock.in-qb .talk-btn { flex: 1 1 auto; justify-content: center; } }
+
+/* v20261022f: Samsung Galaxy phones (A17 ≈ 412×915, 360×800, landscape ≈ 915×412). Phone-only: Tab/desktop untouched. */
+@media (max-width: 480px), (max-height: 480px) and (orientation: landscape) and (max-width: 1000px) {
+  .pill.small, .btn.small, .btn, .pill, .kill, .mini, .hot, .pl-b, .lib-tab, .smp-bank, .toplink, .qb, .peq-btn { min-height: 44px; min-width: 44px; }
+  .kill, .hot { flex: 1 1 44px; }
+  .mini.peq-btn, .peq .kill, .mixer .kill { min-height: 44px !important; min-width: 44px !important; }
+  .hot { min-width: 0; max-width: 100%; }
+  *:has(> .hot) { display: flex; flex-wrap: wrap; } *:has(> .hot) > .hot { flex: 1 1 calc(25% - 6px); min-width: 44px; }
+  *:has(> .pill.small), *:has(> .kill), *:has(> .hot), *:has(> .btn.small) { flex-wrap: wrap; }
+  .pl-b { padding: 0 10px; }
+  .pl-row { min-height: 48px; }
+  input[type=checkbox] { width: 24px; height: 24px; }
+  label:has(> input[type=checkbox]) { min-height: 44px; display: inline-flex; align-items: center; gap: 6px; }
+  .lib-tabs { overflow-x: auto; max-width: 100%; }
+  html, body { overflow-x: hidden; }
+}
+/* phone landscape: short screen — one swipeable row for the quick bar, compact top bar */
+@media (max-height: 480px) and (orientation: landscape) and (max-width: 1000px) {
+  .quickbar { flex-wrap: nowrap; overflow-x: auto; padding: 4px 8px; }
+  .quickbar .qb, .quickbar .talk-dock.in-qb { flex: 0 0 auto; }
+  .topbar { padding-top: 4px; padding-bottom: 4px; }
+  #mixer .strips, #mixer .master { zoom: 1; }
+}

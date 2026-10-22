@@ -75,6 +75,8 @@
     if (P.libTab === "mylib" && window.PFLIB && window.PFLIB.L.tracks.length) items = window.PFLIB.L.tracks.map(window.PFLIB.item);
     if (!items.length) SOURCES.forEach(function (fn) { try { items = items.concat(fn() || []); } catch (e) { /* ignore */ } });
     if (!items.length) items = P.BUILTIN.map(builtinItem);
+    /* v20261022f: playlist order = oldest first, newest added go to the END (stable sort; items without a date keep their place) */
+    items = items.map(function (it, i) { return [it, i]; }).sort(function (x, y) { var a = x[0].added, b = y[0].added; return (a != null && b != null && a !== b) ? a - b : x[1] - y[1]; }).map(function (x) { return x[0]; });
     items.forEach(function (it) { if (busy.indexOf(it.key) < 0) add(it, true); });
     if (!A.queue.length && busy.some(Boolean)) P.BUILTIN.forEach(function (b) { var it = builtinItem(b); if (busy.indexOf(it.key) < 0) add(it, true); });
     return A.queue.length - before;
@@ -266,6 +268,6 @@
   var rs = $("ad-resume"); if (rs) rs.addEventListener("click", function () { start(); });
   var rx = $("ad-live-x"); if (rx) rx.addEventListener("click", function () { if (A.on) stop("Auto DJ off"); else { A.paused = false; A.msg = ""; renderStatus(); } });
   renderStatus();
-  window.PFAUTODJ = { A: A, add: add, fillQueue: fillQueue, sources: SOURCES, start: start, stop: stop, analyzeBuf: analyzeBuf, mixPoint: mixPoint, builtins: builtins,
+  window.PFAUTODJ = { A: A, add: add, fillQueue: fillQueue, sources: SOURCES, start: start, stop: stop, analyzeBuf: analyzeBuf, mixPoint: mixPoint, builtins: builtins, setShuffle: function (v) { A.shuffle = !!v; save(); var sh = $("ad-shuffle"); if (sh) sh.classList.toggle("on", A.shuffle); },
     info: function () { return { on: A.on, phase: A.phase, queue: A.queue.map(function (q) { return { name: q.name, bpm: bpmOf(q), ana: anaOf(q) }; }), cur: A.cur && A.cur.id, inc: A.inc && A.inc.id, msg: A.msg, bars: A.bars, mix: A.mix }; } };
 })();

@@ -38,7 +38,7 @@
   }
   function itemOf(t) {
     return { name: t.title || "Beat", sub: "From Beats" + (t.artist ? " · " + t.artist : "") + (t.duration ? " · " + P.fmtTime(t.duration) : "") + " · " + new Date(t.createdAt || Date.now()).toLocaleDateString([], { month: "short", day: "numeric" }),
-      key: "media:" + t.id, mediaId: t.id, bpmHint: P.bpmFromName(t.title), get: function () { return t.blob.arrayBuffer(); } };
+      key: "media:" + t.id, added: t.createdAt, mediaId: t.id, bpmHint: P.bpmFromName(t.title), get: function () { return t.blob.arrayBuffer(); } };
   }
   function tab(list) {
     list.innerHTML = "";
@@ -46,7 +46,7 @@
     bar.innerHTML = '<button type="button" class="btn small" id="fb-all">+ Add all to Auto DJ</button><a class="btn small ghost" href="../beats/" target="_blank" rel="noopener">Open Beats ↗</a><span class="muted" id="fb-n"></span>';
     list.appendChild(bar);
     $("fb-n").textContent = beats.length + " track" + (beats.length === 1 ? "" : "s") + " · updates live";
-    $("fb-all").onclick = function () { if (!window.PFAUTODJ || !beats.length) return; beats.forEach(function (t) { window.PFAUTODJ.add(itemOf(t), true); }); P.toast("Auto DJ queue: + " + beats.length + " track(s) from Beats"); };
+    $("fb-all").onclick = function () { if (!window.PFAUTODJ || !beats.length) return; beats.slice().reverse().forEach(function (t) { window.PFAUTODJ.add(itemOf(t), true); }); P.toast("Auto DJ queue: + " + beats.length + " track(s) from Beats"); };
     if (err) { list.insertAdjacentHTML("beforeend", '<p class="empty">The shared library isn\'t available here (' + String(err.message || err).replace(/</g, "") + ").</p>"); return; }
     if (!beats.length) { list.insertAdjacentHTML("beforeend", '<p class="empty">No beats sent from Island Pin Beats yet. In <a href="../beats/">Beats</a>, bounce a beat and send it to the shared library (source “beats”) — it appears here instantly.</p>'); return; }
     beats.forEach(function (t) {

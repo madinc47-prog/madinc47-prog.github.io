@@ -181,7 +181,7 @@
   function item(t) {
     var a = t.ana || null;
     return { name: t.title || t.file, sub: [t.artist, t.bpm || (a && a.bpm) ? Math.round((a && a.bpm) || t.bpm) + " BPM" : "", t.key, "My library"].filter(Boolean).join(" · "),
-      bpm: a && a.bpm ? a.bpm : null, grid: a && a.bpm ? a.grid : null, bpmHint: !a && t.bpm ? t.bpm : null, libId: t.id, key: "lib:" + t.id, dur: t.dur, ana: a,
+      bpm: a && a.bpm ? a.bpm : null, grid: a && a.bpm ? a.grid : null, bpmHint: !a && t.bpm ? t.bpm : null, libId: t.id, key: "lib:" + t.id, added: t.added, dur: t.dur, ana: a,
       get: function () { return getFile(t.id).then(function (b) { return b.arrayBuffer(); }); } };
   }
   function saveAnalysis(id, a) {
@@ -273,7 +273,7 @@
     document.getElementById("mylib-crate").onchange = function (e) { L.crate = e.target.value; L.shown = 150; render(); };
     document.getElementById("mylib-newcrate").onclick = newCrate;
     document.getElementById("mylib-delcrate").onclick = function () { deleteCrate(L.crate); };
-    document.getElementById("mylib-queue").onclick = function () { var l = sorted(); if (!l.length) { P.toast("Nothing to queue."); return; } if (window.PFAUTODJ) { l.forEach(function (t) { window.PFAUTODJ.add(item(t), true); }); P.toast("Queued " + l.length + " track" + (l.length === 1 ? "" : "s") + " for Auto DJ"); } };
+    document.getElementById("mylib-queue").onclick = function () { var l = sorted(); if (L.sort === "added" && L.crate === "all") l = l.slice().reverse(); /* v20261022f: oldest first, newest at the END */ if (!l.length) { P.toast("Nothing to queue."); return; } if (window.PFAUTODJ) { l.forEach(function (t) { window.PFAUTODJ.add(item(t), true); }); P.toast("Queued " + l.length + " track" + (l.length === 1 ? "" : "s") + " for Auto DJ"); } };
     render(); estimate();
   }
   P.LIBTABS.mylib = tab;
