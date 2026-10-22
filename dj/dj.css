@@ -884,3 +884,4 @@ body:not(.vdj-page) .talk-dock { bottom: 124px; }
   body, body.vdj-page, body:not(.vdj-page) { padding-bottom: calc(var(--xfh, 64px) + 8px) !important; }
   .vdj-page .vdj-prog canvas { max-height: 70vh; }
 }
+.automix-offer { bottom: calc(var(--xfh, 80px) + 12px); z-index: 70; } .automix-offer #automix-go { font-size: 16px; }

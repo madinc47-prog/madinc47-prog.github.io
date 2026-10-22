@@ -115,7 +115,7 @@
     files = Array.prototype.filter.call(files, function (f) { return f && (AUDIO_RE.test(f.name) || /^audio\//.test(f.type)); });
     if (!files.length) { P.toast("No audio files found there (mp3, m4a, wav, ogg, flac…)."); return Promise.resolve(0); }
     if (L.busy) { P.toast("Still importing — one batch at a time."); return Promise.resolve(0); }
-    L.busy = true; persist();
+    L.busy = true; persist(); L.lastNew = [];
     var have = {}; L.tracks.forEach(function (t) { have[t.id] = 1; });
     var added = 0, skipped = 0, i = 0, total = files.length;
     function one() {
@@ -127,8 +127,8 @@
         return Promise.all([thumb(tg.art), duration(f)]).then(function (r) {
           var np = nameParts(f.name), bpm = parseFloat((tg.bpm || "").replace(",", "."));
           var t = { id: id, file: f.name, title: tg.title || np.title, artist: tg.artist || tg.albumArtist || np.artist || "", album: tg.album || "", genre: tg.genre || "", key: tg.key || "",
-            bpm: bpm >= 50 && bpm <= 220 ? bpm : P.bpmFromName(f.name), dur: r[1], size: f.size, type: f.type, added: Date.now() + i, art: r[0] || null };
-          return tx(["tracks", "files"], "readwrite", function (x) { x.objectStore("files").put({ id: id, blob: f }); x.objectStore("tracks").put(t); }).then(function () { L.tracks.push(t); have[id] = 1; added++; if (added % 25 === 0) render(); });
+            bpm: bpm >= 50 && bpm <= 220 ? bpm : P.bpmFromName(f.name), dur: r[1], size: f.size, type: f.type, added: Date.now() + i, dl: f.lastModified || Date.now(), art: r[0] || null };
+          return tx(["tracks", "files"], "readwrite", function (x) { x.objectStore("files").put({ id: id, blob: f }); x.objectStore("tracks").put(t); }).then(function () { L.tracks.push(t); L.lastNew.push(t); have[id] = 1; added++; if (added % 25 === 0) render(); });
         });
       }).catch(function (e) {
         if (e && /quota/i.test(e.name + e.message)) { i = files.length; P.toast("Browser storage is full — free some space or import fewer files."); return; }
@@ -137,6 +137,8 @@
     }
     return one().then(function () {
       L.busy = false; progress(""); render(); estimate();
+      if (L.fullDl) { L.fullDl = false; L.sort = "added"; L.crate = "all"; try { localStorage.setItem(LK, JSON.stringify({ sort: L.sort })); } catch (e) { /* ignore */ } if (P.showLib) P.showLib("mylib"); render();
+        P.toast("Added " + added + " new, skipped " + skipped + " already in library"); if (added) offerMix(L.lastNew.slice()); return added; }
       P.toast("Library: added " + added + " track" + (added === 1 ? "" : "s") + (skipped ? " · " + skipped + " skipped (already there or unreadable)" : "") + " — stored on this device only");
       return added;
     });
@@ -207,7 +209,7 @@
     if (L.crate !== "all") { var c = L.crates.filter(function (x) { return x.id === L.crate; })[0]; var ix = {}; list = []; if (c) c.ids.forEach(function (id, k) { ix[id] = k; }); list = L.tracks.filter(function (t) { return ix[t.id] != null; }); if (L.sort === "added") list.sort(function (a, b) { return ix[a.id] - ix[b.id]; }); }
     if (q) list = list.filter(function (t) { return (t.title + " " + t.artist + " " + t.album + " " + t.genre + " " + t.key + " " + t.file).toLowerCase().indexOf(q) >= 0 || (t.bpm && String(Math.round(t.bpm)) === q); });
     var bp = function (t) { return (t.ana && t.ana.bpm) || t.bpm || 999; };
-    var f = { added: function (a, b) { return b.added - a.added; }, title: function (a, b) { return (a.title || "").localeCompare(b.title || ""); }, artist: function (a, b) { return (a.artist || "").localeCompare(b.artist || "") || (a.title || "").localeCompare(b.title || ""); },
+    var f = { added: function (a, b) { return (b.dl || b.added) - (a.dl || a.added); }, title: function (a, b) { return (a.title || "").localeCompare(b.title || ""); }, artist: function (a, b) { return (a.artist || "").localeCompare(b.artist || "") || (a.title || "").localeCompare(b.title || ""); },
       bpm: function (a, b) { return bp(a) - bp(b); }, key: function (a, b) { return (a.key || "~").localeCompare(b.key || "~"); }, dur: function (a, b) { return (a.dur || 0) - (b.dur || 0); } }[L.sort];
     if (f && !(L.crate !== "all" && L.sort === "added")) list = list.slice().sort(f);
     return list;
@@ -293,6 +295,50 @@
   }
   Promise.all([getAll("tracks"), getAll("crates")]).then(function (r) { L.tracks = r[0] || []; L.crates = r[1] || []; render(); }).catch(function () { /* no IDB (private mode) */ });
   wireDrop(); estimate();
-  window.PFLIB = { L: L, importFiles: importFiles, item: item, saveAnalysis: saveAnalysis, getFile: getFile, parseID3v2: parseID3v2, readTags: readTags,
+  /* v20261022h: ⬇ Full Music Download — one quick-bar button: folder picker where supported, else multi-select audio files.
+     Dedupes by name + size + lastModified (the track id), stores lastModified as the downloaded date, My Library shows newest first. */
+  var FULL_RE = /\.(mp3|m4a|aac|wav|flac|ogg|opus)$/i;
+  function fullDownload() {
+    var inp = document.createElement("input"); inp.type = "file"; inp.multiple = true;
+    var android = /Android/i.test(navigator.userAgent), dirOk = !android && "webkitdirectory" in inp;
+    if (dirOk) { inp.webkitdirectory = true; inp.setAttribute("directory", ""); } else inp.accept = "audio/*,.mp3,.m4a,.aac,.wav,.flac,.ogg,.opus";
+    inp.style.display = "none"; document.body.appendChild(inp);
+    inp.onchange = function () {
+      var all = Array.prototype.slice.call(inp.files || []); inp.remove();
+      var files = all.filter(function (f) { return FULL_RE.test(f.name) || /^audio\//.test(f.type); });
+      if (!files.length) { P.toast("No music found (mp3, m4a, aac, wav, flac, ogg, opus)."); return; }
+      L.fullDl = true; importFiles(files).then(function () { L.fullDl = false; });
+    };
+    inp.click();
+  }
+  /* ▶ Auto-Mix new: queue just-imported tracks (newest download first, at the front for this mix) and start Auto DJ */
+  function autoMixNew(tracks) {
+    var ad = window.PFAUTODJ; if (!ad || !tracks.length) return;
+    var its = tracks.slice().sort(function (a, b) { return (b.dl || b.added) - (a.dl || a.added); }).map(item), keys = its.map(function (x) { return x.key; });
+    its.forEach(function (it) { ad.add(it, true); });
+    var mine = [], rest = [];
+    ad.A.queue.forEach(function (q) { (keys.indexOf(q.key) >= 0 ? mine : rest).push(q); });
+    mine.sort(function (a, b) { return keys.indexOf(a.key) - keys.indexOf(b.key); });
+    ad.A.queue.splice(0, ad.A.queue.length); Array.prototype.push.apply(ad.A.queue, mine.concat(rest));
+    if (!ad.A.on) ad.start(); else P.toast("Auto-Mix: " + mine.length + " new track(s) up next");
+    if (window.PFLAYOUT) window.PFLAYOUT.render();
+  }
+  function offerMix(tracks) {
+    var old = document.getElementById("automix-offer"); if (old) old.remove();
+    var o = document.createElement("div"); o.className = "eco-offer automix-offer"; o.id = "automix-offer";
+    o.innerHTML = '<span>' + tracks.length + ' new track' + (tracks.length === 1 ? "" : "s") + ' ready</span><button type="button" class="qb on" id="automix-go">▶ Auto-Mix new</button><button type="button" class="qb" id="automix-x" aria-label="Close">✕</button>';
+    document.body.appendChild(o);
+    document.getElementById("automix-go").onclick = function () { o.remove(); autoMixNew(tracks); };
+    document.getElementById("automix-x").onclick = function () { o.remove(); };
+    setTimeout(function () { if (o.parentNode) o.remove(); }, 60000);
+  }
+  function fullBtn() {
+    var qb = document.querySelector(".quickbar"); if (!qb) return false; if (document.getElementById("qb-fulldl")) return true;
+    var b = document.createElement("button"); b.type = "button"; b.id = "qb-fulldl"; b.className = "qb qb-fulldl"; b.textContent = "⬇ Full Music Download"; b.onclick = fullDownload;
+    var more = document.getElementById("qb-more"); qb.insertBefore(b, more || null); return true;
+  }
+  if (!fullBtn()) { var fbT = setInterval(function () { if (fullBtn()) clearInterval(fbT); }, 300); setTimeout(function () { clearInterval(fbT); }, 15000); }
+
+  window.PFLIB = { fullDownload: fullDownload, autoMixNew: autoMixNew, L: L, importFiles: importFiles, item: item, saveAnalysis: saveAnalysis, getFile: getFile, parseID3v2: parseID3v2, readTags: readTags,
     info: function () { return { tracks: L.tracks.length, crates: L.crates.map(function (c) { return { name: c.name, n: c.ids.length }; }), est: L.est, persisted: L.persisted, sample: L.tracks.slice(0, 3).map(function (t) { return { title: t.title, artist: t.artist, bpm: t.bpm, key: t.key, dur: t.dur, art: !!t.art, album: t.album }; }) }; } };
 })();
