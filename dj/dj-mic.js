@@ -4,8 +4,11 @@
   "use strict";
   var P = window.PFDJ; if (!P) return;
   var $ = function (id) { return document.getElementById(id); };
-  var MK = "pfdj_mic_v2", d0 = { ec: true, ns: true, agc: true, gate: true, hp: "auto", gain: 0, eq: [0, 0, 0], verb: 0.12, echo: 0, duck: true, depth: 10, mute: false };
+  var MK = "pfdj_mic_v2", d0 = { ec: false, ns: false, agc: false, gate: false, hp: "auto", gain: 0, eq: [0, 0, 0], verb: 0.12, echo: 0, duck: true, depth: 10, mute: false };
   var C = d0; try { var s = JSON.parse(localStorage.getItem(MK) || localStorage.getItem("pfdj_mic_v1") || "null"); if (s && !localStorage.getItem(MK)) { s.ec = true; s.ns = true; s.agc = true; } if (s) { C = Object.assign({}, d0, s); C.mute = false; } } catch (e) { /* ignore */ }
+  /* v20261022r FULLY RAW: no browser processing, no gate/reverb/echo, no auto talkover — forced off once, never re-enabled */
+  try { if (localStorage.getItem("pfdj_mic_raw") !== "1") { C.ec = C.ns = C.agc = C.gate = C.duck = false; C.verb = 0; C.echo = 0; localStorage.setItem("pfdj_mic_raw", "1"); localStorage.setItem(MK, JSON.stringify(C)); } } catch (e) { /* ignore */ }
+  C.ec = C.ns = C.agc = C.gate = false; C.verb = C.echo = 0;
   var N = null, stream = null, on = false, blocked = false, phones = false, gateOpen = false, gateHold = 0, reacq = null, duckOn = false, holdUntil = 0, timer = null, starting = false;
   function save() { try { localStorage.setItem(MK, JSON.stringify(C)); } catch (e) { /* ignore */ } }
   function ir(ctx, sec) {
@@ -33,6 +36,10 @@
     N.mute.connect(N.out); N.mute.connect(N.an); N.out.connect(N.post);
     N.mute.connect(N.vs); N.vs.connect(N.conv); N.conv.connect(N.post);
     N.mute.connect(N.es); N.es.connect(N.dl); N.dl.connect(N.elp); N.elp.connect(N.fb); N.fb.connect(N.dl); N.elp.connect(N.post);
+    /* v20261022r: the mic signal used everywhere = raw, unity gain, channels untouched (stereo stays stereo). The old chain is no longer fed. */
+    N.raw = ctx.createGain(); N.raw.gain.value = 1; N.raw.channelCountMode = "max"; N.raw.channelInterpretation = "discrete";
+    N.raw.connect(N.post); N.raw.connect(N.an); N.raw.connect(N.pre);
+    try { N.out.disconnect(); N.vs.disconnect(); N.es.disconnect(); N.conv.disconnect(); N.elp.disconnect(); } catch (e) { /* ignore */ }
     route();
     apply();
     return N;
@@ -70,7 +77,7 @@
     var t = P.ctx.currentTime;
     N.inG.gain.setTargetAtTime(P.db2g(C.gain), t, 0.02);
     N.low.gain.setTargetAtTime(C.eq[0], t, 0.02); N.mid.gain.setTargetAtTime(C.eq[1], t, 0.02); N.high.gain.setTargetAtTime(C.eq[2], t, 0.02);
-    N.mute.gain.setTargetAtTime(C.mute || !on ? 0 : 1, t, 0.01);
+    N.mute.gain.setTargetAtTime(C.mute || !on ? 0 : 1, t, 0.01); N.raw.gain.setTargetAtTime(C.mute || !on ? 0 : 1, t, 0.01);
     N.vs.gain.setTargetAtTime(C.verb * 0.9, t, 0.02);
     N.es.gain.setTargetAtTime(C.echo * 0.8, t, 0.02);
     N.dl.delayTime.setTargetAtTime(echoTime(), t, 0.05);
@@ -80,10 +87,10 @@
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { P.toast("This browser can't use the microphone here (needs HTTPS and mic permission)."); return; }
     if (!graph()) return;
     starting = true;
-    navigator.mediaDevices.getUserMedia({ audio: (function () { var raw = window.PFDJ_MICDEV && window.PFDJ_MICRAW, c = { echoCancellation: raw ? false : C.ec, noiseSuppression: raw ? false : C.ns, autoGainControl: raw ? false : C.agc, channelCount: 1 }; if (nohp()) c = { echoCancellation: true, noiseSuppression: false, autoGainControl: false, channelCount: 1, sampleRate: { ideal: 48000 } }; /* v20261022q No headphones: echo-cancel only */ if (window.PFDJ_MICDEV) c.deviceId = { exact: window.PFDJ_MICDEV }; return c; })(), video: false }).then(function (st) {
+    navigator.mediaDevices.getUserMedia({ audio: (function () { var c = { echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: { ideal: 2 }, sampleRate: { ideal: 48000 } }; /* v20261022r: always fully raw */ if (window.PFDJ_MICDEV) c.deviceId = { exact: window.PFDJ_MICDEV }; return c; })(), video: false }).then(function (st) {
       starting = false;
       stopStream();
-      stream = st; N.src = P.ctx.createMediaStreamSource(st); N.src.connect(N.inG);
+      stream = st; N.src = P.ctx.createMediaStreamSource(st); N.src.connect(N.raw);
       st.getAudioTracks().forEach(function (t) { t.onended = function () { if (on && stream === st) reacquire("Mic dropped"); }; });
       on = true; blocked = false; try { localStorage.setItem("pfdj_mic_ok", "1"); } catch (e) { /* ignore */ }
       if (P.ctx.state === "suspended") P.ctx.resume();
@@ -110,7 +117,7 @@
     var l = level(), now = performance.now();
     var g = preLevel();                                              // gentle expander: closes to -24 dB between phrases (room hiss / beat bleed)
     if (g > 0.012) { gateHold = now + 280; }
-    var open = !C.gate || now < gateHold;
+    var open = true; /* v20261022r: no gate */
     if (open !== gateOpen) { gateOpen = open; N.gate.gain.setTargetAtTime(open ? 1 : 0.06, P.ctx.currentTime, open ? 0.004 : 0.09); }
     if (C.duck && !C.mute && gateOpen && l.rms > 0.012) holdUntil = now + 450;
     setDuck(C.duck && !C.mute && now < holdUntil);
@@ -135,18 +142,18 @@
     var w = document.createElement("div"); w.className = "talk-dock";
     w.innerHTML = '<button type="button" id="talk-btn" class="talk-btn" data-state="off" aria-label="Talk over the mix"><span class="talk-l">🎤 TALK</span><span class="talk-s"></span></button><button type="button" id="talk-mute" class="talk-mute" hidden>MUTE</button>';
     document.body.appendChild(w);
-    $("talk-btn").addEventListener("click", function () { if (on) stop(); else { C.ec = C.ns = C.agc = true; C.duck = true; C.gate = true; save(); start(); } });
+    $("talk-btn").addEventListener("click", function () { if (on) stop(); else start(); });
     $("talk-mute").addEventListener("click", function () { C.mute = !C.mute; apply(); ui(); });
   }
   function build() {
     if (!$("mic")) return;
     $("mic-on").addEventListener("click", function () { if (on) stop(); else start(); });
     $("mic-mute").addEventListener("click", function () { C.mute = !C.mute; apply(); ui(); });
-    $("mic-gate").addEventListener("click", function () { C.gate = !C.gate; save(); apply(); });
+    
     $("mic-hp").addEventListener("click", function () { C.hp = { auto: "on", on: "off", off: "auto" }[C.hp]; save(); route(); P.toast(C.hp === "auto" ? "Mic to speakers: automatic (only with headphones)" : C.hp === "on" ? "Mic to speakers: ON — use headphones or it may howl" : "Mic to speakers: OFF — mic goes into the recording only"); });
-    ["ec", "ns", "agc"].forEach(function (k) {
-      $("mic-" + k).addEventListener("click", function () { C[k] = !C[k]; save(); apply(); if (on) start(); });
-    });
+    /* v20261022r: processing toggles + reverb/echo/EQ/gain knobs removed from use (mic is fully raw) */
+    ["mic-ec", "mic-ns", "mic-agc", "mic-gate"].forEach(function (id) { var b = $(id); if (b) b.hidden = true; });
+    ["k-verb", "k-echo", "k-low", "k-mid", "k-high", "k-gain"].forEach(function (c) { var k = document.querySelector("#mic ." + c); if (k && k.closest(".kn")) k.closest(".kn").hidden = true; });
     $("mic-duck").addEventListener("click", function () { C.duck = !C.duck; save(); apply(); if (!C.duck) setDuck(false); P.toast(C.duck ? "Talkover on — the music dips " + C.depth + " dB while you talk" : "Talkover off"); });
     var mk = function (sel, o) { o.kind = "knob"; P.control(document.querySelector(sel), o); };
     mk("#mic .k-gain", { name: "mic.gain", min: -12, max: 24, value: C.gain, def: 0, snap: 0, fmt: function (v) { return (v > 0 ? "+" : "") + Math.round(v) + "dB"; }, onChange: function (v) { C.gain = v; save(); apply(); } });

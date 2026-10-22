@@ -51,10 +51,9 @@
     if (!mime) { P.toast("This browser can't record here."); return; }
     var mic = window.PFMIC, C = mic && mic.info().C;
     S = { sid: "fs_" + Date.now().toString(36), t0: Date.now(), i: 0, mime: mime, startedAD: false, oldDepth: C ? C.depth : 10, oldGain: C ? C.gain : 0, bars0: null };
-    if (C) { C.depth = 4; C.gain = Math.max(C.gain, 3); C.duck = true; }                 // light duck, mic up front
     var AD = window.PFAUTODJ;
     if (AD && !AD.A.on) { AD.start(); S.startedAD = true; }
-    if (mic && mic.info().state !== "live") { C.ec = C.ns = C.agc = true; C.gate = true; C.mute = false; mic.start(true); }
+    if (mic && mic.info().state !== "live") { C.mute = false; mic.start(true); } /* v20261022r: raw mic, no boost */
     var mr = new MediaRecorder(P.audioStream(), { mimeType: mime, audioBitsPerSecond: 160000 });
     mr.ondataavailable = function (e) {
       if (!e.data || !e.data.size || !S) return;
@@ -77,7 +76,7 @@
     };
     try { s.mr.stop(); } catch (e) { /* ignore */ }
     if (window.PFMIC) window.PFMIC.stop();
-    if (C) { C.depth = s.oldDepth; C.gain = s.oldGain; }
+
     if (s.startedAD && window.PFAUTODJ && window.PFAUTODJ.A.on) window.PFAUTODJ.stop("Freestyle session ended");
     S = null;
     $("fs-hud").hidden = true; $("fs-go").classList.remove("on"); $("fs-go").textContent = "🎤 LIVE FREESTYLE";

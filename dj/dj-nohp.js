@@ -1,6 +1,5 @@
 /* DJ Psycho Fingers — v20261022q "No headphones — voice only" (modeled on Beat Studio's toggle). OFF by default = mic unchanged.
- * ON: mic opens with echoCancellation ONLY (no noise suppression, no auto-gain, mono, 48 kHz ideal) so the browser cancels the
- * beat coming out of the speaker; the mic never goes to the speaker; and while ● REC or Live Freestyle runs, the mic is ALSO
+ * ON (v20261022r): mic stays FULLY raw (no echo cancel / noise suppression / auto-gain); the mic never goes to the speaker; and while ● REC or Live Freestyle runs, the mic is ALSO
  * recorded on its own straight from the mic stream (no Web Audio, no gain, no filters → no resampling, no clipping added) as
  * Opus 192 kbps → "Voice only" in My Recordings. The show recording keeps the beat digitally from the internal bus. Only the
  * setting is stored. */
@@ -12,18 +11,18 @@
   function recording() { var r = document.getElementById("rec"); return !!((r && r.classList.contains("on")) || (window.PFFREESTYLE && window.PFFREESTYLE.on)); }
   function ui() {
     var v = on();
-    document.querySelectorAll(".js-nohp").forEach(function (b) { b.classList.toggle("on", v); b.setAttribute("aria-pressed", String(v)); b.querySelector(".nh-s").textContent = v ? "ON · voice only, beat cancelled" : "OFF · raw mic"; });
+    document.querySelectorAll(".js-nohp").forEach(function (b) { b.classList.toggle("on", v); b.setAttribute("aria-pressed", String(v)); b.querySelector(".nh-s").textContent = v ? "ON · voice saved on its own" : "OFF · raw mic"; });
   }
   function set(v) {
     if (recording()) { P.toast("Change this between recordings."); return; }
     try { localStorage.setItem(K, v ? "1" : "0"); } catch (e) { /* ignore */ }
     ui();
     var M = window.PFMIC; if (M) { M.route(); if (M.info().on) M.start(true); }
-    P.toast(v ? "No headphones ON: mic echo-cancel only (cancels the speaker beat), voice also saved on its own while recording" : "No headphones OFF: mic unchanged (raw)");
+    P.toast(v ? "No headphones ON: raw mic also saved as its own Voice only track while recording" : "No headphones OFF: mic unchanged (raw)");
   }
   function button() {
     var b = document.createElement("button"); b.type = "button"; b.className = "nohp-btn js-nohp"; b.setAttribute("aria-pressed", "false");
-    b.title = "Recording with friends on the speaker? ON = the mic catches voices, not the beat (browser echo-cancel only, nothing else). OFF = raw mic.";
+    b.title = "Recording with friends on the speaker? ON = while recording, your raw mic is also saved as its own Voice only track (the beat isn't mixed in; mic is never sent to the speaker). Nothing cancels speaker sound: on a loud speaker the mic still hears it. OFF = normal.";
     b.innerHTML = '<span class="nh-l">🔇 No headphones</span><span class="nh-s"></span>';
     b.addEventListener("click", function () { set(!on()); });
     return b;
