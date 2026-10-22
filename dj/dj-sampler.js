@@ -17,7 +17,7 @@
   var PADPREF = pr.pads || {};
   function save() {
     var o = { bank: S.bank, vol: S.vol, q: S.q, qDiv: S.qDiv, pads: {} };
-    Object.keys(S.pads).forEach(function (k) { var p = S.pads[k]; if (p.vol !== 0.85 || p.mode !== p.defMode || p.loopOn) o.pads[k] = { vol: p.vol, mode: p.mode, loop: p.loopOn ? 1 : 0 }; });
+    Object.keys(S.pads).forEach(function (k) { var p = S.pads[k]; if (p.vol !== 0.85 || p.mode !== p.defMode) o.pads[k] = { vol: p.vol, mode: p.mode }; });
     try { localStorage.setItem(PK, JSON.stringify(o)); } catch (e) { /* ignore */ }
   }
   /* ---------- IndexedDB for user pads ---------- */
@@ -36,7 +36,7 @@
   function makePad(b, i) {
     var k = key(b, i), pp = PADPREF[k] || {};
     S.pads[k] = { k: k, bank: b, i: i, name: "", file: null, cat: "", dur: 0, buf: null, user: false,
-      vol: isFinite(+pp.vol) ? +pp.vol : 0.85, defMode: "one", mode: ["one", "hold", "loop"].indexOf(pp.mode) >= 0 ? pp.mode : "one", voice: null, loading: null, loopS: 0, loopE: 0, loopOn: pp.loop === 1, lv: null, shots: [] };
+      vol: isFinite(+pp.vol) ? +pp.vol : 0.85, defMode: "one", mode: ["one", "hold", "loop"].indexOf(pp.mode) >= 0 ? pp.mode : "one", voice: null, loading: null, loopS: 0, loopE: 0, loopOn: false /* session only — not saved */, lv: null, shots: [] };
   }
   /* assign a sound to a pad: rec = { name, url?, blob?, cat?, loopS?, loopE?, mode? } — persisted unless opts.noSave */
   function assign(k, rec, noSave) {
@@ -168,7 +168,7 @@
   function stopShots(p) { var t = P.ctx ? P.ctx.currentTime : 0; p.shots.splice(0).forEach(function (v) { try { v.g.gain.setTargetAtTime(0, t, 0.01); v.s.stop(t + 0.06); } catch (e) { /* ignore */ } }); render(p); }
   function toggleLoop(k) {
     var p = S.pads[k]; if (!p || (!p.file && !p.user)) return;
-    p.loopOn = !p.loopOn; save();
+    p.loopOn = !p.loopOn;
     if (!p.loopOn) { stopLoop(p); render(p); return; }
     if (!P.ensureCtx()) { render(p); return; }
     (p.buf ? Promise.resolve() : load(p)).then(function () { if (p.loopOn && !p.lv) startLoop(p); }).catch(function () { P.toast("Couldn't load " + p.name); });
