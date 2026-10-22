@@ -17,7 +17,7 @@
   var PADPREF = pr.pads || {};
   function save() {
     var o = { bank: S.bank, vol: S.vol, q: S.q, qDiv: S.qDiv, pads: {} };
-    Object.keys(S.pads).forEach(function (k) { var p = S.pads[k]; if (p.vol !== 0.85 || p.mode !== p.defMode) o.pads[k] = { vol: p.vol, mode: p.mode }; });
+    Object.keys(S.pads).forEach(function (k) { var p = S.pads[k]; if (p.vol !== 0.85 || p.mode !== p.defMode || p.loopOn) o.pads[k] = { vol: p.vol, mode: p.mode, loop: p.loopOn ? 1 : 0 }; });
     try { localStorage.setItem(PK, JSON.stringify(o)); } catch (e) { /* ignore */ }
   }
   /* ---------- IndexedDB for user pads ---------- */
@@ -36,7 +36,7 @@
   function makePad(b, i) {
     var k = key(b, i), pp = PADPREF[k] || {};
     S.pads[k] = { k: k, bank: b, i: i, name: "", file: null, cat: "", dur: 0, buf: null, user: false,
-      vol: isFinite(+pp.vol) ? +pp.vol : 0.85, defMode: "one", mode: ["one", "hold", "loop"].indexOf(pp.mode) >= 0 ? pp.mode : "one", voice: null, loading: null, loopS: 0, loopE: 0 };
+      vol: isFinite(+pp.vol) ? +pp.vol : 0.85, defMode: "one", mode: ["one", "hold", "loop"].indexOf(pp.mode) >= 0 ? pp.mode : "one", voice: null, loading: null, loopS: 0, loopE: 0, loopOn: pp.loop === 1, lv: null, shots: [] };
   }
   /* assign a sound to a pad: rec = { name, url?, blob?, cat?, loopS?, loopE?, mode? } — persisted unless opts.noSave */
   function assign(k, rec, noSave) {
@@ -134,11 +134,48 @@
     if (!p.file && !p.user) { if (down) { if (window.PFSTUDIO) window.PFSTUDIO.open({ pad: k }); else select(k); } return; }
     if (!P.ensureCtx()) return;
     if (!p.buf) { if (down) load(p).then(function () { if (p.mode !== "hold" || p.held) fire(k, true); }).catch(function () { P.toast("Couldn't load " + p.name); }); p.held = down; return; }
-    if (p.mode === "one") { if (down) startVoice(p, false); }
+    if (p.loopOn) { if (down) { if (!p.lv) startLoop(p); else shot(p); } return; }  // looping pad: body taps stutter over the loop
+    if (p.mode === "one") { if (down) shot(p); }
     else if (p.mode === "hold") { if (down) { p.held = true; startVoice(p, true); } else { p.held = false; stopVoice(p); } }
     else if (down) { if (p.voice) stopVoice(p); else startVoice(p, true); }
   }
-  function stopAll() { Object.keys(S.pads).forEach(function (k) { stopVoice(S.pads[k]); }); }
+  /* v20261022k: polyphonic one-shots (stutter, max 8 per pad, oldest stolen) + independent per-pad ⟳ loops */
+  var MAXV = 8;
+  function shot(p) {
+    var ctx = P.ctx, b = bus(); if (!b || !p.buf) return;
+    var t = S.q ? qTime() : ctx.currentTime, s = ctx.createBufferSource(), g = ctx.createGain();
+    s.buffer = p.buf; g.gain.value = p.vol; s.connect(g); g.connect(b); s.start(t);
+    var v = { s: s, g: g, t: t }; p.shots.push(v);
+    while (p.shots.length > MAXV) { var o = p.shots.shift(); try { o.g.gain.setTargetAtTime(0, ctx.currentTime, 0.004); o.s.stop(ctx.currentTime + 0.03); } catch (e) { /* ignore */ } }
+    s.onended = function () { var i = p.shots.indexOf(v); if (i >= 0) { p.shots.splice(i, 1); render(p); } };
+    var el = padEl(p); if (el) { el.classList.remove("hit"); void el.offsetWidth; el.classList.add("hit"); }
+    render(p); P.emit("pad", p);
+  }
+  function startLoop(p) {
+    var ctx = P.ctx, b = bus(); if (!b || !p.buf) return;
+    stopLoop(p, true);
+    var t = qTime(), s = ctx.createBufferSource(), g = ctx.createGain();
+    s.buffer = p.buf; s.loop = true; g.gain.value = p.vol;
+    if (p.loopE > p.loopS + 0.02 && p.loopE <= p.buf.duration + 0.01) { s.loopStart = p.loopS; s.loopEnd = p.loopE; }
+    s.connect(g); g.connect(b); s.start(t); p.lv = { s: s, g: g, t: t }; render(p); P.emit("pad", p);
+  }
+  function stopLoop(p, quick) {
+    var v = p.lv; if (!v) return; var t = P.ctx.currentTime;
+    v.g.gain.cancelScheduledValues(t); v.g.gain.setValueAtTime(v.g.gain.value, t); v.g.gain.setTargetAtTime(0, t, quick ? 0.006 : 0.02);
+    try { v.s.stop(t + (quick ? 0.04 : 0.12)); } catch (e) { /* ignore */ }
+    p.lv = null; render(p);
+  }
+  function stopShots(p) { var t = P.ctx ? P.ctx.currentTime : 0; p.shots.splice(0).forEach(function (v) { try { v.g.gain.setTargetAtTime(0, t, 0.01); v.s.stop(t + 0.06); } catch (e) { /* ignore */ } }); render(p); }
+  function toggleLoop(k) {
+    var p = S.pads[k]; if (!p || (!p.file && !p.user)) return;
+    p.loopOn = !p.loopOn; save();
+    if (!p.loopOn) { stopLoop(p); render(p); return; }
+    if (!P.ensureCtx()) { render(p); return; }
+    (p.buf ? Promise.resolve() : load(p)).then(function () { if (p.loopOn && !p.lv) startLoop(p); }).catch(function () { P.toast("Couldn't load " + p.name); });
+    render(p);
+  }
+  function stopLoops() { Object.keys(S.pads).forEach(function (k) { var p = S.pads[k]; stopLoop(p); if (p.mode === "loop") stopVoice(p); }); }
+  function stopAll() { Object.keys(S.pads).forEach(function (k) { var p = S.pads[k]; stopVoice(p); stopLoop(p); if (p.shots.length) stopShots(p); }); }
 
   /* ---------- UI ---------- */
   function padEl(p) { return p.bank === S.bank ? $("smp-grid").children[p.i] : null; }
@@ -146,7 +183,8 @@
     var el = padEl(p); if (!el) return;
     var col = p.user ? CAT.user : CAT[p.cat] || "#3a4459", empty = !p.file && !p.user;
     el.style.setProperty("--pc", col);
-    el.classList.toggle("empty", empty); el.classList.toggle("playing", !!p.voice); el.classList.toggle("sel", S.sel === p.k);
+    el.classList.toggle("empty", empty); el.classList.toggle("playing", !!(p.voice || p.lv || p.shots.length)); el.classList.toggle("looping", !!p.lv); el.classList.toggle("loopon", !!p.loopOn);
+    var lb = el.querySelector(".pad-loop"); if (lb) { lb.hidden = empty; lb.classList.toggle("on", !!p.loopOn); lb.setAttribute("aria-pressed", p.loopOn ? "true" : "false"); } el.classList.toggle("sel", S.sel === p.k);
     el.classList.toggle("loading", !!p.loading); el.classList.toggle("err", !!p.err && !p.buf);
     el.querySelector(".pad-name").textContent = empty ? "empty · tap = Studio" : p.name;
     el.querySelector(".pad-mode").textContent = empty ? "" : p.mode === "one" ? "" : p.mode === "hold" ? "HOLD" : "LOOP";
@@ -157,7 +195,7 @@
     if (!g.children.length) {
       for (var i = 0; i < 16; i++) {
         var b = document.createElement("button"); b.type = "button"; b.className = "pad"; b.dataset.i = i;
-        b.innerHTML = '<span class="pad-key mono">' + KEYS[i].toUpperCase() + '</span><span class="pad-name"></span><span class="pad-mode"></span>';
+        b.innerHTML = '<span class="pad-key mono">' + KEYS[i].toUpperCase() + '</span><span class="pad-name"></span><span class="pad-mode"></span><span class="pad-loop" role="button" aria-label="Loop this pad" title="Loop on/off">⟳</span>';
         wirePad(b, i); g.appendChild(b);
       }
     }
@@ -166,16 +204,20 @@
   }
   function wirePad(b, i) {
     var cur = function () { return key(S.bank, i); };
+    b._ptr = {};
+    var lb = b.querySelector(".pad-loop");
+    lb.addEventListener("pointerdown", function (e) { e.preventDefault(); e.stopPropagation(); if (!S.edit) toggleLoop(cur()); });
     b.addEventListener("pointerdown", function (e) {
       if (e.button > 0) return;
       e.preventDefault();
       if (S.edit) { select(cur()); return; }
       try { b.setPointerCapture(e.pointerId); } catch (er) { /* ignore */ }
-      b._down = cur(); fire(b._down, true);
+      b._ptr[e.pointerId] = 1; var multi = Object.keys(b._ptr).length > 1;
+      b._down = cur(); fire(b._down, true);  // every finger / rapid tap = fresh overlapping hit
       var kk = b._down, pp = S.pads[kk];
-      clearTimeout(b._lp); if (pp.file || pp.user) b._lp = setTimeout(function () { if (b._down === kk && window.PFSTUDIO) { b._down = null; stopVoice(pp, true); window.PFSTUDIO.open({ pad: kk, fromPad: true }); } }, 650); // long-press → Sample Studio
+      clearTimeout(b._lp); if (!multi && !pp.loopOn && (pp.file || pp.user)) b._lp = setTimeout(function () { if (b._down === kk && window.PFSTUDIO) { b._down = null; stopVoice(pp, true); window.PFSTUDIO.open({ pad: kk, fromPad: true }); } }, 650); // long-press → Sample Studio
     });
-    var up = function () { clearTimeout(b._lp); if (b._down) { var k = b._down; b._down = null; fire(k, false); } };
+    var up = function (e) { if (e && e.pointerId != null) delete b._ptr[e.pointerId]; clearTimeout(b._lp); if (Object.keys(b._ptr).length) return; if (b._down) { var k = b._down; b._down = null; fire(k, false); } };
     b.addEventListener("pointerup", up); b.addEventListener("pointercancel", up); b.addEventListener("lostpointercapture", up);
     b.addEventListener("contextmenu", function (e) { e.preventDefault(); select(cur()); });
     b.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); if (!e.repeat) fire(cur(), true); } });
@@ -226,6 +268,7 @@
     $("smp-vol").addEventListener("input", function () { S.vol = +$("smp-vol").value; if (S.bus) S.bus.gain.setTargetAtTime(S.vol, P.ctx.currentTime, 0.01); save(); });
     $("smp-editbtn").addEventListener("click", function () { S.edit = !S.edit; $("smp-editbtn").classList.toggle("on", S.edit); if (!S.edit) { $("smp-edit").hidden = true; var o = S.sel; S.sel = null; if (o) render(S.pads[o]); } else P.toast("Edit mode: tap a pad to set its volume, mode or load your own sample"); });
     $("smp-stop").addEventListener("click", stopAll);
+    if ($("smp-stoploops")) $("smp-stoploops").addEventListener("click", function () { stopLoops(); P.toast("All loops stopped (loop switches stay on — tap a pad to restart)"); });
     $("smp-ed-vol").addEventListener("input", function () { var p = S.pads[S.sel]; if (!p) return; p.vol = +$("smp-ed-vol").value; $("smp-ed-volv").textContent = Math.round(p.vol * 100) + "%"; if (p.voice) p.voice.g.gain.setTargetAtTime(p.vol, P.ctx.currentTime, 0.01); save(); });
     $("smp-ed-mode").addEventListener("change", function () { var p = S.pads[S.sel]; if (!p) return; stopVoice(p); p.mode = $("smp-ed-mode").value; render(p); save(); });
     $("smp-ed-file").addEventListener("change", function (e) { var f = e.target.files[0]; e.target.value = ""; if (f && S.sel) assignFile(S.sel, f); });
@@ -364,11 +407,11 @@
     import("../shared/user-samples.js").then(function (m) { m.onSamplesChange(function () { loadMine().then(renderBrowser); }); }).catch(function () { /* no shared store */ });
   }
   build();
-  window.PFSAMPLER = { S: S, fire: fire, stopAll: stopAll, setBank: setBank, load: load, assign: assign, clearPad: clearPad, firstEmpty: firstEmpty, browser: toggleBrowser, B: B, useItem: useItem, KEYS: KEYS,
+  window.PFSAMPLER = { S: S, fire: fire, stopAll: stopAll, stopLoops: stopLoops, toggleLoop: toggleLoop, setBank: setBank, load: load, assign: assign, clearPad: clearPad, firstEmpty: firstEmpty, browser: toggleBrowser, B: B, useItem: useItem, KEYS: KEYS,
     padBlob: function (k) { var p = S.pads[k]; if (!p) return Promise.resolve(null); return p.blob ? Promise.resolve(p.blob) : p.file ? fetch(p.file).then(function (r) { return r.ok ? r.blob() : null; }) : Promise.resolve(null); },
     info: function () {
     var o = { bank: S.bank, q: S.q, qDiv: S.qDiv, vol: S.vol, loaded: 0, total: 0, playing: [], pads: {} };
-    Object.keys(S.pads).forEach(function (k) { var p = S.pads[k]; if (p.file || p.user) { o.total++; if (p.buf) o.loaded++; o.pads[k] = p.name; } if (p.voice) o.playing.push(k); });
+    Object.keys(S.pads).forEach(function (k) { var p = S.pads[k]; if (p.file || p.user) { o.total++; if (p.buf) o.loaded++; o.pads[k] = p.name; } if (p.voice) o.playing.push(k); if (p.lv) (o.loops = o.loops || []).push(k); if (p.shots.length) (o.shots = o.shots || {})[k] = p.shots.length; });
     o.busPeak = (function () { if (!S.an) return 0; var a = new Float32Array(S.an.fftSize); S.an.getFloatTimeDomainData(a); var m = 0; for (var i = 0; i < a.length; i++) m = Math.max(m, Math.abs(a[i])); return m; })();
     return o;
   } };
