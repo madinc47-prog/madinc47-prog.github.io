@@ -73,12 +73,36 @@
     for (var ch = 0; ch < buf.numberOfChannels; ch++) out.getChannelData(ch).set(buf.getChannelData(ch).subarray(i));
     return out;
   }
+  /* v20261022p: decoded audio must actually move (catches DC-only / silent files) */
+  function audible(b) {
+    var c = b.getChannelData(0), n = c.length, step = Math.max(1, n >> 12), zc = 0, pk = 0, last = 0;
+    for (var i = 0; i < n; i += step) { var v = c[i]; pk = Math.max(pk, Math.abs(v)); if ((v > 0) !== (last > 0)) zc++; last = v; }
+    return pk > 0.01 && zc > 8;
+  }
+  /* synthesized DJ FX (airhorn / siren / laser / riser) — always available, no file needed */
+  function synthFx(i) {
+    var ctx = P.ctx; if (!ctx) return null;
+    var R = ctx.sampleRate, kind = i % 4, d = [1.1, 1.6, 0.35, 1.6][kind], n = Math.round(R * d), b = ctx.createBuffer(1, n, R), c = b.getChannelData(0), ph = 0, ph2 = 0, sd = 12345;
+    for (var j = 0; j < n; j++) {
+      var t = j / R, f, v, e = Math.min(1, t / 0.008, (d - t) / 0.06);
+      if (kind === 0) { f = 440 * (1 + 0.006 * Math.sin(2 * Math.PI * 6 * t)); ph += f / R; ph2 += f * 1.5 / R; v = Math.tanh(2 * ((2 * (ph % 1) - 1) + 0.6 * (2 * (ph2 % 1) - 1)) * 0.6); }
+      else if (kind === 1) { f = 900 + 450 * Math.sin(2 * Math.PI * 2.5 * t); ph += f / R; v = 0.8 * Math.sin(2 * Math.PI * ph) + 0.2 * (ph % 1 < 0.5 ? 1 : -1); }
+      else if (kind === 2) { f = 3000 * Math.pow(0.05, t / d); ph += f / R; v = ph % 1 < 0.5 ? 0.6 : -0.6; }
+      else { sd = (sd * 16807) % 2147483647; f = 200 * Math.pow(10, t / d); ph += f / R; v = (t / d) * (0.5 * (2 * (ph % 1) - 1) + 0.4 * (sd / 1073741823 - 1)); }
+      c[j] = 0.8 * v * Math.max(0, e);
+    }
+    return b;
+  }
   function load(p) {
     if (p.buf) return Promise.resolve(p.buf);
     if (p.loading) return p.loading;
     var get = p.user ? Promise.resolve(p.blob.arrayBuffer()) : p.file ? fetch(p.file).then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.arrayBuffer(); }).catch(function (e) { if (!window.caches) throw e; return caches.match(p.file).then(function (r) { if (!r) throw e; return r.arrayBuffer(); }); }) : Promise.reject(new Error("empty"));
-    p.loading = get.then(function (ab) { return P.decode(ab); }).then(function (b) { p.buf = trimLead(b); p.loading = null; render(p); return p.buf; })
-      .catch(function (e) { p.loading = null; p.err = true; render(p); throw e; });
+    p.loading = get.then(function (ab) { return P.decode(ab); }).then(function (b) { if (!audible(b)) throw new Error("silent/DC"); p.buf = trimLead(b); p.loading = null; render(p); return p.buf; })
+      .catch(function (e) { // v20261022p: never silent or a thump — fall back to a code-synth DJ FX
+        try { console.warn("[pads] " + p.k + " " + (p.file || "blob") + " failed: " + (e && e.message) + " → synth FX"); } catch (er) { /* ignore */ }
+        var fb = synthFx(p.i); p.loading = null;
+        if (fb) { p.buf = fb; p.fallback = true; render(p); return fb; }
+        p.err = true; render(p); throw e; });
     render(p);
     return p.loading;
   }
@@ -343,11 +367,13 @@
   }
   /* v20261022i: ready out of the box — fill EMPTY pads with the pack layout (banks A–E), once per pack version.
      Pads he customised (or cleared after a preload) are never touched; the Sample Studio / browser swap path is unchanged. */
-  var PRE_K = "pfdj_pads_preload", PRE_V = "p2", PCACHE = "pfdj-pads-v2";
+  var PRE_K = "pfdj_pads_preload", PRE_V = "p3", PCACHE = "pfdj-pads-v3";
   /* v2 pack (20261022m): old island-specific files → universal one-shots. Pads still pointing at an old pack file are
      moved to the v2 sample on the same pad; his own pads (blobs / other URLs) are never touched. */
   var OLDV1 = ["a01-dj-psycho-fingers.mp3", "a02-on-the-decks.mp3", "a03-dominica-stand-up.mp3", "a04-nature-isle.mp3", "a05-island-pin.mp3", "a06-wheel-it-up.mp3", "a07-rewind.mp3", "a08-run-it-back.mp3", "a09-big-tune.mp3", "a10-selector.mp3", "a11-boo-yaka.mp3", "a12-pull-up.mp3", "a13-come-again.mp3", "a14-big-up-dominica.mp3", "a15-in-the-mix.mp3", "c07-fresh-stab.mp3", "c08-yeah-stab.mp3", "c09-hey-stab.mp3", "c13-reverse-rewind.mp3", "d07-dancehall-kick.mp3", "d08-dancehall-snare.mp3", "d09-timbale-fill.mp3", "d10-steel-pan-stab.mp3"];
-  if (window.caches) caches.delete("pfdj-pads-v1").catch(function () { /* ignore */ });
+  if (window.caches) ["pfdj-pads-v1", "pfdj-pads-v2"].forEach(function (c) { caches.delete(c).catch(function () { /* ignore */ }); });
+  /* v20261022p: v2 voice files (broken: DC thump, sounded like a drum) → FX on the same pad */
+  OLDV1 = OLDV1.concat(["a01-dj-psycho-fingers-gran.mp3", "a02-on-the-decks-gran.mp3", "a03-yeah.mp3", "a04-hey.mp3", "a05-come-on.mp3", "a06-make-some-noise.mp3", "a07-rewind-gran.mp3", "a08-run-it-back-gran.mp3", "a09-big-tune-gran.mp3", "a10-lets-go.mp3", "a11-hands-up.mp3", "a12-one-more-time.mp3", "a13-turn-it-up.mp3", "a14-oh-yeah.mp3", "a15-in-the-mix-gran.mp3", "a16-laugh.mp3", "c07-fresh-stab-gran.mp3", "c08-yeah-stab-gran.mp3", "c09-hey-stab-gran.mp3", "c13-rewind-swell-gran.mp3"]);
   function preload() {
     var done = ""; try { done = localStorage.getItem(PRE_K) || ""; } catch (e) { /* ignore */ }
     if (done === PRE_V) return;

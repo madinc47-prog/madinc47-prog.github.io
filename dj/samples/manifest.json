@@ -1,118 +1,118 @@
 {
- "pack": "DJ Psycho Fingers sample pack v2 (2026-10-22): universal DJ one-shots, elderly-woman voice tags",
+ "pack": "DJ Psycho Fingers sample pack v3 (2026-10-22): all-FX bank A (no voices), C voice stabs replaced with FX",
  "banks": {
   "A": [
    {
     "pad": 0,
-    "file": "a01-dj-psycho-fingers-gran.mp3",
-    "name": "DJ Psycho Fingers! (Gran)",
-    "cat": "voice",
-    "dur": 2.01
+    "file": "a01-fx-air-horn.mp3",
+    "name": "Air Horn",
+    "cat": "fx",
+    "dur": 1.2
    },
    {
     "pad": 1,
-    "file": "a02-on-the-decks-gran.mp3",
-    "name": "On the decks (Gran)",
-    "cat": "voice",
-    "dur": 2.22
+    "file": "a02-fx-air-horn-x3.mp3",
+    "name": "Air Horn x3",
+    "cat": "fx",
+    "dur": 1.16
    },
    {
     "pad": 2,
-    "file": "a03-yeah.mp3",
-    "name": "Yeah!",
-    "cat": "voice",
-    "dur": 0.89
+    "file": "a03-fx-air-horn-high.mp3",
+    "name": "Air Horn High",
+    "cat": "fx",
+    "dur": 1.0
    },
    {
     "pad": 3,
-    "file": "a04-hey.mp3",
-    "name": "Hey!",
-    "cat": "voice",
-    "dur": 1.04
+    "file": "a04-fx-horn-drop.mp3",
+    "name": "Horn Drop",
+    "cat": "fx",
+    "dur": 1.4
    },
    {
     "pad": 4,
-    "file": "a05-come-on.mp3",
-    "name": "Come on!",
-    "cat": "voice",
-    "dur": 1.02
+    "file": "a05-fx-siren-up-down.mp3",
+    "name": "Siren Up-Down",
+    "cat": "fx",
+    "dur": 2.0
    },
    {
     "pad": 5,
-    "file": "a06-make-some-noise.mp3",
-    "name": "Make some noise!",
-    "cat": "voice",
-    "dur": 1.49
+    "file": "a06-fx-siren-fast.mp3",
+    "name": "Siren Fast",
+    "cat": "fx",
+    "dur": 1.6
    },
    {
     "pad": 6,
-    "file": "a07-rewind-gran.mp3",
-    "name": "Rewind!",
-    "cat": "voice",
-    "dur": 1.07
+    "file": "a07-fx-laser.mp3",
+    "name": "Laser",
+    "cat": "fx",
+    "dur": 0.28
    },
    {
     "pad": 7,
-    "file": "a08-run-it-back-gran.mp3",
-    "name": "Run it back!",
-    "cat": "voice",
-    "dur": 1.2
+    "file": "a08-fx-laser-x4.mp3",
+    "name": "Laser x4",
+    "cat": "fx",
+    "dur": 0.6
    },
    {
     "pad": 8,
-    "file": "a09-big-tune-gran.mp3",
-    "name": "Big tune!",
-    "cat": "voice",
-    "dur": 1.2
+    "file": "a09-fx-riser-2s.mp3",
+    "name": "Riser 2s",
+    "cat": "fx",
+    "dur": 2.0
    },
    {
     "pad": 9,
-    "file": "a10-lets-go.mp3",
-    "name": "Let's go!",
-    "cat": "voice",
-    "dur": 1.54
+    "file": "a10-fx-big-impact.mp3",
+    "name": "Big Impact",
+    "cat": "fx",
+    "dur": 1.6
    },
    {
     "pad": 10,
-    "file": "a11-hands-up.mp3",
-    "name": "Put your hands up!",
-    "cat": "voice",
-    "dur": 1.49
-   },
-   {
-    "pad": 11,
-    "file": "a12-one-more-time.mp3",
-    "name": "One more time!",
-    "cat": "voice",
-    "dur": 1.41
-   },
-   {
-    "pad": 12,
-    "file": "a13-turn-it-up.mp3",
-    "name": "Turn it up!",
-    "cat": "voice",
-    "dur": 1.28
-   },
-   {
-    "pad": 13,
-    "file": "a14-oh-yeah.mp3",
-    "name": "Oh yeah!",
-    "cat": "voice",
+    "file": "a11-fx-rewind-fx.mp3",
+    "name": "Rewind FX",
+    "cat": "fx",
     "dur": 1.2
    },
    {
+    "pad": 11,
+    "file": "a12-fx-whoosh-up.mp3",
+    "name": "Whoosh Up",
+    "cat": "fx",
+    "dur": 1.0
+   },
+   {
+    "pad": 12,
+    "file": "a13-fx-whoosh-down.mp3",
+    "name": "Whoosh Down",
+    "cat": "fx",
+    "dur": 1.0
+   },
+   {
+    "pad": 13,
+    "file": "a14-fx-synth-stab.mp3",
+    "name": "Synth Stab",
+    "cat": "fx",
+    "dur": 0.5
+   },
+   {
     "pad": 14,
-    "file": "a15-in-the-mix-gran.mp3",
-    "name": "In the mix (Gran)",
-    "cat": "voice",
-    "dur": 2.12
+    "file": "a15-fx-gated-buzz.mp3",
+    "name": "Gated Buzz",
+    "cat": "fx",
+    "dur": 1.5
    },
    {
     "pad": 15,
-    "file": "a16-laugh.mp3",
-    "name": "Laugh",
-    "cat": "voice",
-    "dur": 1.67
+    "file": "a16-fx-reverse-crash.mp3",
+    "name": "Reverse Crash",
+    "cat": "fx",
+    "dur": 1.5
    }
   ],
   "B": [
@@ -274,24 +274,24 @@
    },
    {
     "pad": 6,
-    "file": "c07-fresh-stab-gran.mp3",
-    "name": "'Fresh!' stab",
-    "cat": "voice",
-    "dur": 0.91
+    "file": "c07-fx-brass-hit.mp3",
+    "name": "Brass Hit",
+    "cat": "fx",
+    "dur": 0.6
    },
    {
     "pad": 7,
-    "file": "c08-yeah-stab-gran.mp3",
-    "name": "'Yeah!' stab",
-    "cat": "voice",
-    "dur": 0.89
+    "file": "c08-fx-zap-up.mp3",
+    "name": "Zap Up",
+    "cat": "fx",
+    "dur": 0.35
    },
    {
     "pad": 8,
-    "file": "c09-hey-stab-gran.mp3",
-    "name": "'Hey!' stab",
-    "cat": "voice",
-    "dur": 1.04
+    "file": "c09-fx-chirp-fx.mp3",
+    "name": "Chirp FX",
+    "cat": "fx",
+    "dur": 0.2
    },
    {
     "pad": 9,
@@ -316,10 +316,10 @@
    },
    {
     "pad": 12,
-    "file": "c13-rewind-swell-gran.mp3",
-    "name": "Reverse 'Rewind' swell",
-    "cat": "voice",
-    "dur": 1.44
+    "file": "c13-fx-reverse-riser.mp3",
+    "name": "Reverse Riser",
+    "cat": "fx",
+    "dur": 1.2
    },
    {
     "pad": 13,
