@@ -85,6 +85,9 @@
     /* v20261022f: the one-tap TALK button gets its own spot in the quick bar instead of floating over the decks */
     var dock = document.querySelector(".talk-dock"); if (dock && dock.parentNode !== qb) { qb.insertBefore(dock, B["qb-talk"]); dock.classList.add("in-qb"); B["qb-talk"].hidden = true; }
   }
+  /* v20261022g: page padding follows the real crossfader-bar height (used by the phone-landscape CSS) */
+  function xfh() { var x = document.querySelector(".xfbar"); if (x) document.documentElement.style.setProperty("--xfh", x.offsetHeight + "px"); }
+  window.addEventListener("resize", xfh); setInterval(xfh, 1000); xfh();
   setInterval(mirror, 400); mirror();
   window.PFLAYOUT = { render: render };
 })();

@@ -841,7 +841,7 @@ body:not(.vdj-page) .talk-dock { bottom: 124px; }
 @media (max-width: 1099px) { .quickbar .talk-dock.in-qb { flex: 1 1 auto; } .quickbar .talk-dock.in-qb .talk-btn { flex: 1 1 auto; justify-content: center; } }
 
 /* v20261022f: Samsung Galaxy phones (A17 ≈ 412×915, 360×800, landscape ≈ 915×412). Phone-only: Tab/desktop untouched. */
-@media (max-width: 480px), (max-height: 480px) and (orientation: landscape) and (max-width: 1000px) {
+@media (orientation: landscape) and (max-height: 500px) {
   .pill.small, .btn.small, .btn, .pill, .kill, .mini, .hot, .pl-b, .lib-tab, .smp-bank, .toplink, .qb, .peq-btn { min-height: 44px; min-width: 44px; }
   .kill, .hot { flex: 1 1 44px; }
   .mini.peq-btn, .peq .kill, .mixer .kill { min-height: 44px !important; min-width: 44px !important; }
@@ -856,9 +856,31 @@ body:not(.vdj-page) .talk-dock { bottom: 124px; }
   html, body { overflow-x: hidden; }
 }
 /* phone landscape: short screen — one swipeable row for the quick bar, compact top bar */
-@media (max-height: 480px) and (orientation: landscape) and (max-width: 1000px) {
+@media (orientation: landscape) and (max-height: 500px) {
   .quickbar { flex-wrap: nowrap; overflow-x: auto; padding: 4px 8px; }
   .quickbar .qb, .quickbar .talk-dock.in-qb { flex: 0 0 auto; }
   .topbar { padding-top: 4px; padding-bottom: 4px; }
   #mixer .strips, #mixer .master { zoom: 1; }
+}
+/* v20261022g: phone LANDSCAPE (≈915×412 / 870×390 / 800×360) — real-size decks + mixer, page scrolls vertically, nothing clipped */
+@media (orientation: landscape) and (max-height: 500px) {
+  .console { display: grid !important; grid-template-columns: minmax(0, 1fr) minmax(0, .9fr) minmax(0, 1fr) !important; grid-template-rows: auto auto; gap: 8px; align-items: start; }
+  .console > #deck-A { grid-column: 1; grid-row: 1 / 3; order: 0; }
+  .console > #mixer { grid-column: 2; grid-row: 1; order: 0; min-width: 0; overflow: visible; }
+  .console > .pl-mini { grid-column: 2; grid-row: 2; order: 0; }
+  .console > #deck-B { grid-column: 3; grid-row: 1 / 3; order: 0; }
+  .deck { display: flex !important; flex-direction: column; min-width: 0; height: auto !important; max-height: none !important; overflow: visible !important; }
+  .deck > * { min-width: 0; }
+  .tt { max-width: min(240px, 100%) !important; width: 100%; }
+  body:not(.vdj-page) .waves { display: none; }
+  #mixer .strips, #mixer .master { zoom: 1 !important; }
+  #mixer .strips { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+  #mixer, #mixer * { max-height: none; }
+  /* crossfader bar: one compact row, and the page is padded by its real height so it never covers anything */
+  .xfbar { flex-wrap: nowrap !important; padding-top: 4px !important; padding-bottom: calc(4px + env(safe-area-inset-bottom)) !important; }
+  .xfbar .xf-wrap { display: flex; align-items: center; gap: 8px; flex-wrap: nowrap; }
+  .xfbar .xf-wrap > .ctl.xf { flex: 1 1 auto; min-width: 140px; }
+  .xfbar .xf-labels, .xfbar .xf-btns { flex: 0 0 auto; display: flex; gap: 4px; flex-wrap: nowrap !important; align-items: center; }
+  body, body.vdj-page, body:not(.vdj-page) { padding-bottom: calc(var(--xfh, 64px) + 8px) !important; }
+  .vdj-page .vdj-prog canvas { max-height: 70vh; }
 }
