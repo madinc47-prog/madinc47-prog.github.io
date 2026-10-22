@@ -19,7 +19,7 @@
   q("qb-talk", "🎤 TALK", function () { var b = $("talk-btn"); if (b) b.click(); }, "qb-talk");
   if ($("fs-go")) q("qb-fs", "🔥 FREESTYLE", function () { $("fs-go").click(); go("#freestyle"); }, "qb-fs");
   q("qb-fx", "🎛 FX / EQ", function () { go("#mixer"); });
-  if ($("sampler")) q("qb-pads", "🥁 Pads", function () { go("#sampler"); });
+  if ($("sampler")) q("qb-pads", "🥁 Pads", function () { var F = window.PFDJ_PADSFLOAT; if (F && F.isOpen()) { var pf = $("pads-float"); if (pf) { pf.classList.remove("collapsed"); pf.scrollIntoView && pf.querySelector(".pf-body").scrollTo(0, 0); } return; } go("#sampler"); });
   q("qb-lib", "📚 Library", function () { go(".lib-tabs"); });
   q("qb-recs", "📁 My Recordings", function () { go("#my-recs"); });
   q("qb-more", "⋯ More", function () { var m = $("more"); m.hidden = !m.hidden; B["qb-more"].classList.toggle("on", !m.hidden); if (!m.hidden) go(m); });
