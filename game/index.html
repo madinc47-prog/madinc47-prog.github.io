@@ -1,21 +1,12 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"><meta name="robots" content="noindex"><link rel="icon" href="data:,"><title>Psycho Fingers Island — Demo</title>
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'none'">
-<style>html,body{margin:0;height:100%;overflow:hidden;background:#000;font-family:system-ui,sans-serif;color:#fff;-webkit-user-select:none;user-select:none}#c{position:fixed;inset:0}
-.ov{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:5;text-align:center;padding:16px;box-sizing:border-box}
-#pick{background:linear-gradient(#120024,#3a0b4a)}#pick h1{margin:.2em;font-size:clamp(22px,5vw,40px)}#pick .r{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-top:14px}
-#pick button{font:600 18px system-ui;padding:16px 22px;border-radius:14px;border:0;color:#fff;min-width:110px}
-#boot{display:none;background:#000;color:#3f6;font:16px monospace;white-space:pre;transition:opacity .9s}
-#hud{display:none}#joy{position:fixed;left:24px;bottom:24px;width:120px;height:120px;border-radius:50%;background:#fff2;border:2px solid #fff5;z-index:3;touch-action:none}
-#knob{position:absolute;left:35px;top:35px;width:50px;height:50px;border-radius:50%;background:#fff9;pointer-events:none}
-#carb{display:none;position:fixed;right:24px;bottom:40px;z-index:3;padding:14px 18px;border-radius:12px;border:0;background:#d8262f;color:#fff;font:600 16px system-ui}
-#fps{position:fixed;top:6px;right:8px;font-size:12px;opacity:.7;z-index:3}#help{position:fixed;top:6px;left:8px;font-size:12px;opacity:.8;z-index:3;text-shadow:0 1px 2px #000}
-#msg{position:fixed;top:40px;left:50%;transform:translateX(-50%);background:#0008;padding:8px 14px;border-radius:10px;opacity:0;transition:opacity .4s;z-index:3;font-size:14px;max-width:90vw}
-#club{display:none;background:radial-gradient(#3a0b4a,#05000a);z-index:6}#club h2{color:#ff2bd6;font-size:clamp(24px,6vw,48px);margin:.2em}#club button{margin-top:18px;padding:12px 20px;border-radius:12px;border:0;font:600 16px system-ui}
-</style></head><body><div id="c"></div>
-<div id="pick" class="ov"><h1>PSYCHO FINGERS ISLAND</h1><div>Rough demo · choose your role</div><div class="r">
-<button data-r="artist" style="background:#c9a000">🎤 Artist</button><button data-r="dj" style="background:#7a2bff">🎧 DJ</button><button data-r="fan" style="background:#2a9d55">🙌 Fan</button></div></div>
-<div id="boot" class="ov"></div>
-<div id="hud"><div id="joy"><div id="knob"></div></div><button id="carb">Enter car (E)</button><div id="fps"></div><div id="help">Joystick/WASD move · drag to look · Shift run · E car</div></div>
-<div id="msg"></div>
-<div id="club" class="ov"><h2>LIVE DJ ROOM</h2><div>🎧 Headphone party · coming soon</div><button id="leave">Leave club</button></div>
-<script src="three.min.js"></script><script src="g.js"></script></body></html>
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#000"><meta name="mobile-web-app-capable" content="yes"><link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="data:,"><title>DJ Psycho Fingers — The Game</title>
+<link rel="stylesheet" href="game.css"></head><body>
+<canvas id="c"></canvas>
+<div id="sub"></div><div id="hud"></div>
+<div id="top"><div id="chap"></div><button id="qbtn">Quality</button><button id="fs" title="Full screen">⛶</button></div>
+<div id="load"><div class="spin"></div><div id="loadt">Loading…</div></div>
+<div id="start"><h1 class="neon">DJ PSYCHO FINGERS</h1><p>Dominica · the Nature Isle · tonight</p><button id="startb" class="big">▶ Tap to start</button><button id="contb" class="big alt">Continue</button><p class="small">Best with sound on. Headphones recommended.</p><p class="small" id="ver"></p>
+<p class="tiny">Map data © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a> (ODbL) · Elevation: AWS Terrain Tiles (SRTM/USGS, public domain) · Textures: ambientCG &amp; Poly Haven (CC0) · Engine: three.js (MIT) · Voice: Kokoro-82M TTS (Apache-2.0) · <a href="CREDITS.md">Credits</a></p></div>
+<script type="module" src="js/main.js"></script></body></html>
