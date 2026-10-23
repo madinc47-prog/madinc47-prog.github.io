@@ -136,24 +136,69 @@
     P.toast("Program output popped out — drag that window to the projector / TV and double-click it for fullscreen. (Audio stays on this page's output.)");
   }
   function fullscreen() { var el = $("vdj-progwrap"); var f = el.requestFullscreen || el.webkitRequestFullscreen; if (f) f.call(el); else P.toast("Fullscreen isn't available here — use Pop-out."); }
+  /* v20261023b: REC VIDEO saves itself to 📁 My Recordings (IndexedDB, chunked every second, crash-safe) as MP4.
+     MP4 (H.264/AAC) is recorded directly where MediaRecorder supports it (recent Chrome / Android Chrome).
+     Otherwise the WEBM is converted to MP4 in the browser with ffmpeg.wasm (lazy-loaded from a CDN only then);
+     if that fails the WEBM is kept with a note. Mic stays raw (audioStream is the same show bus as ● REC). */
+  var MP4 = ["video/mp4;codecs=avc1.42E01E,mp4a.40.2", "video/mp4;codecs=avc1,mp4a.40.2", "video/mp4;codecs=avc1.42E01E,opus", "video/mp4;codecs=avc1,opus", "video/mp4"];
+  var WEBM = ["video/webm;codecs=vp9,opus", "video/webm;codecs=vp8,opus", "video/webm"];
   function toggleRec() {
     if (rec) { rec.mr.stop(); return; }
     if (!cv.captureStream || !window.MediaRecorder) { P.toast("This browser can't record the video output."); return; }
-    var mime = P.pickMime(["video/webm;codecs=vp9,opus", "video/webm;codecs=vp8,opus", "video/webm", "video/mp4"]);
+    var mime = P.pickMime(window.PFVDJ_FORCE_WEBM ? WEBM : MP4.concat(WEBM));
     if (!mime) { P.toast("No supported video recording format in this browser."); return; }
     var as = P.audioStream(); if (!as) return;
     var st = new MediaStream(cv.captureStream(30).getVideoTracks().concat(as.getAudioTracks()));
-    var mr = new MediaRecorder(st, { mimeType: mime, videoBitsPerSecond: 4000000, audioBitsPerSecond: 160000 }), chunks = [];
-    rec = { mr: mr, t0: performance.now(), bytes: 0 };
-    mr.ondataavailable = function (e) { if (e.data && e.data.size) { chunks.push(e.data); rec && (rec.bytes += e.data.size); } };
+    var mr = new MediaRecorder(st, { mimeType: mime, videoBitsPerSecond: 4000000, audioBitsPerSecond: 192000 });
+    var R = window.PFREC, id = R ? R.begin("video", mime, 0, "DJ Psycho Fingers video show", true) : null, chunks = [];
+    rec = { mr: mr, t0: performance.now(), bytes: 0, id: id };
+    mr.ondataavailable = function (e) { if (e.data && e.data.size) { if (id) R.chunk(id, e.data); else chunks.push(e.data); rec && (rec.bytes += e.data.size); } };
     mr.onstop = function () {
-      var dur = (performance.now() - rec.t0) / 1000, blob = new Blob(chunks, { type: mime.split(";")[0] });
+      var dur = (performance.now() - rec.t0) / 1000, bytes = rec.bytes;
       rec = null; $("vdj-rec").classList.remove("on"); $("vdj-rec").textContent = "● REC VIDEO"; $("vdj-rect").textContent = "";
-      var it = P.addMix(blob, dur, /mp4/.test(mime) ? "mp4" : "webm", "DJ Psycho Fingers video show"); it.video = true; P.showLib("mixes");
-      P.toast("Video show recorded · " + P.fmtTime(dur) + " · " + P.fmtSize(blob.size));
+      if (!id) { var it = P.addMix(new Blob(chunks, { type: mime.split(";")[0] }), dur, /mp4/.test(mime) ? "mp4" : "webm", "DJ Psycho Fingers video show"); it.video = true; P.showLib("mixes"); return; }
+      R.end(id, dur).then(function (m) {
+        if (!m) { P.toast("Video recording was empty — nothing saved."); return; }
+        if (P.showLib) { var el = document.getElementById("my-recs"); if (el) el.scrollIntoView({ behavior: "smooth", block: "start" }); }
+        if (/mp4/.test(mime)) { P.toast("Video show saved to My Recordings as MP4 · " + P.fmtTime(dur) + " · " + P.fmtSize(bytes)); return; }
+        P.toast("Video show saved (WEBM) — converting to MP4 on this device…");
+        R.blobOf(m).then(function (b) { return toMp4(b); }).then(function (mp4) { return R.replace(id, mp4, "video/mp4"); })
+          .then(function () { P.toast("Video show converted — saved in My Recordings as MP4"); })
+          .catch(function (e) { R.note(id, "kept as WEBM (MP4 conversion failed)"); P.toast("Couldn't convert to MP4 (" + (e && e.message || e) + ") — kept as WEBM in My Recordings."); });
+      });
     };
     mr.start(1000); $("vdj-rec").classList.add("on"); $("vdj-rec").textContent = "■ STOP VIDEO"; schedule();
-    P.toast("Recording the program video + the whole show audio (decks, sampler, mic). Keep this tab in front.");
+    P.toast("Recording video + show audio as " + (/mp4/.test(mime) ? "MP4" : "WEBM (→ MP4 after)") + " — saves itself to My Recordings. Keep this tab in front.");
+  }
+  P.stopVideoRec = function () { if (rec) rec.mr.stop(); };
+  var FF = null, CDN = "https://cdn.jsdelivr.net/npm/";
+  function blobUrl(u, type) { return fetch(u).then(function (r) { if (!r.ok) throw new Error("download " + r.status); return r.blob(); }).then(function (b) { return URL.createObjectURL(new Blob([b], { type: type })); }); }
+  function loadFF() {
+    if (FF) return FF;
+    FF = new Promise(function (res, rej) {
+      if (window.FFmpegWASM) return res();
+      var s = document.createElement("script"); s.src = CDN + "@ffmpeg/ffmpeg@0.12.10/dist/umd/ffmpeg.js"; s.onload = res; s.onerror = function () { rej(new Error("converter download failed")); }; document.head.appendChild(s);
+    }).then(function () {
+      var core = CDN + "@ffmpeg/core@0.12.6/dist/esm/";
+      return Promise.all([blobUrl(CDN + "@ffmpeg/ffmpeg@0.12.10/dist/umd/814.ffmpeg.js", "text/javascript"), blobUrl(core + "ffmpeg-core.js", "text/javascript"), blobUrl(core + "ffmpeg-core.wasm", "application/wasm")]);
+    }).then(function (u) {
+      var ff = new window.FFmpegWASM.FFmpeg();
+      ff.on("progress", function (p) { var x = Math.round((p.progress || 0) * 100); if (x > 0 && x <= 100 && x % 10 === 0) P.toast("Converting to MP4… " + x + "%"); });
+      return ff.load({ classWorkerURL: u[0], coreURL: u[1], wasmURL: u[2] }).then(function () { return ff; });
+    });
+    FF.catch(function () { FF = null; });
+    return FF;
+  }
+  function toMp4(webm) {
+    if (webm.size > 400 * 1048576) return Promise.reject(new Error("too big to convert on-device"));
+    P.toast("Loading the MP4 converter (~30 MB, first time only)…");
+    return loadFF().then(function (ff) {
+      return webm.arrayBuffer().then(function (ab) { return ff.writeFile("in.webm", new Uint8Array(ab)); })
+        .then(function () { return ff.exec(["-i", "in.webm", "-c:v", "copy", "-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart", "out.mp4"]).catch(function () { return 1; }); })   /* remux (VP9 fits in MP4) */
+        .then(function (rc) { if (rc === 0) return ff.readFile("out.mp4").then(function (d) { return d && d.length > 1000 ? d : null; }).catch(function () { return null; }); return null; })
+        .then(function (d) { if (d) return d; return ff.exec(["-i", "in.webm", "-c:v", "libx264", "-preset", "ultrafast", "-crf", "23", "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart", "out.mp4"]).then(function (rc) { if (rc !== 0) throw new Error("ffmpeg " + rc); return ff.readFile("out.mp4"); }); })
+        .then(function (d) { ff.deleteFile("in.webm").catch(function () {}); ff.deleteFile("out.mp4").catch(function () {}); return new Blob([d], { type: "video/mp4" }); });
+    });
   }
   function build() {
     cv = $("vdj-prog"); if (!cv) return;
@@ -174,6 +219,6 @@
     $("vdj-prog").addEventListener("dblclick", fullscreen);
   }
   build();
-  window.PFVDJ = { open: setOpen, loadVideo: function (deck, blob, name) { return loadVideo(P.BY[deck], blob, name); }, toggleRec: toggleRec,
+  window.PFVDJ = { open: setOpen, loadVideo: function (deck, blob, name) { return loadVideo(P.BY[deck], blob, name); }, toggleRec: toggleRec, _toMp4: function (b) { return toMp4(b); },
     info: function () { return { open: open, trans: V.trans, mix: mixAmount(), rec: !!rec, decks: P.DECKS.map(function (d) { var v = d.video; return v ? { id: d.id, t: v.currentTime, pos: P.pos(d), paused: v.paused, rate: v.playbackRate, ready: v.readyState, w: v.videoWidth } : { id: d.id, none: true }; }) }; } };
 })();
