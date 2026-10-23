@@ -439,6 +439,15 @@
   $("undo").onclick = undo; $("redo").onclick = redo;
   $("zin").onclick = function () { zoomTo(pxs * 1.5); }; $("zout").onclick = function () { zoomTo(pxs / 1.5); };
   $("bpm").onchange = function () { var v = Math.max(40, Math.min(240, +this.value || 90)); edit(); S.bpm = v; this.value = v; rebuildAll(); render(); };
+  /* Rock guitar bank (IPB original, CC0): drops the sample on a new track at the playhead. Pads elsewhere untouched. */
+  (function () { var sel = $("rockgtr"), L = window.IPBLib; if (!sel || !L) return;
+    L.ITEMS.filter(function (x) { return x.c === "guitar"; }).forEach(function (x) { var o = document.createElement("option"); o.value = x.f; o.textContent = x.n; sel.appendChild(o); });
+    sel.onchange = function () { var f = sel.value, it = L.ITEMS.filter(function (x) { return x.f === f; })[0]; sel.value = ""; if (!it) return;
+      var n = S.tracks.filter(function (t) { return t.kind === "audio"; }).length; if (n >= MAXT) return toast("Track limit reached.");
+      fetch("samples/lib/" + f).then(function (r) { return r.arrayBuffer(); }).then(decode).then(function (buf) {
+        edit(); var t = newTrack(it.n); var id = addBuf(buf), at = S.playhead || 0; t.clips.push(mkClip(id, at, 0, buf.duration, it.n)); S.tracks.push(t); render(); toast("Added " + it.n + " (" + it.k + ")");
+      }).catch(function () { toast("Could not load " + it.n); }); };
+  })();
   $("addtrk").onclick = function () { var n = S.tracks.filter(function (t) { return t.kind === "audio"; }).length; if (n >= MAXT) return; edit(); var t = newTrack("Track " + (n + 1)); t.ch = n % 2 ? "R" : "L"; S.tracks.push(t); render(); };
   $("setup").onclick = function () { ac(); latHint(); $("lat").value = latMs; $("cal-trk").innerHTML = S.tracks.filter(function (t) { return t.kind === "audio"; }).map(function (t) { return '<option value="' + t.id + '">' + esc(t.name) + "</option>"; }).join(""); renderDevs(); $("sh-setup").hidden = false; };
   $("perm").onclick = function () { openDev("").then(function () { return listDevs(); }).then(function () { renderDevs(); render(); toast(devices.length + " input" + (devices.length === 1 ? "" : "s") + " found."); }).catch(function (e) { toast("Mic blocked: " + (e && e.message || e), 4500); }); };

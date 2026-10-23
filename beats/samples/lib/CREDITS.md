@@ -194,3 +194,6 @@ Thank you to every Freesound creator listed below.
 * `melodic/ipb-organ-c4.mp3`: Organ Stab (C4), IPB Original, CC0 1.0; root C4
 * `melodic/ipb-pluck-c4.mp3`: Pluck (C4), IPB Original, CC0 1.0; root C4
 * `melodic/ipb-saw-stab-c4.mp3`: Saw Stab (C4), IPB Original, CC0 1.0; root C4
+
+## Rock Guitar (guitar/) — IPB Original, CC0
+All 10 files synthesized locally (Karplus-Strong plucked string + amp/cab simulation in Python/numpy), no third-party audio. Released CC0 / public domain.

@@ -17,3 +17,5 @@ Unchanged: banks B and C (synth airhorns, sirens, lasers, booms, risers, sweeps,
 D1–D6 and D11–D15 (808, kick, snare, clap, rim, hat, brass, piano, womp, cowbell, shaker), and bank E
 (E1 Psycho Fingers drop, sirens, gunshots, reload, orchestra hit, crowd cheer, record stop) — see CREDITS.md
 for how each of those was made (Piper TTS public-domain-trained voice + numpy synthesis; Kokoro af_bella for E1).
+
+E13-E16 rock guitar (Power Chord E5, Palm-Mute Chug E 140, Distorted Riff E 140, Dive Bomb): synthesized locally (Karplus-Strong + amp sim), original work, CC0.

@@ -28,7 +28,7 @@
     <span class="time" id="time">1.1 · 0:00.00</span>
     <button class="btn" id="setup" title="Inputs, raw check and latency">🎤 Inputs &amp; latency</button>
     <button class="btn" id="beat" title="Load the beat">🥁 Beat</button>
-    <button class="btn" id="addtrk" title="Add an audio track">＋ Track</button>
+    <button class="btn" id="addtrk" title="Add an audio track">＋ Track</button><select class="btn" id="rockgtr" title="Drop a rock guitar sample at the playhead" aria-label="Rock guitar samples"><option value="">🎸 Rock</option></select>
     <button class="btn tog" id="mixbtn" title="Mixer view: faders, pan, meters">🎚 Mixer</button>
     <button class="btn" id="plugbtn" title="Browse, create and upload plugins">🎛 Plugins</button>
     <button class="btn" id="sessions" title="Saved sessions / new session">📁 Sessions</button>
@@ -109,7 +109,8 @@
   <div class="toast" id="toast" hidden></div>
   <iframe id="beatfr" title="beat maker (hidden, for bouncing)" hidden></iframe>
   <script src="mt-plugins.js?v=20261022c"></script>
-  <script src="multitrack.js?v=20261023a"></script>
+  <script src="samples/lib/index.js?v=20261023b"></script>
+  <script src="multitrack.js?v=20261023b"></script>
   <script src="mt-mixer.js?v=20261022c"></script>
 </body>
 </html>

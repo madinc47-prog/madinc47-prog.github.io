@@ -1,6 +1,6 @@
 /* Island Pin Beats hip-hop sample library: index (see CREDITS.md). Every file is CC0 / public domain. */
 window.IPBLib = {
-  CATS: [{"id": "808", "name": "808s"}, {"id": "kick", "name": "Kicks"}, {"id": "snare", "name": "Snares"}, {"id": "clap", "name": "Claps"}, {"id": "snap", "name": "Snaps"}, {"id": "rim", "name": "Rims"}, {"id": "hat", "name": "Hi-Hats & Rolls"}, {"id": "ohat", "name": "Open Hats"}, {"id": "cym", "name": "Crashes & Cymbals"}, {"id": "tom", "name": "Toms"}, {"id": "perc", "name": "Percussion"}, {"id": "vox", "name": "Vocals & Chops"}, {"id": "scratch", "name": "Scratches"}, {"id": "fx", "name": "Risers & FX"}, {"id": "vinyl", "name": "Vinyl & Texture"}, {"id": "melodic", "name": "Melodic One-Shots"}],
+  CATS: [{"id": "808", "name": "808s"}, {"id": "kick", "name": "Kicks"}, {"id": "snare", "name": "Snares"}, {"id": "clap", "name": "Claps"}, {"id": "snap", "name": "Snaps"}, {"id": "rim", "name": "Rims"}, {"id": "hat", "name": "Hi-Hats & Rolls"}, {"id": "ohat", "name": "Open Hats"}, {"id": "cym", "name": "Crashes & Cymbals"}, {"id": "tom", "name": "Toms"}, {"id": "perc", "name": "Percussion"}, {"id": "vox", "name": "Vocals & Chops"}, {"id": "scratch", "name": "Scratches"}, {"id": "fx", "name": "Risers & FX"}, {"id": "vinyl", "name": "Vinyl & Texture"}, {"id": "melodic", "name": "Melodic One-Shots"}, {"id": "guitar", "name": "Rock Guitar"}],
   ITEMS: [
     {"f": "808/hl-first-808.mp3", "n": "Bouncy 808 (HL)", "c": "808", "by": "harrisonlace", "d": 0.697, "u": "https://freesound.org/s/611506/"},
     {"f": "808/jh-drill-808.mp3", "n": "Drill 808 (JH)", "c": "808", "by": "Johnnie_Holiday", "d": 1.999, "u": "https://freesound.org/s/679775/"},
@@ -141,6 +141,16 @@ window.IPBLib = {
     {"f": "melodic/ipb-flute-lead-c5.mp3", "n": "Flute Lead (C5)", "c": "melodic", "by": "IPB Original", "d": 1.8, "k": "root C5"},
     {"f": "melodic/ipb-organ-c4.mp3", "n": "Organ Stab (C4)", "c": "melodic", "by": "IPB Original", "d": 1.4, "k": "root C4"},
     {"f": "melodic/ipb-pluck-c4.mp3", "n": "Pluck (C4)", "c": "melodic", "by": "IPB Original", "d": 1.2, "k": "root C4"},
-    {"f": "melodic/ipb-saw-stab-c4.mp3", "n": "Saw Stab (C4)", "c": "melodic", "by": "IPB Original", "d": 1.0, "k": "root C4"}
+    {"f": "melodic/ipb-saw-stab-c4.mp3", "n": "Saw Stab (C4)", "c": "melodic", "by": "IPB Original", "d": 1.0, "k": "root C4"},
+    {"f": "guitar/rock-power-e.mp3", "n": "Power Chord Stab (E5)", "c": "guitar", "by": "IPB Original", "d": 1.6, "k": "key E, one-shot"},
+    {"f": "guitar/rock-chug-e-140.mp3", "n": "Palm-Mute Chug (E) 140", "c": "guitar", "by": "IPB Original", "d": 1.91, "k": "key E, 140 BPM, 1 bar"},
+    {"f": "guitar/rock-power-a.mp3", "n": "Power Chord Stab (A5)", "c": "guitar", "by": "IPB Original", "d": 1.6, "k": "key A, one-shot"},
+    {"f": "guitar/rock-chug-a-140.mp3", "n": "Palm-Mute Chug (A) 140", "c": "guitar", "by": "IPB Original", "d": 1.91, "k": "key A, 140 BPM, 1 bar"},
+    {"f": "guitar/rock-power-d.mp3", "n": "Power Chord Stab (D5)", "c": "guitar", "by": "IPB Original", "d": 1.6, "k": "key D, one-shot"},
+    {"f": "guitar/rock-chug-d-140.mp3", "n": "Palm-Mute Chug (D) 140", "c": "guitar", "by": "IPB Original", "d": 1.91, "k": "key D, 140 BPM, 1 bar"},
+    {"f": "guitar/rock-riff-e-140.mp3", "n": "Distorted Riff (E) 140", "c": "guitar", "by": "IPB Original", "d": 2.11, "k": "key E, 140 BPM, 1 bar"},
+    {"f": "guitar/rock-riff-a-100.mp3", "n": "Distorted Riff (A) 100", "c": "guitar", "by": "IPB Original", "d": 2.8, "k": "key A, 100 BPM, 1 bar"},
+    {"f": "guitar/rock-squeal-e.mp3", "n": "Pinch Squeal (E6)", "c": "guitar", "by": "IPB Original", "d": 1.8, "k": "key E, one-shot"},
+    {"f": "guitar/rock-dive-bomb.mp3", "n": "Dive Bomb", "c": "guitar", "by": "IPB Original", "d": 2.2, "k": "starts E, one-shot"}
   ]
 };

@@ -1,5 +1,5 @@
 {
- "pack": "DJ Psycho Fingers sample pack v3 (2026-10-22): all-FX bank A (no voices), C voice stabs replaced with FX",
+ "pack": "DJ Psycho Fingers sample pack v3 (2026-10-22): all-FX bank A (no voices), C voice stabs replaced with FX; v4 (2026-10-23): E13-E16 rock guitar (IPB original, CC0)",
  "banks": {
   "A": [
    {
@@ -520,6 +520,34 @@
     "name": "Backs Off The Wall",
     "cat": "voice",
     "dur": 3.71
+   },
+   {
+    "pad": 12,
+    "file": "e13-rock-power-e.mp3",
+    "name": "Power Chord Stab (E5)",
+    "cat": "guitar",
+    "dur": 1.6
+   },
+   {
+    "pad": 13,
+    "file": "e14-rock-chug-e-140.mp3",
+    "name": "Palm-Mute Chug (E) 140",
+    "cat": "guitar",
+    "dur": 1.91
+   },
+   {
+    "pad": 14,
+    "file": "e15-rock-riff-e-140.mp3",
+    "name": "Distorted Riff (E) 140",
+    "cat": "guitar",
+    "dur": 2.11
+   },
+   {
+    "pad": 15,
+    "file": "e16-rock-dive-bomb.mp3",
+    "name": "Dive Bomb",
+    "cat": "guitar",
+    "dur": 2.2
    }
   ]
  }
