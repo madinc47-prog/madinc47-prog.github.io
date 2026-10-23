@@ -759,7 +759,7 @@
   }
   function recDone(item) {
     recUI(false);
-    if (item) toast("Saved to My Recordings · " + item.name + " · " + fmtTime(item.dur) + " · " + fmtSize(item.bytes || 0));
+    if (item) toast((item.kind === "mp3" ? "Saved MP3 · " : "Saved to My Recordings · ") + item.name + " · " + fmtTime(item.dur) + " · " + fmtSize(item.bytes || 0));
     else toast("Recording stopped — nothing was captured");
   }
   function toggleRec() {
@@ -768,19 +768,19 @@
     if (!PR) { toast("Recorder is still loading — try again in a second"); return; }
     if (X.rec && X.rec.on) {
       var r = X.rec; r.on = false; X.rec = null;
-      if (r.mr) { r.mr.onstop = function () { PR.end(r.id, (performance.now() - r.t0) / 1000, null).then(recDone); }; try { r.mr.stop(); } catch (e) { PR.end(r.id, (performance.now() - r.t0) / 1000, null).then(recDone); } }
+      if (r.mr) { toast("Saving MP3…"); r.mr.onstop = function () { PR.end(r.id, (performance.now() - r.t0) / 1000, null).then(recDone); }; try { r.mr.stop(); } catch (e) { PR.end(r.id, (performance.now() - r.t0) / 1000, null).then(recDone); } }
       else { pcmFlush(r); PR.end(r.id, r.n / r.sr, r.peak).then(recDone); }
       return;
     }
-    var mime = X.recFmt === "webm" ? pickMime(["audio/webm;codecs=opus", "audio/ogg;codecs=opus", "audio/mp4", "audio/webm"]) : null;
-    if (X.recFmt === "webm" && !mime) { toast("This browser can't record compressed audio — using WAV."); X.recFmt = "wav"; $("rec-fmt").value = "wav"; }
-    if (mime) {
-      var mr = new MediaRecorder(audioStream(), { mimeType: mime, audioBitsPerSecond: 160000 });
+    /* v20261022w: every REC is live-encoded MP3 320 kbps stereo (dj-mp3.js) — no export step */
+    var mr = window.PFMP3 && window.PFMP3.make(audioStream(), ctx), mime = mr ? "audio/mpeg" : null;
+    if (!mr) { toast("This browser can't encode MP3 here — using WAV."); }
+    if (mr) {
       var rr = { on: true, mr: mr, bytes: 0, t0: performance.now(), mime: mime };
-      rr.id = PR.begin("opus", mime, ctx.sampleRate);
+      rr.id = PR.begin("mp3", mime, ctx.sampleRate);
       mr.ondataavailable = function (e) { if (e.data && e.data.size) { rr.bytes += e.data.size; PR.chunk(rr.id, e.data); } };
       mr.start(3000); X.rec = rr; recUI(true);
-      toast("Recording the whole show to My Recordings (Opus ~1.2 MB/min · saved every 3 s)");
+      toast("Recording the whole show as MP3 320 kbps (~2.4 MB/min · saved every 3 s)");
       return;
     }
     var sr = ctx.sampleRate;
@@ -1010,7 +1010,7 @@
     $("xf-curve").addEventListener("click", function () { X.curve = X.curve === "smooth" ? "cut" : X.curve === "cut" ? "scratch" : "smooth"; $("xf-curve").textContent = curveName(); applyXf(); savePrefs(); toast("Crossfader curve: " + curveName() + (X.curve === "scratch" ? " (razor-sharp cut for scratching)" : X.curve === "cut" ? " (fast cut)" : " (smooth blend)")); });
     $("xf-ham").classList.toggle("on", X.ham);
     $("xf-ham").addEventListener("click", function () { X.ham = !X.ham; $("xf-ham").classList.toggle("on", X.ham); applyXf(); savePrefs(); toast(X.ham ? "Hamster on: crossfader reversed" : "Hamster off"); });
-    $("rec-fmt").value = X.recFmt;
+    X.recFmt = "webm"; $("rec-fmt").value = "webm";
     $("rec-fmt").addEventListener("change", function () { X.recFmt = $("rec-fmt").value === "webm" ? "webm" : "wav"; savePrefs(); if (X.recFmt === "wav") toast("WAV is ~660 MB per hour (~3.2 GB for 5 h). For long shows pick Opus (~72 MB/hour)."); });
     $("rec").addEventListener("click", toggleRec);
     document.querySelectorAll(".lib-tab").forEach(function (b) { b.addEventListener("click", function () { showLib(b.dataset.lib); }); });

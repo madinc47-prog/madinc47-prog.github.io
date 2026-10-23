@@ -1,5 +1,5 @@
 /* DJ Psycho Fingers — LIVE FREESTYLE (DJ + rapper session). One tap: Auto DJ rolls instrumentals non-stop, the one-tap
- * mic goes live (clean chain, light duck so the rapper rides the beat), the show (mic + beat) records with 2 s chunks
+ * mic goes live (clean chain, NO ducking — beat at full level; mic only to recording unless headphones), the show (mic + beat) records with 2 s chunks
  * autosaved to IndexedDB (nothing is lost if the page is hidden or closed). Stop session → saved as "Freestyle <date time>"
  * in My Freestyles (play, rename, download/share, delete, load to a deck, send to Lyrics Lab). Data stays on this device. */
 (function () {
@@ -47,14 +47,15 @@
   function start() {
     if (S) return;
     if (!P.ensureCtx()) return;
-    var mime = P.pickMime(["audio/webm;codecs=opus", "audio/ogg;codecs=opus", "audio/mp4", "audio/webm"]);
-    if (!mime) { P.toast("This browser can't record here."); return; }
+    var mime = "audio/mpeg";   /* v20261022w: live MP3 320 */
+    if (!window.PFMP3 || !window.PFMP3.Recorder.isSupported()) { P.toast("This browser can't record here."); return; }
     var mic = window.PFMIC, C = mic && mic.info().C;
     S = { sid: "fs_" + Date.now().toString(36), t0: Date.now(), i: 0, mime: mime, startedAD: false, oldDepth: C ? C.depth : 10, oldGain: C ? C.gain : 0, bars0: null };
     var AD = window.PFAUTODJ;
     if (AD && !AD.A.on) { AD.start(); S.startedAD = true; }
-    if (mic && mic.info().state !== "live") { C.mute = false; mic.start(true); } /* v20261022r: raw mic, no boost */
-    var mr = new MediaRecorder(P.audioStream(), { mimeType: mime, audioBitsPerSecond: 160000 });
+    if (mic && mic.info().state === "live") mic.stop();   /* v20261022w: Freestyle uses its own voice mic (no talkover ducking) */
+    fsMic(S);
+    var mr = window.PFMP3.make(P.audioStream(), P.ctx);
     mr.ondataavailable = function (e) {
       if (!e.data || !e.data.size || !S) return;
       var rec = { sid: S.sid, i: S.i++, t0: S.t0, mime: mime, data: e.data };
@@ -65,17 +66,60 @@
     $("fs-hud").hidden = false; $("fs-go").classList.add("on"); $("fs-go").textContent = "● FREESTYLE LIVE";
     P.toast("Live Freestyle: beat rolling, mic live, recording — ride it!");
   }
+  /* v20261022w — FREESTYLE VOICE MIC (Freestyle only). Own getUserMedia with noiseSuppression + voiceIsolation (Chrome) but
+     echoCancellation OFF: echo cancel is what flips Android Chrome into the voice-call audio path ("beat in the distance").
+     Chain: mic → high-pass 90 Hz → gentle noise gate → (a) the show mix bus that is RECORDED, never the speakers (no feedback),
+     (b) its own MP3 recorder → "Voice only (Freestyle)" in My Recordings. The beat path is never touched: no ducking, no filters. */
+  function fsMic(s) {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { P.toast("Mic not available here"); return; }
+    var c = { echoCancellation: false, noiseSuppression: true, autoGainControl: false, voiceIsolation: true, channelCount: { ideal: 1 } };
+    if (window.PFDJ_MICDEV) c.deviceId = { exact: window.PFDJ_MICDEV };
+    navigator.mediaDevices.getUserMedia({ audio: c, video: false }).then(function (st) {
+      if (S !== s) { st.getTracks().forEach(function (t) { t.stop(); }); return; }
+      var x = P.ctx, n = s.mic = { st: st };
+      n.src = x.createMediaStreamSource(st);
+      n.hp = x.createBiquadFilter(); n.hp.type = "highpass"; n.hp.frequency.value = 90; n.hp.Q.value = 0.7;
+      n.gate = x.createGain(); n.gate.gain.value = 0;
+      n.an = x.createAnalyser(); n.an.fftSize = 1024; n.buf = new Float32Array(1024);
+      n.dest = x.createMediaStreamDestination();
+      n.src.connect(n.hp); n.hp.connect(n.an); n.hp.connect(n.gate);
+      n.gate.connect(P.M.recMix); n.gate.connect(n.dest);
+      n.open = false; n.hold = 0;
+      n.iv = setInterval(function () {      /* gentle gate: −20 dB floor, 6 ms attack, 250 ms hold, 150 ms release */
+        n.an.getFloatTimeDomainData(n.buf); var q = 0; for (var i = 0; i < n.buf.length; i++) q += n.buf[i] * n.buf[i]; q = Math.sqrt(q / n.buf.length);
+        var now = performance.now(); if (q > 0.01) n.hold = now + 250;
+        var o = now < n.hold; if (o !== n.open) { n.open = o; n.gate.gain.setTargetAtTime(o ? 1 : 0.1, x.currentTime, o ? 0.006 : 0.15); }
+      }, 20);
+      if (window.PFREC && window.PFMP3) {
+        var vr = window.PFMP3.make(n.dest.stream, x), vid = window.PFREC.begin("mp3", "audio/mpeg", x.sampleRate, "Voice only (Freestyle)");
+        vr.ondataavailable = function (e) { if (e.data && e.data.size) window.PFREC.chunk(vid, e.data); };
+        vr.onstop = function () { window.PFREC.end(vid, (performance.now() - n.t0) / 1000, null).then(function (m) { if (m) P.toast("Saved MP3 · Freestyle voice-only track"); }); };
+        n.t0 = performance.now(); n.vr = vr; vr.start(2000);
+      }
+    }).catch(function (e) { if (S === s) P.toast("Mic blocked (" + (e && e.name || "error") + ") — allow the mic in Chrome and try again"); });
+  }
+  function fsMicStop(s) {
+    var n = s.mic; s.mic = null; if (!n) return;
+    clearInterval(n.iv);
+    try { if (n.vr && n.vr.state === "recording") n.vr.stop(); } catch (e) { /* ignore */ }
+    n.st.getTracks().forEach(function (t) { t.stop(); });
+    setTimeout(function () { ["src", "hp", "an", "gate"].forEach(function (k) { try { n[k].disconnect(); } catch (e) { /* ignore */ } }); }, 400);
+    /* Android: after the mic is released bounce the output so playback reopens as normal media at full quality */
+    var c = P.ctx; setTimeout(function () { if (!c || c.state !== "running" || S) return; c.suspend().then(function () { return new Promise(function (r) { setTimeout(r, 120); }); }).then(function () { return c.resume(); }).catch(function () { try { c.resume(); } catch (e) { /* ignore */ } }); }, 600);
+  }
   function stop() {
     if (!S) return;
     var s = S, C = window.PFMIC && window.PFMIC.info().C;
     clearInterval(s.timer);
+    P.toast("Saving MP3…");
     s.mr.onstop = function () {
       setTimeout(function () {
-        finalize(s.sid, { dur: (Date.now() - s.t0) / 1000, bpm: s.bpm }).then(function (t) { load(); if (t) P.toast("Saved to My Recordings · " + t.name); });
+        finalize(s.sid, { dur: (Date.now() - s.t0) / 1000, bpm: s.bpm }).then(function (t) { load(); if (t) { if (/mpeg/.test(t.mime)) window.PFMP3.autoSave(t.blob, window.PFMP3.name("freestyle", t.created)); P.toast("Saved MP3 · " + t.name); } });
       }, 300);
     };
     try { s.mr.stop(); } catch (e) { /* ignore */ }
-    if (window.PFMIC) window.PFMIC.stop();
+    fsMicStop(s);
+    if (P.M && P.M.music) { var mg = P.M.music.gain; mg.cancelScheduledValues(P.ctx.currentTime); mg.setValueAtTime(1, P.ctx.currentTime); }   /* v20261022w: music back to full */
 
     if (s.startedAD && window.PFAUTODJ && window.PFAUTODJ.A.on) window.PFAUTODJ.stop("Freestyle session ended");
     S = null;

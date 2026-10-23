@@ -35,13 +35,13 @@
   }
   /* separate clean voice track while recording */
   function startVoice(st) {
-    var mime = P.pickMime(["audio/webm;codecs=opus", "audio/ogg;codecs=opus", "audio/mp4"]); if (!mime || !window.PFREC) return;
-    var tr = st.getAudioTracks()[0], sr = (tr && tr.getSettings && tr.getSettings().sampleRate) || 48000;
-    var mr; try { mr = new MediaRecorder(st, { mimeType: mime, audioBitsPerSecond: 192000 }); } catch (e) { return; }
-    var id = window.PFREC.begin("opus", mime, sr, "Voice only (no headphones)");
+    if (!window.PFREC || !window.PFMP3 || !P.ctx) return;
+    var mime = "audio/mpeg", sr = P.ctx.sampleRate;   /* v20261022w: MP3 320 (raw mic, no processing) */
+    var mr = window.PFMP3.make(st, P.ctx); if (!mr) return;
+    var id = window.PFREC.begin("mp3", mime, sr, "Voice only (no headphones)");
     V = { mr: mr, id: id, st: st, t0: performance.now() };
     mr.ondataavailable = function (e) { if (e.data && e.data.size) window.PFREC.chunk(id, e.data); };
-    mr.onstop = function () { setTimeout(function () { window.PFREC.end(id, (performance.now() - V0.t0) / 1000, null).then(function (m) { if (m) P.toast("Voice-only track saved to My Recordings"); }); }, 200); };
+    mr.onstop = function () { setTimeout(function () { window.PFREC.end(id, (performance.now() - V0.t0) / 1000, null).then(function (m) { if (m) P.toast("Saved MP3 · Voice-only track"); }); }, 200); };
     var V0 = V; mr.start(3000);
   }
   function stopVoice() {

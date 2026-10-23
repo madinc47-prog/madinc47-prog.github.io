@@ -24,7 +24,7 @@
   function getChunks(id) { return tx(["chunks"], "readonly", function (t) { return t.objectStore("chunks").index("mid").getAll(IDBKeyRange.only(id)); }).then(function (cs) { return (cs || []).sort(function (a, b) { return a.i - b.i; }); }); }
   function putMeta(m) { return tx(["mixes"], "readwrite", function (t) { t.objectStore("mixes").put(m); }); }
   function stamp(t) { return new Date(t).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }); }
-  function extOf(m) { return m.kind === "wav" ? "wav" : /ogg/.test(m.mime) ? "ogg" : /mp4/.test(m.mime) ? "m4a" : "webm"; }
+  function extOf(m) { return m.kind === "mp3" || /mpeg/.test(m.mime || "") ? "mp3" : m.kind === "wav" ? "wav" : /ogg/.test(m.mime) ? "ogg" : /mp4/.test(m.mime) ? "m4a" : "webm"; }
   function wavHeader(bytes, sr) {
     var b = new ArrayBuffer(44), v = new DataView(b), o = 0;
     function s(x) { for (var i = 0; i < x.length; i++) v.setUint8(o++, x.charCodeAt(i)); }
@@ -75,7 +75,9 @@
     var q = Q[id]; clearInterval(watch); watch = null;
     if (!q) return Promise.resolve(null);
     return q.p.then(function () { return finalize(id, { dur: dur, peak: peak }); }).then(function (m) {
-      delete Q[id]; load(); if (m && DIR) blobOf(m).then(function (b) { copyToDir(m, b); });
+      delete Q[id]; load();
+      if (m && m.kind === "mp3" && window.PFMP3) blobOf(m).then(function (b) { window.PFMP3.autoSave(b, window.PFMP3.name(/Voice only/.test(m.name) ? "voice" : /Go Live/.test(m.name) ? "live" : "mix", m.created)); });   /* v20261022w: auto-save .mp3 */
+      if (m && DIR) blobOf(m).then(function (b) { copyToDir(m, b); });
       return m;
     }).catch(function () { delete Q[id]; return null; });
   }
@@ -98,12 +100,12 @@
     var fsl = window.PFFREESTYLE ? window.PFFREESTYLE.list() : [];
     return getMetas().catch(function () { return []; }).then(function (ms) {
       var a = ms.filter(function (m) { return m.done; }).map(function (m) { return { id: m.id, type: "mix", tag: MIX, name: m.name, created: m.created, dur: m.dur, bytes: m.bytes, ext: extOf(m), m: m }; });
-      var b = fsl.map(function (t) { return { id: t.id, type: "fs", tag: FS, name: t.name, created: t.created, dur: t.dur, bytes: t.blob ? t.blob.size : 0, ext: /ogg/.test(t.mime) ? "ogg" : /mp4/.test(t.mime) ? "m4a" : "webm", t: t }; });
+      var b = fsl.map(function (t) { return { id: t.id, type: "fs", tag: FS, name: t.name, created: t.created, dur: t.dur, bytes: t.blob ? t.blob.size : 0, ext: /mpeg/.test(t.mime) ? "mp3" : /ogg/.test(t.mime) ? "ogg" : /mp4/.test(t.mime) ? "m4a" : "webm", t: t }; });
       LIST = a.concat(b).sort(function (x, y) { return y.created - x.created; });
       render();
     });
   }
-  function fname(it) { return "PsychoFingers_" + it.name.replace(/[^\w\- ]+/g, "").trim().replace(/\s+/g, "_") + "." + it.ext; }
+  function fname(it) { if (it.ext === "mp3" && window.PFMP3) return window.PFMP3.name(it.type === "fs" ? "freestyle" : /Voice only/.test(it.name) ? "voice" : /Go Live/.test(it.name) ? "live" : "mix", it.created); return "PsychoFingers_" + it.name.replace(/[^\w\- ]+/g, "").trim().replace(/\s+/g, "_") + "." + it.ext; }
   function getBlob(it) { return it.type === "fs" ? Promise.resolve(it.t.blob) : blobOf(it.m); }
   function download(it) {
     getBlob(it).then(function (b) {
@@ -111,12 +113,17 @@
       setTimeout(function () { URL.revokeObjectURL(u); }, 60000);
     });
   }
+  /* v20261022w: Share needs the file READY before the tap — awaiting IndexedDB inside the tap lost Android Chrome's user
+     gesture, so navigator.share silently did nothing. Files are prepared when the list renders; the tap shares synchronously. */
+  var FILES = {};
+  function prep(it) {
+    if (FILES[it.id]) return Promise.resolve(FILES[it.id]);
+    return getBlob(it).then(function (b) { var f = new File([b], fname(it), { type: it.ext === "mp3" ? "audio/mpeg" : b.type }); FILES[it.id] = f; return f; });
+  }
   function share(it) {
-    getBlob(it).then(function (b) {
-      var f = new File([b], fname(it), { type: b.type });
-      if (b.size < 200 * 1048576 && navigator.canShare && navigator.canShare({ files: [f] })) navigator.share({ files: [f], title: it.name }).catch(function () { /* cancelled */ });
-      else download(it);
-    });
+    var f = FILES[it.id];
+    if (!f) { P.toast("Getting the file ready — tap Share again"); prep(it); return; }
+    if (window.PFSHARE) window.PFSHARE.shareFile(f, it.name); else download(it);
   }
   function play(it, btn) {
     if (!aud) { aud = new Audio(); aud.onended = function () { playingId = null; render(); }; }
@@ -149,6 +156,7 @@
       .then(function () { P.toast("Also copied to your folder: " + fname(it)); }).catch(function () { P.toast("Couldn't copy to the folder — it's still in My Recordings"); });
   }
   function render() {
+    LIST.slice(0, 12).forEach(function (it) { prep(it).catch(function () { /* ignore */ }); });
     var box = $("recs-list"); if (!box) return;
     var rows = LIST.filter(function (it) { return filter === "all" || it.type === filter; });
     box.innerHTML = rows.length ? "" : '<p class="empty">Nothing here yet. Press ● REC (top bar) or 🎤 LIVE FREESTYLE — every recording saves here by itself.</p>';
@@ -190,5 +198,5 @@
   document.head.appendChild(style);
   build();
   recover().catch(function () { /* ignore */ }).then(load);
-  window.PFREC = { begin: begin, chunk: chunk, end: end, load: load, list: function () { return LIST; }, blobOf: blobOf, _getChunks: getChunks };
+  window.PFREC = { prep: prep, files: FILES, begin: begin, chunk: chunk, end: end, load: load, list: function () { return LIST; }, blobOf: blobOf, _getChunks: getChunks };
 })();

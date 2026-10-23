@@ -96,11 +96,11 @@
     P.toast("Live ended" + (rec ? "" : ""));
   }
   function startRec() {
-    var mime = P.pickMime(["audio/webm;codecs=opus", "audio/ogg;codecs=opus", "audio/mp4"]), s = P.audioStream(); if (!mime || !s || !window.PFREC) return;
-    var mr; try { mr = new MediaRecorder(s, { mimeType: mime, audioBitsPerSecond: 192000 }); } catch (e) { return; }
-    var id = window.PFREC.begin("opus", mime, P.ctx.sampleRate, "Go Live show"), t0 = performance.now();
+    var mime = "audio/mpeg", s = P.audioStream(); if (!s || !window.PFREC || !window.PFMP3) return;   /* v20261022w: MP3 320 */
+    var mr = window.PFMP3.make(s, P.ctx); if (!mr) return;
+    var id = window.PFREC.begin("mp3", mime, P.ctx.sampleRate, "Go Live show"), t0 = performance.now();
     mr.ondataavailable = function (e) { if (e.data && e.data.size) window.PFREC.chunk(id, e.data); };
-    mr.onstop = function () { setTimeout(function () { window.PFREC.end(id, (performance.now() - t0) / 1000, null).then(function (m) { if (m) P.toast("Live show saved to My Recordings"); }); }, 200); };
+    mr.onstop = function () { setTimeout(function () { window.PFREC.end(id, (performance.now() - t0) / 1000, null).then(function (m) { if (m) P.toast("Saved MP3 · Go Live show"); }); }, 200); };
     mr.start(3000); rec = mr;
   }
   function stopRec() { if (rec && rec.state !== "inactive") try { rec.stop(); } catch (e) { /* ignore */ } rec = null; }
