@@ -14,7 +14,7 @@ if(["mix","mic1","mic2","split"].indexOf(state.mode)<0) state.mode="mix";
 
 function rawConstraints(deviceId, voiceOnly){
   // voiceOnly is an existing manual toggle in Beats/Studio; when on, respect it. Otherwise RAW.
-  if(voiceOnly) return {echoCancellation:true,noiseSuppression:true,autoGainControl:false, channelCount:{ideal:2}};
+  if(voiceOnly) return {echoCancellation:false,noiseSuppression:false,autoGainControl:false, channelCount:{ideal:2}};
   var c={echoCancellation:false,noiseSuppression:false,autoGainControl:false,channelCount:{ideal:2}};
   if(deviceId) c.deviceId={exact:deviceId};
   return c;

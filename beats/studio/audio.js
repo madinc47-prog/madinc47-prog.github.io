@@ -269,9 +269,9 @@
       // as the mic captured it; 🧹 Clean take is manual)
       var RAW = { echoCancellation: false, noiseSuppression: false, autoGainControl: false };
       // "No headphones — voice only" (manual toggle): browser echo-cancel + noise suppression on, auto-gain still off
-      if (vo) RAW = { echoCancellation: true, noiseSuppression: true, autoGainControl: false };
+      if (vo) RAW = { echoCancellation: false, noiseSuppression: false, autoGainControl: false };
       var _bai = (typeof window!=="undefined" && window.BeatAudioInput) || (typeof parent!=="undefined" && parent.BeatAudioInput) || null;
-      var _want = vo ? { echoCancellation: true, noiseSuppression: true, autoGainControl: false, channelCount: 1 } : (_bai ? _bai.constraints(undefined,false) : { echoCancellation:false, noiseSuppression:false, autoGainControl:false, channelCount:{ideal:2} });
+      var _want = vo ? { echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: 1 } : (_bai ? _bai.constraints(undefined,false) : { echoCancellation:false, noiseSuppression:false, autoGainControl:false, channelCount:{ideal:2} });
       return navigator.mediaDevices.getUserMedia({ audio: _want })
         .catch(function (e) { if (e && (e.name === "OverconstrainedError" || e.name === "TypeError")) return navigator.mediaDevices.getUserMedia({ audio: RAW }); throw e; });
     }).then(function (stream) {

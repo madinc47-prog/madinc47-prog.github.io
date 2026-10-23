@@ -3569,9 +3569,9 @@
     // every mode (headphones and speaker): the RAW mic, exactly as captured. No browser / phone echo canceller, noise
     // suppression or auto gain, and nothing is applied after the take; 🧹 Clean last take is manual.
     var RAW = { echoCancellation: false, noiseSuppression: false, autoGainControl: false };
-    var want = proc ? { echoCancellation: true, noiseSuppression: true, autoGainControl: false, channelCount: 1 } // voice only (manual)
+    var want = proc ? { echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: 1 } // voice only (manual)
       : (window.BeatAudioInput ? window.BeatAudioInput.constraints(undefined,false) : { echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: {ideal:2} });
-    if (proc) RAW = { echoCancellation: true, noiseSuppression: true, autoGainControl: false };
+    if (proc) RAW = { echoCancellation: false, noiseSuppression: false, autoGainControl: false };
     return md.getUserMedia({ audio: want })
       .catch(function (e) {
         if (e && (e.name === "OverconstrainedError" || e.name === "TypeError")) return md.getUserMedia({ audio: RAW });

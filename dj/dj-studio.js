@@ -57,7 +57,7 @@
   function startRec() {
     var ctx = P.ensureCtx(); if (!ctx) return;
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { toast("No microphone access in this browser."); return; }
-    navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: $("st-ns").checked, autoGainControl: false } }).then(function (stream) {
+    navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } }).then(function (stream) {
       var src = ctx.createMediaStreamSource(stream), sp = ctx.createScriptProcessor(4096, 1, 1), mute = ctx.createGain(); mute.gain.value = 0;
       var r = { stream: stream, src: src, sp: sp, mute: mute, chunks: [], n: 0, peak: 0, t0: performance.now() };
       sp.onaudioprocess = function (e) { var d = e.inputBuffer.getChannelData(0), c = new Float32Array(d); r.chunks.push(c); r.n += c.length; for (var i = 0; i < c.length; i += 8) { var a = Math.abs(c[i]); if (a > r.peak) r.peak = a; } r.lvl = Math.max(r.lvl * 0.85 || 0, r.peak); r.peak = 0; if (r.n > ctx.sampleRate * 60) stopRec(); };
