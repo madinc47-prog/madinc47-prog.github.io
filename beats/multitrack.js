@@ -23,10 +23,10 @@
   /* ---------- audio ---------- */
   function ac() {
     if (!ctx) {
-      ctx = new (window.AudioContext || window.webkitAudioContext)({ latencyHint: "interactive" });
+      var AC = window.AudioContext || window.webkitAudioContext; try { ctx = new AC({ latencyHint: "interactive", sampleRate: 48000 }); } catch (e) { ctx = new AC({ latencyHint: "interactive" }); }
       master = ctx.createGain(); master.gain.value = S.mvol == null ? 1 : S.mvol; master.connect(ctx.destination);
       S.tracks.forEach(trackNodes); S.tracks.forEach(rebuildFx);
-      workletReady = ctx.audioWorklet ? ctx.audioWorklet.addModule("multitrack-worklet.js?v=20261021d") : Promise.reject(new Error("AudioWorklet not supported"));
+      workletReady = ctx.audioWorklet ? ctx.audioWorklet.addModule("multitrack-worklet.js?v=20261023a") : Promise.reject(new Error("AudioWorklet not supported"));
       workletReady.catch(function () { toast("This browser cannot record here (no AudioWorklet). Update Chrome.", 5000); });
       latHint();
     }
@@ -138,9 +138,22 @@
   }
 
   /* ---------- inputs ---------- */
-  var RAW = { echoCancellation: false, noiseSuppression: false, autoGainControl: false, googEchoCancellation: false, googNoiseSuppression: false, googAutoGainControl: false, googHighpassFilter: false, channelCount: { ideal: 2 } };
+  var RAW = { echoCancellation: false, noiseSuppression: false, autoGainControl: false, googEchoCancellation: false, googNoiseSuppression: false, googAutoGainControl: false, googHighpassFilter: false, googTypingNoiseDetection: false, googAudioMirroring: false, voiceIsolation: false, sampleRate: { ideal: 48000 }, sampleSize: { ideal: 16 }, latency: { ideal: 0.01 }, channelCount: { ideal: 2 } };
   function listDevs() { return navigator.mediaDevices.enumerateDevices().then(function (d) { devices = d.filter(function (x) { return x.kind === "audioinput"; }); return devices; }); }
+  var HS = /head ?set|head ?phone|wired|usb|earphone|earpiece|lightning|type-c|bluetooth|airpods|buds/i;
+  function pickDefault() { // headset/USB mic first, Tab built-in mic only as fallback; remembered choice wins
+    var saved = localStorage.getItem("ipb_mic_dev") || "";
+    return listDevs().then(function (d) {
+      if (saved && d.some(function (x) { return x.deviceId === saved; })) return saved;
+      var h = d.filter(function (x) { return x.deviceId !== "default" && x.deviceId !== "communications" && HS.test(x.label) && !/bluetooth|airpods|buds/i.test(x.label); })[0] || d.filter(function (x) { return HS.test(x.label); })[0];
+      return h ? h.deviceId : "";
+    }).catch(function () { return ""; });
+  }
   function openDev(dev) {
+    if (!dev) return pickDefault().then(function (id) { return id ? openDev2(id).then(function (o) { streams["default"] = o; return o; }) : openDev2(""); });
+    return openDev2(dev);
+  }
+  function openDev2(dev) {
     ac(); var key = dev || "default";
     if (streams[key]) return Promise.resolve(streams[key]);
     var c = {}; for (var k in RAW) c[k] = RAW[k]; if (dev) c.deviceId = { exact: dev };
@@ -170,14 +183,15 @@
       });
     });
   }
-  function meters() {
+  var mLast = 0;
+  function meters(ts) {
+    requestAnimationFrame(meters); if (document.hidden || (ts || 0) - mLast < 50) return; mLast = ts || 0;
     S.tracks.forEach(function (t) {
-      var el = document.querySelector('.row[data-t="' + t.id + '"] .meter b'); if (!el) return;
+      var el = t._mEl && t._mEl.isConnected ? t._mEl : (t._mEl = document.querySelector('.row[data-t="' + t.id + '"] .meter b')); if (!el) return;
       if (!t.tap || !t.arm) { el.style.width = "0"; return; }
       t.tap.an.getFloatTimeDomainData(t.tap.buf); var m = 0; for (var i = 0; i < t.tap.buf.length; i++) m = Math.max(m, Math.abs(t.tap.buf[i]));
-      t.peak = Math.max(m, (t.peak || 0) * 0.9); var db = 20 * Math.log10(t.peak + 1e-6); el.style.width = Math.max(0, Math.min(100, (db + 60) / 60 * 100)) + "%";
+      t.peak = Math.max(m, (t.peak || 0) * 0.9); var db = 20 * Math.log10(t.peak + 1e-6); var w = Math.round(Math.max(0, Math.min(100, (db + 60) / 60 * 100))); if (t._mW !== w) { t._mW = w; el.style.width = w + "%"; }
     });
-    requestAnimationFrame(meters);
   }
 
   /* ---------- recording ---------- */

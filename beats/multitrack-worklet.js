@@ -3,7 +3,7 @@
 class MTRec extends AudioWorkletProcessor {
   constructor() {
     super();
-    this.on = false; this.from = 0; this.to = Infinity; this.buf = new Float32Array(16384); this.n = 0; this.first = -1;
+    this.on = false; this.from = 0; this.to = Infinity; this.buf = new Float32Array(48000); this.n = 0; this.first = -1;
     this.port.onmessage = (e) => {
       const m = e.data;
       if (m.cmd === "arm") { this.on = true; this.from = m.from; this.to = m.to == null ? Infinity : m.to; this.n = 0; this.first = -1; }
@@ -11,14 +11,14 @@ class MTRec extends AudioWorkletProcessor {
     };
   }
   flush() { if (this.n) { const c = this.buf.slice(0, this.n); this.port.postMessage({ type: "chunk", data: c }, [c.buffer]); this.n = 0; } }
-  process(inputs) {
+  process(inputs, outputs) {
     const ch = inputs[0] && inputs[0][0];
     if (!this.on || !ch) return true;
     const f0 = currentFrame, len = ch.length;
     let a = Math.max(0, this.from - f0), b = Math.min(len, this.to - f0);
     if (b > a) {
       if (this.first < 0) this.first = f0 + a;
-      for (let i = a; i < b; i++) { this.buf[this.n++] = ch[i]; if (this.n === this.buf.length) this.flush(); }
+      let i = a; while (i < b) { const k = Math.min(b - i, this.buf.length - this.n); this.buf.set(ch.subarray(i, i + k), this.n); this.n += k; i += k; if (this.n === this.buf.length) this.flush(); }
     }
     if (f0 + len >= this.to) { this.flush(); this.on = false; this.port.postMessage({ type: "done", first: this.first }); }
     return true;

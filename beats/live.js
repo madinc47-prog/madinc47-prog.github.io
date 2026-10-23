@@ -35,8 +35,24 @@
   vc.muted = vs.muted = true;
   var Q = { "480": [854, 480, 1000], "720": [1280, 720, 2500], "1080": [1920, 1080, 4500] };
   function q() { return Q[$("lv-q").value] || Q["720"]; }
+  var RAWMIC = { echoCancellation: false, noiseSuppression: false, autoGainControl: false, googEchoCancellation: false, googNoiseSuppression: false, googAutoGainControl: false, googHighpassFilter: false, googTypingNoiseDetection: false, voiceIsolation: false, sampleRate: { ideal: 48000 }, channelCount: { ideal: 2 }, latency: { ideal: 0.01 } };
+  var lastDraw = 0, HS = /head ?set|head ?phone|wired|usb|earphone|type-c/i;
+  /* Mic picker: headset/USB mic is the default, Tab built-in mic only if none. Choice remembered on this device. */
+  var micSel = el("select", { id: "lv-micdev", "aria-label": "Microphone" });
+  micSel.addEventListener("change", function () { localStorage.setItem("ipb_mic_dev", micSel.value); say("Mic set: " + (micSel.selectedOptions[0] || {}).textContent + ". Tap Start preview again."); });
+  (function () { var m = $("lv-mic"), row = m && m.closest("label"); if (row && row.parentNode) row.parentNode.insertBefore(el("label", { class: "lv-f" }, [el("span", { text: "Microphone (headset first)" }), micSel]), row.nextSibling); })();
+  async function micPick() {
+    var d = []; try { d = (await navigator.mediaDevices.enumerateDevices()).filter(function (x) { return x.kind === "audioinput"; }); } catch (e) {}
+    var saved = localStorage.getItem("ipb_mic_dev") || "", has = function (id) { return d.some(function (x) { return x.deviceId === id; }); };
+    var hs = d.filter(function (x) { return x.deviceId !== "default" && x.deviceId !== "communications" && HS.test(x.label); })[0];
+    var pick = saved && has(saved) ? saved : (hs ? hs.deviceId : "");
+    micSel.textContent = ""; micSel.appendChild(el("option", { value: "", text: "Auto (headset if plugged in)" }));
+    d.forEach(function (x, i) { if (x.deviceId === "communications") return; micSel.appendChild(el("option", { value: x.deviceId, text: x.label || ("Mic " + (i + 1)) })); });
+    micSel.value = saved && has(saved) ? saved : ""; return pick;
+  }
   function stopAll() { [cam, scr, mic].forEach(function (s) { if (s) s.getTracks().forEach(function (t) { t.stop(); }); }); cam = scr = mic = null; cancelAnimationFrame(raf); }
-  function draw() {
+  function draw(ts) {
+    raf = requestAnimationFrame(draw); if (ts && ts - lastDraw < 32) return; lastDraw = ts || 0;
     var w = cv.width, h = cv.height, mode = $("lv-src").value;
     cx.fillStyle = "#0b0d12"; cx.fillRect(0, 0, w, h);
     function fit(v, x, y, W, H) { if (!v.videoWidth) return; var r = Math.min(W / v.videoWidth, H / v.videoHeight), dw = v.videoWidth * r, dh = v.videoHeight * r; cx.drawImage(v, x + (W - dw) / 2, y + (H - dh) / 2, dw, dh); }
@@ -44,7 +60,6 @@
     else if (mode === "screen") fit(vs, 0, 0, w, h);
     else { fit(vs, 0, 0, w, h); var pw = Math.round(w * 0.28), ph = Math.round(pw * 9 / 16), m = Math.round(w * 0.02), pos = $("lv-pip").value, x = pos.indexOf("l") >= 0 ? m : w - pw - m, y = pos.indexOf("t") >= 0 ? m : h - ph - m; cx.fillStyle = "#000"; cx.fillRect(x - 3, y - 3, pw + 6, ph + 6); fit(vc, x, y, pw, ph); }
     if ($("lv-title").value) { cx.font = "bold " + Math.round(h / 22) + "px system-ui"; cx.fillStyle = "rgba(0,0,0,.55)"; var tw = cx.measureText($("lv-title").value).width; cx.fillRect(0, h - h / 12, tw + 40, h / 12); cx.fillStyle = "#fbbf24"; cx.fillText($("lv-title").value, 20, h - h / 40); }
-    raf = requestAnimationFrame(draw);
   }
   async function startSrc() {
     stopAll(); var mode = $("lv-src").value, Z = q();
@@ -55,7 +70,9 @@
         if (!navigator.mediaDevices.getDisplayMedia) { say("This browser can't capture the screen (Chrome on Android tablets usually can't). Use Camera, or screen-share inside Larix / a WhatsApp video call.", true); if (!cam) return false; $("lv-src").value = "cam"; }
         else { scr = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: 30 }, audio: true }); vs.srcObject = scr; await vs.play(); }
       }
-      if ($("lv-mic").checked) mic = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } });
+      if ($("lv-mic").checked) var mc = {}; for (var k in RAWMIC) mc[k] = RAWMIC[k]; var md = await micPick(); if (md) mc.deviceId = { exact: md };
+        mic = await navigator.mediaDevices.getUserMedia({ audio: mc }).catch(function () { return navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } }); });
+        mic.getAudioTracks().forEach(function (t) { try { t.contentHint = "music"; } catch (e) {} });
     } catch (e) { say("Camera/screen not allowed: " + (e.message || e) + ". Allow it in the site settings and try again.", true); return false; }
     var vt = cv.captureStream(30).getVideoTracks()[0], tracks = [vt];
     [mic, scr].forEach(function (s) { if (s) s.getAudioTracks().forEach(function (t) { tracks.push(t); }); });
@@ -69,7 +86,7 @@
     if (rec) { rec.stop(); return; }
     if (!out) { say("Start the preview first.", true); return; }
     var mt = ["video/mp4;codecs=avc1,mp4a", "video/webm;codecs=vp8,opus", "video/webm"].filter(function (m) { return window.MediaRecorder && MediaRecorder.isTypeSupported(m); })[0];
-    chunks = []; rec = new MediaRecorder(out, { mimeType: mt, videoBitsPerSecond: q()[2] * 1000 });
+    chunks = []; rec = new MediaRecorder(out, { mimeType: mt, videoBitsPerSecond: q()[2] * 1000, audioBitsPerSecond: 192000 });
     rec.ondataavailable = function (e) { if (e.data.size) chunks.push(e.data); };
     rec.onstop = function () { var b = new Blob(chunks, { type: rec.mimeType }), ext = /mp4/.test(rec.mimeType) ? "mp4" : "webm", a = $("lv-clip"); a.href = URL.createObjectURL(b); a.download = "island-beats-clip." + ext; a.hidden = false; a.textContent = "⬇ Save clip (" + Math.round(b.size / 1024) + " KB, " + ext + ")"; rec = null; $("lv-rec").textContent = "● Record clip"; say("Clip ready — save it, then post it to WhatsApp Status or a Channel." + (ext === "webm" ? " WhatsApp prefers MP4; if it refuses the file, convert it first." : "")); };
     rec.start(1000); $("lv-rec").textContent = "■ Stop clip"; say("Recording clip…");
@@ -77,6 +94,12 @@
 
   /* ---------- WHIP (RFC 9725) ---------- */
   var pc = null, whipRes = null;
+  /* Music-grade Opus: no DTX (DTX/comfort noise = robotic, choppy vocals), stereo, high bitrate, no FEC padding cuts. */
+  function hiFiOpus(sdp) {
+    var m = /a=rtpmap:(\d+) opus\/48000/i.exec(sdp); if (!m) return sdp; var pt = m[1];
+    var re = new RegExp("a=fmtp:" + pt + " ([^\\r\\n]*)"), want = "minptime=10;useinbandfec=1;usedtx=0;stereo=1;sprop-stereo=1;maxaveragebitrate=256000;maxplaybackrate=48000;cbr=0";
+    return re.test(sdp) ? sdp.replace(re, "a=fmtp:" + pt + " " + want) : sdp.replace(m[0], m[0] + "\r\na=fmtp:" + pt + " " + want);
+  }
   async function whipStart() {
     var d = D[cur.id] || {}, url = (d.whip || cur.whip || "").trim(), tok = (d.key || "").trim();
     if (!/^(https:\/\/|http:\/\/(localhost|127\.0\.0\.1)[:/])/.test(url)) { say("Enter the WHIP URL (https://…) first.", true); return; }
@@ -85,14 +108,15 @@
     out.getTracks().forEach(function (t) { var tr = pc.addTransceiver(t, { direction: "sendonly" }); if (t.kind === "video" && tr.setCodecPreferences && RTCRtpSender.getCapabilities) { var c = RTCRtpSender.getCapabilities("video").codecs, h = c.filter(function (x) { return /h264/i.test(x.mimeType); }); if (h.length) tr.setCodecPreferences(h.concat(c.filter(function (x) { return !/h264/i.test(x.mimeType); }))); } });
     pc.onconnectionstatechange = function () { say("WHIP: " + pc.connectionState + (pc.connectionState === "connected" ? " — you are live on " + cur.n + "." : ""), /failed|disconnected/.test(pc.connectionState)); };
     try {
-      await pc.setLocalDescription(await pc.createOffer());
+      var off = await pc.createOffer(); off = { type: "offer", sdp: hiFiOpus(off.sdp) };
+      await pc.setLocalDescription(off);
       await new Promise(function (r) { if (pc.iceGatheringState === "complete") return r(); var t = setTimeout(r, 2500); pc.addEventListener("icegatheringstatechange", function () { if (pc.iceGatheringState === "complete") { clearTimeout(t); r(); } }); });
       var h = { "Content-Type": "application/sdp" }; if (tok) h.Authorization = "Bearer " + tok;
-      var r = await fetch(url, { method: "POST", headers: h, body: pc.localDescription.sdp });
+      var r = await fetch(url, { method: "POST", headers: h, body: hiFiOpus(pc.localDescription.sdp) });
       if (r.status !== 201 && !r.ok) throw new Error("server said " + r.status);
       var loc = r.headers.get("Location"); whipRes = loc ? new URL(loc, url).href : null;
-      await pc.setRemoteDescription({ type: "answer", sdp: await r.text() });
-      pc.getSenders().forEach(function (s) { if (s.track && s.track.kind === "video") { var p = s.getParameters(); p.encodings = p.encodings && p.encodings.length ? p.encodings : [{}]; p.encodings[0].maxBitrate = q()[2] * 1000; s.setParameters(p).catch(function () {}); } });
+      await pc.setRemoteDescription({ type: "answer", sdp: hiFiOpus(await r.text()) });
+      pc.getSenders().forEach(function (s) { if (s.track && s.track.kind === "audio") { var pa = s.getParameters(); pa.encodings = pa.encodings && pa.encodings.length ? pa.encodings : [{}]; pa.encodings[0].maxBitrate = 256000; pa.encodings[0].priority = "high"; s.setParameters(pa).catch(function () {}); } if (s.track && s.track.kind === "video") { var p = s.getParameters(); p.encodings = p.encodings && p.encodings.length ? p.encodings : [{}]; p.encodings[0].maxBitrate = q()[2] * 1000; s.setParameters(p).catch(function () {}); } });
       $("lv-whip").textContent = "■ Stop WHIP"; say("WHIP: connecting…");
     } catch (e) { var m = String(e.message || e); say("WHIP failed: " + m + (/fetch|NetworkError|Failed/.test(m) ? " — the server probably blocks browser requests (CORS). Use Larix instead." : ""), true); whipStop(); }
   }
