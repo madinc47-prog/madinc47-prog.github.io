@@ -30,7 +30,7 @@
   function getChunks(id) { return tx(["chunks"], "readonly", function (t) { return t.objectStore("chunks").index("mid").getAll(IDBKeyRange.only(id)); }).then(function (cs) { return (cs || []).sort(function (a, b) { return a.i - b.i; }); }); }
   function putMeta(m) { return tx(["mixes"], "readwrite", function (t) { t.objectStore("mixes").put(m); }); }
   function stamp(t) { return new Date(t).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }); }
-  function extOf(m) { if (m.video) return /mp4/.test(m.mime || "") ? "mp4" : "webm"; return m.kind === "mp3" || /mpeg/.test(m.mime || "") ? "mp3" : m.kind === "wav" ? "wav" : /ogg/.test(m.mime) ? "ogg" : /mp4/.test(m.mime) ? "m4a" : "webm"; }
+  function extOf(m) { if (m.video) return /mp4/.test(m.mime || "") ? "mp4" : "webm"; return m.kind === "mp3" || /mpeg/.test(m.mime || "") ? "mp3" : m.kind === "wav" || /wav/.test(m.mime || "") ? "wav" : /ogg/.test(m.mime) ? "ogg" : /mp4/.test(m.mime) ? "m4a" : "webm"; }
   function wavHeader(bytes, sr) {
     var b = new ArrayBuffer(44), v = new DataView(b), o = 0;
     function s(x) { for (var i = 0; i < x.length; i++) v.setUint8(o++, x.charCodeAt(i)); }
@@ -107,10 +107,10 @@
   function load() {
     var fsl = [];
     return OLD.list().then(function (o) { fsl = o; return getMetas(); }).catch(function () { return []; }).then(function (ms) {
-      var a = ms.filter(function (m) { return m.done; }).map(function (m) { return { id: m.id, type: "mix", tag: m.video ? VID : MIX, video: !!m.video, name: m.name, created: m.created, dur: m.dur, bytes: m.bytes, ext: extOf(m), m: m }; });
-      var b = fsl.map(function (t) { return { id: t.id, type: "fs", tag: FS, name: t.name, created: t.created, dur: t.dur, bytes: t.blob ? t.blob.size : 0, ext: /mpeg/.test(t.mime) ? "mp3" : /ogg/.test(t.mime) ? "ogg" : /mp4/.test(t.mime) ? "m4a" : "webm", t: t }; });
+      var a = ms.filter(function (m) { return m.done; }).map(function (m) { return { id: m.id, type: "mix", src: m.src || "DJ Decks", tag: m.src || (m.video ? VID : MIX), video: !!m.video, name: m.name, created: m.created, dur: m.dur, bytes: m.bytes, ext: extOf(m), m: m }; });
+      var b = fsl.map(function (t) { return { id: t.id, type: "fs", src: "DJ Decks", tag: FS, name: t.name, created: t.created, dur: t.dur, bytes: t.blob ? t.blob.size : 0, ext: /mpeg/.test(t.mime) ? "mp3" : /ogg/.test(t.mime) ? "ogg" : /mp4/.test(t.mime) ? "m4a" : "webm", t: t }; });
       LIST = a.concat(b).sort(function (x, y) { return y.created - x.created; });
-      render();
+      srcButtons(); render();
     });
   }
   function fname(it) { if (it.ext === "mp3" && window.PFMP3) return window.PFMP3.name(it.type === "fs" ? "take" : /Voice only/.test(it.name) ? "voice" : /Go Live/.test(it.name) ? "live" : "mix", it.created); if (it.video) return "PsychoFingers_Video_" + (function (d) { var z = function (n) { return ("0" + n).slice(-2); }; return d.getFullYear() + "-" + z(d.getMonth() + 1) + "-" + z(d.getDate()) + "_" + z(d.getHours()) + "-" + z(d.getMinutes()); })(new Date(it.created)) + "." + it.ext; return "PsychoFingers_" + it.name.replace(/[^\w\- ]+/g, "").trim().replace(/\s+/g, "_") + "." + it.ext; }
@@ -190,14 +190,14 @@
   function render() {
     LIST.slice(0, 12).forEach(function (it) { prep(it).catch(function () { /* ignore */ }); });
     var box = $("recs-list"); if (!box) return;
-    var rows = LIST.filter(function (it) { return filter === "all" || it.type === filter; });
+    var rows = LIST.filter(function (it) { return filter === "all" || (it.type === filter && !(it.m && it.m.src)) || (filter.indexOf("src:") === 0 && it.src === filter.slice(4)); });
     box.innerHTML = rows.length ? "" : '<p class="empty">Nothing here yet. Press ● REC (top bar) — every recording saves here by itself.</p>';
     document.querySelectorAll(".recs-filter button").forEach(function (b) { b.classList.toggle("on", b.dataset.f === filter); });
     rows.forEach(function (it) {
       var r = document.createElement("div"); r.className = "recs-item recs-row";
       r.innerHTML = '<div class="recs-main"><span class="recs-tag"></span> <strong></strong><span class="mono"></span></div>' +
         '<div class="recs-acts"><button type="button" class="btn">▶ Play</button><button type="button" class="btn">✎ Rename</button><button type="button" class="btn">⇩ Download</button><button type="button" class="btn">↗ Share</button><button type="button" class="btn">→ A</button><button type="button" class="btn">→ B</button><button type="button" class="btn danger">🗑 Delete</button></div>';
-      var tag = r.querySelector(".recs-tag"); tag.textContent = it.tag; tag.classList.add(it.type === "fs" ? "fs" : it.video ? "vid" : "mix"); var b4;
+      var tag = r.querySelector(".recs-tag"); tag.textContent = it.tag; tag.classList.add(it.type === "fs" ? "fs" : it.m && it.m.src ? "app" : it.video ? "vid" : "mix"); var b4;
       r.querySelector("strong").textContent = it.name;
       r.querySelector(".mono").textContent = " " + P.fmtTime(it.dur || 0) + " · " + it.ext.toUpperCase() + " · " + P.fmtSize(it.bytes || 0) + (it.m && it.m.note ? " · " + it.m.note : "");
       if (it.video) { b4 = r.querySelectorAll(".recs-acts > button"); b4[4].hidden = b4[5].hidden = true; }
@@ -208,9 +208,22 @@
       box.appendChild(r);
     });
   }
+  /* v20261023lib: one place for the whole suite — filter by the app that made it (shared/library.js sets m.src) */
+  function srcButtons() {
+    var bar = document.querySelector(".recs-filter"); if (!bar) return;
+    var have = {}; LIST.forEach(function (it) { if (it.m && it.m.src) have[it.m.src] = 1; });
+    Object.keys(have).forEach(function (s) {
+      if (bar.querySelector('[data-f="src:' + CSS.escape(s) + '"]')) return;
+      var b = document.createElement("button"); b.type = "button"; b.className = "btn small"; b.dataset.f = "src:" + s; b.textContent = s;
+      b.onclick = function () { filter = b.dataset.f; render(); };
+      var dirL = bar.querySelector(".recs-dir"); bar.insertBefore(b, dirL || null);
+    });
+  }
+  window.addEventListener("storage", function (e) { if (e.key === "pflib_ping") load(); });
+  document.addEventListener("visibilitychange", function () { if (!document.hidden) load(); });
   function build() {
     var s = document.createElement("section"); s.className = "recs-panel my-recs"; s.id = "my-recs"; s.setAttribute("aria-label", "My Recordings");
-    s.innerHTML = '<div class="recs-head"><h2>📁 My Recordings</h2><span class="muted">REC shows, REC VIDEO shows (MP4), Voice only and Go Live recordings, saved automatically on this device. Newest first.</span></div>' +
+    s.innerHTML = '<div class="recs-head"><h2>📁 My Recordings</h2><span class="muted">REC shows, REC VIDEO shows (MP4), Voice only and Go Live recordings, plus songs, takes and exports from every app in the suite (Beats, Multitrack, Voice Over, Isle Voice…), saved automatically on this device. Newest first.</span></div>' +
       '<div class="recs-filter"><button type="button" class="btn small" data-f="all">All</button><button type="button" class="btn small" data-f="mix">' + MIX + '</button><button type="button" class="btn small" data-f="fs">' + FS + '</button>' +
       (window.showDirectoryPicker ? '<label class="btn small recs-dir"><input type="checkbox" id="recs-dir"> Also copy to a folder on this device</label>' : "") + '</div>' +
       '<div id="recs-list" class="recs-items"></div>';
@@ -226,7 +239,7 @@
     };
   }
   var style = document.createElement("style");
-  style.textContent = ".recs-filter{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}.recs-filter .on{outline:2px solid #c084fc}.recs-tag{display:inline-block;align-self:flex-start;width:max-content;font-size:11px;font-weight:700;padding:2px 7px;border-radius:9px;margin-right:4px;vertical-align:middle}.recs-tag.mix{background:#7c3aed;color:#fff}.recs-tag.fs{background:#f59e0b;color:#111}.recs-tag.vid{background:#0891b2;color:#fff}.recs-vov{position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.85);display:flex;align-items:center;justify-content:center}.recs-vbox{display:flex;flex-direction:column;gap:8px;width:min(96vw,960px)}.recs-vbox video{width:100%;max-height:80vh;background:#000}.recs-dir input{margin-right:4px}";
+  style.textContent = ".recs-filter{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}.recs-filter .on{outline:2px solid #c084fc}.recs-tag{display:inline-block;align-self:flex-start;width:max-content;font-size:11px;font-weight:700;padding:2px 7px;border-radius:9px;margin-right:4px;vertical-align:middle}.recs-tag.mix{background:#7c3aed;color:#fff}.recs-tag.fs{background:#f59e0b;color:#111}.recs-tag.vid{background:#0891b2;color:#fff}.recs-tag.app{background:#059669;color:#fff}.recs-vov{position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.85);display:flex;align-items:center;justify-content:center}.recs-vbox{display:flex;flex-direction:column;gap:8px;width:min(96vw,960px)}.recs-vbox video{width:100%;max-height:80vh;background:#000}.recs-dir input{margin-right:4px}";
   document.head.appendChild(style);
   build();
   recover().catch(function () { /* ignore */ }).then(load);

@@ -324,7 +324,7 @@
     scheduleDuck(dg.gain, 0, 0, 0);
     takes.forEach(function (t) { scheduleTake(oc, oc.destination, t, 0, 0, 0); });
     busy("Mixing WAV…", 0.3);
-    oc.startRendering().then(function (b) { dl(wav([b.getChannelData(0), b.getChannelData(1)], SR), base() + ".wav"); busy(); toast("WAV exported."); }).catch(function (e) { busy(); toast("WAV failed: " + e.message); });
+    oc.startRendering().then(function (b) { var wb = wav([b.getChannelData(0), b.getChannelData(1)], SR); if (window.PFLIB) window.PFLIB.addLater(wb, { name: base() + " (audio)", source: "Voice Over", dur: b.duration }); dl(wb, base() + ".wav"); busy(); toast("WAV exported."); }).catch(function (e) { busy(); toast("WAV failed: " + e.message); });
   };
   function busy(t, p) { $("busy").hidden = !t; if (t) { $("busy-t").textContent = t; $("busy-p").style.width = Math.round((p || 0) * 100) + "%"; } }
   $("busy-x").onclick = function () { if (exporting) { exporting.cancel = true; exporting.stop(); } busy(); };
@@ -349,8 +349,8 @@
       if (x && x.cancel) return toast("Export cancelled.");
       var blob = new Blob(ch, { type: (mime || "video/webm").split(";")[0] });
       window.__voExport = blob;
-      if (/mp4/.test(blob.type)) { dl(blob, base() + ".mp4"); toast("MP4 exported."); }
-      else toMp4(blob).then(function (m) { window.__voExport = m; dl(m, base() + ".mp4"); toast("MP4 exported."); }).catch(function (e) { dl(blob, base() + ".webm"); toast("MP4 converter failed (" + e.message + ") — saved WEBM instead."); });
+      if (/mp4/.test(blob.type)) { if (window.PFLIB) window.PFLIB.addLater(blob, { name: base(), source: "Voice Over", video: true }); dl(blob, base() + ".mp4"); toast("MP4 exported."); }
+      else toMp4(blob).then(function (m) { window.__voExport = m; if (window.PFLIB) window.PFLIB.addLater(m, { name: base(), source: "Voice Over", video: true }); dl(m, base() + ".mp4"); toast("MP4 exported."); }).catch(function (e) { if (window.PFLIB) window.PFLIB.addLater(blob, { name: base(), source: "Voice Over", video: true }); dl(blob, base() + ".webm"); toast("MP4 converter failed (" + e.message + ") — saved WEBM instead."); });
     };
     vid.currentTime = 0;
     vid.addEventListener("seeked", function go() {

@@ -88,7 +88,7 @@
     var mt = ["video/mp4;codecs=avc1,mp4a", "video/webm;codecs=vp8,opus", "video/webm"].filter(function (m) { return window.MediaRecorder && MediaRecorder.isTypeSupported(m); })[0];
     chunks = []; rec = new MediaRecorder(out, { mimeType: mt, videoBitsPerSecond: q()[2] * 1000, audioBitsPerSecond: 192000 });
     rec.ondataavailable = function (e) { if (e.data.size) chunks.push(e.data); };
-    rec.onstop = function () { var b = new Blob(chunks, { type: rec.mimeType }), ext = /mp4/.test(rec.mimeType) ? "mp4" : "webm", a = $("lv-clip"); a.href = URL.createObjectURL(b); a.download = "island-beats-clip." + ext; a.hidden = false; a.textContent = "⬇ Save clip (" + Math.round(b.size / 1024) + " KB, " + ext + ")"; rec = null; $("lv-rec").textContent = "● Record clip"; say("Clip ready — save it, then post it to WhatsApp Status or a Channel." + (ext === "webm" ? " WhatsApp prefers MP4; if it refuses the file, convert it first." : "")); };
+    rec.onstop = function () { var b = new Blob(chunks, { type: rec.mimeType }); if (window.PFLIB) window.PFLIB.addLater(b, { name: "Live studio clip", source: "Live Studio" }); var ext = /mp4/.test(rec.mimeType) ? "mp4" : "webm", a = $("lv-clip"); a.href = URL.createObjectURL(b); a.download = "island-beats-clip." + ext; a.hidden = false; a.textContent = "⬇ Save clip (" + Math.round(b.size / 1024) + " KB, " + ext + ")"; rec = null; $("lv-rec").textContent = "● Record clip"; say("Clip ready — save it, then post it to WhatsApp Status or a Channel." + (ext === "webm" ? " WhatsApp prefers MP4; if it refuses the file, convert it first." : "")); };
     rec.start(1000); $("lv-rec").textContent = "■ Stop clip"; say("Recording clip…");
   }
 

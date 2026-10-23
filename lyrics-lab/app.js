@@ -142,7 +142,7 @@
         return IsleSing.mix(L, R, r.audio, sr, {});
       });
     }).then(function (lr) {
-      OUT = { blob: wav(lr, 44100), name: (DOC.name || "lyrics") + " — draft" };
+      OUT = { blob: wav(lr, 44100), name: (DOC.name || "lyrics") + " — draft" }; if (window.PFLIB) window.PFLIB.addLater(OUT.blob, { name: OUT.name, source: "Lyrics Lab" });
       var a = $("tts-audio"); a.src = URL.createObjectURL(OUT.blob); a.hidden = false; $("tts-acts").hidden = false;
       $("tts-status").textContent = "Draft ready. Download it (step 5) and run the Colab step to make it your voice."; prog("tts-prog", null);
     }).catch(function (e) { $("tts-status").textContent = "Text → Audio failed: " + (e && e.message || e); prog("tts-prog", null); }).then(function () { btn.disabled = false; });

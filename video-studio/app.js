@@ -261,7 +261,7 @@ $('exportBtn').onclick=async()=>{if(exporting)return; exporting=true; const res=
    if(state.fgKind==='video'){fgVid.currentTime=val('trimIn');} $('playBtn').click();
    const dur=((val('trimOut')|| (fgVid.duration||5)) - val('trimIn'))||5; const t0=Date.now();
    const iv=setInterval(()=>{const p=Math.min(100,(Date.now()-t0)/(dur*1000)*100);$('expProg').value=p;$('expInfo').textContent=`Exporting… ${p.toFixed(0)}% (real-time)`; if(p>=100){clearInterval(iv); try{rec.stop();}catch(e){}}},200);
-   await done; const blob=new Blob(chunks,{type:mime||'video/webm'}); const ext=(mime&&mime.includes('mp4'))?'mp4':'webm'; const url=URL.createObjectURL(blob); $('dl').innerHTML=`<a href="${url}" download="video-studio-export.${ext}">⬇ Download export (${(blob.size/1048576).toFixed(2)} MB, ${ext})</a>`; $('expInfo').textContent='Export done.';
+   await done; const blob=new Blob(chunks,{type:mime||'video/webm'}); const ext=(mime&&mime.includes('mp4'))?'mp4':'webm'; if(window.PFLIB)window.PFLIB.addLater(blob,{name:'Video Studio export',source:'Video Studio',video:true}); const url=URL.createObjectURL(blob); $('dl').innerHTML=`<a href="${url}" download="video-studio-export.${ext}">⬇ Download export (${(blob.size/1048576).toFixed(2)} MB, ${ext})</a>`; $('expInfo').textContent='Export done.';
  }catch(err){$('expInfo').textContent='Export failed: '+err.message;}
  canvas.width=ow;canvas.height=oh; $('exportBtn').textContent='⬇ Export video (WebM / MP4 if supported)'; exporting=false;};
 // tier

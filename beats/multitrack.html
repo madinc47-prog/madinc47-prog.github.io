@@ -31,6 +31,7 @@
     <button class="btn" id="addtrk" title="Add an audio track">＋ Track</button><select class="btn" id="rockgtr" title="Drop a rock guitar sample at the playhead" aria-label="Rock guitar samples"><option value="">🎸 Rock</option></select>
     <button class="btn tog" id="mixbtn" title="Mixer view: faders, pan, meters">🎚 Mixer</button>
     <button class="btn" id="plugbtn" title="Browse, create and upload plugins">🎛 Plugins</button>
+    <button class="btn" id="mt-export" title="Render this session to a WAV and save it in DJ Decks › My Recordings">🎧 Export mix to DJ playlist</button>
     <button class="btn" id="sessions" title="Saved sessions / new session">📁 Sessions</button>
     <button class="btn save" id="saveexit" title="Save as a named session and go back to the hub">💾 Save &amp; exit</button>
   </div>
@@ -109,9 +110,10 @@
   <div class="toast" id="toast" hidden></div>
   <iframe id="beatfr" title="beat maker (hidden, for bouncing)" hidden></iframe>
   <script src="/shared/raw-mic.js?v=20261023rm"></script>
+<script src="/shared/library.js?v=20261023lib"></script>
 <script src="mt-plugins.js?v=20261022c"></script>
   <script src="samples/lib/index.js?v=20261023b"></script>
-  <script src="multitrack.js?v=20261023rm"></script>
+  <script src="multitrack.js?v=20261023lib"></script>
   <script src="mt-mixer.js?v=20261022c"></script>
 </body>
 </html>

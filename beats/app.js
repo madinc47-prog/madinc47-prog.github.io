@@ -2828,6 +2828,7 @@
       size: blob.size,
       blob: blob
     };
+    if (window.PFLIB) window.PFLIB.addLater(blob, { name: label, source: /record\.html/.test(location.pathname) ? "Record Vocals" : "Beats", dur: dur });   /* v20261023lib: also in DJ My Recordings */
     idb("vault", "readwrite", function (st) { return st.put(item); })
       .then(function () { if (then) then(item.id); }, function () { memVault.push(item); toast(then ? "Storage is blocked, so the Studio can't receive the bounce. Download it from the Vault and import it in the Studio." : "Saved for this session only — download to keep."); if (fail) fail(new Error("storage blocked")); })
       .then(renderVault);

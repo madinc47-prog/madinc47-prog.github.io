@@ -315,7 +315,7 @@
       return IS.mix(inst.getChannelData(0), inst.getChannelData(1), v, SR, { vocalDb: S.vol, verb: 0.12 });
     }).then(function (m) {
       if (my !== mixSeq) return;
-      S.final = C.wavFromChannels(m, SR); S.finalCh = null; finalCh = m; save(); showP4();
+      S.final = C.wavFromChannels(m, SR); S.finalCh = null; finalCh = m; save(); showP4(); if (window.PFLIB) window.PFLIB.addLater(S.final, { name: (S.name || "Isle Voice song"), source: "Isle Voice" });
     });
   }
   var finalCh = null;

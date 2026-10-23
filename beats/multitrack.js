@@ -458,6 +458,7 @@
   function openBeat() { $("sh-beat").hidden = false; $("bb-out").textContent = ""; renderVault(); }
   $("beat").onclick = openBeat;
   $("bb-now").onclick = bounceNow;
+  if ($("mt-export")) $("mt-export").onclick = function () { if (play) stop(); exportMix(); };
   $("bb-file").onclick = function () { $("bb-input").click(); };
   $("bb-input").onchange = function () { var f = this.files[0]; if (!f) return; f.arrayBuffer().then(decode).then(function (buf) { placeBeat(buf, f.name.replace(/\.[^.]+$/, ""), bpmOf(f.name)); $("sh-beat").hidden = true; }).catch(function () { toast("Could not read that file. Try WAV or MP3."); }); this.value = ""; };
   // clip bar
@@ -650,6 +651,45 @@
       .catch(function (e) { booting = false; toast("Save failed: " + (e && e.message || e) + ". Session still kept.", 6000); });
   }
   function listSessions() { return tx(["sessions"], "readonly", function (t) { var o = { v: [] }, c = t.objectStore("sessions").openCursor(); c.onsuccess = function () { var r = c.result; if (r) { o.v.push({ id: r.key, name: r.value.name, saved: r.value.saved }); r.continue(); } }; return o; }); }
+  /* v20261023lib: render the whole session (all tracks, vol/pan/mute/solo, fades, loops, master) offline to a 48 kHz WAV
+     and save it into DJ Decks › My Recordings (shared/library.js), plus a normal download. Insert plugins are not rendered. */
+  function wav16(L, R, sr) {
+    var n = L.length, b = new ArrayBuffer(44 + n * 4), v = new DataView(b), o = 0;
+    function w(x) { for (var i = 0; i < x.length; i++) v.setUint8(o++, x.charCodeAt(i)); }
+    w("RIFF"); v.setUint32(o, 36 + n * 4, true); o += 4; w("WAVEfmt "); v.setUint32(o, 16, true); o += 4; v.setUint16(o, 1, true); o += 2; v.setUint16(o, 2, true); o += 2;
+    v.setUint32(o, sr, true); o += 4; v.setUint32(o, sr * 4, true); o += 4; v.setUint16(o, 4, true); o += 2; v.setUint16(o, 16, true); o += 2; w("data"); v.setUint32(o, n * 4, true); o += 4;
+    for (var i = 0; i < n; i++) { var a = Math.max(-1, Math.min(1, L[i])), c = Math.max(-1, Math.min(1, R[i])); v.setInt16(o, a * 32767, true); v.setInt16(o + 2, c * 32767, true); o += 4; }
+    return new Blob([b], { type: "audio/wav" });
+  }
+  function exportMix(name) {
+    var end = projEnd(); if (end < 0.05) { toast("Nothing to export yet — record or load something first."); return Promise.resolve(null); }
+    name = name || (S.beatName ? S.beatName + " session" : "Multitrack mix");
+    var sr = 48000, oc = new OfflineAudioContext(2, Math.ceil((end + 0.25) * sr), sr), mg = oc.createGain(); mg.gain.value = S.mvol == null ? 1 : S.mvol; mg.connect(oc.destination);
+    var anySolo = S.tracks.some(function (t) { return t.solo; });
+    S.tracks.forEach(function (t) {
+      if (t.mute || (anySolo && !t.solo)) return;
+      var tg = oc.createGain(); tg.gain.value = t.vol == null ? 1 : t.vol;
+      if (oc.createStereoPanner) { var pn = oc.createStereoPanner(); pn.pan.value = t.pn || 0; tg.connect(pn); pn.connect(mg); } else tg.connect(mg);
+      t.clips.forEach(function (c) {
+        var B = bufs[c.buf]; if (!B) return; var cs = c.start, ce = clipEnd(c);
+        for (var i = 0; i < (c.reps || 1); i++) {
+          var st = cs + i * c.dur, src = oc.createBufferSource(), g = oc.createGain(); src.buffer = B.buf; src.connect(g); g.connect(tg);
+          g.gain.setValueAtTime(i === 0 && c.fi ? 0 : 1, st);
+          if (i === 0 && c.fi) g.gain.linearRampToValueAtTime(1, cs + c.fi);
+          if (c.fo && st + c.dur >= ce - 0.001) { g.gain.setValueAtTime(1, Math.max(st, ce - c.fo)); g.gain.linearRampToValueAtTime(0, ce); }
+          src.start(st, c.offset, c.dur);
+        }
+      });
+    });
+    toast("Rendering the mix…", 60000);
+    return oc.startRendering().then(function (b) {
+      var blob = wav16(b.getChannelData(0), b.getChannelData(1), sr);
+      var a = document.createElement("a"), u = URL.createObjectURL(blob); a.href = u; a.download = name.replace(/[^\w\- ]+/g, "").replace(/\s+/g, "_") + ".wav"; document.body.appendChild(a); a.click(); a.remove(); setTimeout(function () { URL.revokeObjectURL(u); }, 60000);
+      if (!window.PFLIB) { toast("Mix downloaded (WAV)."); return null; }
+      return window.PFLIB.add(blob, { name: name, source: "Multitrack", dur: b.duration, quiet: true }).then(function (id) { toast(id ? "Mix saved to DJ Decks › My Recordings (and downloaded)." : "Mix downloaded (WAV)."); return id; });
+    }).catch(function (e) { toast("Export failed: " + (e && e.message || e)); return null; });
+  }
+  window.IPBMT = Object.assign(window.IPBMT || {}, { exportMix: exportMix });
   function renderSessions() {
     listSessions().then(function (L) {
       var ul = $("ss-list"); ul.innerHTML = L.length ? "" : "<li>No saved sessions yet. Use 💾 Save &amp; exit.</li>";
@@ -659,13 +699,15 @@
         o.className = d.className = "btn"; o.textContent = "Open"; d.textContent = "🗑";
         o.onclick = function () { if (projEnd() > 0 && !confirm("Open this session? Your current work will be replaced (save it first with Save & exit).")) return; openSession(s.id); };
         d.onclick = function () { if (!confirm("Delete saved session \"" + s.name + "\"?")) return; tx(["sessions"], "readwrite", function (t) { t.objectStore("sessions").delete(s.id); }).then(renderSessions); };
-        li.appendChild(o); li.appendChild(d); ul.appendChild(li);
+        var x = document.createElement("button"); x.className = "btn"; x.textContent = "🎧 Export to DJ";
+        x.onclick = function () { if (projEnd() > 0 && !confirm("Open \"" + s.name + "\" and export it to the DJ playlist? Your current work will be replaced (save it first).")) return; openSession(s.id).then(function () { return exportMix(s.name); }); };
+        li.appendChild(o); li.appendChild(x); li.appendChild(d); ul.appendChild(li);
       });
     });
   }
   function openSession(id) {
     if (play) stop();
-    tx(["sessions"], "readonly", function (t) { var o = { v: null }, q = t.objectStore("sessions").get(id); q.onsuccess = function () { o.v = q.result; }; return o; }).then(function (s) {
+    return tx(["sessions"], "readonly", function (t) { var o = { v: null }, q = t.objectStore("sessions").get(id); q.onsuccess = function () { o.v = q.result; }; return o; }).then(function (s) {
       if (!s) return; booting = true; Object.keys(bufs).forEach(function (k) { delete bufs[k]; });
       return clearActive().then(function () { apply(s.st, s.raws); booting = false; return saveNow(); }).then(function () { $("sh-sess").hidden = true; toast("Opened: " + s.name); });
     }).catch(function (e) { booting = false; toast("Could not open: " + (e && e.message || e)); });
