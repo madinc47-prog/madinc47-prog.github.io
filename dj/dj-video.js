@@ -12,10 +12,12 @@
   function save() { try { localStorage.setItem(VK, JSON.stringify(V)); } catch (e) { /* ignore */ } }
   var open = false, cv, g, pop = null, rec = null, vids = {}, raf = 0;
   var W = 1280, H = 720;
+  var WM = new Image(); WM.src = "icons/watermark.jpg?v=20261023c"; WM.onload = function () { wmPlace(); };
 
   function vEl(id) { return $("vdj-v" + id); }
   function loadVideo(d, blob, name) {
     var v = vEl(d.id), url = URL.createObjectURL(blob);
+    if (!v._sk) { v._sk = 1; v.addEventListener("seeked", function () { var dd = P.BY[d.id]; if (v._want != null && dd && dd.video === v) { var w = v._want; v._want = null; if (Math.abs(v.currentTime - P.pos(dd)) > 0.03) v.currentTime = P.pos(dd); } schedule(); }); }
     if (vids[d.id] && vids[d.id].url) URL.revokeObjectURL(vids[d.id].url);
     vids[d.id] = { url: url, name: name, ready: false, pending: true };
     v.src = url; v.muted = true; v.playsInline = true; v.preload = "auto";
@@ -59,7 +61,12 @@
       if (Math.abs(drift) > 0.18 && !v.seeking) v.currentTime = t + 0.03;
     } else {
       if (!v.paused) v.pause();
-      if (Math.abs(drift) > 0.035 && !v.seeking) v.currentTime = t;   // scratch / reverse = seek-based scrubbing
+      /* v20261023c: scratch / drag / jog = seek-based scrubbing. One seek in flight at a time (a queued target is taken
+         as soon as the last one lands), fastSeek (nearest keyframe) while the hand is on the platter, exact frame on release. */
+      if (Math.abs(drift) > 0.03) {
+        if (v.seeking) { v._want = t; return; }
+        if (scr && v.fastSeek && Math.abs(drift) > 0.5) v.fastSeek(t); else v.currentTime = t;
+      }
     }
   }
   var fbuf = null;
@@ -79,7 +86,25 @@
     g.fillStyle = col; g.font = "700 " + Math.round(h * 0.035) + "px system-ui, sans-serif"; g.fillText("DECK " + d.id + (d.bpm ? " · " + P.effBpm(d).toFixed(1) + " BPM" : ""), x + w / 2, y + h * 0.5);
     g.textAlign = "left";
   }
+  /* v20261023c: YouTube decks play in YouTube's own iframe — browsers never let a page copy those pixels (or that audio)
+     into a canvas, so the program / REC VIDEO shows a title card with the video's thumbnail (i.ytimg.com sends CORS *, so no taint). */
+  var thumbs = {};
+  function ytCard(d, x, y, w, h) {
+    var id = d.ext && d.ext.id, im = id && thumbs[id];
+    if (id && !im) { im = thumbs[id] = new Image(); im.crossOrigin = "anonymous"; im.onerror = function () { im.bad = true; }; im.src = "https://i.ytimg.com/vi/" + id + "/hqdefault.jpg"; }
+    g.fillStyle = "#0b0d12"; g.fillRect(x, y, w, h);
+    if (im && im.complete && im.naturalWidth && !im.bad) {
+      var s = Math.max(w / im.naturalWidth, h / im.naturalHeight), dw = im.naturalWidth * s, dh = im.naturalHeight * s;
+      g.save(); g.beginPath(); g.rect(x, y, w, h); g.clip(); g.drawImage(im, x + (w - dw) / 2, y + (h - dh) / 2, dw, dh); g.restore();
+      g.fillStyle = "rgba(0,0,0,.55)"; g.fillRect(x, y, w, h);
+    }
+    g.textAlign = "center"; g.fillStyle = "#ef4444"; g.font = "900 " + Math.round(h * 0.05) + "px system-ui, sans-serif"; g.fillText("▶ YouTube · Deck " + d.id, x + w / 2, y + h * 0.36);
+    g.fillStyle = "#fff"; g.font = "800 " + Math.round(h * 0.055) + "px system-ui, sans-serif"; g.fillText(String(d.name || "").slice(0, 48), x + w / 2, y + h * 0.48);
+    g.fillStyle = "rgba(255,255,255,.75)"; g.font = "600 " + Math.round(h * 0.03) + "px system-ui, sans-serif"; g.fillText("YouTube video can't be recorded — load a video file for picture in REC VIDEO", x + w / 2, y + h * 0.58);
+    g.textAlign = "left";
+  }
   function drawDeck(d, x, y, w, h) {
+    if (d.ext) { ytCard(d, x, y, w, h); return; }
     var v = d.video;
     if (v && v.readyState >= 2 && v.videoWidth) {
       g.fillStyle = "#000"; g.fillRect(x, y, w, h);
@@ -93,7 +118,7 @@
     return a + b < 1e-6 ? 0.5 : b / (a + b);
   }
   function draw() {
-    raf = 0;
+    raf = 0; if (open && (draw.n = (draw.n || 0) + 1) % 30 === 0) wmPlace();
     var need = open || rec || (pop && !pop.closed);
     P.DECKS.forEach(follow);
     if (!need) return;
@@ -113,8 +138,43 @@
       var live = P.DECKS.filter(function (d) { return d.playing; }).map(function (d) { return d.name; }).join("  ×  ");
       if (live) { g.fillStyle = "rgba(255,255,255,.85)"; g.font = "600 " + Math.round(H * 0.026) + "px system-ui, sans-serif"; g.fillText(live.slice(0, 90), 42, H - 22); }
     }
-    if (rec) { g.fillStyle = "#f43f5e"; g.beginPath(); g.arc(W - 30, 30, 9, 0, 7); g.fill(); $("vdj-rect").textContent = P.fmtTime((performance.now() - rec.t0) / 1000) + " · " + P.fmtSize(rec.bytes); }
+    if (rec) { composite(); g.fillStyle = "#f43f5e"; g.beginPath(); g.arc(30, 30, 9, 0, 7); g.fill(); $("vdj-rect").textContent = P.fmtTime((performance.now() - rec.t0) / 1000) + " · " + P.fmtSize(rec.bytes); }
     schedule();
+  }
+  /* v20261023c: watermark. On screen it's a fixed <img> in the top-right of the program (not in the canvas);
+     REC VIDEO records an offscreen composite = program + the watermark bouncing around (DVD-logo style, ~120 px/s at 1280 wide). */
+  var rc = null, rg = null, bx = { x: 0, y: 0, vx: 1, vy: 1, t: 0 };
+  function composite() {
+    if (!rc) return;
+    rg.drawImage(cv, 0, 0);
+    if (!(WM.complete && WM.naturalWidth)) return;
+    var ww = Math.round(W * 0.2), wh = Math.round(ww * WM.naturalHeight / WM.naturalWidth), now = performance.now(), sp = 120 * W / 1280;
+    var dt = bx.t ? Math.min(0.25, (now - bx.t) / 1000) : 0; bx.t = now;
+    bx.x += bx.vx * sp * dt; bx.y += bx.vy * sp * dt;
+    if (bx.x < 0) { bx.x = 0; bx.vx = 1; } if (bx.x > W - ww) { bx.x = W - ww; bx.vx = -1; }
+    if (bx.y < 0) { bx.y = 0; bx.vy = 1; } if (bx.y > H - wh) { bx.y = H - wh; bx.vy = -1; }
+    rg.save(); rg.globalAlpha = 0.7; rg.imageSmoothingQuality = "high"; rg.drawImage(WM, Math.round(bx.x), Math.round(bx.y), ww, wh); rg.restore();
+  }
+  function recCanvas() {
+    if (!rc) { rc = document.createElement("canvas"); rg = rc.getContext("2d"); }
+    rc.width = W; rc.height = H;
+    var mg = Math.round(24 * W / 1280), ww = Math.round(W * 0.2), wh = WM.naturalWidth ? Math.round(ww * WM.naturalHeight / WM.naturalWidth) : Math.round(ww * 0.56); bx = { x: W - ww - mg, y: H - wh - mg, vx: -1, vy: -1, t: 0 };
+    composite(); return rc;
+  }
+  function wmOverlay() {
+    var wrap = $("vdj-progwrap"); if (!wrap || $("vdj-wm")) return;
+    if (getComputedStyle(wrap).position === "static") wrap.style.position = "relative";
+    var im = document.createElement("img"); im.id = "vdj-wm"; im.src = WM.src; im.alt = ""; im.setAttribute("aria-hidden", "true");
+    im.style.cssText = "position:absolute;bottom:3.33%;right:1.875%;width:20%;height:auto;opacity:.7;pointer-events:none;z-index:2";
+    wrap.appendChild(im);
+    window.addEventListener("resize", wmPlace); setTimeout(wmPlace, 300);
+  }
+  function wmPlace() {   /* pin the on-screen watermark to the PICTURE's bottom-right (the canvas may be letterboxed in its box) */
+    var im = $("vdj-wm"), wrap = $("vdj-progwrap"); if (!im || !cv || !wrap) return;
+    var rw = wrap.getBoundingClientRect(), r = cv.getBoundingClientRect(); if (!r.width) return;
+    var s = Math.min(r.width / W, r.height / H), pw = W * s, ph = H * s, px = r.left + (r.width - pw) / 2 - rw.left, py = r.top + (r.height - ph) / 2 - rw.top;
+    var ww = pw * 0.2, mg = 24 * s, wh = ww * (WM.naturalWidth ? WM.naturalHeight / WM.naturalWidth : 0.56);
+    im.style.width = ww + "px"; im.style.left = (px + pw - ww - mg) + "px"; im.style.top = (py + ph - wh - mg) + "px"; im.style.right = im.style.bottom = "auto";
   }
   function schedule() { if (!raf) raf = requestAnimationFrame(draw); }
   setInterval(function () { if (!open && !rec) P.DECKS.forEach(follow); }, 120);    // keep videos in step even with the panel closed
@@ -143,13 +203,16 @@
   var MP4 = ["video/mp4;codecs=avc1.42E01E,mp4a.40.2", "video/mp4;codecs=avc1,mp4a.40.2", "video/mp4;codecs=avc1.42E01E,opus", "video/mp4;codecs=avc1,opus", "video/mp4"];
   var WEBM = ["video/webm;codecs=vp9,opus", "video/webm;codecs=vp8,opus", "video/webm"];
   function toggleRec() {
-    if (rec) { rec.mr.stop(); return; }
+    if (rec) { if (rec.mr.state !== "inactive") rec.mr.stop(); return; }
     if (!cv.captureStream || !window.MediaRecorder) { P.toast("This browser can't record the video output."); return; }
     var mime = P.pickMime(window.PFVDJ_FORCE_WEBM ? WEBM : MP4.concat(WEBM));
     if (!mime) { P.toast("No supported video recording format in this browser."); return; }
     var as = P.audioStream(); if (!as) return;
-    var st = new MediaStream(cv.captureStream(30).getVideoTracks().concat(as.getAudioTracks()));
-    var mr = new MediaRecorder(st, { mimeType: mime, videoBitsPerSecond: 4000000, audioBitsPerSecond: 192000 });
+    var st = new MediaStream(recCanvas().captureStream(30).getVideoTracks().concat(as.getAudioTracks()));
+    /* v20261023c: some Android builds say a type is supported but the constructor / start() then throws — try each in turn */
+    var cands = (window.PFVDJ_FORCE_WEBM ? WEBM : MP4.concat(WEBM)).filter(function (m) { return MediaRecorder.isTypeSupported(m); }), mr = null;
+    for (var ci = 0; ci < cands.length && !mr; ci++) { try { mr = new MediaRecorder(st, { mimeType: cands[ci], videoBitsPerSecond: 4000000, audioBitsPerSecond: 192000 }); mr.start(1000); mime = cands[ci]; } catch (er) { mr = null; } }
+    if (!mr) { P.toast("This device couldn't start a video recording."); return; }
     var R = window.PFREC, id = R ? R.begin("video", mime, 0, "DJ Psycho Fingers video show", true) : null, chunks = [];
     rec = { mr: mr, t0: performance.now(), bytes: 0, id: id };
     mr.ondataavailable = function (e) { if (e.data && e.data.size) { if (id) R.chunk(id, e.data); else chunks.push(e.data); rec && (rec.bytes += e.data.size); } };
@@ -167,10 +230,20 @@
           .catch(function (e) { R.note(id, "kept as WEBM (MP4 conversion failed)"); P.toast("Couldn't convert to MP4 (" + (e && e.message || e) + ") — kept as WEBM in My Recordings."); });
       });
     };
-    mr.start(1000); $("vdj-rec").classList.add("on"); $("vdj-rec").textContent = "■ STOP VIDEO"; schedule();
+    mr.onerror = function (ev) { P.toast("Video recorder error (" + (ev.error && ev.error.name || "unknown") + ") — saving what was recorded."); try { if (mr.state !== "inactive") mr.stop(); } catch (er) { /* ignore */ } };
+    $("vdj-rec").classList.add("on"); $("vdj-rec").textContent = "■ STOP VIDEO"; schedule();
     P.toast("Recording video + show audio as " + (/mp4/.test(mime) ? "MP4" : "WEBM (→ MP4 after)") + " — saves itself to My Recordings. Keep this tab in front.");
   }
-  P.stopVideoRec = function () { if (rec) rec.mr.stop(); };
+  P.stopVideoRec = function () { if (rec && rec.mr.state !== "inactive") rec.mr.stop(); };
+  /* v20261023c: tab hidden / app switched → flush what's recorded right away; keep drawing on a timer (rAF stops when hidden) */
+  var hidT = 0;
+  document.addEventListener("visibilitychange", function () {
+    clearInterval(hidT); hidT = 0;
+    if (!rec) return;
+    if (document.hidden) { try { rec.mr.requestData(); } catch (e) { /* ignore */ } hidT = setInterval(function () { if (rec) { raf = 0; draw(); cancelAnimationFrame(raf); raf = 0; } }, 100); }
+    else schedule();
+  });
+  window.addEventListener("pagehide", function () { if (rec) { try { rec.mr.requestData(); } catch (e) { /* ignore */ } } });
   var FF = null, CDN = "https://cdn.jsdelivr.net/npm/";
   function blobUrl(u, type) { return fetch(u).then(function (r) { if (!r.ok) throw new Error("download " + r.status); return r.blob(); }).then(function (b) { return URL.createObjectURL(new Blob([b], { type: type })); }); }
   function loadFF() {
@@ -203,7 +276,7 @@
   function build() {
     cv = $("vdj-prog"); if (!cv) return;
     if (window.innerWidth < 600) { W = 960; H = 540; }
-    cv.width = W; cv.height = H; g = cv.getContext("2d");
+    cv.width = W; cv.height = H; g = cv.getContext("2d"); wmOverlay();
     if ($("vdj-toggle")) $("vdj-toggle").addEventListener("click", function () { setOpen(!open); });
     if (document.body.classList.contains("vdj-page")) setOpen(true);
     P.DECKS.forEach(function (d) {
