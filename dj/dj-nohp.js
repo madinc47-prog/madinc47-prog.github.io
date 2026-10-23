@@ -1,5 +1,5 @@
 /* DJ Psycho Fingers — v20261022q "No headphones — voice only" (modeled on Beat Studio's toggle). OFF by default = mic unchanged.
- * ON (v20261022r): mic stays FULLY raw (no echo cancel / noise suppression / auto-gain); the mic never goes to the speaker; and while ● REC or Live Freestyle runs, the mic is ALSO
+ * ON (v20261022r): mic stays FULLY raw (no echo cancel / noise suppression / auto-gain); the mic never goes to the speaker; and while ● REC runs, the mic is ALSO
  * recorded on its own straight from the mic stream (no Web Audio, no gain, no filters → no resampling, no clipping added) as
  * Opus 192 kbps → "Voice only" in My Recordings. The show recording keeps the beat digitally from the internal bus. Only the
  * setting is stored. */
@@ -8,7 +8,7 @@
   var P = window.PFDJ; if (!P) return;
   var K = "pfdj_nohp", V = null;
   function on() { try { return localStorage.getItem(K) === "1"; } catch (e) { return false; } }
-  function recording() { var r = document.getElementById("rec"); return !!((r && r.classList.contains("on")) || (window.PFFREESTYLE && window.PFFREESTYLE.on)); }
+  function recording() { var r = document.getElementById("rec"); return !!(r && r.classList.contains("on")); }
   function ui() {
     var v = on();
     document.querySelectorAll(".js-nohp").forEach(function (b) { b.classList.toggle("on", v); b.setAttribute("aria-pressed", String(v)); b.querySelector(".nh-s").textContent = v ? "ON · voice saved on its own" : "OFF · raw mic"; });
@@ -29,7 +29,6 @@
   }
   function place() {
     var dock = document.querySelector(".talk-dock"); if (dock && !dock.querySelector(".js-nohp")) dock.appendChild(button());
-    var fs = document.getElementById("freestyle"); if (fs && !fs.querySelector(".js-nohp")) { var h = fs.querySelector(".fs-head"); (h || fs).insertAdjacentElement("afterend", button()); }
     var rec = document.getElementById("rec"); if (rec && !document.getElementById("nohp-rec")) { var b = button(); b.id = "nohp-rec"; b.classList.add("nohp-sm"); rec.parentNode.insertBefore(b, rec.nextSibling); }
     ui();
   }
@@ -48,7 +47,6 @@
     var v = V; V = null; if (!v) return;
     if (v.mr.state !== "inactive") try { v.mr.stop(); } catch (e) { /* onstop finalizes */ }
   }
-  if (window.PFFREESTYLE) { var fsStop = window.PFFREESTYLE.stop; window.PFFREESTYLE.stop = function () { stopVoice(); return fsStop.apply(this, arguments); }; }
   setInterval(function () {
     var M = window.PFMIC, st = M && M.stream && M.stream(), want = on() && recording() && st && st.active;
     if (V && (!want || V.st !== st)) stopVoice();

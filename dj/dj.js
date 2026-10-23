@@ -1055,7 +1055,7 @@
     var list = $("lib-list"); list.innerHTML = "";
     if (tab === "beats") BUILTIN.forEach(function (it) { list.appendChild(row(it)); });
     else if (tab === "mixes") {
-      if (!MIXES.length) list.innerHTML = '<p class="empty">Press ● REC in the top bar to record your mix (master output, after the limiter). REC shows and freestyles save automatically to 📁 My Recordings. Video shows listed here stay until you leave the page — download them to keep.</p>';
+      if (!MIXES.length) list.innerHTML = '<p class="empty">Press ● REC in the top bar to record your mix (master output, after the limiter). REC shows save automatically to 📁 My Recordings. Video shows listed here stay until you leave the page — download them to keep.</p>';
       MIXES.forEach(function (m) { list.appendChild(row({ name: m.name, sub: fmtTime(m.dur) + " · " + (m.ext || "wav").toUpperCase() + " · " + fmtSize(m.blob.size), url: m.url, ext: m.ext, noDeck: m.video, mix: m, get: function () { return m.blob.arrayBuffer(); } })); });
     } else if (LIBTABS[tab]) { LIBTABS[tab](list);
     } else {

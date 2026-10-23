@@ -712,24 +712,19 @@ a.vdj-tg { display: inline-flex; align-items: center; text-decoration: none; }
 body.autodj-on .ad-live { font-size: 14px; font-weight: 800; background: rgba(52,211,153,.18); border-width: 2px; border-color: var(--ok); }
 body.autodj-on .ad-live .ad-dot { width: 12px; height: 12px; }
 
-/* v20261022c: Live Freestyle */
-.freestyle { background: var(--bg2); border: 1px solid var(--line); border-radius: 14px; padding: 12px; margin: 12px 0; }
-.fs-head { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; } .fs-head h2 { margin: 0; font-size: 18px; }
-.fs-go { width: 100%; min-height: 84px; margin: 10px 0; border-radius: 18px; border: 3px solid var(--ok); background: #062a1e; color: #fff; font-size: 26px; font-weight: 900; letter-spacing: .05em; touch-action: manipulation; }
-.fs-go.on { background: var(--hot, #f43f5e); border-color: var(--hot, #f43f5e); animation: pulse 1.6s infinite; }
-.fs-big { display: flex; gap: 18px; flex-wrap: wrap; font-size: 34px; font-weight: 900; font-variant-numeric: tabular-nums; } .fs-rec { color: var(--hot, #f43f5e); }
-.fs-beat { margin: 4px 0 8px; opacity: .8; }
-.fs-drops { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; } .fs-drops .btn { min-height: 64px; font-size: 17px; font-weight: 800; }
-.fs-list { display: flex; flex-direction: column; gap: 8px; } .fs-row { border: 1px solid var(--line); border-radius: 12px; padding: 8px; }
-.fs-main { display: flex; flex-direction: column; } .fs-row audio { width: 100%; margin: 6px 0; }
-.fs-acts { display: flex; flex-wrap: wrap; gap: 6px; } .fs-acts .btn { min-height: 48px; min-width: 64px; }
+/* My Recordings panel */
+.recs-panel { background: var(--bg2); border: 1px solid var(--line); border-radius: 14px; padding: 12px; margin: 12px 0; }
+.recs-head { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; } .recs-head h2 { margin: 0; font-size: 18px; }
+.recs-items { display: flex; flex-direction: column; gap: 8px; } .recs-item { border: 1px solid var(--line); border-radius: 12px; padding: 8px; }
+.recs-main { display: flex; flex-direction: column; } .recs-item audio { width: 100%; margin: 6px 0; }
+.recs-acts { display: flex; flex-wrap: wrap; gap: 6px; } .recs-acts .btn { min-height: 48px; min-width: 64px; }
 
 /* ---------- v20261022d: essentials on first load ---------- */
 .quickbar { position: sticky; top: 0; z-index: 30; display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding: 6px 12px; background: rgba(11,13,18,.96); border-bottom: 1px solid var(--line); backdrop-filter: blur(6px); }
 .quickbar::-webkit-scrollbar { display: none; }
 .qb { flex: 0 0 auto; min-height: 44px; padding: 0 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--bg3, #1a1f2b); color: var(--tx, #e8ecf4); font: inherit; font-weight: 800; font-size: 14px; white-space: nowrap; touch-action: manipulation; }
 .qb.on { background: var(--ok); color: #05241a; border-color: var(--ok); }
-.qb-talk.on, .qb-fs.on { background: var(--hot, #f43f5e); color: #fff; border-color: var(--hot, #f43f5e); }
+.qb-talk.on { background: var(--hot, #f43f5e); color: #fff; border-color: var(--hot, #f43f5e); }
 .qb-auto { border-color: #1b5140; color: var(--ok); } .qb-auto.on { color: #05241a; }
 .more-panel { max-width: 1400px; width: calc(100% - 24px); margin: 8px auto; background: var(--bg2); border: 1px solid var(--line); border-radius: 14px; padding: 12px; }
 .more-panel[hidden] { display: none; }
@@ -934,7 +929,6 @@ body:not(.vdj-page) .zoom { height: 44px; }
 .nohp-btn { min-height: 56px; min-width: 150px; padding: 6px 16px; border-radius: 28px; border: 3px solid #64748b; background: #111827; color: #fff; display: inline-flex; flex-direction: column; align-items: center; justify-content: center; font-weight: 800; cursor: pointer; touch-action: manipulation; }
 .nohp-btn .nh-l { font-size: 16px; } .nohp-btn .nh-s { font-size: 11px; font-weight: 600; opacity: .85; }
 .nohp-btn.on { border-color: #22d3ee; background: #083344; }
-#freestyle > .nohp-btn { margin: 8px 0; min-height: 64px; min-width: 220px; }
 .nohp-btn.nohp-sm { min-height: 48px; min-width: 0; border-radius: 12px; margin-left: 6px; }
 .quickbar .talk-dock.in-qb .nohp-btn { min-height: 44px; border-radius: 12px; border-width: 2px; padding: 0 12px; }
 .quickbar .talk-dock.in-qb .nohp-btn .nh-s { display: none; }

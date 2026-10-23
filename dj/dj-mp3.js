@@ -1,4 +1,4 @@
-/* DJ Psycho Fingers — MP3 RECORDER (v20261022w). Drop-in for MediaRecorder on every DJ record path (REC, Freestyle, Voice only,
+/* DJ Psycho Fingers — MP3 RECORDER (v20261022w). Drop-in for MediaRecorder on every DJ record path (REC, Voice only,
  * Go Live show). PCM is tapped straight off the stream (no processing — the mic stays fully RAW) and encoded live to MP3
  * 320 kbps stereo in a Web Worker, so stopping is instant and every ~3 s chunk saved to IndexedDB is already valid MP3
  * (MP3 frames concatenate — crash-recovered recordings are MP3 too). */

@@ -1,12 +1,18 @@
-/* DJ Psycho Fingers — 📁 MY RECORDINGS (v20261022n). One place for ● REC shows ("DJ Psycho Fingers Mix") and Live Freestyles.
+/* DJ Psycho Fingers — 📁 MY RECORDINGS (v20261022x). One place for ● REC shows ("DJ Psycho Fingers Mix") and older saved takes.
  * REC streams to IndexedDB "pfdj_mixes" in ~3 s chunks (Opus blobs or 16-bit PCM for WAV) so memory stays flat for 5 h+ shows
- * and an unfinished show is recovered on the next load. Freestyles keep living in their own DB ("pfdj_freestyle"), read as-is.
+ * and an unfinished show is recovered on the next load. Older takes from the retired live-rap section stay in their own legacy DB (OLDDB below), read as-is.
  * Nothing leaves the device; files download only when he taps Download. */
 (function () {
   "use strict";
   var P = window.PFDJ; if (!P) return;
   var $ = function (id) { return document.getElementById(id); };
-  var DBN = "pfdj_mixes", MIX = "DJ Psycho Fingers Mix", FS = "Freestyle";
+  var DBN = "pfdj_mixes", MIX = "DJ Psycho Fingers Mix", FS = "Older takes";
+  /* v20261022x: the live-rap section was removed; its saved takes still play / download / share / rename / delete here. */
+  var OLDDB = "pfdj_" + "free" + "style";   /* legacy IndexedDB name, kept only so old recordings stay readable */
+  function odb() { return new Promise(function (res, rej) { var r = indexedDB.open(OLDDB, 1); r.onupgradeneeded = function () { var d = r.result; d.createObjectStore("takes", { keyPath: "id" }); d.createObjectStore("chunks", { autoIncrement: true }).createIndex("sid", "sid"); }; r.onsuccess = function () { res(r.result); }; r.onerror = function () { rej(r.error); }; }); }
+  function otx(mode, fn) { return odb().then(function (d) { return new Promise(function (res, rej) { var t = d.transaction(["takes"], mode), out = fn(t.objectStore("takes")); t.oncomplete = function () { d.close(); res(out && out.result !== undefined ? out.result : undefined); }; t.onerror = function () { d.close(); rej(t.error); }; }); }); }
+  var OLD = { list: function () { return otx("readonly", function (s) { return s.getAll(); }).then(function (r) { return r || []; }).catch(function () { return []; }); },
+    put: function (t) { return otx("readwrite", function (s) { s.put(t); }); }, del: function (t) { return otx("readwrite", function (s) { s.delete(t.id); }); } };
   var LIST = [], Q = {}, urls = {}, filter = "all", DIR = null, conn = null, watch = null, warned = false, aud = null, playingId = null;
   if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(function () { /* ignore */ });
   function db() {
@@ -97,15 +103,15 @@
 
   /* ---------- list ---------- */
   function load() {
-    var fsl = window.PFFREESTYLE ? window.PFFREESTYLE.list() : [];
-    return getMetas().catch(function () { return []; }).then(function (ms) {
+    var fsl = [];
+    return OLD.list().then(function (o) { fsl = o; return getMetas(); }).catch(function () { return []; }).then(function (ms) {
       var a = ms.filter(function (m) { return m.done; }).map(function (m) { return { id: m.id, type: "mix", tag: MIX, name: m.name, created: m.created, dur: m.dur, bytes: m.bytes, ext: extOf(m), m: m }; });
       var b = fsl.map(function (t) { return { id: t.id, type: "fs", tag: FS, name: t.name, created: t.created, dur: t.dur, bytes: t.blob ? t.blob.size : 0, ext: /mpeg/.test(t.mime) ? "mp3" : /ogg/.test(t.mime) ? "ogg" : /mp4/.test(t.mime) ? "m4a" : "webm", t: t }; });
       LIST = a.concat(b).sort(function (x, y) { return y.created - x.created; });
       render();
     });
   }
-  function fname(it) { if (it.ext === "mp3" && window.PFMP3) return window.PFMP3.name(it.type === "fs" ? "freestyle" : /Voice only/.test(it.name) ? "voice" : /Go Live/.test(it.name) ? "live" : "mix", it.created); return "PsychoFingers_" + it.name.replace(/[^\w\- ]+/g, "").trim().replace(/\s+/g, "_") + "." + it.ext; }
+  function fname(it) { if (it.ext === "mp3" && window.PFMP3) return window.PFMP3.name(it.type === "fs" ? "take" : /Voice only/.test(it.name) ? "voice" : /Go Live/.test(it.name) ? "live" : "mix", it.created); return "PsychoFingers_" + it.name.replace(/[^\w\- ]+/g, "").trim().replace(/\s+/g, "_") + "." + it.ext; }
   function getBlob(it) { return it.type === "fs" ? Promise.resolve(it.t.blob) : blobOf(it.m); }
   function download(it) {
     getBlob(it).then(function (b) {
@@ -136,13 +142,13 @@
   }
   function rename(it) {
     var n = prompt("Name this recording", it.name); if (!n || !n.trim()) return; n = n.trim().slice(0, 80);
-    if (it.type === "fs") { it.t.name = n; window.PFFREESTYLE.put(it.t).then(load); }
+    if (it.type === "fs") { it.t.name = n; OLD.put(it.t).then(load); }
     else { it.m.name = n; putMeta(it.m).then(load); }
   }
   function del(it) {
     if (!confirm("Delete “" + it.name + "”? This can't be undone.")) return;
     if (playingId === it.id && aud) { aud.pause(); playingId = null; }
-    if (it.type === "fs") { window.PFFREESTYLE.del(it.t).then(load); return; }
+    if (it.type === "fs") { OLD.del(it.t).then(load); return; }
     tx(["mixes", "chunks"], "readwrite", function (t) {
       t.objectStore("mixes").delete(it.id);
       var c = t.objectStore("chunks").index("mid").openKeyCursor(IDBKeyRange.only(it.id));
@@ -159,16 +165,16 @@
     LIST.slice(0, 12).forEach(function (it) { prep(it).catch(function () { /* ignore */ }); });
     var box = $("recs-list"); if (!box) return;
     var rows = LIST.filter(function (it) { return filter === "all" || it.type === filter; });
-    box.innerHTML = rows.length ? "" : '<p class="empty">Nothing here yet. Press ● REC (top bar) or 🎤 LIVE FREESTYLE — every recording saves here by itself.</p>';
+    box.innerHTML = rows.length ? "" : '<p class="empty">Nothing here yet. Press ● REC (top bar) — every recording saves here by itself.</p>';
     document.querySelectorAll(".recs-filter button").forEach(function (b) { b.classList.toggle("on", b.dataset.f === filter); });
     rows.forEach(function (it) {
-      var r = document.createElement("div"); r.className = "fs-row recs-row";
-      r.innerHTML = '<div class="fs-main"><span class="recs-tag"></span> <strong></strong><span class="mono"></span></div>' +
-        '<div class="fs-acts"><button type="button" class="btn">▶ Play</button><button type="button" class="btn">✎ Rename</button><button type="button" class="btn">⇩ Download</button><button type="button" class="btn">↗ Share</button><button type="button" class="btn">→ A</button><button type="button" class="btn">→ B</button><button type="button" class="btn danger">🗑 Delete</button></div>';
+      var r = document.createElement("div"); r.className = "recs-item recs-row";
+      r.innerHTML = '<div class="recs-main"><span class="recs-tag"></span> <strong></strong><span class="mono"></span></div>' +
+        '<div class="recs-acts"><button type="button" class="btn">▶ Play</button><button type="button" class="btn">✎ Rename</button><button type="button" class="btn">⇩ Download</button><button type="button" class="btn">↗ Share</button><button type="button" class="btn">→ A</button><button type="button" class="btn">→ B</button><button type="button" class="btn danger">🗑 Delete</button></div>';
       var tag = r.querySelector(".recs-tag"); tag.textContent = it.tag; tag.classList.add(it.type === "fs" ? "fs" : "mix");
       r.querySelector("strong").textContent = it.name;
       r.querySelector(".mono").textContent = " " + P.fmtTime(it.dur || 0) + " · " + it.ext.toUpperCase() + " · " + P.fmtSize(it.bytes || 0);
-      var b = r.querySelectorAll(".fs-acts > button");
+      var b = r.querySelectorAll(".recs-acts > button");
       b[0].textContent = playingId === it.id ? "■ Stop" : "▶ Play";
       b[0].onclick = function () { play(it); }; b[1].onclick = function () { rename(it); }; b[2].onclick = function () { download(it); }; b[3].onclick = function () { share(it); };
       b[4].onclick = function () { toDeck(it, P.DECKS[0]); }; b[5].onclick = function () { toDeck(it, P.DECKS[1]); }; b[6].onclick = function () { del(it); };
@@ -176,12 +182,12 @@
     });
   }
   function build() {
-    var s = document.createElement("section"); s.className = "freestyle my-recs"; s.id = "my-recs"; s.setAttribute("aria-label", "My Recordings");
-    s.innerHTML = '<div class="fs-head"><h2>📁 My Recordings</h2><span class="muted">REC shows and Live Freestyles, saved automatically on this device. Newest first.</span></div>' +
+    var s = document.createElement("section"); s.className = "recs-panel my-recs"; s.id = "my-recs"; s.setAttribute("aria-label", "My Recordings");
+    s.innerHTML = '<div class="recs-head"><h2>📁 My Recordings</h2><span class="muted">REC shows, Voice only and Go Live recordings, saved automatically on this device. Newest first.</span></div>' +
       '<div class="recs-filter"><button type="button" class="btn small" data-f="all">All</button><button type="button" class="btn small" data-f="mix">' + MIX + '</button><button type="button" class="btn small" data-f="fs">' + FS + '</button>' +
       (window.showDirectoryPicker ? '<label class="btn small recs-dir"><input type="checkbox" id="recs-dir"> Also copy to a folder on this device</label>' : "") + '</div>' +
-      '<div id="recs-list" class="fs-list"></div>';
-    var fs = $("freestyle"), lib = document.querySelector(".lib-tabs");
+      '<div id="recs-list" class="recs-items"></div>';
+    var fs = null, lib = document.querySelector(".lib-tabs");
     if (fs && fs.parentNode) fs.parentNode.insertBefore(s, fs.nextSibling);
     else if (lib) { var sec = lib.closest("section") || lib.parentNode; sec.parentNode.insertBefore(s, sec); }
     else document.querySelector("main, body").appendChild(s);
@@ -191,7 +197,6 @@
       if (!cb.checked) { DIR = null; return; }
       window.showDirectoryPicker({ mode: "readwrite" }).then(function (d) { DIR = d; P.toast("New recordings will also be copied to “" + d.name + "” (until you close the app)"); }).catch(function () { cb.checked = false; });
     };
-    if (fs) { var h = fs.querySelector("h3"), l = $("fs-list"); if (h) h.hidden = true; if (l) l.hidden = true; }   // freestyles now listed in My Recordings
   }
   var style = document.createElement("style");
   style.textContent = ".recs-filter{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}.recs-filter .on{outline:2px solid #c084fc}.recs-tag{display:inline-block;align-self:flex-start;width:max-content;font-size:11px;font-weight:700;padding:2px 7px;border-radius:9px;margin-right:4px;vertical-align:middle}.recs-tag.mix{background:#7c3aed;color:#fff}.recs-tag.fs{background:#f59e0b;color:#111}.recs-dir input{margin-right:4px}";

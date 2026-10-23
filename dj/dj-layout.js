@@ -1,5 +1,5 @@
 /* DJ layout v20261022d: essentials on first load (DJ Decks + Video DJ).
- * - Quick bar under the top bar: AUTO DJ · TALK · FREESTYLE · FX/EQ · Pads · Library · My Freestyles · ⋯ More (all mirror the real controls)
+ * - Quick bar under the top bar: AUTO DJ · TALK · FX/EQ · Pads · Library · My Recordings · ⋯ More (all mirror the real controls)
  * - Compact playlist in the centre column (under the mixer; portrait: between the deck stack and the mixer)
  * - Rare stuff (booth banner, YouTube link, recording format, keyboard help) lives in one "⋯ More" panel. */
 (function () {
@@ -17,7 +17,6 @@
   q("qb-auto", "AUTO DJ: OFF", function () { var b = $("autodj-btn"); if (b) b.click(); }, "qb-auto");
   q("qb-shuf", "🔀 SHUFFLE: OFF", function () { var ad = AD(); if (ad && ad.setShuffle) { ad.setShuffle(!ad.A.shuffle); mirror(); } }, "qb-shuf");
   q("qb-talk", "🎤 TALK", function () { var b = $("talk-btn"); if (b) b.click(); }, "qb-talk");
-  if ($("fs-go")) q("qb-fs", "🔥 FREESTYLE", function () { $("fs-go").click(); go("#freestyle"); }, "qb-fs");
   q("qb-fx", "🎛 FX / EQ", function () { go("#mixer"); });
   if ($("sampler")) q("qb-pads", "🥁 Pads", function () { var F = window.PFDJ_PADSFLOAT; if (F && F.isOpen()) { var pf = $("pads-float"); if (pf) { pf.classList.remove("collapsed"); pf.scrollIntoView && pf.querySelector(".pf-body").scrollTo(0, 0); } return; } go("#sampler"); });
   q("qb-lib", "📚 Library", function () { go(".lib-tabs"); });
@@ -80,7 +79,6 @@
   function mirror() {
     var ad = AD(), on = ad && ad.A.on; B["qb-auto"].textContent = on ? "AUTO DJ: ON ●" : "AUTO DJ: OFF"; B["qb-auto"].classList.toggle("on", !!on);
     var t = $("talk-btn"), s = t ? t.dataset.state : "off"; B["qb-talk"].textContent = { off: "🎤 TALK", live: "● LIVE MIC", muted: "MIC MUTED", blocked: "MIC BLOCKED" }[s] || "🎤 TALK"; B["qb-talk"].classList.toggle("on", s === "live");
-    if (B["qb-fs"]) { var f = window.PFFREESTYLE && window.PFFREESTYLE.on; B["qb-fs"].textContent = f ? "● FREESTYLE LIVE" : "🔥 FREESTYLE"; B["qb-fs"].classList.toggle("on", !!f); }
     var sa = ad && ad.A.shuffle; B["qb-shuf"].textContent = sa ? "🔀 SHUFFLE: ON" : "🔀 SHUFFLE: OFF"; B["qb-shuf"].classList.toggle("on", !!sa);
     /* v20261022f: the one-tap TALK button gets its own spot in the quick bar instead of floating over the decks */
     var dock = document.querySelector(".talk-dock"); if (dock && dock.parentNode !== qb) { qb.insertBefore(dock, B["qb-talk"]); dock.classList.add("in-qb"); B["qb-talk"].hidden = true; }
