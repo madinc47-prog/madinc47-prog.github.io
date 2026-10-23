@@ -96,7 +96,7 @@
       $("lv-whip").textContent = "■ Stop WHIP"; say("WHIP: connecting…");
     } catch (e) { var m = String(e.message || e); say("WHIP failed: " + m + (/fetch|NetworkError|Failed/.test(m) ? " — the server probably blocks browser requests (CORS). Use Larix instead." : ""), true); whipStop(); }
   }
-  function whipStop() { if (whipRes) fetch(whipRes, { method: "DELETE", headers: (D[cur.id] || {}).key ? { Authorization: "Bearer " + D[cur.id].key } : {} }).catch(function () {}); whipRes = null; if (pc) pc.close(); pc = null; $("lv-whip").textContent = "▶ Go live (WHIP)"; }
+  function whipStop() { if (whipRes) fetch(whipRes, { method: "DELETE", headers: (D[cur.id] || {}).key ? { Authorization: "Bearer " + D[cur.id].key } : {} }).catch(function () {}); whipRes = null; if (pc) pc.close(); pc = null; var wb = $("lv-whip"); if (wb) wb.textContent = "▶ Go live (WHIP)"; }
 
   /* ---------- Larix handoff ---------- */
   function rtmpFull(d) { var u = (d.url || cur.url || "").trim(), k = (d.key || "").trim(); if (!u) return ""; return k ? u.replace(/\/+$/, "") + "/" + k : u; }
@@ -145,7 +145,7 @@
   var sel = $("lv-plat"); P.forEach(function (p) { sel.appendChild(el("option", { value: p.id, text: p.n + ({ larix: " · Larix", whip: " · browser WHIP", both: " · Larix / WHIP", guide: " · share only" }[p.how]) })); });
   sel.addEventListener("change", function () { cur = P.filter(function (p) { return p.id === sel.value; })[0]; renderDest(); });
   $("lv-start").addEventListener("click", startSrc);
-  $("lv-stop").addEventListener("click", function () { whipStop(); stopAll(); out = null; $("lv-preview").srcObject = null; say("Stopped."); });
+  $("lv-stop").addEventListener("click", function () { whipStop(); if (rec && rec.state !== "inactive") { try { rec.stop(); } catch (e) {} } stopAll(); out = null; $("lv-preview").srcObject = null; say("Stopped."); });
   $("lv-rec").addEventListener("click", recToggle);
   $("lv-clearall").addEventListener("click", function () { if (!confirm("Clear every saved stream URL and key from this device?")) return; D = {}; save(D); renderDest(); say("All stream details cleared."); });
   renderDest();
