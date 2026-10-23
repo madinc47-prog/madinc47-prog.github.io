@@ -1534,7 +1534,9 @@
           triggerPad(i);
           flashPad(i);
           selectPad(i);
+          laneHit(i, true);
         });
+        ["pointerup", "pointerleave", "pointercancel"].forEach(function (ev) { el.addEventListener(ev, function () { laneHit(i, false); }); });
         onLongPress(el, function () { selectPad(i); lyOpen({ kind: "drum", pad: i }); swOpen({ kind: "drum", pad: i }); });
         wrap.appendChild(el);
         padEls.push(el);
@@ -2079,6 +2081,22 @@
     el.classList.add("hit");
     setTimeout(function () { el.classList.remove("hit"); }, 90);
   }
+  /* pad press → light up that pad's sequencer row (lane) so you can see which line it plays */
+  var laneHitT = {};
+  function laneHit(i, on) {
+    var row = seqRows[i];
+    if (!row) return;
+    clearTimeout(laneHitT[i]);
+    if (on === false) { laneHitT[i] = setTimeout(function () { row.classList.remove("hit"); }, 160); return; }
+    row.classList.remove("hit"); void row.offsetWidth; row.classList.add("hit");
+    var c = seqCells[i] && seqCells[i][uiStep >= 0 ? uiStep : 0];
+    if (c) { c.classList.remove("flash"); void c.offsetWidth; c.classList.add("flash"); setTimeout(function () { c.classList.remove("flash"); }, 260); }
+    if (on !== true) laneHitT[i] = setTimeout(function () { row.classList.remove("hit"); }, 420);
+    var sc = row.closest(".seq-scroll") || row.parentElement, r = row.getBoundingClientRect();
+    var box = sc ? sc.getBoundingClientRect() : null, vh = window.innerHeight;
+    if (sc && sc.scrollHeight > sc.clientHeight + 2 && (r.top < box.top || r.bottom > box.bottom)) row.scrollIntoView({ block: "nearest" });
+    else if (r.bottom < 0 || r.top > vh) row.scrollIntoView({ block: "nearest" });
+  }
   function selectPad(i) {
     S.sel = i;
     refreshPads();
@@ -2163,6 +2181,7 @@
         var nm = document.createElement("button");
         nm.type = "button";
         nm.className = "rname";
+        nm.dataset.num = p + 1;
         nm.textContent = padLabel(p);
         nm.title = padLabel(p);
         nm.title = padLabel(p) + " — tap for this layer's knobs";
@@ -6614,7 +6633,7 @@
       if (ly.open) return; // no pad/key triggers behind the teleprompter
       if (k === "r" || k === "`" || e.code === "Backquote") { e.preventDefault(); refToggleAB(); return; }
       var pi = PAD_KEYS.indexOf(k);
-      if (pi !== -1) { triggerPad(pi); flashPad(pi); return; }
+      if (pi !== -1) { triggerPad(pi); flashPad(pi); laneHit(pi); return; }
       if (KEYMAP[k] != null && !held[k]) { held[k] = true; pianoDown(KEYMAP[k]); }
     });
     window.addEventListener("keyup", function (e) {
