@@ -6,7 +6,7 @@ import { OutputPass } from '../lib/a/OutputPass.js';
 import { Q, tick, onQuality, setMode } from './core/quality.js';
 import { initAudio, stopVoice, A } from './core/audio.js';
 import { $, sub, clearHud, sleep } from './core/ui.js';
-export const VERSION = 'v20261022-g1';
+export const VERSION = 'v20261023-g2';
 const canvas = $('#c');
 export const renderer = new THREE.WebGLRenderer({ canvas, antialias: !Q.mobile, powerPreference: 'high-performance' });
 renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 0.6; renderer.outputColorSpace = THREE.SRGBColorSpace;
