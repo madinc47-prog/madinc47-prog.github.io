@@ -84,7 +84,7 @@
     return q.p.then(function () { return finalize(id, { dur: dur, peak: peak }); }).then(function (m) {
       delete Q[id]; load();
       if (m && m.kind === "mp3" && window.PFMP3) blobOf(m).then(function (b) { window.PFMP3.autoSave(b, window.PFMP3.name(/Voice only/.test(m.name) ? "voice" : /Go Live/.test(m.name) ? "live" : "mix", m.created)); });   /* v20261022w: auto-save .mp3 */
-      if (m && DIR) blobOf(m).then(function (b) { copyToDir(m, b); });
+      if (m && window.PFEXPORT && window.PFEXPORT.cfg().folder && m.kind !== "mp3") blobOf(m).then(function (b) { window.PFEXPORT.autoCopy(b, fname({ name: m.name, ext: extOf(m), created: m.created })); });
       return m;
     }).catch(function () { delete Q[id]; return null; });
   }
@@ -124,8 +124,8 @@
   }
   function download(it) {
     var f = FILES[it.id];
-    if (f) { saveFile(f, fname(it)); P.toast("Downloading " + fname(it)); return; }
-    P.toast("Getting the file ready — tap Download again"); prep(it).catch(function () { P.toast("Couldn't read this recording"); });
+    if (f) { if (window.PFEXPORT) window.PFEXPORT.export(f, fname(it)); else { saveFile(f, fname(it)); P.toast("Downloading " + fname(it)); } return; }
+    P.toast("Getting the file ready — tap Export again"); prep(it).catch(function () { P.toast("Couldn't read this recording"); });
   }
   /* v20261022w: Share needs the file READY before the tap — awaiting IndexedDB inside the tap lost Android Chrome's user
      gesture, so navigator.share silently did nothing. Files are prepared when the list renders; the tap shares synchronously. */
@@ -196,7 +196,7 @@
     rows.forEach(function (it) {
       var r = document.createElement("div"); r.className = "recs-item recs-row";
       r.innerHTML = '<div class="recs-main"><span class="recs-tag"></span> <strong></strong><span class="mono"></span></div>' +
-        '<div class="recs-acts"><button type="button" class="btn">▶ Play</button><button type="button" class="btn">✎ Rename</button><button type="button" class="btn">⇩ Download</button><button type="button" class="btn">↗ Share</button><button type="button" class="btn">→ A</button><button type="button" class="btn">→ B</button><button type="button" class="btn danger">🗑 Delete</button></div>';
+        '<div class="recs-acts"><button type="button" class="btn">▶ Play</button><button type="button" class="btn">✎ Rename</button><button type="button" class="btn">⇩ Export</button><button type="button" class="btn">↗ Share</button><button type="button" class="btn">→ A</button><button type="button" class="btn">→ B</button><button type="button" class="btn danger">🗑 Delete</button></div>';
       var tag = r.querySelector(".recs-tag"); tag.textContent = it.tag; tag.classList.add(it.type === "fs" ? "fs" : it.m && it.m.src ? "app" : it.video ? "vid" : "mix"); var b4;
       r.querySelector("strong").textContent = it.name;
       r.querySelector(".mono").textContent = " " + P.fmtTime(it.dur || 0) + " · " + it.ext.toUpperCase() + " · " + P.fmtSize(it.bytes || 0) + (it.m && it.m.note ? " · " + it.m.note : "");
@@ -225,7 +225,7 @@
     var s = document.createElement("section"); s.className = "recs-panel my-recs"; s.id = "my-recs"; s.setAttribute("aria-label", "My Recordings");
     s.innerHTML = '<div class="recs-head"><h2>📁 My Recordings</h2><span class="muted">REC shows, REC VIDEO shows (MP4), Voice only and Go Live recordings, plus songs, takes and exports from every app in the suite (Beats, Multitrack, Voice Over, Isle Voice…), saved automatically on this device. Newest first.</span></div>' +
       '<div class="recs-filter"><button type="button" class="btn small" data-f="all">All</button><button type="button" class="btn small" data-f="mix">' + MIX + '</button><button type="button" class="btn small" data-f="fs">' + FS + '</button>' +
-      (window.showDirectoryPicker ? '<label class="btn small recs-dir"><input type="checkbox" id="recs-dir"> Also copy to a folder on this device</label>' : "") + '</div>' +
+      '</div>' +
       '<div id="recs-list" class="recs-items"></div>';
     var fs = null, lib = document.querySelector(".lib-tabs");
     if (fs && fs.parentNode) fs.parentNode.insertBefore(s, fs.nextSibling);

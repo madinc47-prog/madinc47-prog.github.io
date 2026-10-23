@@ -55,14 +55,16 @@
     setTimeout(function () { URL.revokeObjectURL(u); }, 60000);
   }
   function autoSave(blob, name) {
-    try { save(blob, name); } catch (e) { /* ignore */ }
+    var X = window.PFEXPORT, c = X && X.autoCopy(blob, name);
+    if (X) name = X.name(name);
+    try { if (!c) save(blob, name); } catch (e) { /* ignore */ }
     var old = document.getElementById("mp3-dl-bar"); if (old) old.remove();
     var bar = document.createElement("div"); bar.id = "mp3-dl-bar"; bar.setAttribute("role", "status");
     bar.style.cssText = "position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:2147481000;display:flex;gap:8px;align-items:center;background:#1e1b2e;color:#fff;border:1px solid #7c3aed;border-radius:14px;padding:8px 10px;font:600 14px system-ui;box-shadow:0 6px 24px #0008;max-width:94vw";
     var t = document.createElement("span"); t.textContent = "Saved MP3 · " + name; t.style.cssText = "overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:46vw";
-    var b = document.createElement("button"); b.type = "button"; b.id = "mp3-dl-btn"; b.textContent = "⬇ Download MP3"; b.style.cssText = "min-height:44px;padding:0 14px;border-radius:10px;border:0;background:#7c3aed;color:#fff;font:700 15px system-ui";
+    var b = document.createElement("button"); b.type = "button"; b.id = "mp3-dl-btn"; b.textContent = "⬇ Export MP3"; b.style.cssText = "min-height:44px;padding:0 14px;border-radius:10px;border:0;background:#7c3aed;color:#fff;font:700 15px system-ui";
     var x = document.createElement("button"); x.type = "button"; x.textContent = "✕"; x.setAttribute("aria-label", "Close"); x.style.cssText = "min-height:44px;min-width:44px;border:0;background:transparent;color:#fff;font-size:18px";
-    b.onclick = function () { save(blob, name); }; x.onclick = function () { bar.remove(); };
+    b.onclick = function () { if (window.PFEXPORT) window.PFEXPORT.export(blob, name); else save(blob, name); }; x.onclick = function () { bar.remove(); };
     bar.appendChild(t); bar.appendChild(b); bar.appendChild(x); document.body.appendChild(bar);
     setTimeout(function () { if (bar.parentNode) bar.remove(); }, 30000);
   }
