@@ -138,7 +138,8 @@
   }
 
   /* ---------- inputs ---------- */
-  var RAW = { echoCancellation: false, noiseSuppression: false, autoGainControl: false, googEchoCancellation: false, googNoiseSuppression: false, googAutoGainControl: false, googHighpassFilter: false, googTypingNoiseDetection: false, googAudioMirroring: false, voiceIsolation: false, sampleRate: { ideal: 48000 }, sampleSize: { ideal: 16 }, latency: { ideal: 0.01 }, channelCount: { ideal: 2 } };
+  var RAW = { echoCancellation: false, noiseSuppression: false, autoGainControl: false, googEchoCancellation: false, googNoiseSuppression: false, googAutoGainControl: false, googHighpassFilter: false, googTypingNoiseDetection: false, googAudioMirroring: false, voiceIsolation: false, sampleRate: { ideal: 48000 }, sampleSize: { ideal: 16 }, latency: 0, channelCount: { ideal: 1 } }; // v20261023rm: same as Voice Over studio (mono for Tab/headset mics; stereo only for a USB mixer/interface)
+  var STEREO = /usb|mixer|interface|codec|hayner|line ?in/i;
   function listDevs() { return navigator.mediaDevices.enumerateDevices().then(function (d) { devices = d.filter(function (x) { return x.kind === "audioinput"; }); return devices; }); }
   var HS = /head ?set|head ?phone|wired|usb|earphone|earpiece|lightning|type-c|bluetooth|airpods|buds/i;
   function pickDefault() { // headset/USB mic first, Tab built-in mic only as fallback; remembered choice wins
@@ -156,7 +157,7 @@
   function openDev2(dev) {
     ac(); var key = dev || "default";
     if (streams[key]) return Promise.resolve(streams[key]);
-    var c = {}; for (var k in RAW) c[k] = RAW[k]; if (dev) c.deviceId = { exact: dev };
+    var c = {}; for (var k in RAW) c[k] = RAW[k]; if (dev) c.deviceId = { exact: dev }; var dl = (devices || []).filter(function (x) { return x.deviceId === dev; })[0]; if (dl && STEREO.test(dl.label)) c.channelCount = { ideal: 2 };
     return navigator.mediaDevices.getUserMedia({ audio: c, video: false }).then(function (st) {
       var tr = st.getAudioTracks()[0], set = tr.getSettings ? tr.getSettings() : {};
       var src = ctx.createMediaStreamSource(st), sp = ctx.createChannelSplitter(2); src.connect(sp);
