@@ -113,11 +113,17 @@
   }
   function fname(it) { if (it.ext === "mp3" && window.PFMP3) return window.PFMP3.name(it.type === "fs" ? "take" : /Voice only/.test(it.name) ? "voice" : /Go Live/.test(it.name) ? "live" : "mix", it.created); return "PsychoFingers_" + it.name.replace(/[^\w\- ]+/g, "").trim().replace(/\s+/g, "_") + "." + it.ext; }
   function getBlob(it) { return it.type === "fs" ? Promise.resolve(it.t.blob) : blobOf(it.m); }
+  /* v20261022y: Download used to read the file from IndexedDB AFTER the tap; on Android Chrome the click() then ran outside
+     the user gesture and was silently dropped. Now the file is prepared before the tap (same cache as Share) and saved synchronously. */
+  function saveFile(f, name) {
+    var u = URL.createObjectURL(f), a = document.createElement("a"); a.href = u; a.download = name; a.rel = "noopener"; a.style.display = "none";
+    document.body.appendChild(a); a.click(); setTimeout(function () { a.remove(); }, 1000);
+    setTimeout(function () { URL.revokeObjectURL(u); }, 60000);
+  }
   function download(it) {
-    getBlob(it).then(function (b) {
-      var u = URL.createObjectURL(b), a = document.createElement("a"); a.href = u; a.download = fname(it); document.body.appendChild(a); a.click(); a.remove();
-      setTimeout(function () { URL.revokeObjectURL(u); }, 60000);
-    });
+    var f = FILES[it.id];
+    if (f) { saveFile(f, fname(it)); P.toast("Downloading " + fname(it)); return; }
+    P.toast("Getting the file ready — tap Download again"); prep(it).catch(function () { P.toast("Couldn't read this recording"); });
   }
   /* v20261022w: Share needs the file READY before the tap — awaiting IndexedDB inside the tap lost Android Chrome's user
      gesture, so navigator.share silently did nothing. Files are prepared when the list renders; the tap shares synchronously. */

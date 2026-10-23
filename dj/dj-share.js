@@ -6,7 +6,7 @@
   var P = window.PFDJ; if (!P) return;
   var TITLE = "DJ Psycho Fingers mix";
   function canFiles(f) { try { return !!(navigator.share && navigator.canShare && navigator.canShare({ files: [f] })); } catch (e) { return false; } }
-  function dl(f) { var u = URL.createObjectURL(f), a = document.createElement("a"); a.href = u; a.download = f.name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(function () { URL.revokeObjectURL(u); }, 60000); }
+  function dl(f) { var u = URL.createObjectURL(f), a = document.createElement("a"); a.href = u; a.download = f.name; a.style.display = "none"; document.body.appendChild(a); a.click(); setTimeout(function () { a.remove(); }, 1000); setTimeout(function () { URL.revokeObjectURL(u); }, 60000); }
   function linkShare() { if (window.IslePinShare) return window.IslePinShare.share(); if (navigator.share) return navigator.share({ title: document.title, url: location.href }); }
   function shareFile(f, name) {
     if (canFiles(f)) {

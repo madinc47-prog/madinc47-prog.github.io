@@ -122,3 +122,9 @@ All original, made on 22 Oct 2026. **No recordings, no third-party samples** —
 | E9 | Orchestra hit | `e09-orchestra-hit.mp3` | stacked detuned saw chord (C minor) + sub + noise attack, hall reverb |
 | E10 | Crowd cheer | `e10-crowd-cheer.mp3` | band-passed noise with random swells + synthetic whistles |
 | E11 | Record stop | `e11-record-stop.mp3` | saw chord with vinyl-brake pitch fall to zero |
+
+## Bank E addition (22 Oct 2026)
+
+| Pad | Name | File | How it was made |
+|---|---|---|---|
+| E12 | Backs Off The Wall — "Everybody stand up! Get your backs off the wall!" | `e12-backs-off-the-wall.mp3` | Same voice and chain as E1: Kokoro-82M TTS (kokoro-onnx, Apache-2.0), voice `af_bella`, speed 1.0, run locally; same FFmpeg chain ([`make_drop_e01.sh`](make_drop_e01.sh)); −14.4 LUFS vs E1 −14.1 LUFS, peak −1.3 dBFS, mono 44.1 kHz MP3 |

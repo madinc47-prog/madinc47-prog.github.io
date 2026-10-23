@@ -47,11 +47,24 @@
     var d = new Date(t || Date.now());
     return "DJ-Psycho-Fingers-" + (kind || "mix") + "-" + d.getFullYear() + pad(d.getMonth() + 1) + pad(d.getDate()) + "-" + pad(d.getHours()) + pad(d.getMinutes()) + ".mp3";
   }
+  /* v20261022y: the auto-download runs after the recorder finishes (no user gesture), which Android Chrome may block.
+     So it is tried, and a visible "⬇ Download MP3" button stays up for 30 s — tapping it is a real gesture and always works. */
+  function save(blob, name) {
+    var u = URL.createObjectURL(blob), a = document.createElement("a"); a.href = u; a.download = name; a.style.display = "none";
+    document.body.appendChild(a); a.click(); setTimeout(function () { a.remove(); }, 1000);
+    setTimeout(function () { URL.revokeObjectURL(u); }, 60000);
+  }
   function autoSave(blob, name) {
-    try {
-      var u = URL.createObjectURL(blob), a = document.createElement("a"); a.href = u; a.download = name; document.body.appendChild(a); a.click(); a.remove();
-      setTimeout(function () { URL.revokeObjectURL(u); }, 60000);
-    } catch (e) { /* ignore */ }
+    try { save(blob, name); } catch (e) { /* ignore */ }
+    var old = document.getElementById("mp3-dl-bar"); if (old) old.remove();
+    var bar = document.createElement("div"); bar.id = "mp3-dl-bar"; bar.setAttribute("role", "status");
+    bar.style.cssText = "position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:2147481000;display:flex;gap:8px;align-items:center;background:#1e1b2e;color:#fff;border:1px solid #7c3aed;border-radius:14px;padding:8px 10px;font:600 14px system-ui;box-shadow:0 6px 24px #0008;max-width:94vw";
+    var t = document.createElement("span"); t.textContent = "Saved MP3 · " + name; t.style.cssText = "overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:46vw";
+    var b = document.createElement("button"); b.type = "button"; b.id = "mp3-dl-btn"; b.textContent = "⬇ Download MP3"; b.style.cssText = "min-height:44px;padding:0 14px;border-radius:10px;border:0;background:#7c3aed;color:#fff;font:700 15px system-ui";
+    var x = document.createElement("button"); x.type = "button"; x.textContent = "✕"; x.setAttribute("aria-label", "Close"); x.style.cssText = "min-height:44px;min-width:44px;border:0;background:transparent;color:#fff;font-size:18px";
+    b.onclick = function () { save(blob, name); }; x.onclick = function () { bar.remove(); };
+    bar.appendChild(t); bar.appendChild(b); bar.appendChild(x); document.body.appendChild(bar);
+    setTimeout(function () { if (bar.parentNode) bar.remove(); }, 30000);
   }
   window.PFMP3 = { Recorder: MP3Rec, kbps: KBPS, name: mp3Name, autoSave: autoSave,
     make: function (stream, ctx) { return MP3Rec.isSupported() && ctx ? new MP3Rec(stream, ctx) : null; } };

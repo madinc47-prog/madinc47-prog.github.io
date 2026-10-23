@@ -21,6 +21,18 @@
   if ($("sampler")) q("qb-pads", "🥁 Pads", function () { var F = window.PFDJ_PADSFLOAT; if (F && F.isOpen()) { var pf = $("pads-float"); if (pf) { pf.classList.remove("collapsed"); pf.scrollIntoView && pf.querySelector(".pf-body").scrollTo(0, 0); } return; } go("#sampler"); });
   q("qb-lib", "📚 Library", function () { go(".lib-tabs"); });
   q("qb-recs", "📁 My Recordings", function () { go("#my-recs"); });
+  /* v20261022y: real full screen — hides Chrome's tab strip + address bar (navigationUI: "hide"), called inside the tap */
+  function fsEl() { return document.fullscreenElement || document.webkitFullscreenElement || null; }
+  function fsSync() { var on = !!fsEl(); document.documentElement.classList.toggle("pf-fullscreen", on); if (B["qb-full"]) { B["qb-full"].textContent = on ? "⛶ Exit full screen" : "⛶ Full screen"; B["qb-full"].classList.toggle("on", on); } }
+  q("qb-full", "⛶ Full screen", function () {
+    var d = document, de = d.documentElement;
+    if (fsEl()) { (d.exitFullscreen || d.webkitExitFullscreen || function () {}).call(d); return; }
+    var rq = de.requestFullscreen || de.webkitRequestFullscreen;
+    if (!rq) { if (window.PFDJ) window.PFDJ.toast("Full screen isn't available in this browser — add DJ Decks to your home screen for a bar-free app."); return; }
+    var r; try { r = rq.call(de, { navigationUI: "hide" }); } catch (e) { r = null; }
+    if (r && r.catch) r.catch(function () { if (window.PFDJ) window.PFDJ.toast("Chrome blocked full screen — tap again"); });
+  }, "qb-full");
+  document.addEventListener("fullscreenchange", fsSync); document.addEventListener("webkitfullscreenchange", fsSync);
   q("qb-more", "⋯ More", function () { var m = $("more"); m.hidden = !m.hidden; B["qb-more"].classList.toggle("on", !m.hidden); if (!m.hidden) go(m); });
   if (top && top.parentNode) top.parentNode.insertBefore(qb, top.nextSibling);
 
