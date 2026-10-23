@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0b0d14">
+<meta name="robots" content="noindex">
+<title>Voice Over Studio — DJ Psycho Fingers</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="vo.css?v=20261023c">
+</head>
+<body>
+<header class="top">
+  <a class="back" href="../">← Hub</a>
+  <h1>🎙 Voice Over <small>dub it in your own voice</small></h1>
+  <label class="btn file">🎬 Load video<input type="file" id="f-video" accept="video/mp4,video/webm,video/quicktime,video/*,.mov" hidden></label>
+</header>
+<main class="studio">
+  <section class="stage">
+    <div class="vwrap"><video id="vid" playsinline preload="auto"></video><div id="empty" class="empty">Load a video file (MP4 / WEBM / MOV) to start dubbing.</div><div id="count" class="count" hidden></div><div id="recdot" class="recdot" hidden>● REC</div></div>
+    <div class="transport">
+      <button class="btn big" id="b-start" title="To start">⏮</button>
+      <button class="btn big" id="b-play">▶ Play</button>
+      <button class="btn big rec" id="b-rec">● Record</button>
+      <span class="time" id="t-now">0:00.0</span><span class="time dim">/ <span id="t-dur">0:00</span></span>
+      <button class="btn" id="b-undo" title="Undo">↶ Undo</button>
+      <button class="btn" id="b-redo" title="Redo">↷</button>
+    </div>
+  </section>
+  <section class="panel">
+    <details open><summary>🎤 Mic (raw)</summary>
+      <label>Input <select id="mic"></select></label>
+      <div class="meter"><i id="meter"></i></div>
+      <label>Count-in <select id="countin"><option value="0">Off</option><option value="2">2 beats</option><option value="3" selected>3 beats</option><option value="4">4 beats</option></select></label>
+      <label>Pre-roll <select id="preroll"><option value="0">0 s</option><option value="1">1 s</option><option value="2" selected>2 s</option><option value="3">3 s</option><option value="5">5 s</option></select></label>
+      <label>Latency fix <input type="number" id="lat" value="0" step="5" min="-500" max="500"> ms <small class="dim">(auto + this)</small></label>
+      <p class="dim small">No echo cancel, noise suppression or auto gain. Use headphones so the movie sound doesn't get into the mic.</p>
+    </details>
+    <details open><summary>🎞 Original audio</summary>
+      <label>Volume <input type="range" id="ov" min="0" max="1.5" step="0.01" value="1"> <span id="ov-v">100%</span></label>
+      <label class="chk"><input type="checkbox" id="om"> Mute original</label>
+      <label class="chk"><input type="checkbox" id="od" checked> Auto-dip under my takes</label>
+      <label>Dip depth <input type="range" id="odd" min="0" max="1" step="0.01" value="0.85"> <span id="odd-v">-85%</span></label>
+    </details>
+    <details open id="take-box"><summary>🗣 Selected take</summary>
+      <div id="take-none" class="dim small">Tap a take on the VO track to edit it.</div>
+      <div id="take-ed" hidden>
+        <label>Name <input type="text" id="tk-name" maxlength="40"></label>
+        <label>Volume <input type="range" id="tk-vol" min="0" max="2" step="0.01"> <span id="tk-vol-v"></span></label>
+        <label>Fade in <input type="range" id="tk-fi" min="0" max="3" step="0.05"> <span id="tk-fi-v"></span></label>
+        <label>Fade out <input type="range" id="tk-fo" min="0" max="3" step="0.05"> <span id="tk-fo-v"></span></label>
+        <div class="row"><button class="btn" id="tk-nudge-l">◀ 0.05s</button><button class="btn" id="tk-nudge-r">0.05s ▶</button><button class="btn" id="tk-split">✂ Split at playhead</button></div>
+        <div class="row"><button class="btn" id="tk-mute">Mute</button><button class="btn danger" id="tk-del">🗑 Delete</button></div>
+        <details class="match"><summary>✨ Match voice (optional, free Colab)</summary>
+          <p class="small">1) Download this take. 2) Run it through your voice model in the free Isle Voice Colab (RVC). 3) Import the result — it drops back in the same spot.</p>
+          <div class="row"><button class="btn" id="tk-dl">⬇ Take WAV</button><a class="btn" id="tk-colab" target="_blank" rel="noopener">Open Colab</a><label class="btn file">⬆ Import matched<input type="file" id="tk-imp" accept="audio/*" hidden></label></div>
+        </details>
+      </div>
+    </details>
+    <details open><summary>💾 Export</summary>
+      <label class="chk"><input type="checkbox" id="rights"> I have the rights to use this video</label>
+      <div class="row"><button class="btn" id="ex-mp4">🎬 Export MP4</button><button class="btn" id="ex-wav">🎧 Mixed WAV</button><label class="btn file">⬆ Add audio take<input type="file" id="f-take" accept="audio/*" hidden></label></div>
+      <p class="dim small">MP4 export plays the video through once in real time. Project autosaves on this device.</p>
+      <button class="btn ghost" id="b-new">Start new project</button>
+    </details>
+  </section>
+  <section class="tl">
+    <div class="tl-tools"><span class="dim small">Timeline — drag takes to move, edges to trim, ruler to scrub, empty space to pan, pinch to zoom</span><span class="sp"></span><button class="btn" id="z-out">−</button><button class="btn" id="z-in">+</button></div>
+    <canvas id="tl"></canvas>
+  </section>
+</main>
+<div id="toast" class="toast" hidden></div>
+<div id="busy" class="busy" hidden><div><b id="busy-t">Working…</b><div class="bar"><i id="busy-p"></i></div><button class="btn" id="busy-x">Cancel</button></div></div>
+<script src="vo.js?v=20261023c"></script>
+</body>
+</html>
