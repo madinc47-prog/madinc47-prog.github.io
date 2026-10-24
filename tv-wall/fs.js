@@ -1,4 +1,4 @@
-/* Full screen for Galaxy Tab (Android Chrome) · v20261024a */
+/* Full screen for Galaxy Tab (Android Chrome) · v20261024b */
 (function(){
  const d=document,de=d.documentElement,K="tvAutoFS";
  const isFS=()=>!!(d.fullscreenElement||d.webkitFullscreenElement);
@@ -24,5 +24,14 @@
   const first=e=>{d.removeEventListener("pointerdown",first,true);hint.classList.add("hidden");if(auto&&!isFS()&&e.target!==b&&e.target!==a)enter()};
   d.addEventListener("pointerdown",first,true);
  }
+
+ // installable app
+ const app=matchMedia("(display-mode: fullscreen)").matches||matchMedia("(display-mode: standalone)").matches;
+ if(app){lock();hint.classList.add("hidden")}
+ const ib=d.createElement("button");ib.id="fsInstall";ib.className="fsbtn fsinst hidden";ib.type="button";ib.textContent="📲 Install as app";bar.appendChild(ib);
+ let dp=null;addEventListener("beforeinstallprompt",e=>{e.preventDefault();dp=e;if(!app)ib.classList.remove("hidden")});
+ ib.addEventListener("click",async e=>{e.stopPropagation();if(!dp){alert("In Chrome tap ⋮ then 'Add to Home screen' / 'Install app'.");return}dp.prompt();try{await dp.userChoice}catch(_){}dp=null;ib.classList.add("hidden")});
+ addEventListener("appinstalled",()=>ib.classList.add("hidden"));
+ if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
  label();
 })();

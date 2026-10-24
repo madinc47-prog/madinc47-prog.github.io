@@ -1,6 +1,6 @@
 (()=>{"use strict";
 const $=s=>document.querySelector(s),TZ="America/Dominica";
-let CH=[],EV=[],idx=0,on=false,vol=+(localStorage.tvVol||70),muted=false,numBuf="",numT,osdT,volT,wallOn=false,audio=null,guideSel=0;
+let autoSkip=false,skips=0,tapPending=false;let CH=[],EV=[],idx=0,on=false,vol=+(localStorage.tvVol||70),muted=false,numBuf="",numT,osdT,volT,wallOn=false,audio=null,guideSel=0;
 const today=()=>new Intl.DateTimeFormat("en-CA",{timeZone:TZ}).format(new Date());
 const fmt=d=>new Date(d+"T12:00:00").toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short"});
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
@@ -12,16 +12,23 @@ function render(el,src,c,small){
   if(src.type==="youtube"){el.innerHTML=`<iframe allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen src="${ytSrc(src.channelId,small)}"></iframe>${small?"":`<div class="ytnote">If YouTube shows “unavailable”, ${esc(c.name)} is off air · next live: ${esc(nextFor(c.num))}</div>`}`;return}
   if(src.type==="facebook"){el.innerHTML=`<iframe allow="autoplay; encrypted-media" allowfullscreen src="https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(src.url)}&show_text=false&autoplay=1"></iframe>`;return}
   if(src.type==="hls"){el.innerHTML=`<video playsinline autoplay controls></video>`;const v=el.querySelector("video");v.volume=vol/100;v.muted=muted||small;
-    const fail=()=>c.fallback&&src!==c.fallback?render(el,c.fallback,c,small):el.innerHTML=slate(c,"Stream not reachable right now");
+    const fail=()=>c.fallback&&src!==c.fallback?render(el,c.fallback,c,small):(!small&&autoSkip&&skips<CH.length)?(skips++,tune(nextPlayable(idx+1))):el.innerHTML=slate(c,"Stream not reachable right now");
     if(v.canPlayType("application/vnd.apple.mpegurl")){v.src=src.url;v.onerror=fail}else loadHls().then(H=>{const h=new H();h.loadSource(src.url);h.attachMedia(v);h.on(H.Events.ERROR,(e,d)=>d.fatal&&fail())}).catch(fail);return}
   if(src.type==="radio"){if(small){el.innerHTML=slate(c,"Radio — open full screen to listen");return}
     el.innerHTML=`<div class="slate radio"><div class="box"><h3>📻 ${esc(c.num)} · ${esc(c.name)}</h3><div class="eq">${"<i></i>".repeat(12)}</div><p>Now: ${esc(c.now||"Live radio")}</p><p id="rstat">Tuning…</p></div></div>`;
     stopAudio();audio=new Audio();audio.volume=vol/100;audio.muted=muted;const a=audio;let ok=false;
-    const fail=()=>{if(a!==audio||ok)return;stopAudio();if(c.fallback&&src!==c.fallback)render(el,c.fallback,c,small);else el.innerHTML=slate(c,"Radio stream not reachable right now")};
-    a.onerror=fail;a.onplaying=()=>{ok=true;const s=$("#rstat");if(s)s.textContent="● LIVE"};setTimeout(()=>{if(!ok&&a===audio&&a.readyState<2)fail()},12000);
-    a.src=src.url;a.play().catch(e=>{if(e.name==="NotAllowedError"){const s=$("#rstat");if(s)s.innerHTML='<button id="tap">▶ Tap to listen</button>';$("#tap").onclick=()=>a.play()}else fail()});return}
+    const fail=()=>{if(a!==audio||ok)return;stopAudio();if(c.fallback&&src!==c.fallback)render(el,c.fallback,c,small);else if(autoSkip&&skips<CH.length){skips++;tune(nextPlayable(idx+1))}else el.innerHTML=slate(c,"Radio stream not reachable right now")};
+    a.onerror=fail;a.onplaying=()=>{ok=true;autoSkip=false;const s=$("#rstat");if(s)s.textContent="● LIVE"};setTimeout(()=>{if(!ok&&a===audio&&a.readyState<2)fail()},12000);
+    a.src=src.url;a.play().catch(e=>{if(e.name==="NotAllowedError"){showTap();const s=$("#rstat");if(s)s.innerHTML='<button id="tap">▶ Tap to listen</button>';$("#tap").onclick=()=>a.play()}else fail()});return}
   el.innerHTML=slate(c,c.now||"No free web stream");
 }
+
+function nextPlayable(i){for(let k=0;k<CH.length;k++){const j=(i+k)%CH.length;if(CH[j].type==="radio"||CH[j].type==="hls")return j}return i}
+function showTap(){const t=$("#tapPlay");if(t)t.classList.remove("hidden")}
+function hideTap(){const t=$("#tapPlay");if(t)t.classList.add("hidden")}
+function firstTap(){if(!tapPending)return;tapPending=false;hideTap();muted=false;apply();if(audio)audio.play().catch(()=>{});document.querySelectorAll("video").forEach(v=>v.play().catch(()=>{}))}
+document.addEventListener("pointerdown",firstTap,true);document.addEventListener("keydown",firstTap,true);
+function autoStart(){const saved=localStorage.tvCh;let i=saved!=null?+saved:Math.max(0,CH.findIndex(c=>c.num===4));const t=CH[i]&&CH[i].type;if(t!=="radio"&&t!=="hls")i=nextPlayable(i);idx=i;muted=true;tapPending=true;autoSkip=true;skips=0;showTap();if(!on)power();else tune(idx)}
 let hlsP;function loadHls(){return hlsP||(hlsP=new Promise((r,j)=>{const s=document.createElement("script");s.src="https://cdn.jsdelivr.net/npm/hls.js@1/dist/hls.min.js";s.onload=()=>r(window.Hls);s.onerror=j;document.head.appendChild(s)}))}
 function tune(i){if(!CH.length)return;idx=(i+CH.length)%CH.length;localStorage.tvCh=idx;const c=CH[idx];stopAudio();if(wallOn)toggleWall(false);render($("#main"),c,c,false);showOSD();}
 function showOSD(){const c=CH[idx];$("#osdNum").textContent=String(c.num).padStart(2,"0");$("#osdName").textContent=c.name;$("#osd").classList.remove("hidden");clearTimeout(osdT);osdT=setTimeout(()=>$("#osd").classList.add("hidden"),3000)}
@@ -55,6 +62,6 @@ addEventListener("keydown",e=>{const g=!$("#guide").classList.contains("hidden")
   const m={ArrowUp:"chup",PageUp:"chup",ChannelUp:"chup",ArrowDown:"chdn",PageDown:"chdn",ChannelDown:"chdn",ArrowRight:"volup",ArrowLeft:"voldn",m:"mute",g:"guide",e:"events",i:"info",w:"wall",f:"full",p:"power",Escape:"",Backspace:""};
   if(/^\d$/.test(e.key))return num(e.key);if(e.key==="Escape"||e.key==="Backspace"){panel(null);return}if(m[e.key]){e.preventDefault();key(m[e.key])}});
 Promise.all([fetch("channels.json?v=1").then(r=>r.json()),fetch("events.json?v=1").then(r=>r.json())]).then(([c,e])=>{
-  CH=c.channels.sort((a,b)=>(a.group===b.group?0:a.group==="local"?-1:1)||a.num-b.num);EV=e.events;idx=Math.min(+(localStorage.tvCh||0),CH.length-1);drawEvents();$("#vol").innerHTML="<i></i>";
+  CH=c.channels.sort((a,b)=>(a.group===b.group?0:a.group==="local"?-1:1)||a.num-b.num);EV=e.events;idx=Math.min(+(localStorage.tvCh||0),CH.length-1);drawEvents();$("#vol").innerHTML="<i></i>";autoStart();
 }).catch(()=>{$("#main").innerHTML='<div class="slate"><div class="box">Could not load channel list</div></div>'});
 })();
