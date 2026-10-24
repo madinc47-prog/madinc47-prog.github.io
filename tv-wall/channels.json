@@ -1,17 +1,137 @@
 {
-  "_help": "Add a channel: copy one object. type = youtube (channelId = YouTube UC... id, plays when that channel is live) | hls (url = .m3u8) | radio (url = mp3/aac stream) | facebook (url = public FB video/live URL) | link (no embeddable stream; shows slate with link). Optional fallback: another source object tried if the first fails. group: local | events. Keep official free sources only.",
-  "channels": [
-    {"num":1,"name":"DBS Radio 88.1","group":"local","type":"radio","url":"https://stream.dbcradio.net:8005/live","fallback":{"type":"youtube","channelId":"UCX2yUaP3upa63YKqG2Mx61A"},"site":"https://dbsradio.com","now":"DBS live programming (news at 7am / midday / evening)","source":"https://www.youtube.com/watch?v=iE_YFwPdqEo"},
-    {"num":2,"name":"GIS Dominica","group":"local","type":"youtube","channelId":"UC8jefAmSQs7LI61cRK1VflA","site":"https://www.youtube.com/user/gisdominica","now":"Government Information Service: National Focus, govt events","source":"https://dominicanewsonline.com/news/homepage/news/general/gis-is-now-live-online/"},
-    {"num":3,"name":"Marpin TV Ch 5","group":"local","type":"link","site":"https://www.marpin.dm","now":"Cable channel 5 — no public free web stream found","source":"https://tdntv.net/about.html"},
-    {"num":4,"name":"Kairi FM","group":"local","type":"radio","url":"https://stream.zeno.fm/ych5ixtx51ktv","fallback":{"type":"youtube","channelId":"UCJY6RC-HSxseg3CXzNohvdA"},"site":"https://www.youtube.com/channel/UCJY6RC-HSxseg3CXzNohvdA","now":"Kairi FM live radio"},
-    {"num":5,"name":"Q95 FM","group":"local","type":"radio","url":"https://sonic01.instainternet.com/8306/stream","site":"http://www.q95da.com/","now":"Q95 live radio (stream listed as 'Wice QFM')","source":"https://github.com/junguler/m3u-radio-music-playlists/blob/main/listen_fm/Dominica.m3u"},
-    {"num":6,"name":"Vibes Radio","group":"local","type":"radio","url":"https://vibesradio.dm/stream","site":"https://vibesradio.dm","now":"Vibes Radio live"},
-    {"num":7,"name":"TDN Radio","group":"local","type":"radio","url":"https://sonic01.instainternet.com/8308/stream","site":"https://tdntv.net","now":"TDN Radio live"},
-    {"num":8,"name":"EmoNews","group":"local","type":"youtube","channelId":"UCxwP8k3FKfweOg_SbKG3HRQ","site":"https://www.youtube.com/channel/UCxwP8k3FKfweOg_SbKG3HRQ","now":"EmoNews live (news, WCMF pressers)","source":"https://www.youtube.com/watch?v=04PxgYqGn5g"},
-    {"num":9,"name":"Diocese of Roseau","group":"local","type":"youtube","channelId":"UCBgdr_HDTCwVhi5FAfgJL-A","site":"https://www.youtube.com/channel/UCBgdr_HDTCwVhi5FAfgJL-A","now":"Catholic Mass & church events"},
-    {"num":10,"name":"Voice of Life Radio","group":"local","type":"youtube","channelId":"UC2Q28PP-3g0Y6BL0CYHiSUA","site":"https://www.youtube.com/channel/UC2Q28PP-3g0Y6BL0CYHiSUA","now":"Christian radio 102.1 / 106.1 / 90.7"},
-    {"num":20,"name":"Discover Dominica Live","group":"events","type":"youtube","channelId":"UCLBnmXCt10xljfT6PokbAiQ","site":"https://discoverdominica.com/festivals-and-events/","now":"Creole season events, when streamed by Discover Dominica Authority"},
-    {"num":21,"name":"Creole Season (GIS)","group":"events","type":"youtube","channelId":"UC8jefAmSQs7LI61cRK1VflA","site":"https://www.youtube.com/user/gisdominica","now":"Independence / Creole Day ceremonies (GIS coverage)"}
-  ]
+ "_help": "Add a channel: copy one object. type = youtube (channelId = YouTube UC... id, plays when that channel is live) | hls (url = .m3u8) | radio (url = mp3/aac stream) | facebook (url = public FB video/live URL) | link (no embeddable stream; shows slate with link). Optional fallback: another source object tried if the first fails. group: local | events. Keep official free sources only. Numbering (cable-style blocks): 1-19 Local News/Gov · 20-49 Culture & Events · 50-69 Faith · 780-799 Radio & Music. cat = news|culture|faith|radio.",
+ "channels": [
+  {
+   "num": 1,
+   "name": "GIS Dominica",
+   "group": "local",
+   "type": "youtube",
+   "channelId": "UC8jefAmSQs7LI61cRK1VflA",
+   "site": "https://www.youtube.com/user/gisdominica",
+   "now": "Government Information Service: National Focus, govt events",
+   "source": "https://dominicanewsonline.com/news/homepage/news/general/gis-is-now-live-online/",
+   "cat": "news"
+  },
+  {
+   "num": 2,
+   "name": "EmoNews",
+   "group": "local",
+   "type": "youtube",
+   "channelId": "UCxwP8k3FKfweOg_SbKG3HRQ",
+   "site": "https://www.youtube.com/channel/UCxwP8k3FKfweOg_SbKG3HRQ",
+   "now": "EmoNews live (news, WCMF pressers)",
+   "source": "https://www.youtube.com/watch?v=04PxgYqGn5g",
+   "cat": "news"
+  },
+  {
+   "num": 3,
+   "name": "Marpin TV Ch 5",
+   "group": "local",
+   "type": "link",
+   "site": "https://www.marpin.dm",
+   "now": "Cable channel 5 — no public free web stream found",
+   "source": "https://tdntv.net/about.html",
+   "cat": "news"
+  },
+  {
+   "num": 20,
+   "name": "Discover Dominica Live",
+   "group": "events",
+   "type": "youtube",
+   "channelId": "UCLBnmXCt10xljfT6PokbAiQ",
+   "site": "https://discoverdominica.com/festivals-and-events/",
+   "now": "Creole season events, when streamed by Discover Dominica Authority",
+   "cat": "culture"
+  },
+  {
+   "num": 21,
+   "name": "Creole Season (GIS)",
+   "group": "events",
+   "type": "youtube",
+   "channelId": "UC8jefAmSQs7LI61cRK1VflA",
+   "site": "https://www.youtube.com/user/gisdominica",
+   "now": "Independence / Creole Day ceremonies (GIS coverage)",
+   "cat": "culture"
+  },
+  {
+   "num": 55,
+   "name": "Diocese of Roseau",
+   "group": "local",
+   "type": "youtube",
+   "channelId": "UCBgdr_HDTCwVhi5FAfgJL-A",
+   "site": "https://www.youtube.com/channel/UCBgdr_HDTCwVhi5FAfgJL-A",
+   "now": "Catholic Mass & church events",
+   "cat": "faith"
+  },
+  {
+   "num": 56,
+   "name": "Voice of Life Radio",
+   "group": "local",
+   "type": "youtube",
+   "channelId": "UC2Q28PP-3g0Y6BL0CYHiSUA",
+   "site": "https://www.youtube.com/channel/UC2Q28PP-3g0Y6BL0CYHiSUA",
+   "now": "Christian radio 102.1 / 106.1 / 90.7",
+   "cat": "faith"
+  },
+  {
+   "num": 781,
+   "name": "DBS Radio 88.1",
+   "group": "local",
+   "type": "radio",
+   "url": "https://stream.dbcradio.net:8005/live",
+   "fallback": {
+    "type": "youtube",
+    "channelId": "UCX2yUaP3upa63YKqG2Mx61A"
+   },
+   "site": "https://dbsradio.com",
+   "now": "DBS live programming (news at 7am / midday / evening)",
+   "source": "https://www.youtube.com/watch?v=iE_YFwPdqEo",
+   "cat": "radio"
+  },
+  {
+   "num": 782,
+   "name": "Kairi FM",
+   "group": "local",
+   "type": "radio",
+   "url": "https://stream.zeno.fm/ych5ixtx51ktv",
+   "fallback": {
+    "type": "youtube",
+    "channelId": "UCJY6RC-HSxseg3CXzNohvdA"
+   },
+   "site": "https://www.youtube.com/channel/UCJY6RC-HSxseg3CXzNohvdA",
+   "now": "Kairi FM live radio",
+   "cat": "radio"
+  },
+  {
+   "num": 783,
+   "name": "Q95 FM",
+   "group": "local",
+   "type": "radio",
+   "url": "https://sonic01.instainternet.com/8306/stream",
+   "site": "http://www.q95da.com/",
+   "now": "Q95 live radio (stream listed as 'Wice QFM')",
+   "source": "https://github.com/junguler/m3u-radio-music-playlists/blob/main/listen_fm/Dominica.m3u",
+   "cat": "radio"
+  },
+  {
+   "num": 784,
+   "name": "Vibes Radio",
+   "group": "local",
+   "type": "radio",
+   "url": "https://vibesradio.dm/stream",
+   "site": "https://vibesradio.dm",
+   "now": "Vibes Radio live",
+   "cat": "radio"
+  },
+  {
+   "num": 785,
+   "name": "TDN Radio",
+   "group": "local",
+   "type": "radio",
+   "url": "https://sonic01.instainternet.com/8308/stream",
+   "site": "https://tdntv.net",
+   "now": "TDN Radio live",
+   "cat": "radio"
+  }
+ ]
 }
