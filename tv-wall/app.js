@@ -44,7 +44,7 @@ function toggleWall(f){wallOn=f??!wallOn;const w=$("#wall");if(!wallOn){w.innerH
   stopAudio();$("#main").innerHTML="";const vids=CH.filter(c=>c.type!=="radio"&&c.type!=="link").slice(0,4);
   w.innerHTML=vids.map(()=>"<div></div>").join("");w.querySelectorAll("div").forEach((d,i)=>{render(d,vids[i],vids[i],true);d.insertAdjacentHTML("beforeend",`<span class="lbl">${vids[i].num} ${esc(vids[i].name)}</span>`)});w.classList.remove("hidden")}
 function power(){on=!on;const t=$("#tv");if(on){t.classList.remove("off");t.classList.add("on-anim");setTimeout(()=>t.classList.remove("on-anim"),1000);tune(idx)}else{stopAudio();$("#main").innerHTML="";toggleWall(false);t.classList.add("off")}}
-function full(){const d=document;if(d.fullscreenElement)d.exitFullscreen();else d.documentElement.requestFullscreen({navigationUI:"hide"}).then(()=>screen.orientation&&screen.orientation.lock&&screen.orientation.lock("landscape").catch(()=>{})).catch(()=>{})}
+function full(){const d=document;if(d.fullscreenElement)d.exitFullscreen();else window.tvFullToggle&&window.tvFullToggle()}
 function num(n){numBuf+=n;$("#osdNum").textContent=numBuf.padEnd(2,"-");$("#osdName").textContent="";$("#osd").classList.remove("hidden");clearTimeout(numT);numT=setTimeout(()=>{const i=CH.findIndex(c=>c.num===+numBuf);numBuf="";if(i>=0){if(!on)power();tune(i)}else{$("#osdName").textContent="No channel";}},1300)}
 function key(k){if(k==="power")return power();if(k==="full")return full();if(!on)power();
   ({chup:()=>tune(idx+1),chdn:()=>tune(idx-1),volup:()=>setVol(10),voldn:()=>setVol(-10),mute:()=>{muted=!muted;apply()},guide:()=>panel("guide"),events:()=>panel("events"),info,wall:()=>toggleWall()}[k]||(()=>{}))()}
