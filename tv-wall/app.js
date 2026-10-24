@@ -35,7 +35,7 @@ function hideTap(){const t=$("#tapPlay");if(t)t.classList.add("hidden")}
 function firstTap(){if(!tapPending)return;tapPending=false;hideTap();muted=false;apply();if(audio)audio.play().catch(()=>{});document.querySelectorAll("video").forEach(v=>v.play().catch(()=>{}));ytCmd("unMute");ytCmd("playVideo")}
 function ytCmd(f){document.querySelectorAll("#main iframe").forEach(i=>{try{i.contentWindow.postMessage(JSON.stringify({event:"command",func:f,args:[]}),"*")}catch(e){}})}
 document.addEventListener("pointerdown",firstTap,true);document.addEventListener("keydown",firstTap,true);
-function autoStart(){const sv=CH.findIndex(x=>x.num===+localStorage.tvNum);let i=sv>=0?sv:Math.max(0,CH.findIndex(c=>c.num===782));const t=CH[i]&&CH[i].type;if(t!=="radio"&&t!=="hls")i=nextPlayable(i);idx=i;muted=true;tapPending=true;autoSkip=true;skips=0;showTap();if(!on)power();else tune(idx);startLiveWatch()}
+function autoStart(){const sv=CH.findIndex(x=>x.num===+localStorage.tvNum);let i=sv>=0?sv:Math.max(0,CH.findIndex(c=>c.num===782));const t=CH[i]&&CH[i].type;if(t!=="radio"&&t!=="hls")i=nextPlayable(i);idx=i;const fire=/TVWall-FireTV/.test(navigator.userAgent);muted=!fire;tapPending=!fire;autoSkip=true;skips=0;if(!fire)showTap();if(!on)power();else tune(idx);startLiveWatch()}
 
 /* ---- free live check via YouTube IFrame API (no keys) ---- */
 let ytP,liveT,liveNum=null;
@@ -100,7 +100,7 @@ addEventListener("keydown",e=>{const g=!$("#guide").classList.contains("hidden")
   if(g&&e.key==="Enter"){panel(null);tune(guideSel);return}
   const m={ArrowUp:"chup",PageUp:"chup",ChannelUp:"chup",ArrowDown:"chdn",PageDown:"chdn",ChannelDown:"chdn",ArrowRight:"volup",ArrowLeft:"voldn",m:"mute",g:"guide",e:"events",i:"info",w:"wall",l:"last",f:"full",p:"power",Escape:"",Backspace:""};
   if(/^\d$/.test(e.key))return num(e.key);if(e.key==="Escape"||e.key==="Backspace"){panel(null);return}if(m[e.key]){e.preventDefault();key(m[e.key])}});
-Promise.all([fetch("channels.json?v=20261024e").then(r=>r.json()),fetch("events.json?v=20261024e").then(r=>r.json()),fetch("vod.json?v=20261024e").then(r=>r.json()).catch(()=>({movies:[],shows:[]}))]).then(([c,e,v])=>{VOD=v;window.TVVOD=v;
+Promise.all([fetch("channels.json?v=20261024f").then(r=>r.json()),fetch("events.json?v=20261024f").then(r=>r.json()),fetch("vod.json?v=20261024f").then(r=>r.json()).catch(()=>({movies:[],shows:[]}))]).then(([c,e,v])=>{VOD=v;window.TVVOD=v;
   CH=c.channels.sort((a,b)=>a.num-b.num);EV=e.events;idx=Math.max(0,CH.findIndex(x=>x.num===+localStorage.tvNum));drawEvents();$("#vol").innerHTML="<i></i>";autoStart();
 }).catch(()=>{$("#main").innerHTML='<div class="slate"><div class="box">Could not load channel list</div></div>'});
 })();
