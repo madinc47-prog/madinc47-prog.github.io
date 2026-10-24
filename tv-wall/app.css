@@ -47,3 +47,20 @@ body{display:flex;flex-direction:column;align-items:center;justify-content:cente
 #epg .row.off{opacity:.45}#epg .row.live{background:#3b0d0d}#epg .row.sel{outline:2px solid #3b82f6}
 #epg{align-content:start;grid-auto-rows:auto}#epg>*{min-height:0;height:auto}
 .osd{background:rgba(0,0,0,.6);padding:10px 14px;border-radius:12px}.osd .bn{font-size:20px}.osd .bs{font-size:13px}.osd small{font-size:15px}
+/* On Demand */
+.vodp{position:fixed;inset:0;z-index:200;background:#05070d;color:#fff;overflow-y:auto;padding:14px 22px;font-family:system-ui}
+.vodp.hidden,.vodpl.hidden{display:none}
+.vodhead{display:flex;align-items:center;justify-content:space-between}.vodhead h2{margin:4px 0}
+.vodx,.vodback,.vodbar button{background:#1f2937;color:#fff;border:0;border-radius:10px;padding:10px 16px;font:600 16px system-ui;min-height:44px}
+.vodp h3{margin:14px 0 6px;font-size:17px}.vodp h3 small{opacity:.5;font-weight:400}
+.vrow{display:flex;gap:10px;overflow-x:auto;padding:4px 2px 8px;scroll-snap-type:x proximity}
+.vc{position:relative;flex:0 0 176px;background:#111827;border:2px solid transparent;border-radius:10px;padding:0;color:#fff;text-align:left;overflow:hidden;scroll-snap-align:start;cursor:pointer}
+.vc img{width:100%;aspect-ratio:16/9;object-fit:cover;display:block;background:#1f2937}
+.vc .vt{display:block;padding:6px 8px;font:600 13px system-ui;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.vc .vt small{opacity:.6}
+.vc i{position:absolute;left:0;top:calc(176px*9/16 - 4px);height:4px;background:#ef4444}.vc em{position:absolute;right:6px;top:6px;background:rgba(0,0,0,.7);font:600 11px system-ui;padding:2px 6px;border-radius:6px;font-style:normal}
+.vc:focus,.vc:hover,.ep:focus,.vodp button:focus,.vodbar button:focus{outline:3px solid #3b82f6;border-color:#3b82f6;transform:scale(1.04)}
+.eps{display:flex;flex-direction:column;gap:6px;max-width:760px}.ep{background:#111827;color:#fff;border:0;border-radius:8px;padding:12px;text-align:left;font:15px system-ui}.ep small{opacity:.6;margin-left:6px}
+.vodsrc{opacity:.45;font-size:12px;margin-top:16px}
+.vodpl{position:fixed;inset:0;z-index:210;background:#000;display:flex;flex-direction:column}#vodStage{flex:1;min-height:0}#vodStage video,#vodStage iframe,#vodStage>div{width:100%;height:100%;border:0;background:#000}
+.vodbar{display:flex;gap:10px;align-items:center;padding:6px 10px;background:#0b0f19;color:#fff;font:600 15px system-ui}.vodbar span{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.vodbar{opacity:.85}

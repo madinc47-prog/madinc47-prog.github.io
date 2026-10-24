@@ -1,4 +1,4 @@
-/* Full screen for Galaxy Tab (Android Chrome) · v20261024d */
+/* Full screen for Galaxy Tab (Android Chrome) · v20261024e */
 (function(){
  const d=document,de=d.documentElement,K="tvAutoFS";
  const isFS=()=>!!(d.fullscreenElement||d.webkitFullscreenElement);

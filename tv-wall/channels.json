@@ -1,5 +1,5 @@
 {
- "_help": "Add a channel: copy one object. type = youtube (channelId = YouTube UC... id, plays when that channel is live) | hls (url = .m3u8) | radio (url = mp3/aac stream) | facebook (url = public FB video/live URL) | link (no embeddable stream; shows slate with link). Optional fallback: another source object tried if the first fails. group: local | events. Keep official free sources only. Numbering (cable-style blocks): 1-19 Local News/Gov · 20-49 Culture & Events · 50-69 Faith · 780-799 Radio & Music. cat = news|culture|faith|radio.",
+ "_help": "Add a channel: copy one object. type = youtube (channelId = YouTube UC... id, plays when that channel is live) | hls (url = .m3u8) | radio (url = mp3/aac stream) | facebook (url = public FB video/live URL) | link (no embeddable stream; shows slate with link). Optional fallback: another source object tried if the first fails. group: local | events. Keep official free sources only. Numbering (cable-style blocks): 1-19 Local News/Gov · 20-49 Culture & Events · 50-69 Faith · 780-799 Radio & Music. cat = news|culture|faith|radio. Blocks: 20-29 Culture & Caribbean · 100s US news · 250s Classic TV (fast) · 300s Sports · 400s Movies (fast) · 500s World news · 511+ Docs/Science · 700s Music video · 780s Radio. type fast = looping playlist from vod.json (q.g genres or q.shows ids).",
  "channels": [
   {
    "num": 1,
@@ -54,6 +54,56 @@
    "cat": "culture"
   },
   {
+   "num": 22,
+   "name": "CNC3 Trinidad",
+   "group": "carib",
+   "cat": "carib",
+   "type": "youtube",
+   "channelId": "UC4aMlN15zu2pX3fMB4HAsNA",
+   "site": "https://www.youtube.com/channel/UC4aMlN15zu2pX3fMB4HAsNA",
+   "now": "CNC3 news (live at news times)"
+  },
+  {
+   "num": 23,
+   "name": "TV6 Trinidad",
+   "group": "carib",
+   "cat": "carib",
+   "type": "youtube",
+   "channelId": "UCpcnyZuSh5e_DDkQ0IkYRng",
+   "site": "https://www.youtube.com/channel/UCpcnyZuSh5e_DDkQ0IkYRng",
+   "now": "TV6 news (live at news times)"
+  },
+  {
+   "num": 24,
+   "name": "CBC Barbados",
+   "group": "carib",
+   "cat": "carib",
+   "type": "youtube",
+   "channelId": "UCkXtBMk1R5zazFlA52LcGQg",
+   "site": "https://www.youtube.com/channel/UCkXtBMk1R5zazFlA52LcGQg",
+   "now": "Caribbean Broadcasting Corporation"
+  },
+  {
+   "num": 25,
+   "name": "PBC Jamaica",
+   "group": "carib",
+   "cat": "carib",
+   "type": "youtube",
+   "channelId": "UC8X0kkF7HNdWUxTMjAagJxw",
+   "site": "https://www.youtube.com/channel/UC8X0kkF7HNdWUxTMjAagJxw",
+   "now": "Public Broadcasting Corp. of Jamaica"
+  },
+  {
+   "num": 26,
+   "name": "JIS Jamaica",
+   "group": "carib",
+   "cat": "carib",
+   "type": "youtube",
+   "channelId": "UC6YKNKslQ6eglp1zkUpjnpA",
+   "site": "https://www.youtube.com/channel/UC6YKNKslQ6eglp1zkUpjnpA",
+   "now": "Jamaica Information Service"
+  },
+  {
    "num": 55,
    "name": "Diocese of Roseau",
    "group": "local",
@@ -72,6 +122,428 @@
    "site": "https://www.youtube.com/channel/UC2Q28PP-3g0Y6BL0CYHiSUA",
    "now": "Christian radio 102.1 / 106.1 / 90.7",
    "cat": "faith"
+  },
+  {
+   "num": 101,
+   "name": "ABC News Live",
+   "group": "us",
+   "cat": "us",
+   "type": "youtube",
+   "channelId": "UCBi2mrWuNuyYy4gbM6fU18Q",
+   "site": "https://www.youtube.com/channel/UCBi2mrWuNuyYy4gbM6fU18Q",
+   "now": "24/7 news",
+   "always": true
+  },
+  {
+   "num": 102,
+   "name": "CBS News 24/7",
+   "group": "us",
+   "cat": "us",
+   "type": "youtube",
+   "channelId": "UC8p1vwvWtl6T73JiExfWs1g",
+   "site": "https://www.youtube.com/channel/UC8p1vwvWtl6T73JiExfWs1g",
+   "now": "24/7 news",
+   "always": true
+  },
+  {
+   "num": 103,
+   "name": "NBC News NOW",
+   "group": "us",
+   "cat": "us",
+   "type": "youtube",
+   "channelId": "UCeY0bbntWzzVIaj2z3QigXg",
+   "site": "https://www.youtube.com/channel/UCeY0bbntWzzVIaj2z3QigXg",
+   "now": "24/7 news",
+   "always": true
+  },
+  {
+   "num": 104,
+   "name": "LiveNOW from FOX",
+   "group": "us",
+   "cat": "us",
+   "type": "youtube",
+   "channelId": "UCJg9wBPyKMNA5sRDnvzmkdg",
+   "site": "https://www.youtube.com/channel/UCJg9wBPyKMNA5sRDnvzmkdg",
+   "now": "Live events & news",
+   "always": true
+  },
+  {
+   "num": 105,
+   "name": "Bloomberg TV",
+   "group": "us",
+   "cat": "us",
+   "type": "youtube",
+   "channelId": "UCIALMKvObZNtJ6AmdCLP7Lg",
+   "site": "https://www.youtube.com/channel/UCIALMKvObZNtJ6AmdCLP7Lg",
+   "now": "Business news",
+   "always": true
+  },
+  {
+   "num": 251,
+   "name": "Classic TV",
+   "cat": "tv",
+   "type": "fast",
+   "q": {
+    "shows": "*"
+   },
+   "now": "Public-domain TV classics, back to back"
+  },
+  {
+   "num": 252,
+   "name": "Bonanza",
+   "cat": "tv",
+   "type": "fast",
+   "q": {
+    "shows": [
+     "Bonanza_pd"
+    ]
+   },
+   "now": "Public-domain episodes"
+  },
+  {
+   "num": 253,
+   "name": "The Lone Ranger",
+   "cat": "tv",
+   "type": "fast",
+   "q": {
+    "shows": [
+     "theloneranger_201705"
+    ]
+   },
+   "now": "1949 series"
+  },
+  {
+   "num": 254,
+   "name": "Sherlock Holmes",
+   "cat": "tv",
+   "type": "fast",
+   "q": {
+    "shows": [
+     "SherlockHolmes1954"
+    ]
+   },
+   "now": "1954 series"
+  },
+  {
+   "num": 255,
+   "name": "Dragnet",
+   "cat": "tv",
+   "type": "fast",
+   "q": {
+    "shows": [
+     "Dragnet1951"
+    ]
+   },
+   "now": "1951 series"
+  },
+  {
+   "num": 256,
+   "name": "Comedy Shorts",
+   "cat": "tv",
+   "type": "fast",
+   "q": {
+    "shows": [
+     "3stooges",
+     "You_Bet_Your_Life_Groucho"
+    ]
+   },
+   "now": "Three Stooges & Groucho"
+  },
+  {
+   "num": 301,
+   "name": "Olympics",
+   "group": "sports",
+   "cat": "sports",
+   "type": "youtube",
+   "channelId": "UCTl3QQTvqHFjurroKxexy2Q",
+   "site": "https://www.youtube.com/channel/UCTl3QQTvqHFjurroKxexy2Q",
+   "now": "Olympic Games official"
+  },
+  {
+   "num": 302,
+   "name": "FIFA",
+   "group": "sports",
+   "cat": "sports",
+   "type": "youtube",
+   "channelId": "UCpcTrCXblq78GZrTUTLWeBw",
+   "site": "https://www.youtube.com/channel/UCpcTrCXblq78GZrTUTLWeBw",
+   "now": "FIFA official"
+  },
+  {
+   "num": 303,
+   "name": "Concacaf",
+   "group": "sports",
+   "cat": "sports",
+   "type": "youtube",
+   "channelId": "UCqn7r-so0mBLaJTtTms9dAQ",
+   "site": "https://www.youtube.com/channel/UCqn7r-so0mBLaJTtTms9dAQ",
+   "now": "Concacaf official"
+  },
+  {
+   "num": 304,
+   "name": "Windies Cricket",
+   "group": "sports",
+   "cat": "sports",
+   "type": "youtube",
+   "channelId": "UC2MHTOXktfTK26aDKyQs3cQ",
+   "site": "https://www.youtube.com/channel/UC2MHTOXktfTK26aDKyQs3cQ",
+   "now": "Cricket West Indies official"
+  },
+  {
+   "num": 305,
+   "name": "World Athletics",
+   "group": "sports",
+   "cat": "sports",
+   "type": "youtube",
+   "channelId": "UCQk7fWv15ChjMJLCRVmtApw",
+   "site": "https://www.youtube.com/channel/UCQk7fWv15ChjMJLCRVmtApw",
+   "now": "World Athletics official"
+  },
+  {
+   "num": 306,
+   "name": "Red Bull",
+   "group": "sports",
+   "cat": "sports",
+   "type": "youtube",
+   "channelId": "UCblfuW_4rakIf2h6aqANefA",
+   "site": "https://www.youtube.com/channel/UCblfuW_4rakIf2h6aqANefA",
+   "now": "Red Bull official"
+  },
+  {
+   "num": 307,
+   "name": "ESPN",
+   "group": "sports",
+   "cat": "sports",
+   "type": "youtube",
+   "channelId": "UCiWLfSweyRNmLpgEHekhoAg",
+   "site": "https://www.youtube.com/channel/UCiWLfSweyRNmLpgEHekhoAg",
+   "now": "ESPN official YouTube"
+  },
+  {
+   "num": 308,
+   "name": "Sky Sports News",
+   "group": "sports",
+   "cat": "sports",
+   "type": "youtube",
+   "channelId": "UCcw05gGzjLIs5dnxGkQHMvw",
+   "site": "https://www.youtube.com/channel/UCcw05gGzjLIs5dnxGkQHMvw",
+   "now": "Sky Sports News official"
+  },
+  {
+   "num": 309,
+   "name": "NBC Sports",
+   "group": "sports",
+   "cat": "sports",
+   "type": "youtube",
+   "channelId": "UCqZQlzSHbVJrwrn5XvzrzcA",
+   "site": "https://www.youtube.com/channel/UCqZQlzSHbVJrwrn5XvzrzcA",
+   "now": "NBC Sports official"
+  },
+  {
+   "num": 401,
+   "name": "Action Classics",
+   "cat": "movies",
+   "type": "fast",
+   "q": {
+    "g": [
+     "action"
+    ]
+   },
+   "now": "Free action movies, back to back"
+  },
+  {
+   "num": 402,
+   "name": "Westerns",
+   "cat": "movies",
+   "type": "fast",
+   "q": {
+    "g": [
+     "western"
+    ]
+   },
+   "now": "Classic westerns"
+  },
+  {
+   "num": 403,
+   "name": "Comedy",
+   "cat": "movies",
+   "type": "fast",
+   "q": {
+    "g": [
+     "comedy"
+    ]
+   },
+   "now": "Comedy movies & shorts"
+  },
+  {
+   "num": 404,
+   "name": "Horror / Sci-Fi",
+   "cat": "movies",
+   "type": "fast",
+   "q": {
+    "g": [
+     "horror",
+     "scifi",
+     "sci-fi"
+    ]
+   },
+   "now": "Chillers & sci-fi"
+  },
+  {
+   "num": 501,
+   "name": "Al Jazeera English",
+   "group": "world",
+   "cat": "world",
+   "type": "youtube",
+   "channelId": "UCNye-wNBqNL5ZzHSJj3l8Bg",
+   "site": "https://www.youtube.com/channel/UCNye-wNBqNL5ZzHSJj3l8Bg",
+   "now": "24/7 world news",
+   "always": true
+  },
+  {
+   "num": 502,
+   "name": "France 24 English",
+   "group": "world",
+   "cat": "world",
+   "type": "youtube",
+   "channelId": "UCQfwfsi5VrQ8yKZ-UWmAEFg",
+   "site": "https://www.youtube.com/channel/UCQfwfsi5VrQ8yKZ-UWmAEFg",
+   "now": "24/7 world news",
+   "always": true
+  },
+  {
+   "num": 503,
+   "name": "DW News",
+   "group": "world",
+   "cat": "world",
+   "type": "youtube",
+   "channelId": "UCknLrEdhRCp1aegoMqRaCZg",
+   "site": "https://www.youtube.com/channel/UCknLrEdhRCp1aegoMqRaCZg",
+   "now": "24/7 world news",
+   "always": true
+  },
+  {
+   "num": 504,
+   "name": "Sky News",
+   "group": "world",
+   "cat": "world",
+   "type": "youtube",
+   "channelId": "UCoMdktPbSTixAyNGwb-UYkQ",
+   "site": "https://www.youtube.com/channel/UCoMdktPbSTixAyNGwb-UYkQ",
+   "now": "24/7 UK & world news",
+   "always": true
+  },
+  {
+   "num": 505,
+   "name": "Euronews",
+   "group": "world",
+   "cat": "world",
+   "type": "youtube",
+   "channelId": "UCSrZ3UV4jOidv8ppoVuvW9Q",
+   "site": "https://www.youtube.com/channel/UCSrZ3UV4jOidv8ppoVuvW9Q",
+   "now": "European news",
+   "always": true
+  },
+  {
+   "num": 506,
+   "name": "NHK World-Japan",
+   "group": "world",
+   "cat": "world",
+   "type": "youtube",
+   "channelId": "UCSPEjw8F2nQDtmUKPFNF7_A",
+   "site": "https://www.youtube.com/channel/UCSPEjw8F2nQDtmUKPFNF7_A",
+   "now": "Asia news",
+   "always": true
+  },
+  {
+   "num": 507,
+   "name": "CNA",
+   "group": "world",
+   "cat": "world",
+   "type": "youtube",
+   "channelId": "UC83jt4dlz1Gjl58fzQrrKZg",
+   "site": "https://www.youtube.com/channel/UC83jt4dlz1Gjl58fzQrrKZg",
+   "now": "Asia news & docs",
+   "always": true
+  },
+  {
+   "num": 508,
+   "name": "TRT World",
+   "group": "world",
+   "cat": "world",
+   "type": "youtube",
+   "channelId": "UC7fWeaHhqgM4Ry-RMpM2YYw",
+   "site": "https://www.youtube.com/channel/UC7fWeaHhqgM4Ry-RMpM2YYw",
+   "now": "World news",
+   "always": true
+  },
+  {
+   "num": 509,
+   "name": "WION",
+   "group": "world",
+   "cat": "world",
+   "type": "youtube",
+   "channelId": "UC_gUM8rL-Lrg6O3adPW9K1g",
+   "site": "https://www.youtube.com/channel/UC_gUM8rL-Lrg6O3adPW9K1g",
+   "now": "World news",
+   "always": true
+  },
+  {
+   "num": 510,
+   "name": "CGTN",
+   "group": "world",
+   "cat": "world",
+   "type": "youtube",
+   "channelId": "UCgrNz-aDmcr2uuto8_DL2jg",
+   "site": "https://www.youtube.com/channel/UCgrNz-aDmcr2uuto8_DL2jg",
+   "now": "World news",
+   "always": true
+  },
+  {
+   "num": 511,
+   "name": "NASA Live",
+   "group": "docs",
+   "cat": "docs",
+   "type": "youtube",
+   "channelId": "UCLA_DiR1FfKNvjuUpBHmylQ",
+   "site": "https://www.youtube.com/channel/UCLA_DiR1FfKNvjuUpBHmylQ",
+   "now": "Space station views & NASA events",
+   "always": true
+  },
+  {
+   "num": 512,
+   "name": "Docs & Nature",
+   "cat": "docs",
+   "type": "fast",
+   "q": {
+    "g": [
+     "documentary"
+    ]
+   },
+   "now": "Free documentaries, back to back"
+  },
+  {
+   "num": 513,
+   "name": "Animation Shorts",
+   "cat": "docs",
+   "type": "fast",
+   "q": {
+    "g": [
+     "animation"
+    ]
+   },
+   "now": "Award-winning free shorts"
+  },
+  {
+   "num": 701,
+   "name": "Lofi Girl",
+   "group": "music",
+   "cat": "music",
+   "type": "youtube",
+   "channelId": "UCSJ4gkVC6NrvII8umztf0Ow",
+   "site": "https://www.youtube.com/channel/UCSJ4gkVC6NrvII8umztf0Ow",
+   "now": "24/7 chill beats",
+   "always": true
   },
   {
    "num": 781,
