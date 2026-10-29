@@ -1,0 +1,12 @@
+{
+  "id": "fl-syn-chord",
+  "n": "FLEX Chord Stab",
+  "p": {
+    "i": "horn",
+    "tone": {
+      "drive": 0.2
+    }
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

@@ -1,0 +1,10 @@
+{
+  "id": "fl-keys-grand-x11-rock-hard",
+  "n": "FLEX Hard Rock Piano",
+  "base": "rockpiano",
+  "tone": {
+    "drive": 0.12
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

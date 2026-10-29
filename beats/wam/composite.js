@@ -1,0 +1,1 @@
+export function createComposite(n,t,e){return{input:n,output:t,connect:(n,e=0,c=0)=>(t.connect(n,e,c),n),disconnect(){try{t.disconnect()}catch(n){}},apply:e&&e.apply||function(){},getState:e&&e.getState||function(){return{}},dispose:e&&e.dispose||function(){},analyser:e&&e.analyser||null,chain:e&&e.chain||null}}

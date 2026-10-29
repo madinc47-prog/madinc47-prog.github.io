@@ -1,0 +1,10 @@
+{
+  "id": "fl-keys-grand-x6-layered",
+  "n": "FLEX Layered Grand",
+  "base": "grand",
+  "tone": {
+    "drive": 0.08
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

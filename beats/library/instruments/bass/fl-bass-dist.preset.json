@@ -1,0 +1,13 @@
+{
+  "id": "fl-bass-dist",
+  "n": "FLEX Dist Bass",
+  "p": {
+    "i": "808",
+    "tone": {
+      "drive": 0.85,
+      "glide": 0.45
+    }
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

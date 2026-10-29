@@ -1,0 +1,10 @@
+{
+  "id": "fl-keys-organ-pipe",
+  "n": "FLEX Pipe Organ",
+  "base": "organ",
+  "tone": {
+    "drive": 0.15
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

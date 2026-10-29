@@ -1,0 +1,10 @@
+{
+  "id": "fl-keys-organ-gospel",
+  "n": "FLEX Gospel Organ",
+  "base": "organ",
+  "tone": {
+    "drive": 0.2
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

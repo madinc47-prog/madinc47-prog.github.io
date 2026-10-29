@@ -1,0 +1,12 @@
+{
+  "id": "fl-lead-island",
+  "n": "FLEX Island Lead",
+  "p": {
+    "i": "dbell",
+    "tone": {
+      "drive": 0.1
+    }
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

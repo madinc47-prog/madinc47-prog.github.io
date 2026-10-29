@@ -1,0 +1,12 @@
+{
+  "id": "fl-lead-square",
+  "n": "FLEX Square Lead",
+  "p": {
+    "i": "lead",
+    "tone": {
+      "drive": 0.35
+    }
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

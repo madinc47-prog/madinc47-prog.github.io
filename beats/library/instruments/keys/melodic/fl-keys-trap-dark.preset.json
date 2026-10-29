@@ -1,0 +1,10 @@
+{
+  "id": "fl-keys-trap-dark",
+  "n": "FLEX Dark Trap Keys",
+  "base": "trappiano",
+  "tone": {
+    "drive": 0.12
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

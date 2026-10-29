@@ -1,0 +1,10 @@
+{
+  "id": "fl-keys-ep-trem",
+  "n": "FLEX EP Tremolo",
+  "base": "rhodes",
+  "tone": {
+    "drive": 0.08
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

@@ -1,0 +1,10 @@
+{
+  "id": "fl-keys-ep-x7-wurli-a200",
+  "n": "FLEX Wurli A200",
+  "base": "lofi",
+  "tone": {
+    "drive": 0.18
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

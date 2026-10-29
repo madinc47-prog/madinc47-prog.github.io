@@ -1,0 +1,1 @@
+export const ORIGIN=[15.3,-61.388];const t=111320,o=t*Math.cos(ORIGIN[0]*Math.PI/180);export const toXZ=(I,O)=>[(O-ORIGIN[1])*o,-(I-ORIGIN[0])*t];export const TBOX={n:15.66,w:-61.5,s:15.19,e:-61.23};export const T0=toXZ(TBOX.n,TBOX.w),T1=toXZ(TBOX.s,TBOX.e);

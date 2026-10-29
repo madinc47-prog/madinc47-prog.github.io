@@ -1,0 +1,1 @@
+const addFunctionModule=(audioWorklet,processorFunction,...injection)=>{const text=`(${processorFunction.toString()})(${injection.map(s=>JSON.stringify(s)).join(", ")});`;const url=URL.createObjectURL(new Blob([text],{type:"text/javascript"}));return audioWorklet.addModule(url)};export default addFunctionModule;

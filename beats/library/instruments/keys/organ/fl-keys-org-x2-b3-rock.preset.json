@@ -1,0 +1,10 @@
+{
+  "id": "fl-keys-org-x2-b3-rock",
+  "n": "FLEX B3 Rock",
+  "base": "rockorgan",
+  "tone": {
+    "drive": 0.4
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

@@ -1,0 +1,10 @@
+{
+  "id": "fl-keys-grand-x7-compressed",
+  "n": "FLEX Radio Piano",
+  "base": "grand",
+  "tone": {
+    "drive": 0.15
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

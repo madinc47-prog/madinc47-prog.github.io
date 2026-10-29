@@ -1,0 +1,10 @@
+{
+  "id": "fl-syn-whine",
+  "n": "FLEX Whine",
+  "p": {
+    "i": "whine",
+    "tone": {}
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

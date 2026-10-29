@@ -1,0 +1,12 @@
+{
+  "id": "fl-pad-moving",
+  "n": "FLEX Moving Pad",
+  "p": {
+    "i": "pad",
+    "tone": {
+      "drive": 0.08
+    }
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

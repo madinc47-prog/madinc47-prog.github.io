@@ -1,0 +1,12 @@
+{
+  "id": "fl-pad-wide",
+  "n": "FLEX Wide Pad",
+  "p": {
+    "i": "sidepad",
+    "tone": {
+      "drive": 0.12
+    }
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

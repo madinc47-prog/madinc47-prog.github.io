@@ -1,0 +1,12 @@
+{
+  "id": "fl-lead-hyper",
+  "n": "FLEX Hyper Lead",
+  "p": {
+    "i": "hyperlead",
+    "tone": {
+      "drive": 0.4
+    }
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

@@ -1,0 +1,249 @@
+{
+  "id": "stargate-cc0-curated",
+  "name": "Stargate Sample Pack (curated)",
+  "type": "full-kit",
+  "genres": [
+    "electronic",
+    "hip-hop",
+    "experimental",
+    "multi"
+  ],
+  "license": "CC0 1.0",
+  "source": "https://github.com/stargatedaw/stargate-sample-pack",
+  "canSellBeats": true,
+  "creditRequired": false,
+  "nonCommercialOnly": false,
+  "redistributionOk": true,
+  "files": [
+    {
+      "file": "percussion/freesound-219157__jagadamba__bongo01.mp3",
+      "source": "stargate-sample-pack/freesound",
+      "license": "CC0 1.0"
+    },
+    {
+      "file": "percussion/freesound-579853__curesforbrokenhearts__lp-matador-bongo-d.mp3",
+      "source": "stargate-sample-pack/freesound",
+      "license": "CC0 1.0"
+    },
+    {
+      "file": "percussion/freesound-99752__menegass__bongo2.mp3",
+      "source": "stargate-sample-pack/freesound",
+      "license": "CC0 1.0"
+    },
+    {
+      "file": "percussion/freesound-99754__menegass__bongo4.mp3",
+      "source": "stargate-sample-pack/freesound",
+      "license": "CC0 1.0"
+    },
+    {
+      "file": "percussion/freesound-99755__menegass__bngoh.mp3",
+      "source": "stargate-sample-pack/freesound",
+      "license": "CC0 1.0"
+    },
+    {
+      "file": "drums/claps/freesound-388042__sami-kullstrom__clap.mp3",
+      "source": "stargate-sample-pack/freesound",
+      "license": "CC0 1.0"
+    },
+    {
+      "file": "drums/claps/freesound-448221__toxicfilmzsrsounds__hip-hop-clap.mp3",
+      "source": "stargate-sample-pack/freesound",
+      "license": "CC0 1.0"
+    },
+    {
+      "file": "drums/claps/freesound-493707__bastianpusch__handclap01.mp3",
+      "source": "stargate-sample-pack/freesound",
+      "license": "CC0 1.0"
+    },
+    {
+      "file": "drums/claps/freesound-509526__synthnisse__claps.mp3",
+      "source": "stargate-sample-pack/freesound",
+      "license": "CC0 1.0"
+    },
+    {
+      "file": "drums/hats/freesound-339278__cabled-mess__hihat-closed-raw-03-gate-eq.mp3",
+      "source": "stargate-sample-pack/freesound",
+      "license": "CC0 1.0"
+    },
+    {
+      "file": "drums/hats/freesound-439766__twentytwentymusic__electronic-closed-hat.mp3",
+      "source": "stargate-sample-pack/freesound",
+      "license": "CC0 1.0"
+    },
+    {
+      "file": "drums/hats/freesound-93909__pjcohen__skibacustomhihats1145top1215bott.mp3",
+      "source": "stargate-sample-pack/freesound",
+      "license": "CC0 1.0"
+    },
+    {
+      "file": "other/freesound-104210__minorr__crash-paiste-pst5-17-left-ff.mp3",
+      "source": "stargate-sample-pack/freesound",
+      "license": "CC0 1.0"
+    },
+    {
+      "file": "percussion/freesound-104217__minorr__crash-zildian-a-custom-16-centr-.mp3",
+      "source": "stargate-sample-pack/freesound",
+      "license": "CC0 1.0"
+    },
+    {
+      "file": "percussion/freesound-140153__stomachache__analog-cymbal.mp3",
+      "source": "stargate-sample-pack/freesound",
+      "license": "CC0 1.0"
+    },
+    {
+      "file": "other/freesound-261413__veiler__crash.mp3",
+      "source": "stargate-sample-pack/freesound",
+      "license": "CC0 1.0"
+    },
+    {
+      "file": "drums/hats/freesound-165027__rodrigo-the-mad__mini-open-hihat.mp3",
+      "source": "stargate-sample-pack/freesound",
+      "license": "CC0 1.0"
+    },
+    {
+      "file": "drums/hats/freesound-165028__rodrigo-the-mad__mini-909ish-open-hat.mp3",
+      "source": "stargate-sample-pack/freesound",
+      "license": "CC0 1.0"
+    },
+    {
+      "file": "drums/hats/freesound-317097__shpira__hat-open3.mp3",
+      "source": "stargate-sample-pack/freesound",
+      "license": "CC0 1.0"
+    },
+    {
+      "file": "drums/hats/freesound-439820__twentytwentymusic__electronic-open-hat-7.mp3",
+      "source": "stargate-sample-pack/freesound",
+      "license": "CC0 1.0"
+    },
+    {
+      "file": "drums/kicks/freesound-192512__nabz871__knife-party-like-kick.mp3",
+      "source": "stargate-sample-pack/freesound",
+      "license": "CC0 1.0"
+    },
+    {
+      "file": "drums/kicks/freesound-266764__hard3eat__synth-kick-3.mp3",
+      "source": "stargate-sample-pack/freesound",
+      "license": "CC0 1.0"
+    },
+    {
+      "file": "drums/kicks/freesound-347166__dvbeats__kick-drum-1.mp3",
+      "source": "stargate-sample-pack/freesound",
+      "license": "CC0 1.0"
+    },
+    {
+      "file": "drums/kicks/freesound-348785__arctis__hardstyle-rawstyle-kick-8.mp3",
+      "source": "stargate-sample-pack/freesound",
+      "license": "CC0 1.0"
+    },
+    {
+      "file": "drums/kicks/freesound-561593__panxozerok__safari-kick-2.mp3",
+      "source": "stargate-sample-pack/freesound",
+      "license": "CC0 1.0"
+    },
+    {
+      "file": "drums/snares/freesound-455640__uberproduktion__fd808a-rimshot.mp3",
+      "source": "stargate-sample-pack/freesound",
+      "license": "CC0 1.0"
+    },
+    {
+      "file": "drums/snares/freesound-511382__pjhedman__se1-rim.mp3",
+      "source": "stargate-sample-pack/freesound",
+      "license": "CC0 1.0"
+    },
+    {
+      "file": "drums/snares/freesound-533089__sassaby__timbales-high-rimshot-macho.mp3",
+      "source": "stargate-sample-pack/freesound",
+      "license": "CC0 1.0"
+    },
+    {
+      "file": "drums/snares/freesound-573256__sorinious-genious__timpani-rimshot-4.mp3",
+      "source": "stargate-sample-pack/freesound",
+      "license": "CC0 1.0"
+    },
+    {
+      "file": "drums/snares/freesound-173087__yellowtree__wood-snare-sample-3.mp3",
+      "source": "stargate-sample-pack/freesound",
+      "license": "CC0 1.0"
+    },
+    {
+      "file": "drums/snares/freesound-212211__alexthegr81__tapesnare-18.mp3",
+      "source": "stargate-sample-pack/freesound",
+      "license": "CC0 1.0"
+    },
+    {
+      "file": "drums/snares/freesound-212233__alexthegr81__tapesnare-5.mp3",
+      "source": "stargate-sample-pack/freesound",
+      "license": "CC0 1.0"
+    },
+    {
+      "file": "drums/snares/freesound-212234__alexthegr81__tapesnare-21.mp3",
+      "source": "stargate-sample-pack/freesound",
+      "license": "CC0 1.0"
+    },
+    {
+      "file": "drums/snares/freesound-387186__alexiero-1__ai-snare-20.mp3",
+      "source": "stargate-sample-pack/freesound",
+      "license": "CC0 1.0"
+    },
+    {
+      "file": "drums/snares/freesound-501249__veiler__brian-snare-loud.mp3",
+      "source": "stargate-sample-pack/freesound",
+      "license": "CC0 1.0"
+    },
+    {
+      "file": "drums/hats/stargate-hat-1.mp3",
+      "source": "stargate-sample-pack/stargate",
+      "license": "CC0 1.0"
+    },
+    {
+      "file": "drums/hats/stargate-hat-2.mp3",
+      "source": "stargate-sample-pack/stargate",
+      "license": "CC0 1.0"
+    },
+    {
+      "file": "drums/kicks/stargate-kick-1-a.mp3",
+      "source": "stargate-sample-pack/stargate",
+      "license": "CC0 1.0"
+    },
+    {
+      "file": "drums/kicks/stargate-kick-1-b.mp3",
+      "source": "stargate-sample-pack/stargate",
+      "license": "CC0 1.0"
+    },
+    {
+      "file": "drums/kicks/stargate-kick-1-c.mp3",
+      "source": "stargate-sample-pack/stargate",
+      "license": "CC0 1.0"
+    },
+    {
+      "file": "drums/kicks/stargate-kick-2-a.mp3",
+      "source": "stargate-sample-pack/stargate",
+      "license": "CC0 1.0"
+    },
+    {
+      "file": "drums/kicks/stargate-kick-2-b.mp3",
+      "source": "stargate-sample-pack/stargate",
+      "license": "CC0 1.0"
+    },
+    {
+      "file": "other/stargate-pink-plain.mp3",
+      "source": "stargate-sample-pack/stargate",
+      "license": "CC0 1.0"
+    },
+    {
+      "file": "other/stargate-pink-stereo.mp3",
+      "source": "stargate-sample-pack/stargate",
+      "license": "CC0 1.0"
+    },
+    {
+      "file": "other/stargate-white-plain.mp3",
+      "source": "stargate-sample-pack/stargate",
+      "license": "CC0 1.0"
+    },
+    {
+      "file": "other/stargate-white-stereo.mp3",
+      "source": "stargate-sample-pack/stargate",
+      "license": "CC0 1.0"
+    }
+  ]
+}

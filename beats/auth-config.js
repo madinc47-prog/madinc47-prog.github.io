@@ -1,0 +1,1 @@
+window.IPB_AUTH_CONFIG={supabaseUrl:"https://eitgovoudisilagxtcju.supabase.co",supabaseAnonKey:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVpdGdvdm91ZGlzaWxhZ3h0Y2p1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI2ODQwNzYsImV4cCI6MjEwODI2MDA3Nn0.abo42qymygzLyg-jbOHhcI883pa3GvSHSgAFLYLCUbc"};

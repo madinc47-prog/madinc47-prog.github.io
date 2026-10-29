@@ -1,0 +1,13 @@
+{
+  "id": "fl-bass-slide",
+  "n": "FLEX Slide 808",
+  "p": {
+    "i": "808",
+    "tone": {
+      "drive": 0.6,
+      "glide": 0.8
+    }
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

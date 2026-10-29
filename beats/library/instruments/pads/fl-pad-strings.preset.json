@@ -1,0 +1,10 @@
+{
+  "id": "fl-pad-strings",
+  "n": "FLEX String Pad",
+  "p": {
+    "i": "strings",
+    "tone": {}
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

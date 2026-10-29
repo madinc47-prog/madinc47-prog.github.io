@@ -1,0 +1,33 @@
+{
+  "kits": 26,
+  "drumItems": 2600,
+  "drumsByFolder": {
+    "kicks": 364,
+    "snares": 364,
+    "hats": 312,
+    "claps": 260,
+    "808s": 312,
+    "percussion": 312,
+    "cymbals": 156,
+    "shakers": 208,
+    "rides": 156,
+    "crashes": 156
+  },
+  "instruments": 184,
+  "instrumentsByFolder": {
+    "bass": 20,
+    "synths": 20,
+    "leads": 15,
+    "pads": 12,
+    "plucks": 12,
+    "keys": 105
+  },
+  "keysBySub": {
+    "acoustic": 24,
+    "electric": 22,
+    "organ": 14,
+    "clav": 6,
+    "harpsichord": 4,
+    "melodic": 35
+  }
+}

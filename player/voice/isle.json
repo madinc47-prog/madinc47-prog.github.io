@@ -1,0 +1,2491 @@
+{
+ "model": "Kokoro-82M v1.0 (kokoro-onnx 0.6.1, Apache-2.0)",
+ "voice": "am_fenrir",
+ "loudness": "-20 LUFS integrated, sample peak < -6 dBFS",
+ "places": [
+  {
+   "pid": "roseau",
+   "place": "Roseau",
+   "parish": "Saint George",
+   "kind": "town",
+   "lat": 15.301,
+   "lon": -61.388,
+   "clips": [
+    {
+     "v": "a",
+     "file": "isle/roseau-a.mp3",
+     "text": "Big up Roseau! Make some noise!",
+     "dur": 1.9,
+     "lufs": -20.4,
+     "peak": -6.8,
+     "speed": 1.18,
+     "pitchRange": 12.5,
+     "bytes": 15716
+    },
+    {
+     "v": "b",
+     "file": "isle/roseau-b.mp3",
+     "text": "Roseau, where you at?",
+     "dur": 1.29,
+     "lufs": -20.4,
+     "peak": -7.5,
+     "speed": 1.18,
+     "pitchRange": 12.0,
+     "bytes": 10909
+    },
+    {
+     "v": "c",
+     "file": "isle/roseau-c.mp3",
+     "text": "Shout out to Roseau! Hands up!",
+     "dur": 1.88,
+     "lufs": -20.4,
+     "peak": -7.1,
+     "speed": 1.1,
+     "pitchRange": 11.3,
+     "bytes": 15507
+    },
+    {
+     "v": "d",
+     "file": "isle/roseau-d.mp3",
+     "text": "Roseau in the building!",
+     "dur": 1.43,
+     "lufs": -20.5,
+     "peak": -7.0,
+     "speed": 1.18,
+     "pitchRange": 10.7,
+     "bytes": 11954
+    }
+   ]
+  },
+  {
+   "pid": "st-andrew",
+   "place": "Saint Andrew",
+   "parish": "Saint Andrew",
+   "kind": "parish",
+   "lat": 15.55,
+   "lon": -61.32,
+   "clips": [
+    {
+     "v": "a",
+     "file": "isle/st-andrew-a.mp3",
+     "text": "Big up Saint Andrew! Make some noise!",
+     "dur": 2.05,
+     "lufs": -20.4,
+     "peak": -7.2,
+     "speed": 1.1,
+     "pitchRange": 12.3,
+     "bytes": 16970
+    },
+    {
+     "v": "b",
+     "file": "isle/st-andrew-b.mp3",
+     "text": "Saint Andrew, where you at?",
+     "dur": 1.45,
+     "lufs": -20.5,
+     "peak": -7.2,
+     "speed": 1.18,
+     "pitchRange": 11.2,
+     "bytes": 12163
+    },
+    {
+     "v": "c",
+     "file": "isle/st-andrew-c.mp3",
+     "text": "Shout out to Saint Andrew! Hands up!",
+     "dur": 1.95,
+     "lufs": -20.4,
+     "peak": -7.3,
+     "speed": 1.1,
+     "pitchRange": 12.1,
+     "bytes": 16134
+    },
+    {
+     "v": "d",
+     "file": "isle/st-andrew-d.mp3",
+     "text": "Saint Andrew in the building!",
+     "dur": 1.55,
+     "lufs": -20.5,
+     "peak": -7.1,
+     "speed": 1.18,
+     "pitchRange": 10.8,
+     "bytes": 12999
+    }
+   ]
+  },
+  {
+   "pid": "st-david",
+   "place": "Saint David",
+   "parish": "Saint David",
+   "kind": "parish",
+   "lat": 15.43,
+   "lon": -61.275,
+   "clips": [
+    {
+     "v": "a",
+     "file": "isle/st-david-a.mp3",
+     "text": "Big up Saint David! Make some noise!",
+     "dur": 2.18,
+     "lufs": -20.4,
+     "peak": -6.8,
+     "speed": 1.1,
+     "pitchRange": 12.0,
+     "bytes": 18015
+    },
+    {
+     "v": "b",
+     "file": "isle/st-david-b.mp3",
+     "text": "Saint David, where you at?",
+     "dur": 1.63,
+     "lufs": -20.4,
+     "peak": -7.5,
+     "speed": 1.1,
+     "pitchRange": 11.9,
+     "bytes": 13626
+    },
+    {
+     "v": "c",
+     "file": "isle/st-david-c.mp3",
+     "text": "Shout out to Saint David! Hands up!",
+     "dur": 2.08,
+     "lufs": -20.4,
+     "peak": -7.3,
+     "speed": 1.18,
+     "pitchRange": 12.5,
+     "bytes": 17179
+    },
+    {
+     "v": "d",
+     "file": "isle/st-david-d.mp3",
+     "text": "Saint David in the building!",
+     "dur": 1.64,
+     "lufs": -20.4,
+     "peak": -7.6,
+     "speed": 1.18,
+     "pitchRange": 11.0,
+     "bytes": 13626
+    }
+   ]
+  },
+  {
+   "pid": "st-george",
+   "place": "Saint George",
+   "parish": "Saint George",
+   "kind": "parish",
+   "lat": 15.3,
+   "lon": -61.36,
+   "clips": [
+    {
+     "v": "a",
+     "file": "isle/st-george-a.mp3",
+     "text": "Big up Saint George! Make some noise!",
+     "dur": 2.25,
+     "lufs": -20.4,
+     "peak": -7.2,
+     "speed": 1.1,
+     "pitchRange": 12.2,
+     "bytes": 18433
+    },
+    {
+     "v": "b",
+     "file": "isle/st-george-b.mp3",
+     "text": "Saint George, where you at?",
+     "dur": 1.5,
+     "lufs": -20.5,
+     "peak": -8.0,
+     "speed": 1.18,
+     "pitchRange": 13.7,
+     "bytes": 12581
+    },
+    {
+     "v": "c",
+     "file": "isle/st-george-c.mp3",
+     "text": "Shout out to Saint George! Hands up!",
+     "dur": 2.22,
+     "lufs": -20.4,
+     "peak": -7.2,
+     "speed": 1.1,
+     "pitchRange": 12.1,
+     "bytes": 18224
+    },
+    {
+     "v": "d",
+     "file": "isle/st-george-d.mp3",
+     "text": "Saint George in the building!",
+     "dur": 1.68,
+     "lufs": -20.4,
+     "peak": -7.4,
+     "speed": 1.1,
+     "pitchRange": 11.3,
+     "bytes": 14044
+    }
+   ]
+  },
+  {
+   "pid": "st-john",
+   "place": "Saint John",
+   "parish": "Saint John",
+   "kind": "parish",
+   "lat": 15.58,
+   "lon": -61.44,
+   "clips": [
+    {
+     "v": "a",
+     "file": "isle/st-john-a.mp3",
+     "text": "Big up Saint John! Make some noise!",
+     "dur": 2.13,
+     "lufs": -20.4,
+     "peak": -7.1,
+     "speed": 1.1,
+     "pitchRange": 12.7,
+     "bytes": 17597
+    },
+    {
+     "v": "b",
+     "file": "isle/st-john-b.mp3",
+     "text": "Saint John, where you at?",
+     "dur": 1.45,
+     "lufs": -20.5,
+     "peak": -7.4,
+     "speed": 1.18,
+     "pitchRange": 10.5,
+     "bytes": 12163
+    },
+    {
+     "v": "c",
+     "file": "isle/st-john-c.mp3",
+     "text": "Shout out to Saint John! Hands up!",
+     "dur": 1.98,
+     "lufs": -20.4,
+     "peak": -7.3,
+     "speed": 1.1,
+     "pitchRange": 10.7,
+     "bytes": 16343
+    },
+    {
+     "v": "d",
+     "file": "isle/st-john-d.mp3",
+     "text": "Saint John in the building!",
+     "dur": 1.61,
+     "lufs": -20.5,
+     "peak": -7.3,
+     "speed": 1.1,
+     "pitchRange": 10.8,
+     "bytes": 13417
+    }
+   ]
+  },
+  {
+   "pid": "st-joseph",
+   "place": "Saint Joseph",
+   "parish": "Saint Joseph",
+   "kind": "parish",
+   "lat": 15.42,
+   "lon": -61.4,
+   "clips": [
+    {
+     "v": "a",
+     "file": "isle/st-joseph-a.mp3",
+     "text": "Big up Saint Joseph! Make some noise!",
+     "dur": 2.27,
+     "lufs": -19.8,
+     "peak": -6.6,
+     "speed": 1.1,
+     "pitchRange": 12.1,
+     "bytes": 18642
+    },
+    {
+     "v": "b",
+     "file": "isle/st-joseph-b.mp3",
+     "text": "Saint Joseph, where you at?",
+     "dur": 1.69,
+     "lufs": -20.4,
+     "peak": -7.6,
+     "speed": 1.1,
+     "pitchRange": 11.0,
+     "bytes": 14044
+    },
+    {
+     "v": "c",
+     "file": "isle/st-joseph-c.mp3",
+     "text": "Shout out to Saint Joseph! Hands up!",
+     "dur": 2.17,
+     "lufs": -20.4,
+     "peak": -7.2,
+     "speed": 1.1,
+     "pitchRange": 12.4,
+     "bytes": 18015
+    },
+    {
+     "v": "d",
+     "file": "isle/st-joseph-d.mp3",
+     "text": "Saint Joseph in the building!",
+     "dur": 1.83,
+     "lufs": -20.4,
+     "peak": -7.6,
+     "speed": 1.1,
+     "pitchRange": 11.9,
+     "bytes": 15089
+    }
+   ]
+  },
+  {
+   "pid": "st-luke",
+   "place": "Saint Luke",
+   "parish": "Saint Luke",
+   "kind": "parish",
+   "lat": 15.252,
+   "lon": -61.37,
+   "clips": [
+    {
+     "v": "a",
+     "file": "isle/st-luke-a.mp3",
+     "text": "Big up Saint Luke! Make some noise!",
+     "dur": 2.0,
+     "lufs": -20.4,
+     "peak": -7.2,
+     "speed": 1.1,
+     "pitchRange": 12.2,
+     "bytes": 16552
+    },
+    {
+     "v": "b",
+     "file": "isle/st-luke-b.mp3",
+     "text": "Saint Luke, where you at?",
+     "dur": 1.46,
+     "lufs": -20.5,
+     "peak": -7.3,
+     "speed": 1.1,
+     "pitchRange": 13.4,
+     "bytes": 12163
+    },
+    {
+     "v": "c",
+     "file": "isle/st-luke-c.mp3",
+     "text": "Shout out to Saint Luke! Hands up!",
+     "dur": 1.97,
+     "lufs": -20.4,
+     "peak": -6.9,
+     "speed": 1.1,
+     "pitchRange": 11.8,
+     "bytes": 16343
+    },
+    {
+     "v": "d",
+     "file": "isle/st-luke-d.mp3",
+     "text": "Saint Luke in the building!",
+     "dur": 1.48,
+     "lufs": -20.4,
+     "peak": -7.2,
+     "speed": 1.18,
+     "pitchRange": 11.9,
+     "bytes": 12372
+    }
+   ]
+  },
+  {
+   "pid": "st-mark",
+   "place": "Saint Mark",
+   "parish": "Saint Mark",
+   "kind": "parish",
+   "lat": 15.222,
+   "lon": -61.362,
+   "clips": [
+    {
+     "v": "a",
+     "file": "isle/st-mark-a.mp3",
+     "text": "Big up Saint Mark! Make some noise!",
+     "dur": 2.03,
+     "lufs": -20.4,
+     "peak": -7.1,
+     "speed": 1.1,
+     "pitchRange": 13.1,
+     "bytes": 16761
+    },
+    {
+     "v": "b",
+     "file": "isle/st-mark-b.mp3",
+     "text": "Saint Mark, where you at?",
+     "dur": 1.56,
+     "lufs": -20.5,
+     "peak": -7.4,
+     "speed": 1.1,
+     "pitchRange": 14.1,
+     "bytes": 12999
+    },
+    {
+     "v": "c",
+     "file": "isle/st-mark-c.mp3",
+     "text": "Shout out to Saint Mark! Hands up!",
+     "dur": 2.09,
+     "lufs": -20.4,
+     "peak": -7.1,
+     "speed": 1.1,
+     "pitchRange": 11.8,
+     "bytes": 17179
+    },
+    {
+     "v": "d",
+     "file": "isle/st-mark-d.mp3",
+     "text": "Saint Mark in the building!",
+     "dur": 1.54,
+     "lufs": -20.4,
+     "peak": -7.3,
+     "speed": 1.18,
+     "pitchRange": 11.3,
+     "bytes": 12999
+    }
+   ]
+  },
+  {
+   "pid": "st-patrick",
+   "place": "Saint Patrick",
+   "parish": "Saint Patrick",
+   "kind": "parish",
+   "lat": 15.275,
+   "lon": -61.29,
+   "clips": [
+    {
+     "v": "a",
+     "file": "isle/st-patrick-a.mp3",
+     "text": "Big up Saint Patrick! Make some noise!",
+     "dur": 2.21,
+     "lufs": -20.4,
+     "peak": -7.1,
+     "speed": 1.1,
+     "pitchRange": 14.2,
+     "bytes": 18224
+    },
+    {
+     "v": "b",
+     "file": "isle/st-patrick-b.mp3",
+     "text": "Saint Patrick, where you at?",
+     "dur": 1.57,
+     "lufs": -20.4,
+     "peak": -7.3,
+     "speed": 1.1,
+     "pitchRange": 13.8,
+     "bytes": 12999
+    },
+    {
+     "v": "c",
+     "file": "isle/st-patrick-c.mp3",
+     "text": "Shout out to Saint Patrick! Hands up!",
+     "dur": 2.15,
+     "lufs": -20.4,
+     "peak": -7.1,
+     "speed": 1.1,
+     "pitchRange": 11.7,
+     "bytes": 17806
+    },
+    {
+     "v": "d",
+     "file": "isle/st-patrick-d.mp3",
+     "text": "Saint Patrick in the building!",
+     "dur": 1.64,
+     "lufs": -20.4,
+     "peak": -7.0,
+     "speed": 1.18,
+     "pitchRange": 11.9,
+     "bytes": 13626
+    }
+   ]
+  },
+  {
+   "pid": "st-paul",
+   "place": "Saint Paul",
+   "parish": "Saint Paul",
+   "kind": "parish",
+   "lat": 15.35,
+   "lon": -61.365,
+   "clips": [
+    {
+     "v": "a",
+     "file": "isle/st-paul-a.mp3",
+     "text": "Big up Saint Paul! Make some noise!",
+     "dur": 2.05,
+     "lufs": -20.3,
+     "peak": -7.0,
+     "speed": 1.1,
+     "pitchRange": 12.3,
+     "bytes": 16970
+    },
+    {
+     "v": "b",
+     "file": "isle/st-paul-b.mp3",
+     "text": "Saint Paul, where you at?",
+     "dur": 1.55,
+     "lufs": -20.5,
+     "peak": -7.3,
+     "speed": 1.1,
+     "pitchRange": 13.4,
+     "bytes": 12999
+    },
+    {
+     "v": "c",
+     "file": "isle/st-paul-c.mp3",
+     "text": "Shout out to Saint Paul! Hands up!",
+     "dur": 1.97,
+     "lufs": -20.4,
+     "peak": -7.0,
+     "speed": 1.18,
+     "pitchRange": 11.5,
+     "bytes": 16343
+    },
+    {
+     "v": "d",
+     "file": "isle/st-paul-d.mp3",
+     "text": "Saint Paul in the building!",
+     "dur": 1.52,
+     "lufs": -20.4,
+     "peak": -7.1,
+     "speed": 1.18,
+     "pitchRange": 11.8,
+     "bytes": 12790
+    }
+   ]
+  },
+  {
+   "pid": "st-peter",
+   "place": "Saint Peter",
+   "parish": "Saint Peter",
+   "kind": "parish",
+   "lat": 15.51,
+   "lon": -61.43,
+   "clips": [
+    {
+     "v": "a",
+     "file": "isle/st-peter-a.mp3",
+     "text": "Big up Saint Peter! Make some noise!",
+     "dur": 2.08,
+     "lufs": -20.4,
+     "peak": -7.2,
+     "speed": 1.1,
+     "pitchRange": 12.4,
+     "bytes": 17179
+    },
+    {
+     "v": "b",
+     "file": "isle/st-peter-b.mp3",
+     "text": "Saint Peter, where you at?",
+     "dur": 1.6,
+     "lufs": -20.4,
+     "peak": -7.4,
+     "speed": 1.1,
+     "pitchRange": 13.9,
+     "bytes": 13417
+    },
+    {
+     "v": "c",
+     "file": "isle/st-peter-c.mp3",
+     "text": "Shout out to Saint Peter! Hands up!",
+     "dur": 2.0,
+     "lufs": -20.4,
+     "peak": -7.2,
+     "speed": 1.1,
+     "pitchRange": 12.7,
+     "bytes": 16552
+    },
+    {
+     "v": "d",
+     "file": "isle/st-peter-d.mp3",
+     "text": "Saint Peter in the building!",
+     "dur": 1.65,
+     "lufs": -20.4,
+     "peak": -7.5,
+     "speed": 1.18,
+     "pitchRange": 11.8,
+     "bytes": 13835
+    }
+   ]
+  },
+  {
+   "pid": "goodwill",
+   "place": "Goodwill",
+   "parish": "Saint George",
+   "kind": "town",
+   "lat": 15.311,
+   "lon": -61.389,
+   "clips": [
+    {
+     "v": "a",
+     "file": "isle/goodwill-a.mp3",
+     "text": "Big up Goodwill! Make some noise!",
+     "dur": 1.95,
+     "lufs": -20.4,
+     "peak": -7.1,
+     "speed": 1.1,
+     "pitchRange": 11.9,
+     "bytes": 16134
+    },
+    {
+     "v": "b",
+     "file": "isle/goodwill-b.mp3",
+     "text": "Goodwill, where you at?",
+     "dur": 1.37,
+     "lufs": -20.4,
+     "peak": -8.2,
+     "speed": 1.1,
+     "pitchRange": 10.9,
+     "bytes": 11536
+    },
+    {
+     "v": "c",
+     "file": "isle/goodwill-c.mp3",
+     "text": "Shout out to Goodwill! Hands up!",
+     "dur": 1.94,
+     "lufs": -20.4,
+     "peak": -7.2,
+     "speed": 1.1,
+     "pitchRange": 11.4,
+     "bytes": 16134
+    },
+    {
+     "v": "d",
+     "file": "isle/goodwill-d.mp3",
+     "text": "Goodwill in the building!",
+     "dur": 1.34,
+     "lufs": -20.4,
+     "peak": -7.2,
+     "speed": 1.18,
+     "pitchRange": 10.7,
+     "bytes": 11327
+    }
+   ]
+  },
+  {
+   "pid": "newtown",
+   "place": "Newtown",
+   "parish": "Saint George",
+   "kind": "town",
+   "lat": 15.291,
+   "lon": -61.381,
+   "clips": [
+    {
+     "v": "a",
+     "file": "isle/newtown-a.mp3",
+     "text": "Big up Newtown! Make some noise!",
+     "dur": 1.88,
+     "lufs": -20.4,
+     "peak": -7.0,
+     "speed": 1.18,
+     "pitchRange": 12.0,
+     "bytes": 15716
+    },
+    {
+     "v": "b",
+     "file": "isle/newtown-b.mp3",
+     "text": "Newtown, where you at?",
+     "dur": 1.3,
+     "lufs": -20.4,
+     "peak": -7.2,
+     "speed": 1.18,
+     "pitchRange": 11.5,
+     "bytes": 10909
+    },
+    {
+     "v": "c",
+     "file": "isle/newtown-c.mp3",
+     "text": "Shout out to Newtown! Hands up!",
+     "dur": 1.8,
+     "lufs": -20.4,
+     "peak": -7.0,
+     "speed": 1.1,
+     "pitchRange": 10.8,
+     "bytes": 15089
+    },
+    {
+     "v": "d",
+     "file": "isle/newtown-d.mp3",
+     "text": "Newtown in the building!",
+     "dur": 1.41,
+     "lufs": -20.4,
+     "peak": -6.9,
+     "speed": 1.18,
+     "pitchRange": 10.9,
+     "bytes": 11954
+    }
+   ]
+  },
+  {
+   "pid": "pottersville",
+   "place": "Pottersville",
+   "parish": "Saint George",
+   "kind": "town",
+   "lat": 15.307,
+   "lon": -61.384,
+   "clips": [
+    {
+     "v": "a",
+     "file": "isle/pottersville-a.mp3",
+     "text": "Big up Pottersville! Make some noise!",
+     "dur": 2.13,
+     "lufs": -20.4,
+     "peak": -7.2,
+     "speed": 1.1,
+     "pitchRange": 12.3,
+     "bytes": 17597
+    },
+    {
+     "v": "b",
+     "file": "isle/pottersville-b.mp3",
+     "text": "Pottersville, where you at?",
+     "dur": 1.51,
+     "lufs": -20.4,
+     "peak": -7.5,
+     "speed": 1.1,
+     "pitchRange": 14.2,
+     "bytes": 12581
+    },
+    {
+     "v": "c",
+     "file": "isle/pottersville-c.mp3",
+     "text": "Shout out to Pottersville! Hands up!",
+     "dur": 1.89,
+     "lufs": -20.5,
+     "peak": -7.1,
+     "speed": 1.18,
+     "pitchRange": 11.9,
+     "bytes": 15716
+    },
+    {
+     "v": "d",
+     "file": "isle/pottersville-d.mp3",
+     "text": "Pottersville in the building!",
+     "dur": 1.55,
+     "lufs": -20.4,
+     "peak": -7.3,
+     "speed": 1.18,
+     "pitchRange": 11.7,
+     "bytes": 12999
+    }
+   ]
+  },
+  {
+   "pid": "bath-estate",
+   "place": "Bath Estate",
+   "parish": "Saint George",
+   "kind": "town",
+   "lat": 15.3,
+   "lon": -61.375,
+   "clips": [
+    {
+     "v": "a",
+     "file": "isle/bath-estate-a.mp3",
+     "text": "Big up Bath Estate! Make some noise!",
+     "dur": 2.21,
+     "lufs": -20.4,
+     "peak": -7.1,
+     "speed": 1.1,
+     "pitchRange": 13.7,
+     "bytes": 18224
+    },
+    {
+     "v": "b",
+     "file": "isle/bath-estate-b.mp3",
+     "text": "Bath Estate, where you at?",
+     "dur": 1.61,
+     "lufs": -20.4,
+     "peak": -7.1,
+     "speed": 1.1,
+     "pitchRange": 15.5,
+     "bytes": 13417
+    },
+    {
+     "v": "c",
+     "file": "isle/bath-estate-c.mp3",
+     "text": "Shout out to Bath Estate! Hands up!",
+     "dur": 2.0,
+     "lufs": -20.4,
+     "peak": -7.2,
+     "speed": 1.1,
+     "pitchRange": 11.3,
+     "bytes": 16552
+    },
+    {
+     "v": "d",
+     "file": "isle/bath-estate-d.mp3",
+     "text": "Bath Estate in the building!",
+     "dur": 1.58,
+     "lufs": -20.4,
+     "peak": -7.1,
+     "speed": 1.18,
+     "pitchRange": 12.9,
+     "bytes": 13208
+    }
+   ]
+  },
+  {
+   "pid": "trafalgar",
+   "place": "Trafalgar",
+   "parish": "Saint George",
+   "kind": "town",
+   "lat": 15.318,
+   "lon": -61.346,
+   "clips": [
+    {
+     "v": "a",
+     "file": "isle/trafalgar-a.mp3",
+     "text": "Big up Trafalgar! Make some noise!",
+     "dur": 2.09,
+     "lufs": -20.4,
+     "peak": -7.1,
+     "speed": 1.1,
+     "pitchRange": 13.1,
+     "bytes": 17179
+    },
+    {
+     "v": "b",
+     "file": "isle/trafalgar-b.mp3",
+     "text": "Trafalgar, where you at?",
+     "dur": 1.42,
+     "lufs": -20.4,
+     "peak": -6.8,
+     "speed": 1.18,
+     "pitchRange": 11.6,
+     "bytes": 11954
+    },
+    {
+     "v": "c",
+     "file": "isle/trafalgar-c.mp3",
+     "text": "Shout out to Trafalgar! Hands up!",
+     "dur": 1.92,
+     "lufs": -20.4,
+     "peak": -7.1,
+     "speed": 1.18,
+     "pitchRange": 12.7,
+     "bytes": 15925
+    },
+    {
+     "v": "d",
+     "file": "isle/trafalgar-d.mp3",
+     "text": "Trafalgar in the building!",
+     "dur": 1.57,
+     "lufs": -20.4,
+     "peak": -7.1,
+     "speed": 1.1,
+     "pitchRange": 11.5,
+     "bytes": 13208
+    }
+   ]
+  },
+  {
+   "pid": "laudat",
+   "place": "Laudat",
+   "parish": "Saint George",
+   "kind": "town",
+   "lat": 15.331,
+   "lon": -61.322,
+   "clips": [
+    {
+     "v": "a",
+     "file": "isle/laudat-a.mp3",
+     "text": "Big up Laudat! Make some noise!",
+     "dur": 1.96,
+     "lufs": -20.4,
+     "peak": -7.3,
+     "speed": 1.1,
+     "pitchRange": 13.1,
+     "bytes": 16134
+    },
+    {
+     "v": "b",
+     "file": "isle/laudat-b.mp3",
+     "text": "Laudat, where you at?",
+     "dur": 1.29,
+     "lufs": -20.4,
+     "peak": -7.4,
+     "speed": 1.18,
+     "pitchRange": 11.6,
+     "bytes": 10909
+    },
+    {
+     "v": "c",
+     "file": "isle/laudat-c.mp3",
+     "text": "Shout out to Laudat! Hands up!",
+     "dur": 1.8,
+     "lufs": -20.5,
+     "peak": -7.5,
+     "speed": 1.1,
+     "pitchRange": 11.4,
+     "bytes": 15089
+    },
+    {
+     "v": "d",
+     "file": "isle/laudat-d.mp3",
+     "text": "Laudat in the building!",
+     "dur": 1.42,
+     "lufs": -20.5,
+     "peak": -7.2,
+     "speed": 1.18,
+     "pitchRange": 10.6,
+     "bytes": 11954
+    }
+   ]
+  },
+  {
+   "pid": "bellevue-chopin",
+   "place": "Bellevue Chopin",
+   "parish": "Saint George",
+   "kind": "town",
+   "lat": 15.264,
+   "lon": -61.345,
+   "clips": [
+    {
+     "v": "a",
+     "file": "isle/bellevue-chopin-a.mp3",
+     "text": "Big up Bellevue Chopin! Make some noise!",
+     "dur": 2.53,
+     "lufs": -20.4,
+     "peak": -6.1,
+     "speed": 1.1,
+     "pitchRange": 13.7,
+     "bytes": 20732
+    },
+    {
+     "v": "b",
+     "file": "isle/bellevue-chopin-b.mp3",
+     "text": "Bellevue Chopin, where you at?",
+     "dur": 1.9,
+     "lufs": -20.4,
+     "peak": -7.5,
+     "speed": 1.1,
+     "pitchRange": 11.7,
+     "bytes": 15716
+    },
+    {
+     "v": "c",
+     "file": "isle/bellevue-chopin-c.mp3",
+     "text": "Shout out to Bellevue Chopin! Hands up!",
+     "dur": 2.48,
+     "lufs": -20.4,
+     "peak": -7.2,
+     "speed": 1.1,
+     "pitchRange": 14.2,
+     "bytes": 20523
+    },
+    {
+     "v": "d",
+     "file": "isle/bellevue-chopin-d.mp3",
+     "text": "Bellevue Chopin in the building!",
+     "dur": 1.96,
+     "lufs": -20.4,
+     "peak": -7.0,
+     "speed": 1.1,
+     "pitchRange": 11.5,
+     "bytes": 16343
+    }
+   ]
+  },
+  {
+   "pid": "giraudel",
+   "place": "Giraudel",
+   "parish": "Saint George",
+   "kind": "town",
+   "lat": 15.278,
+   "lon": -61.345,
+   "clips": [
+    {
+     "v": "a",
+     "file": "isle/giraudel-a.mp3",
+     "text": "Big up Giraudel! Make some noise!",
+     "dur": 2.29,
+     "lufs": -20.4,
+     "peak": -7.4,
+     "speed": 1.1,
+     "pitchRange": 13.2,
+     "bytes": 18851
+    },
+    {
+     "v": "b",
+     "file": "isle/giraudel-b.mp3",
+     "text": "Giraudel, where you at?",
+     "dur": 1.64,
+     "lufs": -20.4,
+     "peak": -7.3,
+     "speed": 1.1,
+     "pitchRange": 11.2,
+     "bytes": 13626
+    },
+    {
+     "v": "c",
+     "file": "isle/giraudel-c.mp3",
+     "text": "Shout out to Giraudel! Hands up!",
+     "dur": 2.11,
+     "lufs": -20.4,
+     "peak": -7.0,
+     "speed": 1.1,
+     "pitchRange": 12.9,
+     "bytes": 17388
+    },
+    {
+     "v": "d",
+     "file": "isle/giraudel-d.mp3",
+     "text": "Giraudel in the building!",
+     "dur": 1.63,
+     "lufs": -20.4,
+     "peak": -6.7,
+     "speed": 1.18,
+     "pitchRange": 10.9,
+     "bytes": 13626
+    }
+   ]
+  },
+  {
+   "pid": "morne-prosper",
+   "place": "Morne Prosper",
+   "parish": "Saint George",
+   "kind": "town",
+   "lat": 15.29,
+   "lon": -61.346,
+   "clips": [
+    {
+     "v": "a",
+     "file": "isle/morne-prosper-a.mp3",
+     "text": "Big up Morne Prosper! Make some noise!",
+     "dur": 2.33,
+     "lufs": -20.4,
+     "peak": -7.1,
+     "speed": 1.1,
+     "pitchRange": 13.0,
+     "bytes": 19269
+    },
+    {
+     "v": "b",
+     "file": "isle/morne-prosper-b.mp3",
+     "text": "Morne Prosper, where you at?",
+     "dur": 1.83,
+     "lufs": -20.4,
+     "peak": -6.9,
+     "speed": 1.1,
+     "pitchRange": 14.3,
+     "bytes": 15089
+    },
+    {
+     "v": "c",
+     "file": "isle/morne-prosper-c.mp3",
+     "text": "Shout out to Morne Prosper! Hands up!",
+     "dur": 2.37,
+     "lufs": -20.4,
+     "peak": -7.1,
+     "speed": 1.1,
+     "pitchRange": 13.1,
+     "bytes": 19478
+    },
+    {
+     "v": "d",
+     "file": "isle/morne-prosper-d.mp3",
+     "text": "Morne Prosper in the building!",
+     "dur": 1.77,
+     "lufs": -20.4,
+     "peak": -7.0,
+     "speed": 1.18,
+     "pitchRange": 12.1,
+     "bytes": 14671
+    }
+   ]
+  },
+  {
+   "pid": "canefield",
+   "place": "Canefield",
+   "parish": "Saint Paul",
+   "kind": "town",
+   "lat": 15.336,
+   "lon": -61.392,
+   "clips": [
+    {
+     "v": "a",
+     "file": "isle/canefield-a.mp3",
+     "text": "Big up Canefield! Make some noise!",
+     "dur": 2.16,
+     "lufs": -20.4,
+     "peak": -7.1,
+     "speed": 1.1,
+     "pitchRange": 12.0,
+     "bytes": 17806
+    },
+    {
+     "v": "b",
+     "file": "isle/canefield-b.mp3",
+     "text": "Canefield, where you at?",
+     "dur": 1.41,
+     "lufs": -20.4,
+     "peak": -7.3,
+     "speed": 1.18,
+     "pitchRange": 10.5,
+     "bytes": 11745
+    },
+    {
+     "v": "c",
+     "file": "isle/canefield-c.mp3",
+     "text": "Shout out to Canefield! Hands up!",
+     "dur": 1.95,
+     "lufs": -20.4,
+     "peak": -7.1,
+     "speed": 1.18,
+     "pitchRange": 12.2,
+     "bytes": 16134
+    },
+    {
+     "v": "d",
+     "file": "isle/canefield-d.mp3",
+     "text": "Canefield in the building!",
+     "dur": 1.58,
+     "lufs": -20.4,
+     "peak": -7.4,
+     "speed": 1.1,
+     "pitchRange": 10.9,
+     "bytes": 13208
+    }
+   ]
+  },
+  {
+   "pid": "mahaut",
+   "place": "Mahaut",
+   "parish": "Saint Paul",
+   "kind": "town",
+   "lat": 15.361,
+   "lon": -61.399,
+   "clips": [
+    {
+     "v": "a",
+     "file": "isle/mahaut-a.mp3",
+     "text": "Big up Mahaut! Make some noise!",
+     "dur": 1.93,
+     "lufs": -20.4,
+     "peak": -6.9,
+     "speed": 1.1,
+     "pitchRange": 12.9,
+     "bytes": 15925
+    },
+    {
+     "v": "b",
+     "file": "isle/mahaut-b.mp3",
+     "text": "Mahaut, where you at?",
+     "dur": 1.32,
+     "lufs": -20.4,
+     "peak": -7.6,
+     "speed": 1.1,
+     "pitchRange": 14.0,
+     "bytes": 11118
+    },
+    {
+     "v": "c",
+     "file": "isle/mahaut-c.mp3",
+     "text": "Shout out to Mahaut! Hands up!",
+     "dur": 1.86,
+     "lufs": -20.5,
+     "peak": -7.4,
+     "speed": 1.1,
+     "pitchRange": 11.5,
+     "bytes": 15507
+    },
+    {
+     "v": "d",
+     "file": "isle/mahaut-d.mp3",
+     "text": "Mahaut in the building!",
+     "dur": 1.46,
+     "lufs": -20.4,
+     "peak": -7.4,
+     "speed": 1.1,
+     "pitchRange": 10.4,
+     "bytes": 12372
+    }
+   ]
+  },
+  {
+   "pid": "massacre",
+   "place": "Massacre",
+   "parish": "Saint Paul",
+   "kind": "town",
+   "lat": 15.343,
+   "lon": -61.396,
+   "clips": [
+    {
+     "v": "a",
+     "file": "isle/massacre-a.mp3",
+     "text": "Big up Massacre! Make some noise!",
+     "dur": 2.0,
+     "lufs": -20.3,
+     "peak": -7.3,
+     "speed": 1.1,
+     "pitchRange": 12.8,
+     "bytes": 16552
+    },
+    {
+     "v": "b",
+     "file": "isle/massacre-b.mp3",
+     "text": "Massacre, where you at?",
+     "dur": 1.43,
+     "lufs": -20.4,
+     "peak": -7.4,
+     "speed": 1.1,
+     "pitchRange": 11.2,
+     "bytes": 11954
+    },
+    {
+     "v": "c",
+     "file": "isle/massacre-c.mp3",
+     "text": "Shout out to Massacre! Hands up!",
+     "dur": 1.75,
+     "lufs": -20.4,
+     "peak": -7.2,
+     "speed": 1.18,
+     "pitchRange": 12.2,
+     "bytes": 14462
+    },
+    {
+     "v": "d",
+     "file": "isle/massacre-d.mp3",
+     "text": "Massacre in the building!",
+     "dur": 1.43,
+     "lufs": -20.4,
+     "peak": -7.2,
+     "speed": 1.18,
+     "pitchRange": 13.0,
+     "bytes": 11954
+    }
+   ]
+  },
+  {
+   "pid": "pointe-michel",
+   "place": "Pointe Michel",
+   "parish": "Saint Luke",
+   "kind": "town",
+   "lat": 15.259,
+   "lon": -61.375,
+   "clips": [
+    {
+     "v": "a",
+     "file": "isle/pointe-michel-a.mp3",
+     "text": "Big up Pointe Michel! Make some noise!",
+     "dur": 2.25,
+     "lufs": -20.4,
+     "peak": -7.2,
+     "speed": 1.1,
+     "pitchRange": 13.6,
+     "bytes": 18642
+    },
+    {
+     "v": "b",
+     "file": "isle/pointe-michel-b.mp3",
+     "text": "Pointe Michel, where you at?",
+     "dur": 1.66,
+     "lufs": -20.4,
+     "peak": -7.1,
+     "speed": 1.1,
+     "pitchRange": 13.6,
+     "bytes": 13835
+    },
+    {
+     "v": "c",
+     "file": "isle/pointe-michel-c.mp3",
+     "text": "Shout out to Pointe Michel! Hands up!",
+     "dur": 2.19,
+     "lufs": -20.3,
+     "peak": -7.4,
+     "speed": 1.1,
+     "pitchRange": 13.1,
+     "bytes": 18015
+    },
+    {
+     "v": "d",
+     "file": "isle/pointe-michel-d.mp3",
+     "text": "Pointe Michel in the building!",
+     "dur": 1.72,
+     "lufs": -20.4,
+     "peak": -7.2,
+     "speed": 1.1,
+     "pitchRange": 11.8,
+     "bytes": 14253
+    }
+   ]
+  },
+  {
+   "pid": "soufriere",
+   "place": "Soufrière",
+   "parish": "Saint Mark",
+   "kind": "town",
+   "lat": 15.233,
+   "lon": -61.358,
+   "clips": [
+    {
+     "v": "a",
+     "file": "isle/soufriere-a.mp3",
+     "text": "Big up Soufrière! Make some noise!",
+     "dur": 2.04,
+     "lufs": -20.4,
+     "peak": -7.5,
+     "speed": 1.18,
+     "pitchRange": 12.5,
+     "bytes": 16970
+    },
+    {
+     "v": "b",
+     "file": "isle/soufriere-b.mp3",
+     "text": "Soufrière, where you at?",
+     "dur": 1.66,
+     "lufs": -20.4,
+     "peak": -7.8,
+     "speed": 1.1,
+     "pitchRange": 10.9,
+     "bytes": 13835
+    },
+    {
+     "v": "c",
+     "file": "isle/soufriere-c.mp3",
+     "text": "Shout out to Soufrière! Hands up!",
+     "dur": 2.11,
+     "lufs": -20.4,
+     "peak": -7.1,
+     "speed": 1.1,
+     "pitchRange": 13.1,
+     "bytes": 17388
+    },
+    {
+     "v": "d",
+     "file": "isle/soufriere-d.mp3",
+     "text": "Soufrière in the building!",
+     "dur": 1.6,
+     "lufs": -20.4,
+     "peak": -7.6,
+     "speed": 1.18,
+     "pitchRange": 11.2,
+     "bytes": 13417
+    }
+   ]
+  },
+  {
+   "pid": "scotts-head",
+   "place": "Scotts Head",
+   "parish": "Saint Mark",
+   "kind": "town",
+   "lat": 15.213,
+   "lon": -61.37,
+   "clips": [
+    {
+     "v": "a",
+     "file": "isle/scotts-head-a.mp3",
+     "text": "Big up Scotts Head! Make some noise!",
+     "dur": 2.05,
+     "lufs": -20.4,
+     "peak": -7.3,
+     "speed": 1.18,
+     "pitchRange": 14.5,
+     "bytes": 16970
+    },
+    {
+     "v": "b",
+     "file": "isle/scotts-head-b.mp3",
+     "text": "Scotts Head, where you at?",
+     "dur": 1.52,
+     "lufs": -20.4,
+     "peak": -7.1,
+     "speed": 1.18,
+     "pitchRange": 14.2,
+     "bytes": 12790
+    },
+    {
+     "v": "c",
+     "file": "isle/scotts-head-c.mp3",
+     "text": "Shout out to Scotts Head! Hands up!",
+     "dur": 2.05,
+     "lufs": -20.4,
+     "peak": -7.0,
+     "speed": 1.1,
+     "pitchRange": 12.4,
+     "bytes": 16970
+    },
+    {
+     "v": "d",
+     "file": "isle/scotts-head-d.mp3",
+     "text": "Scotts Head in the building!",
+     "dur": 1.63,
+     "lufs": -20.4,
+     "peak": -7.2,
+     "speed": 1.18,
+     "pitchRange": 13.1,
+     "bytes": 13626
+    }
+   ]
+  },
+  {
+   "pid": "grand-bay",
+   "place": "Grand Bay",
+   "parish": "Saint Patrick",
+   "kind": "town",
+   "lat": 15.241,
+   "lon": -61.312,
+   "clips": [
+    {
+     "v": "a",
+     "file": "isle/grand-bay-a.mp3",
+     "text": "Big up Grand Bay! Make some noise!",
+     "dur": 2.15,
+     "lufs": -20.4,
+     "peak": -7.3,
+     "speed": 1.1,
+     "pitchRange": 12.3,
+     "bytes": 17806
+    },
+    {
+     "v": "b",
+     "file": "isle/grand-bay-b.mp3",
+     "text": "Grand Bay, where you at?",
+     "dur": 1.56,
+     "lufs": -20.4,
+     "peak": -7.3,
+     "speed": 1.1,
+     "pitchRange": 11.3,
+     "bytes": 12999
+    },
+    {
+     "v": "c",
+     "file": "isle/grand-bay-c.mp3",
+     "text": "Shout out to Grand Bay! Hands up!",
+     "dur": 2.0,
+     "lufs": -20.4,
+     "peak": -6.6,
+     "speed": 1.18,
+     "pitchRange": 12.7,
+     "bytes": 16552
+    },
+    {
+     "v": "d",
+     "file": "isle/grand-bay-d.mp3",
+     "text": "Grand Bay in the building!",
+     "dur": 1.59,
+     "lufs": -20.5,
+     "peak": -7.1,
+     "speed": 1.1,
+     "pitchRange": 11.2,
+     "bytes": 13208
+    }
+   ]
+  },
+  {
+   "pid": "berekua",
+   "place": "Berekua",
+   "parish": "Saint Patrick",
+   "kind": "town",
+   "lat": 15.238,
+   "lon": -61.316,
+   "clips": [
+    {
+     "v": "a",
+     "file": "isle/berekua-a.mp3",
+     "text": "Big up Berekua! Make some noise!",
+     "dur": 2.22,
+     "lufs": -20.4,
+     "peak": -7.0,
+     "speed": 1.1,
+     "pitchRange": 14.0,
+     "bytes": 18224
+    },
+    {
+     "v": "b",
+     "file": "isle/berekua-b.mp3",
+     "text": "Berekua, where you at?",
+     "dur": 1.55,
+     "lufs": -20.5,
+     "peak": -7.4,
+     "speed": 1.1,
+     "pitchRange": 11.2,
+     "bytes": 12999
+    },
+    {
+     "v": "c",
+     "file": "isle/berekua-c.mp3",
+     "text": "Shout out to Berekua! Hands up!",
+     "dur": 2.01,
+     "lufs": -20.4,
+     "peak": -7.4,
+     "speed": 1.1,
+     "pitchRange": 12.0,
+     "bytes": 16552
+    },
+    {
+     "v": "d",
+     "file": "isle/berekua-d.mp3",
+     "text": "Berekua in the building!",
+     "dur": 1.56,
+     "lufs": -20.4,
+     "peak": -7.3,
+     "speed": 1.18,
+     "pitchRange": 11.3,
+     "bytes": 12999
+    }
+   ]
+  },
+  {
+   "pid": "delices",
+   "place": "Delices",
+   "parish": "Saint Patrick",
+   "kind": "town",
+   "lat": 15.272,
+   "lon": -61.262,
+   "clips": [
+    {
+     "v": "a",
+     "file": "isle/delices-a.mp3",
+     "text": "Big up Delices! Make some noise!",
+     "dur": 1.99,
+     "lufs": -20.4,
+     "peak": -7.3,
+     "speed": 1.18,
+     "pitchRange": 12.8,
+     "bytes": 16552
+    },
+    {
+     "v": "b",
+     "file": "isle/delices-b.mp3",
+     "text": "Delices, where you at?",
+     "dur": 1.36,
+     "lufs": -20.4,
+     "peak": -7.3,
+     "speed": 1.18,
+     "pitchRange": 10.1,
+     "bytes": 11536
+    },
+    {
+     "v": "c",
+     "file": "isle/delices-c.mp3",
+     "text": "Shout out to Delices! Hands up!",
+     "dur": 1.88,
+     "lufs": -20.4,
+     "peak": -7.0,
+     "speed": 1.18,
+     "pitchRange": 11.6,
+     "bytes": 15716
+    },
+    {
+     "v": "d",
+     "file": "isle/delices-d.mp3",
+     "text": "Delices in the building!",
+     "dur": 1.45,
+     "lufs": -20.4,
+     "peak": -7.5,
+     "speed": 1.18,
+     "pitchRange": 9.8,
+     "bytes": 12163
+    }
+   ]
+  },
+  {
+   "pid": "la-plaine",
+   "place": "La Plaine",
+   "parish": "Saint Patrick",
+   "kind": "town",
+   "lat": 15.33,
+   "lon": -61.247,
+   "clips": [
+    {
+     "v": "a",
+     "file": "isle/la-plaine-a.mp3",
+     "text": "Big up La Plaine! Make some noise!",
+     "dur": 1.99,
+     "lufs": -20.4,
+     "peak": -7.2,
+     "speed": 1.1,
+     "pitchRange": 12.1,
+     "bytes": 16552
+    },
+    {
+     "v": "b",
+     "file": "isle/la-plaine-b.mp3",
+     "text": "La Plaine, where you at?",
+     "dur": 1.43,
+     "lufs": -20.5,
+     "peak": -7.2,
+     "speed": 1.1,
+     "pitchRange": 10.8,
+     "bytes": 11954
+    },
+    {
+     "v": "c",
+     "file": "isle/la-plaine-c.mp3",
+     "text": "Shout out to La Plaine! Hands up!",
+     "dur": 1.91,
+     "lufs": -20.4,
+     "peak": -7.3,
+     "speed": 1.1,
+     "pitchRange": 11.5,
+     "bytes": 15925
+    },
+    {
+     "v": "d",
+     "file": "isle/la-plaine-d.mp3",
+     "text": "La Plaine in the building!",
+     "dur": 1.48,
+     "lufs": -20.4,
+     "peak": -7.5,
+     "speed": 1.1,
+     "pitchRange": 11.7,
+     "bytes": 12372
+    }
+   ]
+  },
+  {
+   "pid": "castle-bruce",
+   "place": "Castle Bruce",
+   "parish": "Saint David",
+   "kind": "town",
+   "lat": 15.443,
+   "lon": -61.258,
+   "clips": [
+    {
+     "v": "a",
+     "file": "isle/castle-bruce-a.mp3",
+     "text": "Big up Castle Bruce! Make some noise!",
+     "dur": 2.37,
+     "lufs": -20.4,
+     "peak": -7.0,
+     "speed": 1.1,
+     "pitchRange": 12.9,
+     "bytes": 19478
+    },
+    {
+     "v": "b",
+     "file": "isle/castle-bruce-b.mp3",
+     "text": "Castle Bruce, where you at?",
+     "dur": 1.7,
+     "lufs": -20.4,
+     "peak": -7.2,
+     "speed": 1.1,
+     "pitchRange": 14.9,
+     "bytes": 14253
+    },
+    {
+     "v": "c",
+     "file": "isle/castle-bruce-c.mp3",
+     "text": "Shout out to Castle Bruce! Hands up!",
+     "dur": 2.08,
+     "lufs": -20.4,
+     "peak": -7.2,
+     "speed": 1.18,
+     "pitchRange": 12.2,
+     "bytes": 17179
+    },
+    {
+     "v": "d",
+     "file": "isle/castle-bruce-d.mp3",
+     "text": "Castle Bruce in the building!",
+     "dur": 1.72,
+     "lufs": -20.3,
+     "peak": -7.0,
+     "speed": 1.18,
+     "pitchRange": 13.4,
+     "bytes": 14462
+    }
+   ]
+  },
+  {
+   "pid": "rosalie",
+   "place": "Rosalie",
+   "parish": "Saint David",
+   "kind": "town",
+   "lat": 15.371,
+   "lon": -61.262,
+   "clips": [
+    {
+     "v": "a",
+     "file": "isle/rosalie-a.mp3",
+     "text": "Big up Rosalie! Make some noise!",
+     "dur": 2.09,
+     "lufs": -20.4,
+     "peak": -7.0,
+     "speed": 1.1,
+     "pitchRange": 12.4,
+     "bytes": 17388
+    },
+    {
+     "v": "b",
+     "file": "isle/rosalie-b.mp3",
+     "text": "Rosalie, where you at?",
+     "dur": 1.49,
+     "lufs": -20.4,
+     "peak": -7.7,
+     "speed": 1.1,
+     "pitchRange": 10.5,
+     "bytes": 12372
+    },
+    {
+     "v": "c",
+     "file": "isle/rosalie-c.mp3",
+     "text": "Shout out to Rosalie! Hands up!",
+     "dur": 1.99,
+     "lufs": -20.4,
+     "peak": -7.3,
+     "speed": 1.1,
+     "pitchRange": 12.5,
+     "bytes": 16552
+    },
+    {
+     "v": "d",
+     "file": "isle/rosalie-d.mp3",
+     "text": "Rosalie in the building!",
+     "dur": 1.51,
+     "lufs": -20.3,
+     "peak": -7.1,
+     "speed": 1.18,
+     "pitchRange": 11.0,
+     "bytes": 12581
+    }
+   ]
+  },
+  {
+   "pid": "grand-fond",
+   "place": "Grand Fond",
+   "parish": "Saint David",
+   "kind": "town",
+   "lat": 15.356,
+   "lon": -61.282,
+   "clips": [
+    {
+     "v": "a",
+     "file": "isle/grand-fond-a.mp3",
+     "text": "Big up Grand Fond! Make some noise!",
+     "dur": 2.14,
+     "lufs": -20.4,
+     "peak": -7.3,
+     "speed": 1.18,
+     "pitchRange": 13.2,
+     "bytes": 17806
+    },
+    {
+     "v": "b",
+     "file": "isle/grand-fond-b.mp3",
+     "text": "Grand Fond, where you at?",
+     "dur": 1.61,
+     "lufs": -20.4,
+     "peak": -7.2,
+     "speed": 1.1,
+     "pitchRange": 13.5,
+     "bytes": 13417
+    },
+    {
+     "v": "c",
+     "file": "isle/grand-fond-c.mp3",
+     "text": "Shout out to Grand Fond! Hands up!",
+     "dur": 2.11,
+     "lufs": -20.5,
+     "peak": -7.3,
+     "speed": 1.1,
+     "pitchRange": 11.9,
+     "bytes": 17388
+    },
+    {
+     "v": "d",
+     "file": "isle/grand-fond-d.mp3",
+     "text": "Grand Fond in the building!",
+     "dur": 1.56,
+     "lufs": -20.4,
+     "peak": -7.1,
+     "speed": 1.18,
+     "pitchRange": 11.5,
+     "bytes": 12999
+    }
+   ]
+  },
+  {
+   "pid": "kalinago-territory",
+   "place": "Kalinago Territory",
+   "parish": "Saint David",
+   "kind": "town",
+   "lat": 15.495,
+   "lon": -61.255,
+   "clips": [
+    {
+     "v": "a",
+     "file": "isle/kalinago-territory-a.mp3",
+     "text": "Big up Kalinago Territory! Make some noise!",
+     "dur": 3.02,
+     "lufs": -20.4,
+     "peak": -7.0,
+     "speed": 1.1,
+     "pitchRange": 13.9,
+     "bytes": 24702
+    },
+    {
+     "v": "b",
+     "file": "isle/kalinago-territory-b.mp3",
+     "text": "Kalinago Territory, where you at?",
+     "dur": 2.24,
+     "lufs": -20.5,
+     "peak": -7.1,
+     "speed": 1.18,
+     "pitchRange": 12.4,
+     "bytes": 18433
+    },
+    {
+     "v": "c",
+     "file": "isle/kalinago-territory-c.mp3",
+     "text": "Shout out to Kalinago Territory! Hands up!",
+     "dur": 3.03,
+     "lufs": -20.4,
+     "peak": -6.7,
+     "speed": 1.1,
+     "pitchRange": 15.6,
+     "bytes": 24911
+    },
+    {
+     "v": "d",
+     "file": "isle/kalinago-territory-d.mp3",
+     "text": "Kalinago Territory in the building!",
+     "dur": 2.32,
+     "lufs": -20.4,
+     "peak": -6.9,
+     "speed": 1.18,
+     "pitchRange": 12.0,
+     "bytes": 19060
+    }
+   ]
+  },
+  {
+   "pid": "atkinson",
+   "place": "Atkinson",
+   "parish": "Saint David",
+   "kind": "town",
+   "lat": 15.508,
+   "lon": -61.276,
+   "clips": [
+    {
+     "v": "a",
+     "file": "isle/atkinson-a.mp3",
+     "text": "Big up Atkinson! Make some noise!",
+     "dur": 2.08,
+     "lufs": -20.4,
+     "peak": -7.1,
+     "speed": 1.18,
+     "pitchRange": 12.6,
+     "bytes": 17179
+    },
+    {
+     "v": "b",
+     "file": "isle/atkinson-b.mp3",
+     "text": "Atkinson, where you at?",
+     "dur": 1.47,
+     "lufs": -20.4,
+     "peak": -7.3,
+     "speed": 1.1,
+     "pitchRange": 12.0,
+     "bytes": 12372
+    },
+    {
+     "v": "c",
+     "file": "isle/atkinson-c.mp3",
+     "text": "Shout out to Atkinson! Hands up!",
+     "dur": 1.86,
+     "lufs": -20.4,
+     "peak": -7.0,
+     "speed": 1.18,
+     "pitchRange": 11.8,
+     "bytes": 15507
+    },
+    {
+     "v": "d",
+     "file": "isle/atkinson-d.mp3",
+     "text": "Atkinson in the building!",
+     "dur": 1.6,
+     "lufs": -20.3,
+     "peak": -7.2,
+     "speed": 1.1,
+     "pitchRange": 12.7,
+     "bytes": 13417
+    }
+   ]
+  },
+  {
+   "pid": "marigot",
+   "place": "Marigot",
+   "parish": "Saint Andrew",
+   "kind": "town",
+   "lat": 15.537,
+   "lon": -61.29,
+   "clips": [
+    {
+     "v": "a",
+     "file": "isle/marigot-a.mp3",
+     "text": "Big up Marigot! Make some noise!",
+     "dur": 2.01,
+     "lufs": -20.4,
+     "peak": -7.2,
+     "speed": 1.1,
+     "pitchRange": 11.9,
+     "bytes": 16761
+    },
+    {
+     "v": "b",
+     "file": "isle/marigot-b.mp3",
+     "text": "Marigot, where you at?",
+     "dur": 1.4,
+     "lufs": -20.4,
+     "peak": -7.2,
+     "speed": 1.18,
+     "pitchRange": 11.7,
+     "bytes": 11745
+    },
+    {
+     "v": "c",
+     "file": "isle/marigot-c.mp3",
+     "text": "Shout out to Marigot! Hands up!",
+     "dur": 1.8,
+     "lufs": -20.4,
+     "peak": -7.0,
+     "speed": 1.18,
+     "pitchRange": 11.2,
+     "bytes": 14880
+    },
+    {
+     "v": "d",
+     "file": "isle/marigot-d.mp3",
+     "text": "Marigot in the building!",
+     "dur": 1.51,
+     "lufs": -20.4,
+     "peak": -7.3,
+     "speed": 1.18,
+     "pitchRange": 11.5,
+     "bytes": 12581
+    }
+   ]
+  },
+  {
+   "pid": "wesley",
+   "place": "Wesley",
+   "parish": "Saint Andrew",
+   "kind": "town",
+   "lat": 15.567,
+   "lon": -61.312,
+   "clips": [
+    {
+     "v": "a",
+     "file": "isle/wesley-a.mp3",
+     "text": "Big up Wesley! Make some noise!",
+     "dur": 1.91,
+     "lufs": -20.4,
+     "peak": -7.2,
+     "speed": 1.1,
+     "pitchRange": 12.0,
+     "bytes": 15925
+    },
+    {
+     "v": "b",
+     "file": "isle/wesley-b.mp3",
+     "text": "Wesley, where you at?",
+     "dur": 1.22,
+     "lufs": -20.4,
+     "peak": -7.6,
+     "speed": 1.18,
+     "pitchRange": 12.6,
+     "bytes": 10283
+    },
+    {
+     "v": "c",
+     "file": "isle/wesley-c.mp3",
+     "text": "Shout out to Wesley! Hands up!",
+     "dur": 1.87,
+     "lufs": -20.4,
+     "peak": -7.2,
+     "speed": 1.1,
+     "pitchRange": 11.9,
+     "bytes": 15507
+    },
+    {
+     "v": "d",
+     "file": "isle/wesley-d.mp3",
+     "text": "Wesley in the building!",
+     "dur": 1.31,
+     "lufs": -20.5,
+     "peak": -7.4,
+     "speed": 1.18,
+     "pitchRange": 12.6,
+     "bytes": 11118
+    }
+   ]
+  },
+  {
+   "pid": "calibishie",
+   "place": "Calibishie",
+   "parish": "Saint Andrew",
+   "kind": "town",
+   "lat": 15.593,
+   "lon": -61.351,
+   "clips": [
+    {
+     "v": "a",
+     "file": "isle/calibishie-a.mp3",
+     "text": "Big up Calibishie! Make some noise!",
+     "dur": 2.16,
+     "lufs": -20.4,
+     "peak": -7.0,
+     "speed": 1.18,
+     "pitchRange": 11.9,
+     "bytes": 17806
+    },
+    {
+     "v": "b",
+     "file": "isle/calibishie-b.mp3",
+     "text": "Calibishie, where you at?",
+     "dur": 1.61,
+     "lufs": -20.4,
+     "peak": -7.2,
+     "speed": 1.1,
+     "pitchRange": 11.0,
+     "bytes": 13417
+    },
+    {
+     "v": "c",
+     "file": "isle/calibishie-c.mp3",
+     "text": "Shout out to Calibishie! Hands up!",
+     "dur": 2.14,
+     "lufs": -20.4,
+     "peak": -7.4,
+     "speed": 1.1,
+     "pitchRange": 13.0,
+     "bytes": 17597
+    },
+    {
+     "v": "d",
+     "file": "isle/calibishie-d.mp3",
+     "text": "Calibishie in the building!",
+     "dur": 1.66,
+     "lufs": -20.3,
+     "peak": -7.1,
+     "speed": 1.18,
+     "pitchRange": 11.1,
+     "bytes": 13835
+    }
+   ]
+  },
+  {
+   "pid": "woodford-hill",
+   "place": "Woodford Hill",
+   "parish": "Saint Andrew",
+   "kind": "town",
+   "lat": 15.578,
+   "lon": -61.331,
+   "clips": [
+    {
+     "v": "a",
+     "file": "isle/woodford-hill-a.mp3",
+     "text": "Big up Woodford Hill! Make some noise!",
+     "dur": 2.27,
+     "lufs": -20.4,
+     "peak": -7.3,
+     "speed": 1.1,
+     "pitchRange": 12.4,
+     "bytes": 18642
+    },
+    {
+     "v": "b",
+     "file": "isle/woodford-hill-b.mp3",
+     "text": "Woodford Hill, where you at?",
+     "dur": 1.49,
+     "lufs": -20.4,
+     "peak": -7.7,
+     "speed": 1.18,
+     "pitchRange": 12.5,
+     "bytes": 12581
+    },
+    {
+     "v": "c",
+     "file": "isle/woodford-hill-c.mp3",
+     "text": "Shout out to Woodford Hill! Hands up!",
+     "dur": 2.08,
+     "lufs": -20.4,
+     "peak": -6.7,
+     "speed": 1.1,
+     "pitchRange": 12.6,
+     "bytes": 17179
+    },
+    {
+     "v": "d",
+     "file": "isle/woodford-hill-d.mp3",
+     "text": "Woodford Hill in the building!",
+     "dur": 1.53,
+     "lufs": -20.4,
+     "peak": -7.2,
+     "speed": 1.18,
+     "pitchRange": 13.1,
+     "bytes": 12790
+    }
+   ]
+  },
+  {
+   "pid": "vieille-case",
+   "place": "Vieille Case",
+   "parish": "Saint Andrew",
+   "kind": "town",
+   "lat": 15.618,
+   "lon": -61.409,
+   "clips": [
+    {
+     "v": "a",
+     "file": "isle/vieille-case-a.mp3",
+     "text": "Big up Vieille Case! Make some noise!",
+     "dur": 2.16,
+     "lufs": -20.4,
+     "peak": -7.4,
+     "speed": 1.1,
+     "pitchRange": 13.1,
+     "bytes": 17806
+    },
+    {
+     "v": "b",
+     "file": "isle/vieille-case-b.mp3",
+     "text": "Vieille Case, where you at?",
+     "dur": 1.65,
+     "lufs": -20.5,
+     "peak": -7.4,
+     "speed": 1.1,
+     "pitchRange": 11.7,
+     "bytes": 13626
+    },
+    {
+     "v": "c",
+     "file": "isle/vieille-case-c.mp3",
+     "text": "Shout out to Vieille Case! Hands up!",
+     "dur": 2.2,
+     "lufs": -20.3,
+     "peak": -7.1,
+     "speed": 1.1,
+     "pitchRange": 12.2,
+     "bytes": 18224
+    },
+    {
+     "v": "d",
+     "file": "isle/vieille-case-d.mp3",
+     "text": "Vieille Case in the building!",
+     "dur": 1.75,
+     "lufs": -20.4,
+     "peak": -7.5,
+     "speed": 1.1,
+     "pitchRange": 11.6,
+     "bytes": 14671
+    }
+   ]
+  },
+  {
+   "pid": "penville",
+   "place": "Penville",
+   "parish": "Saint Andrew",
+   "kind": "town",
+   "lat": 15.629,
+   "lon": -61.419,
+   "clips": [
+    {
+     "v": "a",
+     "file": "isle/penville-a.mp3",
+     "text": "Big up Penville! Make some noise!",
+     "dur": 1.98,
+     "lufs": -20.4,
+     "peak": -7.4,
+     "speed": 1.1,
+     "pitchRange": 11.9,
+     "bytes": 16343
+    },
+    {
+     "v": "b",
+     "file": "isle/penville-b.mp3",
+     "text": "Penville, where you at?",
+     "dur": 1.32,
+     "lufs": -20.4,
+     "peak": -7.4,
+     "speed": 1.1,
+     "pitchRange": 13.5,
+     "bytes": 11118
+    },
+    {
+     "v": "c",
+     "file": "isle/penville-c.mp3",
+     "text": "Shout out to Penville! Hands up!",
+     "dur": 1.88,
+     "lufs": -20.4,
+     "peak": -7.1,
+     "speed": 1.1,
+     "pitchRange": 11.7,
+     "bytes": 15716
+    },
+    {
+     "v": "d",
+     "file": "isle/penville-d.mp3",
+     "text": "Penville in the building!",
+     "dur": 1.35,
+     "lufs": -20.4,
+     "peak": -7.2,
+     "speed": 1.18,
+     "pitchRange": 10.2,
+     "bytes": 11327
+    }
+   ]
+  },
+  {
+   "pid": "portsmouth",
+   "place": "Portsmouth",
+   "parish": "Saint John",
+   "kind": "town",
+   "lat": 15.577,
+   "lon": -61.459,
+   "clips": [
+    {
+     "v": "a",
+     "file": "isle/portsmouth-a.mp3",
+     "text": "Big up Portsmouth! Make some noise!",
+     "dur": 2.07,
+     "lufs": -20.4,
+     "peak": -7.3,
+     "speed": 1.1,
+     "pitchRange": 13.9,
+     "bytes": 17179
+    },
+    {
+     "v": "b",
+     "file": "isle/portsmouth-b.mp3",
+     "text": "Portsmouth, where you at?",
+     "dur": 1.41,
+     "lufs": -20.3,
+     "peak": -7.2,
+     "speed": 1.1,
+     "pitchRange": 14.1,
+     "bytes": 11954
+    },
+    {
+     "v": "c",
+     "file": "isle/portsmouth-c.mp3",
+     "text": "Shout out to Portsmouth! Hands up!",
+     "dur": 1.89,
+     "lufs": -20.4,
+     "peak": -6.9,
+     "speed": 1.18,
+     "pitchRange": 11.6,
+     "bytes": 15716
+    },
+    {
+     "v": "d",
+     "file": "isle/portsmouth-d.mp3",
+     "text": "Portsmouth in the building!",
+     "dur": 1.51,
+     "lufs": -20.4,
+     "peak": -6.9,
+     "speed": 1.1,
+     "pitchRange": 11.9,
+     "bytes": 12581
+    }
+   ]
+  },
+  {
+   "pid": "colihaut",
+   "place": "Colihaut",
+   "parish": "Saint Peter",
+   "kind": "town",
+   "lat": 15.49,
+   "lon": -61.462,
+   "clips": [
+    {
+     "v": "a",
+     "file": "isle/colihaut-a.mp3",
+     "text": "Big up Colihaut! Make some noise!",
+     "dur": 2.07,
+     "lufs": -20.3,
+     "peak": -7.1,
+     "speed": 1.1,
+     "pitchRange": 13.4,
+     "bytes": 17179
+    },
+    {
+     "v": "b",
+     "file": "isle/colihaut-b.mp3",
+     "text": "Colihaut, where you at?",
+     "dur": 1.54,
+     "lufs": -20.5,
+     "peak": -7.1,
+     "speed": 1.1,
+     "pitchRange": 11.8,
+     "bytes": 12790
+    },
+    {
+     "v": "c",
+     "file": "isle/colihaut-c.mp3",
+     "text": "Shout out to Colihaut! Hands up!",
+     "dur": 1.92,
+     "lufs": -20.4,
+     "peak": -7.1,
+     "speed": 1.1,
+     "pitchRange": 12.2,
+     "bytes": 15925
+    },
+    {
+     "v": "d",
+     "file": "isle/colihaut-d.mp3",
+     "text": "Colihaut in the building!",
+     "dur": 1.52,
+     "lufs": -20.4,
+     "peak": -7.0,
+     "speed": 1.18,
+     "pitchRange": 11.3,
+     "bytes": 12790
+    }
+   ]
+  },
+  {
+   "pid": "salisbury",
+   "place": "Salisbury",
+   "parish": "Saint Joseph",
+   "kind": "town",
+   "lat": 15.437,
+   "lon": -61.449,
+   "clips": [
+    {
+     "v": "a",
+     "file": "isle/salisbury-a.mp3",
+     "text": "Big up Salisbury! Make some noise!",
+     "dur": 1.98,
+     "lufs": -20.3,
+     "peak": -7.1,
+     "speed": 1.18,
+     "pitchRange": 13.1,
+     "bytes": 16343
+    },
+    {
+     "v": "b",
+     "file": "isle/salisbury-b.mp3",
+     "text": "Salisbury, where you at?",
+     "dur": 1.44,
+     "lufs": -20.4,
+     "peak": -7.4,
+     "speed": 1.1,
+     "pitchRange": 11.9,
+     "bytes": 12163
+    },
+    {
+     "v": "c",
+     "file": "isle/salisbury-c.mp3",
+     "text": "Shout out to Salisbury! Hands up!",
+     "dur": 1.91,
+     "lufs": -20.3,
+     "peak": -6.9,
+     "speed": 1.18,
+     "pitchRange": 12.0,
+     "bytes": 15925
+    },
+    {
+     "v": "d",
+     "file": "isle/salisbury-d.mp3",
+     "text": "Salisbury in the building!",
+     "dur": 1.55,
+     "lufs": -20.4,
+     "peak": -7.3,
+     "speed": 1.1,
+     "pitchRange": 11.5,
+     "bytes": 12999
+    }
+   ]
+  },
+  {
+   "pid": "st-joseph-village",
+   "place": "St Joseph village",
+   "parish": "Saint Joseph",
+   "kind": "town",
+   "lat": 15.4,
+   "lon": -61.429,
+   "clips": [
+    {
+     "v": "a",
+     "file": "isle/st-joseph-village-a.mp3",
+     "text": "Big up St Joseph village! Make some noise!",
+     "dur": 2.73,
+     "lufs": -20.4,
+     "peak": -6.9,
+     "speed": 1.1,
+     "pitchRange": 13.1,
+     "bytes": 22403
+    },
+    {
+     "v": "b",
+     "file": "isle/st-joseph-village-b.mp3",
+     "text": "St Joseph village, where you at?",
+     "dur": 2.13,
+     "lufs": -20.4,
+     "peak": -7.3,
+     "speed": 1.1,
+     "pitchRange": 14.0,
+     "bytes": 17597
+    },
+    {
+     "v": "c",
+     "file": "isle/st-joseph-village-c.mp3",
+     "text": "Shout out to St Joseph village! Hands up!",
+     "dur": 2.63,
+     "lufs": -20.4,
+     "peak": -6.5,
+     "speed": 1.18,
+     "pitchRange": 14.1,
+     "bytes": 21567
+    },
+    {
+     "v": "d",
+     "file": "isle/st-joseph-village-d.mp3",
+     "text": "St Joseph village in the building!",
+     "dur": 2.23,
+     "lufs": -20.4,
+     "peak": -7.3,
+     "speed": 1.1,
+     "pitchRange": 11.3,
+     "bytes": 18433
+    }
+   ]
+  },
+  {
+   "pid": "coulibistrie",
+   "place": "Coulibistrie",
+   "parish": "Saint Joseph",
+   "kind": "town",
+   "lat": 15.466,
+   "lon": -61.447,
+   "clips": [
+    {
+     "v": "a",
+     "file": "isle/coulibistrie-a.mp3",
+     "text": "Big up Coulibistrie! Make some noise!",
+     "dur": 2.42,
+     "lufs": -20.4,
+     "peak": -7.3,
+     "speed": 1.1,
+     "pitchRange": 12.3,
+     "bytes": 19896
+    },
+    {
+     "v": "b",
+     "file": "isle/coulibistrie-b.mp3",
+     "text": "Coulibistrie, where you at?",
+     "dur": 1.89,
+     "lufs": -20.4,
+     "peak": -7.6,
+     "speed": 1.1,
+     "pitchRange": 11.8,
+     "bytes": 15716
+    },
+    {
+     "v": "c",
+     "file": "isle/coulibistrie-c.mp3",
+     "text": "Shout out to Coulibistrie! Hands up!",
+     "dur": 2.48,
+     "lufs": -20.4,
+     "peak": -7.2,
+     "speed": 1.1,
+     "pitchRange": 13.8,
+     "bytes": 20314
+    },
+    {
+     "v": "d",
+     "file": "isle/coulibistrie-d.mp3",
+     "text": "Coulibistrie in the building!",
+     "dur": 1.95,
+     "lufs": -20.3,
+     "peak": -7.0,
+     "speed": 1.18,
+     "pitchRange": 11.9,
+     "bytes": 16134
+    }
+   ]
+  }
+ ]
+}

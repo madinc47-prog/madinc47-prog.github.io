@@ -1,0 +1,10 @@
+{
+  "id": "fl-keys-org-x3-b3-gospel",
+  "n": "FLEX B3 Gospel",
+  "base": "organ",
+  "tone": {
+    "drive": 0.22
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

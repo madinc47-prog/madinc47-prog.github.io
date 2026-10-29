@@ -1,0 +1,10 @@
+{
+  "id": "fl-keys-island",
+  "n": "FLEX Island Keys",
+  "base": "dbell",
+  "tone": {
+    "drive": 0.1
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

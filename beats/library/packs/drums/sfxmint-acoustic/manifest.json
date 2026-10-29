@@ -1,0 +1,98 @@
+{
+  "id": "sfxmint-acoustic",
+  "name": "SFXMint Acoustic Drum Kit",
+  "type": "drums",
+  "genres": [
+    "rock",
+    "jazz",
+    "pop",
+    "acoustic",
+    "live"
+  ],
+  "license": "CC0 1.0",
+  "source": "https://sfxmint.com/sets/acoustic-drum-kit",
+  "canSellBeats": true,
+  "creditRequired": false,
+  "nonCommercialOnly": false,
+  "redistributionOk": true,
+  "files": [
+    {
+      "file": "kicks/kick-01.mp3",
+      "source": "SFXMint Acoustic Drum Kit",
+      "license": "CC0 1.0",
+      "url": "https://sfxmint.com/dl/acoustic-drum-kit-kick-01.mp3"
+    },
+    {
+      "file": "snares/snare-01.mp3",
+      "source": "SFXMint Acoustic Drum Kit",
+      "license": "CC0 1.0",
+      "url": "https://sfxmint.com/dl/acoustic-drum-kit-snare-01.mp3"
+    },
+    {
+      "file": "snares/rimshot-01.mp3",
+      "source": "SFXMint Acoustic Drum Kit",
+      "license": "CC0 1.0",
+      "url": "https://sfxmint.com/dl/acoustic-drum-kit-snare-rimshot-01.mp3"
+    },
+    {
+      "file": "snares/cross-stick-01.mp3",
+      "source": "SFXMint Acoustic Drum Kit",
+      "license": "CC0 1.0",
+      "url": "https://sfxmint.com/dl/acoustic-drum-kit-snare-cross-stick-01.mp3"
+    },
+    {
+      "file": "toms/high-tom-01.mp3",
+      "source": "SFXMint Acoustic Drum Kit",
+      "license": "CC0 1.0",
+      "url": "https://sfxmint.com/dl/acoustic-drum-kit-high-tom-01.mp3"
+    },
+    {
+      "file": "toms/mid-tom-01.mp3",
+      "source": "SFXMint Acoustic Drum Kit",
+      "license": "CC0 1.0",
+      "url": "https://sfxmint.com/dl/acoustic-drum-kit-mid-tom-01.mp3"
+    },
+    {
+      "file": "toms/floor-tom-01.mp3",
+      "source": "SFXMint Acoustic Drum Kit",
+      "license": "CC0 1.0",
+      "url": "https://sfxmint.com/dl/acoustic-drum-kit-floor-tom-01.mp3"
+    },
+    {
+      "file": "hats/closed-01.mp3",
+      "source": "SFXMint Acoustic Drum Kit",
+      "license": "CC0 1.0",
+      "url": "https://sfxmint.com/dl/acoustic-drum-kit-closed-hat-01.mp3"
+    },
+    {
+      "file": "hats/open-01.mp3",
+      "source": "SFXMint Acoustic Drum Kit",
+      "license": "CC0 1.0",
+      "url": "https://sfxmint.com/dl/acoustic-drum-kit-open-hat-01.mp3"
+    },
+    {
+      "file": "hats/pedal-01.mp3",
+      "source": "SFXMint Acoustic Drum Kit",
+      "license": "CC0 1.0",
+      "url": "https://sfxmint.com/dl/acoustic-drum-kit-pedal-hat-01.mp3"
+    },
+    {
+      "file": "cymbals/crash-01.mp3",
+      "source": "SFXMint Acoustic Drum Kit",
+      "license": "CC0 1.0",
+      "url": "https://sfxmint.com/dl/acoustic-drum-kit-crash-01.mp3"
+    },
+    {
+      "file": "cymbals/ride-01.mp3",
+      "source": "SFXMint Acoustic Drum Kit",
+      "license": "CC0 1.0",
+      "url": "https://sfxmint.com/dl/acoustic-drum-kit-ride-01.mp3"
+    },
+    {
+      "file": "cymbals/ride-bell-01.mp3",
+      "source": "SFXMint Acoustic Drum Kit",
+      "license": "CC0 1.0",
+      "url": "https://sfxmint.com/dl/acoustic-drum-kit-ride-bell-01.mp3"
+    }
+  ]
+}

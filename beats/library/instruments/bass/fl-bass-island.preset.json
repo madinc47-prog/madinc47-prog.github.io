@@ -1,0 +1,12 @@
+{
+  "id": "fl-bass-island",
+  "n": "FLEX Island Bass",
+  "p": {
+    "i": "synthbass",
+    "tone": {
+      "drive": 0.35
+    }
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

@@ -1,0 +1,10 @@
+{
+  "id": "fl-keys-org-x5-church",
+  "n": "FLEX Church Organ",
+  "base": "organ",
+  "tone": {
+    "drive": 0.1
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

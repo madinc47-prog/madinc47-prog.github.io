@@ -1,0 +1,12 @@
+{
+  "id": "fl-bass-pluck",
+  "n": "FLEX Bass Pluck",
+  "p": {
+    "i": "synthbass",
+    "tone": {
+      "drive": 0.15
+    }
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

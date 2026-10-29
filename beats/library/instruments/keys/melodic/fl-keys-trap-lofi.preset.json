@@ -1,0 +1,10 @@
+{
+  "id": "fl-keys-trap-lofi",
+  "n": "FLEX Lo-Fi Trap Keys",
+  "base": "lofipiano",
+  "tone": {
+    "drive": 0.25
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

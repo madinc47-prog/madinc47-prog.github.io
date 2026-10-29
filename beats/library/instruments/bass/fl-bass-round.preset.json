@@ -1,0 +1,12 @@
+{
+  "id": "fl-bass-round",
+  "n": "FLEX Round Bass",
+  "p": {
+    "i": "synthbass",
+    "tone": {
+      "drive": 0.2
+    }
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

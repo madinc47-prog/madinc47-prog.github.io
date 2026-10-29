@@ -1,0 +1,10 @@
+{
+  "id": "fl-keys-techno",
+  "n": "FLEX Techno Keys",
+  "base": "pluck",
+  "tone": {
+    "drive": 0.3
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

@@ -1,0 +1,12 @@
+{
+  "id": "fl-syn-dark",
+  "n": "FLEX Dark Syn",
+  "p": {
+    "i": "hyperlead",
+    "tone": {
+      "drive": 0.45
+    }
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

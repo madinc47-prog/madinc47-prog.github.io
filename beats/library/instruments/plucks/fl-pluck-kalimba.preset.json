@@ -1,0 +1,12 @@
+{
+  "id": "fl-pluck-kalimba",
+  "n": "FLEX Kalimba Pluck",
+  "p": {
+    "i": "trappluck",
+    "tone": {
+      "drive": 0.05
+    }
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

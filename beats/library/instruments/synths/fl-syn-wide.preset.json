@@ -1,0 +1,12 @@
+{
+  "id": "fl-syn-wide",
+  "n": "FLEX Wide Syn",
+  "p": {
+    "i": "sidepad",
+    "tone": {
+      "drive": 0.1
+    }
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

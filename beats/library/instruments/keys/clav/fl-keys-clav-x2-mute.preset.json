@@ -1,0 +1,10 @@
+{
+  "id": "fl-keys-clav-x2-mute",
+  "n": "FLEX Mute Clav",
+  "base": "pluck",
+  "tone": {
+    "drive": 0.15
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

@@ -1,0 +1,35 @@
+{
+  "id": "/apps/",
+  "name": "IslePin Apps",
+  "short_name": "Apps",
+  "description": "Install every IslePin & Island Beats app on your home screen",
+  "start_url": "/apps/",
+  "scope": "/apps/",
+  "display": "fullscreen",
+  "background_color": "#06201c",
+  "theme_color": "#0a2e28",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "display_override": [
+    "fullscreen",
+    "standalone"
+  ]
+}

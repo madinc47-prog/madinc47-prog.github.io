@@ -1,0 +1,21 @@
+DJ Psycho Fingers pad pack v2 (2026-10-22) — credits & licences
+================================================================
+No third-party recordings are used anywhere in the pack. No Dominica / island-specific content.
+
+v2 changes (24 files):
+- Voice pads A1–A16, C7, C8, C9, C13: computer-generated speech, Kokoro-82M (kokoro-onnx, Apache-2.0),
+  voice "bf_emma" (Kokoro voice pack, Apache-2.0), then aged in FFmpeg to sound like an ~85-year-old woman:
+  rubberband pitch 0.9 / tempo 0.9 (formant kept), vibrato 5.5 Hz + tremolo 6.5 Hz (shaky voice),
+  high-pass 170 Hz, low-pass 7.5 kHz, presence lift, compression, short slap. Trimmed, 4 ms / 40 ms fades,
+  peak-normalised to -1 dBFS. Script: generate_v2_voices.py. Output owned by Emmanuel Griffith.
+- D7 Whistle, D8 Bell, D9 Dubstep wobble hit, D10 Finger snap: synthesized from scratch in numpy/scipy
+  (script: generate_v2_synth.py), peak -1 dBFS. Original work, owned by Emmanuel Griffith.
+- Removed: a03 Dominica stand up, a04 Nature Isle, a05 Island Pin, a14 Big up Dominica, a06/a10–a13
+  dancehall shouts, d07/d08 dancehall drums, d09 timbale fill, d10 steel pan, and the old male TTS tags.
+
+Unchanged: banks B and C (synth airhorns, sirens, lasers, booms, risers, sweeps, rewinds, scratches),
+D1–D6 and D11–D15 (808, kick, snare, clap, rim, hat, brass, piano, womp, cowbell, shaker), and bank E
+(E1 Psycho Fingers drop, sirens, gunshots, reload, orchestra hit, crowd cheer, record stop) — see CREDITS.md
+for how each of those was made (Piper TTS public-domain-trained voice + numpy synthesis; Kokoro af_bella for E1).
+
+E13-E16 rock guitar (Power Chord E5, Palm-Mute Chug E 140, Distorted Riff E 140, Dive Bomb): synthesized locally (Karplus-Strong + amp sim), original work, CC0.

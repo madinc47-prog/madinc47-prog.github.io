@@ -1,0 +1,10 @@
+{
+  "id": "fl-keys-grand-room",
+  "n": "FLEX Grand Room",
+  "base": "grand",
+  "tone": {
+    "drive": 0.05
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

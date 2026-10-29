@@ -1,0 +1,12 @@
+{
+  "id": "fl-bass-funk",
+  "n": "FLEX Funk Bass",
+  "p": {
+    "i": "synthbass",
+    "tone": {
+      "drive": 0.3
+    }
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

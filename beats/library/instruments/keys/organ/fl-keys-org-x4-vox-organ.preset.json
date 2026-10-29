@@ -1,0 +1,10 @@
+{
+  "id": "fl-keys-org-x4-vox-organ",
+  "n": "FLEX Vox Organ",
+  "base": "organ",
+  "tone": {
+    "drive": 0.28
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

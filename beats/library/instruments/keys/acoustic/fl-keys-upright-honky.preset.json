@@ -1,0 +1,10 @@
+{
+  "id": "fl-keys-upright-honky",
+  "n": "FLEX Honky Upright",
+  "base": "grand",
+  "tone": {
+    "drive": 0.2
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

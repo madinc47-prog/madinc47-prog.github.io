@@ -1,0 +1,12 @@
+{
+  "id": "fl-pad-darkswell",
+  "n": "FLEX Dark Swell",
+  "p": {
+    "i": "strings",
+    "tone": {
+      "drive": 0.2
+    }
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

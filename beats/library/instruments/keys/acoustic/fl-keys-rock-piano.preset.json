@@ -1,0 +1,10 @@
+{
+  "id": "fl-keys-rock-piano",
+  "n": "FLEX Rock Piano",
+  "base": "rockpiano",
+  "tone": {
+    "drive": 0.08
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

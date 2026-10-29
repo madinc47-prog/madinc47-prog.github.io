@@ -1,0 +1,10 @@
+{
+  "id": "fl-pad-night",
+  "n": "FLEX Night Pad",
+  "p": {
+    "i": "pad",
+    "tone": {}
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

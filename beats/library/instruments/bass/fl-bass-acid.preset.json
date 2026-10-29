@@ -1,0 +1,12 @@
+{
+  "id": "fl-bass-acid",
+  "n": "FLEX Acid Bass",
+  "p": {
+    "i": "synthbass",
+    "tone": {
+      "drive": 0.55
+    }
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}
