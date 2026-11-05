@@ -1,0 +1,10 @@
+{
+  "id": "fl-keys-harpsi",
+  "n": "FLEX Harpsichord",
+  "base": "pluck",
+  "tone": {
+    "drive": 0.05
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

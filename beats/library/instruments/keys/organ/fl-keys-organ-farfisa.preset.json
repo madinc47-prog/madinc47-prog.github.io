@@ -1,0 +1,10 @@
+{
+  "id": "fl-keys-organ-farfisa",
+  "n": "FLEX Farfisa",
+  "base": "organ",
+  "tone": {
+    "drive": 0.3
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

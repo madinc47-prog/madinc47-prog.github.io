@@ -1,0 +1,46 @@
+{
+  "id": "freesound-trap-oneshots",
+  "name": "Freesound CC0 Trap One-Shots",
+  "type": "drums",
+  "genres": [
+    "trap",
+    "hip-hop",
+    "drill"
+  ],
+  "license": "CC0 1.0",
+  "source": "https://freesound.org/",
+  "canSellBeats": true,
+  "creditRequired": false,
+  "nonCommercialOnly": false,
+  "redistributionOk": true,
+  "files": [
+    {
+      "file": "kicks/kick-tight.mp3",
+      "source": "Freesound/harrisonlace",
+      "license": "CC0 1.0",
+      "freesoundId": "611641",
+      "url": "https://freesound.org/s/611641/"
+    },
+    {
+      "file": "bass/bass-deep.mp3",
+      "source": "Freesound/reathance",
+      "license": "CC0 1.0",
+      "freesoundId": "503774",
+      "url": "https://freesound.org/s/503774/"
+    },
+    {
+      "file": "snares/snare-tight.mp3",
+      "source": "Freesound/nbmusic098",
+      "license": "CC0 1.0",
+      "freesoundId": "399747",
+      "url": "https://freesound.org/s/399747/"
+    },
+    {
+      "file": "hats/hat-tight.mp3",
+      "source": "Freesound/catawake",
+      "license": "CC0 1.0",
+      "freesoundId": "497237",
+      "url": "https://freesound.org/s/497237/"
+    }
+  ]
+}

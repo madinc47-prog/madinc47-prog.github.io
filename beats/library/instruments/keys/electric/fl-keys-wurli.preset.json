@@ -1,0 +1,10 @@
+{
+  "id": "fl-keys-wurli",
+  "n": "FLEX Wurlitzer",
+  "base": "lofi",
+  "tone": {
+    "drive": 0.15
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

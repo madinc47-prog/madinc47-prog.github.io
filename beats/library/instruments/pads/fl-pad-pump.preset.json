@@ -1,0 +1,12 @@
+{
+  "id": "fl-pad-pump",
+  "n": "FLEX Pump Pad",
+  "p": {
+    "i": "sidepad",
+    "tone": {
+      "drive": 0.08
+    }
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

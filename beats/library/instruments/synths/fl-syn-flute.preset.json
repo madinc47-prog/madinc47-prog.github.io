@@ -1,0 +1,13 @@
+{
+  "id": "fl-syn-flute",
+  "n": "FLEX Flute Synth",
+  "p": {
+    "i": "trapflute",
+    "tone": {
+      "drive": 0.08,
+      "glide": 0.3
+    }
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

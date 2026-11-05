@@ -1,0 +1,12 @@
+{
+  "id": "fl-pluck-marimba",
+  "n": "FLEX Marimba Pluck",
+  "p": {
+    "i": "pluck",
+    "tone": {
+      "drive": 0.08
+    }
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

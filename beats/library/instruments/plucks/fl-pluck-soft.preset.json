@@ -1,0 +1,10 @@
+{
+  "id": "fl-pluck-soft",
+  "n": "FLEX Soft Pluck",
+  "p": {
+    "i": "pluck",
+    "tone": {}
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

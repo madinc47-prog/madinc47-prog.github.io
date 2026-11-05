@@ -1,0 +1,10 @@
+{
+  "id": "fl-keys-grand-bright",
+  "n": "FLEX Grand Bright",
+  "base": "grand",
+  "tone": {
+    "drive": 0.08
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

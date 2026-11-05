@@ -1,0 +1,12 @@
+{
+  "id": "fl-pad-lush",
+  "n": "FLEX Lush Pad",
+  "p": {
+    "i": "sidepad",
+    "tone": {
+      "drive": 0.05
+    }
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

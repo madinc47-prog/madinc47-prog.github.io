@@ -1,0 +1,13 @@
+{
+  "id": "fl-bass-reese-soft",
+  "n": "FLEX Reese Soft",
+  "p": {
+    "i": "reese",
+    "tone": {
+      "drive": 0.25,
+      "glide": 0.5
+    }
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

@@ -1,0 +1,12 @@
+{
+  "id": "fl-syn-pwm",
+  "n": "FLEX PWM",
+  "p": {
+    "i": "lead",
+    "tone": {
+      "drive": 0.25
+    }
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

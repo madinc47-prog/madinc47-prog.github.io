@@ -1,0 +1,10 @@
+{
+  "id": "fl-keys-ep-x2-mk2",
+  "n": "FLEX Rhodes MK2",
+  "base": "rhodes",
+  "tone": {
+    "drive": 0.08
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

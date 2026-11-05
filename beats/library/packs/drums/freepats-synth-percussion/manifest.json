@@ -1,0 +1,126 @@
+{
+  "id": "freepats-synth-percussion",
+  "name": "FreePats Synthesizer Percussion",
+  "type": "drums",
+  "genres": [
+    "electronic",
+    "vintage",
+    "synth",
+    "house",
+    "techno"
+  ],
+  "license": "CC0 1.0",
+  "source": "https://github.com/freepats/synthesizer-percussion",
+  "author": "Roberto / FreePats",
+  "canSellBeats": true,
+  "creditRequired": false,
+  "nonCommercialOnly": false,
+  "redistributionOk": true,
+  "files": [
+    {
+      "file": "claps/clap01.mp3",
+      "source": "FreePats synthesizer-percussion",
+      "license": "CC0 1.0"
+    },
+    {
+      "file": "percussion/claves01.mp3",
+      "source": "FreePats synthesizer-percussion",
+      "license": "CC0 1.0"
+    },
+    {
+      "file": "hats/closedhihat01-01.mp3",
+      "source": "FreePats synthesizer-percussion",
+      "license": "CC0 1.0"
+    },
+    {
+      "file": "hats/closedhihat02-01.mp3",
+      "source": "FreePats synthesizer-percussion",
+      "license": "CC0 1.0"
+    },
+    {
+      "file": "cymbals/cymbal01-01.mp3",
+      "source": "FreePats synthesizer-percussion",
+      "license": "CC0 1.0"
+    },
+    {
+      "file": "cymbals/cymbal01-02.mp3",
+      "source": "FreePats synthesizer-percussion",
+      "license": "CC0 1.0"
+    },
+    {
+      "file": "cymbals/cymbal01-03.mp3",
+      "source": "FreePats synthesizer-percussion",
+      "license": "CC0 1.0"
+    },
+    {
+      "file": "cymbals/cymbal02.mp3",
+      "source": "FreePats synthesizer-percussion",
+      "license": "CC0 1.0"
+    },
+    {
+      "file": "toms/hightom02-01.mp3",
+      "source": "FreePats synthesizer-percussion",
+      "license": "CC0 1.0"
+    },
+    {
+      "file": "toms/hightom02-02.mp3",
+      "source": "FreePats synthesizer-percussion",
+      "license": "CC0 1.0"
+    },
+    {
+      "file": "kicks/kick04.mp3",
+      "source": "FreePats synthesizer-percussion",
+      "license": "CC0 1.0"
+    },
+    {
+      "file": "kicks/kick06.mp3",
+      "source": "FreePats synthesizer-percussion",
+      "license": "CC0 1.0"
+    },
+    {
+      "file": "toms/lowtom02-01.mp3",
+      "source": "FreePats synthesizer-percussion",
+      "license": "CC0 1.0"
+    },
+    {
+      "file": "toms/lowtom02-02.mp3",
+      "source": "FreePats synthesizer-percussion",
+      "license": "CC0 1.0"
+    },
+    {
+      "file": "toms/midtom02-01.mp3",
+      "source": "FreePats synthesizer-percussion",
+      "license": "CC0 1.0"
+    },
+    {
+      "file": "toms/midtom02-02.mp3",
+      "source": "FreePats synthesizer-percussion",
+      "license": "CC0 1.0"
+    },
+    {
+      "file": "hats/openhihat02-01.mp3",
+      "source": "FreePats synthesizer-percussion",
+      "license": "CC0 1.0"
+    },
+    {
+      "file": "shakers/shaker04.mp3",
+      "source": "FreePats synthesizer-percussion",
+      "license": "CC0 1.0"
+    },
+    {
+      "file": "shakers/shakerlong01.mp3",
+      "source": "FreePats synthesizer-percussion",
+      "license": "CC0 1.0"
+    },
+    {
+      "file": "snares/snare09.mp3",
+      "source": "FreePats synthesizer-percussion",
+      "license": "CC0 1.0"
+    },
+    {
+      "file": "snares/snare14.mp3",
+      "source": "FreePats synthesizer-percussion",
+      "license": "CC0 1.0"
+    }
+  ]
+}

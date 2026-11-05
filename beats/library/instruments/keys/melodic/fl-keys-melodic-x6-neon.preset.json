@@ -1,0 +1,10 @@
+{
+  "id": "fl-keys-melodic-x6-neon",
+  "n": "FLEX Neon Keys",
+  "base": "hyperlead",
+  "tone": {
+    "drive": 0.25
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

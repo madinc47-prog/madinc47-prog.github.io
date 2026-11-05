@@ -1,0 +1,10 @@
+{
+  "id": "fl-keys-dnb",
+  "n": "FLEX DnB Keys",
+  "base": "trappiano",
+  "tone": {
+    "drive": 0.2
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

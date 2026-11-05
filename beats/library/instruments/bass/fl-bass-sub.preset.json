@@ -1,0 +1,12 @@
+{
+  "id": "fl-bass-sub",
+  "n": "FLEX Sub Bass",
+  "p": {
+    "i": "bass",
+    "tone": {
+      "drive": 0.15
+    }
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

@@ -1,0 +1,12 @@
+{
+  "id": "fl-pluck-stereo",
+  "n": "FLEX Stereo Pluck",
+  "p": {
+    "i": "trappluck",
+    "tone": {
+      "drive": 0.15
+    }
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

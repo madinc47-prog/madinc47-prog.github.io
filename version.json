@@ -1,0 +1,5 @@
+{
+  "version": "20261104play1",
+  "builtAt": "2026-11-05T00:31:41.763Z",
+  "note": "Playback audible after record (MicRelease no longer suspends AudioContext; free mic before play). Isle Spool Rew/FF/Listen/Edit/Delete. Multitrack Delete + Clear track."
+}

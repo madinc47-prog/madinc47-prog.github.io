@@ -1,0 +1,12 @@
+{
+  "id": "fl-pad-choir",
+  "n": "FLEX Choir Pad",
+  "p": {
+    "i": "pad",
+    "tone": {
+      "drive": 0.1
+    }
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

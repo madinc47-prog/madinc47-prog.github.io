@@ -1,0 +1,12 @@
+{
+  "id": "fl-syn-metal",
+  "n": "FLEX Metal Hit",
+  "p": {
+    "i": "dbell",
+    "tone": {
+      "drive": 0.4
+    }
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

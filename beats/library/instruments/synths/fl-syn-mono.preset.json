@@ -1,0 +1,12 @@
+{
+  "id": "fl-syn-mono",
+  "n": "FLEX Mono Lead",
+  "p": {
+    "i": "lead",
+    "tone": {
+      "drive": 0.4
+    }
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

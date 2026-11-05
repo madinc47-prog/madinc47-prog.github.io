@@ -1,0 +1,10 @@
+{
+  "id": "fl-keys-melodic-x9-uk-drill",
+  "n": "FLEX UK Drill Keys",
+  "base": "trappiano",
+  "tone": {
+    "drive": 0.18
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

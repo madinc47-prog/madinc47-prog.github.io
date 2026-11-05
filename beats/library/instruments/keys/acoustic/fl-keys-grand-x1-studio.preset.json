@@ -1,0 +1,10 @@
+{
+  "id": "fl-keys-grand-x1-studio",
+  "n": "FLEX Studio Grand",
+  "base": "grand",
+  "tone": {
+    "drive": 0.06
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

@@ -1,0 +1,10 @@
+{
+  "id": "fl-keys-ep-x10-ep-island",
+  "n": "FLEX Island EP",
+  "base": "rhodes",
+  "tone": {
+    "drive": 0.1
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

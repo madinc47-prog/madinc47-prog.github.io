@@ -1,0 +1,10 @@
+{
+  "id": "fl-keys-ep-x4-stage",
+  "n": "FLEX Stage EP",
+  "base": "rhodes",
+  "tone": {
+    "drive": 0.12
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

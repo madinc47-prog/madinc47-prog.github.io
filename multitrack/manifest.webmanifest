@@ -1,0 +1,17 @@
+{
+  "id": "/multitrack/",
+  "name": "Island Pin Multitrack",
+  "short_name": "Multitrack",
+  "description": "Pro multitrack recorder — works online and offline on your Tab.",
+  "start_url": "/multitrack/",
+  "scope": "/multitrack/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0b1220",
+  "theme_color": "#0f172a",
+  "icons": [
+    { "src": "/beats/icons/multitrack/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/beats/icons/multitrack/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/beats/icons/multitrack/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

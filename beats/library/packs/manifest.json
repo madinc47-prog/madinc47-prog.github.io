@@ -1,0 +1,103 @@
+{
+  "v": 1,
+  "note": "Only packs with redistribution-safe licenses (CC0 / CC-BY / PD). See EXTERNAL.md for free packs you must download yourself.",
+  "packs": [
+    {
+      "id": "freepats-synth-percussion",
+      "name": "FreePats Synthesizer Percussion",
+      "path": "drums/freepats-synth-percussion",
+      "type": "drums",
+      "genres": [
+        "electronic",
+        "vintage",
+        "synth",
+        "house",
+        "techno"
+      ],
+      "license": "CC0 1.0",
+      "source": "https://github.com/freepats/synthesizer-percussion",
+      "canSellBeats": true,
+      "creditRequired": false,
+      "nonCommercialOnly": false,
+      "fileCount": 21,
+      "bytes": 301572
+    },
+    {
+      "id": "freesound-trap-oneshots",
+      "name": "Freesound CC0 Trap One-Shots",
+      "path": "drums/freesound-trap-oneshots",
+      "type": "drums",
+      "genres": [
+        "trap",
+        "hip-hop",
+        "drill"
+      ],
+      "license": "CC0 1.0",
+      "source": "https://freesound.org/",
+      "canSellBeats": true,
+      "creditRequired": false,
+      "nonCommercialOnly": false,
+      "fileCount": 4,
+      "bytes": 81914
+    },
+    {
+      "id": "sfxmint-acoustic",
+      "name": "SFXMint Acoustic Drum Kit",
+      "path": "drums/sfxmint-acoustic",
+      "type": "drums",
+      "genres": [
+        "rock",
+        "jazz",
+        "pop",
+        "acoustic",
+        "live"
+      ],
+      "license": "CC0 1.0",
+      "source": "https://sfxmint.com/sets/acoustic-drum-kit",
+      "canSellBeats": true,
+      "creditRequired": false,
+      "nonCommercialOnly": false,
+      "fileCount": 13,
+      "bytes": 523248
+    },
+    {
+      "id": "stargate-cc0-curated",
+      "name": "Stargate Sample Pack (curated)",
+      "path": "full-kits/stargate-cc0-curated",
+      "type": "full-kit",
+      "genres": [
+        "electronic",
+        "hip-hop",
+        "experimental",
+        "multi"
+      ],
+      "license": "CC0 1.0",
+      "source": "https://github.com/stargatedaw/stargate-sample-pack",
+      "canSellBeats": true,
+      "creditRequired": false,
+      "nonCommercialOnly": false,
+      "fileCount": 46,
+      "bytes": 1268360
+    },
+    {
+      "id": "freepats-world-percussion",
+      "name": "FreePats World Percussion",
+      "path": "percussion/freepats-world-percussion",
+      "type": "percussion",
+      "genres": [
+        "world",
+        "latin",
+        "afrobeats",
+        "island",
+        "jazz"
+      ],
+      "license": "CC0 1.0",
+      "source": "https://github.com/freepats/world-percussion",
+      "canSellBeats": true,
+      "creditRequired": false,
+      "nonCommercialOnly": false,
+      "fileCount": 42,
+      "bytes": 405804
+    }
+  ]
+}

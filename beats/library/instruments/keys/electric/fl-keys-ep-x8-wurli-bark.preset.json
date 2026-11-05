@@ -1,0 +1,10 @@
+{
+  "id": "fl-keys-ep-x8-wurli-bark",
+  "n": "FLEX Wurli Bark",
+  "base": "lofi",
+  "tone": {
+    "drive": 0.4
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

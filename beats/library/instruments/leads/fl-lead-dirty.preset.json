@@ -1,0 +1,12 @@
+{
+  "id": "fl-lead-dirty",
+  "n": "FLEX Dirty Lead",
+  "p": {
+    "i": "hyperlead",
+    "tone": {
+      "drive": 0.55
+    }
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

@@ -1,0 +1,10 @@
+{
+  "id": "fl-keys-rhodes-dark",
+  "n": "FLEX Rhodes Dark",
+  "base": "rhodes",
+  "tone": {
+    "drive": 0.15
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}
