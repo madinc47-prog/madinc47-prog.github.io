@@ -1,0 +1,10 @@
+{
+  "id": "fl-keys-grand-x10-detuned",
+  "n": "FLEX Detuned Upright",
+  "base": "grand",
+  "tone": {
+    "drive": 0.18
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

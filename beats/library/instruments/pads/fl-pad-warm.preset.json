@@ -1,0 +1,10 @@
+{
+  "id": "fl-pad-warm",
+  "n": "FLEX Warm Pad",
+  "p": {
+    "i": "pad",
+    "tone": {}
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

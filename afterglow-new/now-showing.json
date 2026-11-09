@@ -1,0 +1,1319 @@
+{
+ "about": "Afterglow rotation. Titles come and go on this schedule. Dates are inclusive, local time. This is programming, not copy protection: the films stay on their owners' channels.",
+ "generated": "2026-10-20",
+ "onDays": 21,
+ "offDays": 14,
+ "watchWindowHours": 48,
+ "windows": [
+  {
+   "id": "special-raid-awaken-2026",
+   "from": "2026-08-27",
+   "until": "2026-09-16"
+  },
+  {
+   "id": "i-love-maria-1988",
+   "from": "2026-08-28",
+   "until": "2026-09-17"
+  },
+  {
+   "id": "singularity-2026",
+   "from": "2026-08-28",
+   "until": "2026-09-17"
+  },
+  {
+   "id": "quick-counterattack-2026",
+   "from": "2026-08-29",
+   "until": "2026-09-18"
+  },
+  {
+   "id": "can-trees-save-the-planet-2026",
+   "from": "2026-08-30",
+   "until": "2026-09-19"
+  },
+  {
+   "id": "no-trouble-2026",
+   "from": "2026-08-31",
+   "until": "2026-09-20"
+  },
+  {
+   "id": "the-protector-1985",
+   "from": "2026-08-31",
+   "until": "2026-09-20"
+  },
+  {
+   "id": "night-shift-2025",
+   "from": "2026-09-01",
+   "until": "2026-09-21"
+  },
+  {
+   "id": "the-flying-sailor-2022",
+   "from": "2026-09-02",
+   "until": "2026-09-22"
+  },
+  {
+   "id": "an-eye-for-an-eye-1981",
+   "from": "2026-09-03",
+   "until": "2026-09-23"
+  },
+  {
+   "id": "coffee-run-2020",
+   "from": "2026-09-03",
+   "until": "2026-09-23"
+  },
+  {
+   "id": "blade-dancer-2026",
+   "from": "2026-09-04",
+   "until": "2026-09-24"
+  },
+  {
+   "id": "gunmen-1988",
+   "from": "2026-09-05",
+   "until": "2026-09-25"
+  },
+  {
+   "id": "countdown-to-mars-2020",
+   "from": "2026-09-06",
+   "until": "2026-09-26"
+  },
+  {
+   "id": "wing-it-2023",
+   "from": "2026-09-06",
+   "until": "2026-09-26"
+  },
+  {
+   "id": "the-spider-within-2024",
+   "from": "2026-09-07",
+   "until": "2026-09-27"
+  },
+  {
+   "id": "reckoning-day-2026",
+   "from": "2026-09-08",
+   "until": "2026-09-28"
+  },
+  {
+   "id": "72-hour-golden-operation-2026",
+   "from": "2026-09-09",
+   "until": "2026-09-29"
+  },
+  {
+   "id": "hair-love-2019",
+   "from": "2026-09-09",
+   "until": "2026-09-29"
+  },
+  {
+   "id": "deep-sea-fishing-arctic-2026",
+   "from": "2026-09-10",
+   "until": "2026-09-30"
+  },
+  {
+   "id": "planetary-defenders-2025",
+   "from": "2026-09-11",
+   "until": "2026-10-01"
+  },
+  {
+   "id": "artemis-i-documentary-2025",
+   "from": "2026-09-12",
+   "until": "2026-10-02"
+  },
+  {
+   "id": "bloodfist-1989",
+   "from": "2026-09-12",
+   "until": "2026-10-02"
+  },
+  {
+   "id": "out-2020",
+   "from": "2026-09-13",
+   "until": "2026-10-03"
+  },
+  {
+   "id": "special-delivery-2026",
+   "from": "2026-09-14",
+   "until": "2026-10-04"
+  },
+  {
+   "id": "kerims-climate-odyssey-2022",
+   "from": "2026-09-15",
+   "until": "2026-10-05"
+  },
+  {
+   "id": "wild-journey-2026",
+   "from": "2026-09-15",
+   "until": "2026-10-05"
+  },
+  {
+   "id": "curacao-and-climate-change-2020",
+   "from": "2026-09-16",
+   "until": "2026-10-06"
+  },
+  {
+   "id": "warlords-of-the-21st-century-1982",
+   "from": "2026-09-17",
+   "until": "2026-10-07"
+  },
+  {
+   "id": "peking-opera-blues-1986",
+   "from": "2026-09-18",
+   "until": "2026-10-08"
+  },
+  {
+   "id": "the-messenger-1986",
+   "from": "2026-09-18",
+   "until": "2026-10-08"
+  },
+  {
+   "id": "charge-2022",
+   "from": "2026-09-19",
+   "until": "2026-10-09"
+  },
+  {
+   "id": "down-to-earth-2021",
+   "from": "2026-09-20",
+   "until": "2026-10-10"
+  },
+  {
+   "id": "equalizer-2000-1987",
+   "from": "2026-09-21",
+   "until": "2026-10-11"
+  },
+  {
+   "id": "mission-in-the-alps-2026",
+   "from": "2026-09-21",
+   "until": "2026-10-11"
+  },
+  {
+   "id": "wheels-of-fire-1985",
+   "from": "2026-09-22",
+   "until": "2026-10-12"
+  },
+  {
+   "id": "spring-2019",
+   "from": "2026-09-23",
+   "until": "2026-10-13"
+  },
+  {
+   "id": "iron-shoulder-2026",
+   "from": "2026-09-24",
+   "until": "2026-10-14"
+  },
+  {
+   "id": "once-upon-a-studio-2023",
+   "from": "2026-09-24",
+   "until": "2026-10-14"
+  },
+  {
+   "id": "battle-creek-brawl-1980",
+   "from": "2026-09-25",
+   "until": "2026-10-15"
+  },
+  {
+   "id": "new-dragon-gate-inn-2026",
+   "from": "2026-09-26",
+   "until": "2026-10-16"
+  },
+  {
+   "id": "laughing-to-survive-2026",
+   "from": "2026-09-27",
+   "until": "2026-10-17"
+  },
+  {
+   "id": "winners-and-sinners-1983",
+   "from": "2026-09-27",
+   "until": "2026-10-17"
+  },
+  {
+   "id": "the-big-heat-1988",
+   "from": "2026-09-28",
+   "until": "2026-10-18"
+  },
+  {
+   "id": "legacy-of-rage-1986",
+   "from": "2026-09-29",
+   "until": "2026-10-19"
+  },
+  {
+   "id": "by-train-through-the-caribbean-2024",
+   "from": "2026-09-30",
+   "until": "2026-10-20"
+  },
+  {
+   "id": "cosmic-dawn-2025",
+   "from": "2026-09-30",
+   "until": "2026-10-20"
+  },
+  {
+   "id": "special-raid-awaken-2026",
+   "from": "2026-10-01",
+   "until": "2026-10-21"
+  },
+  {
+   "id": "i-love-maria-1988",
+   "from": "2026-10-02",
+   "until": "2026-10-22"
+  },
+  {
+   "id": "singularity-2026",
+   "from": "2026-10-02",
+   "until": "2026-10-22"
+  },
+  {
+   "id": "quick-counterattack-2026",
+   "from": "2026-10-03",
+   "until": "2026-10-23"
+  },
+  {
+   "id": "can-trees-save-the-planet-2026",
+   "from": "2026-10-04",
+   "until": "2026-10-24"
+  },
+  {
+   "id": "no-trouble-2026",
+   "from": "2026-10-05",
+   "until": "2026-10-25"
+  },
+  {
+   "id": "the-protector-1985",
+   "from": "2026-10-05",
+   "until": "2026-10-25"
+  },
+  {
+   "id": "night-shift-2025",
+   "from": "2026-10-06",
+   "until": "2026-10-26"
+  },
+  {
+   "id": "the-flying-sailor-2022",
+   "from": "2026-10-07",
+   "until": "2026-10-27"
+  },
+  {
+   "id": "an-eye-for-an-eye-1981",
+   "from": "2026-10-08",
+   "until": "2026-10-28"
+  },
+  {
+   "id": "coffee-run-2020",
+   "from": "2026-10-08",
+   "until": "2026-10-28"
+  },
+  {
+   "id": "blade-dancer-2026",
+   "from": "2026-10-09",
+   "until": "2026-10-29"
+  },
+  {
+   "id": "gunmen-1988",
+   "from": "2026-10-10",
+   "until": "2026-10-30"
+  },
+  {
+   "id": "countdown-to-mars-2020",
+   "from": "2026-10-11",
+   "until": "2026-10-31"
+  },
+  {
+   "id": "wing-it-2023",
+   "from": "2026-10-11",
+   "until": "2026-10-31"
+  },
+  {
+   "id": "the-spider-within-2024",
+   "from": "2026-10-12",
+   "until": "2026-11-01"
+  },
+  {
+   "id": "reckoning-day-2026",
+   "from": "2026-10-13",
+   "until": "2026-11-02"
+  },
+  {
+   "id": "72-hour-golden-operation-2026",
+   "from": "2026-10-14",
+   "until": "2026-11-03"
+  },
+  {
+   "id": "hair-love-2019",
+   "from": "2026-10-14",
+   "until": "2026-11-03"
+  },
+  {
+   "id": "deep-sea-fishing-arctic-2026",
+   "from": "2026-10-15",
+   "until": "2026-11-04"
+  },
+  {
+   "id": "planetary-defenders-2025",
+   "from": "2026-10-16",
+   "until": "2026-11-05"
+  },
+  {
+   "id": "artemis-i-documentary-2025",
+   "from": "2026-10-17",
+   "until": "2026-11-06"
+  },
+  {
+   "id": "bloodfist-1989",
+   "from": "2026-10-17",
+   "until": "2026-11-06"
+  },
+  {
+   "id": "out-2020",
+   "from": "2026-10-18",
+   "until": "2026-11-07"
+  },
+  {
+   "id": "special-delivery-2026",
+   "from": "2026-10-19",
+   "until": "2026-11-08"
+  },
+  {
+   "id": "kerims-climate-odyssey-2022",
+   "from": "2026-10-20",
+   "until": "2026-11-09"
+  },
+  {
+   "id": "wild-journey-2026",
+   "from": "2026-10-20",
+   "until": "2026-11-09"
+  },
+  {
+   "id": "curacao-and-climate-change-2020",
+   "from": "2026-10-21",
+   "until": "2026-11-10"
+  },
+  {
+   "id": "warlords-of-the-21st-century-1982",
+   "from": "2026-10-22",
+   "until": "2026-11-11"
+  },
+  {
+   "id": "peking-opera-blues-1986",
+   "from": "2026-10-23",
+   "until": "2026-11-12"
+  },
+  {
+   "id": "the-messenger-1986",
+   "from": "2026-10-23",
+   "until": "2026-11-12"
+  },
+  {
+   "id": "charge-2022",
+   "from": "2026-10-24",
+   "until": "2026-11-13"
+  },
+  {
+   "id": "down-to-earth-2021",
+   "from": "2026-10-25",
+   "until": "2026-11-14"
+  },
+  {
+   "id": "equalizer-2000-1987",
+   "from": "2026-10-26",
+   "until": "2026-11-15"
+  },
+  {
+   "id": "mission-in-the-alps-2026",
+   "from": "2026-10-26",
+   "until": "2026-11-15"
+  },
+  {
+   "id": "wheels-of-fire-1985",
+   "from": "2026-10-27",
+   "until": "2026-11-16"
+  },
+  {
+   "id": "spring-2019",
+   "from": "2026-10-28",
+   "until": "2026-11-17"
+  },
+  {
+   "id": "iron-shoulder-2026",
+   "from": "2026-10-29",
+   "until": "2026-11-18"
+  },
+  {
+   "id": "once-upon-a-studio-2023",
+   "from": "2026-10-29",
+   "until": "2026-11-18"
+  },
+  {
+   "id": "battle-creek-brawl-1980",
+   "from": "2026-10-30",
+   "until": "2026-11-19"
+  },
+  {
+   "id": "new-dragon-gate-inn-2026",
+   "from": "2026-10-31",
+   "until": "2026-11-20"
+  },
+  {
+   "id": "laughing-to-survive-2026",
+   "from": "2026-11-01",
+   "until": "2026-11-21"
+  },
+  {
+   "id": "winners-and-sinners-1983",
+   "from": "2026-11-01",
+   "until": "2026-11-21"
+  },
+  {
+   "id": "the-big-heat-1988",
+   "from": "2026-11-02",
+   "until": "2026-11-22"
+  },
+  {
+   "id": "legacy-of-rage-1986",
+   "from": "2026-11-03",
+   "until": "2026-11-23"
+  },
+  {
+   "id": "by-train-through-the-caribbean-2024",
+   "from": "2026-11-04",
+   "until": "2026-11-24"
+  },
+  {
+   "id": "cosmic-dawn-2025",
+   "from": "2026-11-04",
+   "until": "2026-11-24"
+  },
+  {
+   "id": "special-raid-awaken-2026",
+   "from": "2026-11-05",
+   "until": "2026-11-25"
+  },
+  {
+   "id": "i-love-maria-1988",
+   "from": "2026-11-06",
+   "until": "2026-11-26"
+  },
+  {
+   "id": "singularity-2026",
+   "from": "2026-11-06",
+   "until": "2026-11-26"
+  },
+  {
+   "id": "quick-counterattack-2026",
+   "from": "2026-11-07",
+   "until": "2026-11-27"
+  },
+  {
+   "id": "can-trees-save-the-planet-2026",
+   "from": "2026-11-08",
+   "until": "2026-11-28"
+  },
+  {
+   "id": "no-trouble-2026",
+   "from": "2026-11-09",
+   "until": "2026-11-29"
+  },
+  {
+   "id": "the-protector-1985",
+   "from": "2026-11-09",
+   "until": "2026-11-29"
+  },
+  {
+   "id": "night-shift-2025",
+   "from": "2026-11-10",
+   "until": "2026-11-30"
+  },
+  {
+   "id": "the-flying-sailor-2022",
+   "from": "2026-11-11",
+   "until": "2026-12-01"
+  },
+  {
+   "id": "an-eye-for-an-eye-1981",
+   "from": "2026-11-12",
+   "until": "2026-12-02"
+  },
+  {
+   "id": "coffee-run-2020",
+   "from": "2026-11-12",
+   "until": "2026-12-02"
+  },
+  {
+   "id": "blade-dancer-2026",
+   "from": "2026-11-13",
+   "until": "2026-12-03"
+  },
+  {
+   "id": "gunmen-1988",
+   "from": "2026-11-14",
+   "until": "2026-12-04"
+  },
+  {
+   "id": "countdown-to-mars-2020",
+   "from": "2026-11-15",
+   "until": "2026-12-05"
+  },
+  {
+   "id": "wing-it-2023",
+   "from": "2026-11-15",
+   "until": "2026-12-05"
+  },
+  {
+   "id": "the-spider-within-2024",
+   "from": "2026-11-16",
+   "until": "2026-12-06"
+  },
+  {
+   "id": "reckoning-day-2026",
+   "from": "2026-11-17",
+   "until": "2026-12-07"
+  },
+  {
+   "id": "72-hour-golden-operation-2026",
+   "from": "2026-11-18",
+   "until": "2026-12-08"
+  },
+  {
+   "id": "hair-love-2019",
+   "from": "2026-11-18",
+   "until": "2026-12-08"
+  },
+  {
+   "id": "deep-sea-fishing-arctic-2026",
+   "from": "2026-11-19",
+   "until": "2026-12-09"
+  },
+  {
+   "id": "planetary-defenders-2025",
+   "from": "2026-11-20",
+   "until": "2026-12-10"
+  },
+  {
+   "id": "artemis-i-documentary-2025",
+   "from": "2026-11-21",
+   "until": "2026-12-11"
+  },
+  {
+   "id": "bloodfist-1989",
+   "from": "2026-11-21",
+   "until": "2026-12-11"
+  },
+  {
+   "id": "out-2020",
+   "from": "2026-11-22",
+   "until": "2026-12-12"
+  },
+  {
+   "id": "special-delivery-2026",
+   "from": "2026-11-23",
+   "until": "2026-12-13"
+  },
+  {
+   "id": "kerims-climate-odyssey-2022",
+   "from": "2026-11-24",
+   "until": "2026-12-14"
+  },
+  {
+   "id": "wild-journey-2026",
+   "from": "2026-11-24",
+   "until": "2026-12-14"
+  },
+  {
+   "id": "curacao-and-climate-change-2020",
+   "from": "2026-11-25",
+   "until": "2026-12-15"
+  },
+  {
+   "id": "warlords-of-the-21st-century-1982",
+   "from": "2026-11-26",
+   "until": "2026-12-16"
+  },
+  {
+   "id": "peking-opera-blues-1986",
+   "from": "2026-11-27",
+   "until": "2026-12-17"
+  },
+  {
+   "id": "the-messenger-1986",
+   "from": "2026-11-27",
+   "until": "2026-12-17"
+  },
+  {
+   "id": "charge-2022",
+   "from": "2026-11-28",
+   "until": "2026-12-18"
+  },
+  {
+   "id": "down-to-earth-2021",
+   "from": "2026-11-29",
+   "until": "2026-12-19"
+  },
+  {
+   "id": "equalizer-2000-1987",
+   "from": "2026-11-30",
+   "until": "2026-12-20"
+  },
+  {
+   "id": "mission-in-the-alps-2026",
+   "from": "2026-11-30",
+   "until": "2026-12-20"
+  },
+  {
+   "id": "wheels-of-fire-1985",
+   "from": "2026-12-01",
+   "until": "2026-12-21"
+  },
+  {
+   "id": "spring-2019",
+   "from": "2026-12-02",
+   "until": "2026-12-22"
+  },
+  {
+   "id": "iron-shoulder-2026",
+   "from": "2026-12-03",
+   "until": "2026-12-23"
+  },
+  {
+   "id": "once-upon-a-studio-2023",
+   "from": "2026-12-03",
+   "until": "2026-12-23"
+  },
+  {
+   "id": "battle-creek-brawl-1980",
+   "from": "2026-12-04",
+   "until": "2026-12-24"
+  },
+  {
+   "id": "new-dragon-gate-inn-2026",
+   "from": "2026-12-05",
+   "until": "2026-12-25"
+  },
+  {
+   "id": "laughing-to-survive-2026",
+   "from": "2026-12-06",
+   "until": "2026-12-26"
+  },
+  {
+   "id": "winners-and-sinners-1983",
+   "from": "2026-12-06",
+   "until": "2026-12-26"
+  },
+  {
+   "id": "the-big-heat-1988",
+   "from": "2026-12-07",
+   "until": "2026-12-27"
+  },
+  {
+   "id": "legacy-of-rage-1986",
+   "from": "2026-12-08",
+   "until": "2026-12-28"
+  },
+  {
+   "id": "by-train-through-the-caribbean-2024",
+   "from": "2026-12-09",
+   "until": "2026-12-29"
+  },
+  {
+   "id": "cosmic-dawn-2025",
+   "from": "2026-12-09",
+   "until": "2026-12-29"
+  },
+  {
+   "id": "special-raid-awaken-2026",
+   "from": "2026-12-10",
+   "until": "2026-12-30"
+  },
+  {
+   "id": "i-love-maria-1988",
+   "from": "2026-12-11",
+   "until": "2026-12-31"
+  },
+  {
+   "id": "singularity-2026",
+   "from": "2026-12-11",
+   "until": "2026-12-31"
+  },
+  {
+   "id": "quick-counterattack-2026",
+   "from": "2026-12-12",
+   "until": "2027-01-01"
+  },
+  {
+   "id": "can-trees-save-the-planet-2026",
+   "from": "2026-12-13",
+   "until": "2027-01-02"
+  },
+  {
+   "id": "no-trouble-2026",
+   "from": "2026-12-14",
+   "until": "2027-01-03"
+  },
+  {
+   "id": "the-protector-1985",
+   "from": "2026-12-14",
+   "until": "2027-01-03"
+  },
+  {
+   "id": "night-shift-2025",
+   "from": "2026-12-15",
+   "until": "2027-01-04"
+  },
+  {
+   "id": "the-flying-sailor-2022",
+   "from": "2026-12-16",
+   "until": "2027-01-05"
+  },
+  {
+   "id": "an-eye-for-an-eye-1981",
+   "from": "2026-12-17",
+   "until": "2027-01-06"
+  },
+  {
+   "id": "coffee-run-2020",
+   "from": "2026-12-17",
+   "until": "2027-01-06"
+  },
+  {
+   "id": "blade-dancer-2026",
+   "from": "2026-12-18",
+   "until": "2027-01-07"
+  },
+  {
+   "id": "gunmen-1988",
+   "from": "2026-12-19",
+   "until": "2027-01-08"
+  },
+  {
+   "id": "countdown-to-mars-2020",
+   "from": "2026-12-20",
+   "until": "2027-01-09"
+  },
+  {
+   "id": "wing-it-2023",
+   "from": "2026-12-20",
+   "until": "2027-01-09"
+  },
+  {
+   "id": "the-spider-within-2024",
+   "from": "2026-12-21",
+   "until": "2027-01-10"
+  },
+  {
+   "id": "reckoning-day-2026",
+   "from": "2026-12-22",
+   "until": "2027-01-11"
+  },
+  {
+   "id": "72-hour-golden-operation-2026",
+   "from": "2026-12-23",
+   "until": "2027-01-12"
+  },
+  {
+   "id": "hair-love-2019",
+   "from": "2026-12-23",
+   "until": "2027-01-12"
+  },
+  {
+   "id": "deep-sea-fishing-arctic-2026",
+   "from": "2026-12-24",
+   "until": "2027-01-13"
+  },
+  {
+   "id": "planetary-defenders-2025",
+   "from": "2026-12-25",
+   "until": "2027-01-14"
+  },
+  {
+   "id": "artemis-i-documentary-2025",
+   "from": "2026-12-26",
+   "until": "2027-01-15"
+  },
+  {
+   "id": "bloodfist-1989",
+   "from": "2026-12-26",
+   "until": "2027-01-15"
+  },
+  {
+   "id": "out-2020",
+   "from": "2026-12-27",
+   "until": "2027-01-16"
+  },
+  {
+   "id": "special-delivery-2026",
+   "from": "2026-12-28",
+   "until": "2027-01-17"
+  },
+  {
+   "id": "kerims-climate-odyssey-2022",
+   "from": "2026-12-29",
+   "until": "2027-01-18"
+  },
+  {
+   "id": "wild-journey-2026",
+   "from": "2026-12-29",
+   "until": "2027-01-18"
+  },
+  {
+   "id": "curacao-and-climate-change-2020",
+   "from": "2026-12-30",
+   "until": "2027-01-19"
+  },
+  {
+   "id": "warlords-of-the-21st-century-1982",
+   "from": "2026-12-31",
+   "until": "2027-01-20"
+  },
+  {
+   "id": "peking-opera-blues-1986",
+   "from": "2027-01-01",
+   "until": "2027-01-21"
+  },
+  {
+   "id": "the-messenger-1986",
+   "from": "2027-01-01",
+   "until": "2027-01-21"
+  },
+  {
+   "id": "charge-2022",
+   "from": "2027-01-02",
+   "until": "2027-01-22"
+  },
+  {
+   "id": "down-to-earth-2021",
+   "from": "2027-01-03",
+   "until": "2027-01-23"
+  },
+  {
+   "id": "equalizer-2000-1987",
+   "from": "2027-01-04",
+   "until": "2027-01-24"
+  },
+  {
+   "id": "mission-in-the-alps-2026",
+   "from": "2027-01-04",
+   "until": "2027-01-24"
+  },
+  {
+   "id": "wheels-of-fire-1985",
+   "from": "2027-01-05",
+   "until": "2027-01-25"
+  },
+  {
+   "id": "spring-2019",
+   "from": "2027-01-06",
+   "until": "2027-01-26"
+  },
+  {
+   "id": "iron-shoulder-2026",
+   "from": "2027-01-07",
+   "until": "2027-01-27"
+  },
+  {
+   "id": "once-upon-a-studio-2023",
+   "from": "2027-01-07",
+   "until": "2027-01-27"
+  },
+  {
+   "id": "battle-creek-brawl-1980",
+   "from": "2027-01-08",
+   "until": "2027-01-28"
+  },
+  {
+   "id": "new-dragon-gate-inn-2026",
+   "from": "2027-01-09",
+   "until": "2027-01-29"
+  },
+  {
+   "id": "laughing-to-survive-2026",
+   "from": "2027-01-10",
+   "until": "2027-01-30"
+  },
+  {
+   "id": "winners-and-sinners-1983",
+   "from": "2027-01-10",
+   "until": "2027-01-30"
+  },
+  {
+   "id": "the-big-heat-1988",
+   "from": "2027-01-11",
+   "until": "2027-01-31"
+  },
+  {
+   "id": "legacy-of-rage-1986",
+   "from": "2027-01-12",
+   "until": "2027-02-01"
+  },
+  {
+   "id": "by-train-through-the-caribbean-2024",
+   "from": "2027-01-13",
+   "until": "2027-02-02"
+  },
+  {
+   "id": "cosmic-dawn-2025",
+   "from": "2027-01-13",
+   "until": "2027-02-02"
+  },
+  {
+   "id": "special-raid-awaken-2026",
+   "from": "2027-01-14",
+   "until": "2027-02-03"
+  },
+  {
+   "id": "i-love-maria-1988",
+   "from": "2027-01-15",
+   "until": "2027-02-04"
+  },
+  {
+   "id": "singularity-2026",
+   "from": "2027-01-15",
+   "until": "2027-02-04"
+  },
+  {
+   "id": "quick-counterattack-2026",
+   "from": "2027-01-16",
+   "until": "2027-02-05"
+  },
+  {
+   "id": "can-trees-save-the-planet-2026",
+   "from": "2027-01-17",
+   "until": "2027-02-06"
+  },
+  {
+   "id": "no-trouble-2026",
+   "from": "2027-01-18",
+   "until": "2027-02-07"
+  },
+  {
+   "id": "the-protector-1985",
+   "from": "2027-01-18",
+   "until": "2027-02-07"
+  },
+  {
+   "id": "night-shift-2025",
+   "from": "2027-01-19",
+   "until": "2027-02-08"
+  },
+  {
+   "id": "the-flying-sailor-2022",
+   "from": "2027-01-20",
+   "until": "2027-02-09"
+  },
+  {
+   "id": "an-eye-for-an-eye-1981",
+   "from": "2027-01-21",
+   "until": "2027-02-10"
+  },
+  {
+   "id": "coffee-run-2020",
+   "from": "2027-01-21",
+   "until": "2027-02-10"
+  },
+  {
+   "id": "blade-dancer-2026",
+   "from": "2027-01-22",
+   "until": "2027-02-11"
+  },
+  {
+   "id": "gunmen-1988",
+   "from": "2027-01-23",
+   "until": "2027-02-12"
+  },
+  {
+   "id": "countdown-to-mars-2020",
+   "from": "2027-01-24",
+   "until": "2027-02-13"
+  },
+  {
+   "id": "wing-it-2023",
+   "from": "2027-01-24",
+   "until": "2027-02-13"
+  },
+  {
+   "id": "the-spider-within-2024",
+   "from": "2027-01-25",
+   "until": "2027-02-14"
+  },
+  {
+   "id": "reckoning-day-2026",
+   "from": "2027-01-26",
+   "until": "2027-02-15"
+  },
+  {
+   "id": "72-hour-golden-operation-2026",
+   "from": "2027-01-27",
+   "until": "2027-02-16"
+  },
+  {
+   "id": "hair-love-2019",
+   "from": "2027-01-27",
+   "until": "2027-02-16"
+  },
+  {
+   "id": "deep-sea-fishing-arctic-2026",
+   "from": "2027-01-28",
+   "until": "2027-02-17"
+  },
+  {
+   "id": "planetary-defenders-2025",
+   "from": "2027-01-29",
+   "until": "2027-02-18"
+  },
+  {
+   "id": "artemis-i-documentary-2025",
+   "from": "2027-01-30",
+   "until": "2027-02-19"
+  },
+  {
+   "id": "bloodfist-1989",
+   "from": "2027-01-30",
+   "until": "2027-02-19"
+  },
+  {
+   "id": "out-2020",
+   "from": "2027-01-31",
+   "until": "2027-02-20"
+  },
+  {
+   "id": "special-delivery-2026",
+   "from": "2027-02-01",
+   "until": "2027-02-21"
+  },
+  {
+   "id": "kerims-climate-odyssey-2022",
+   "from": "2027-02-02",
+   "until": "2027-02-22"
+  },
+  {
+   "id": "wild-journey-2026",
+   "from": "2027-02-02",
+   "until": "2027-02-22"
+  },
+  {
+   "id": "curacao-and-climate-change-2020",
+   "from": "2027-02-03",
+   "until": "2027-02-23"
+  },
+  {
+   "id": "warlords-of-the-21st-century-1982",
+   "from": "2027-02-04",
+   "until": "2027-02-24"
+  },
+  {
+   "id": "peking-opera-blues-1986",
+   "from": "2027-02-05",
+   "until": "2027-02-25"
+  },
+  {
+   "id": "the-messenger-1986",
+   "from": "2027-02-05",
+   "until": "2027-02-25"
+  },
+  {
+   "id": "charge-2022",
+   "from": "2027-02-06",
+   "until": "2027-02-26"
+  },
+  {
+   "id": "down-to-earth-2021",
+   "from": "2027-02-07",
+   "until": "2027-02-27"
+  },
+  {
+   "id": "equalizer-2000-1987",
+   "from": "2027-02-08",
+   "until": "2027-02-28"
+  },
+  {
+   "id": "mission-in-the-alps-2026",
+   "from": "2027-02-08",
+   "until": "2027-02-28"
+  },
+  {
+   "id": "wheels-of-fire-1985",
+   "from": "2027-02-09",
+   "until": "2027-03-01"
+  },
+  {
+   "id": "spring-2019",
+   "from": "2027-02-10",
+   "until": "2027-03-02"
+  },
+  {
+   "id": "iron-shoulder-2026",
+   "from": "2027-02-11",
+   "until": "2027-03-03"
+  },
+  {
+   "id": "once-upon-a-studio-2023",
+   "from": "2027-02-11",
+   "until": "2027-03-03"
+  },
+  {
+   "id": "battle-creek-brawl-1980",
+   "from": "2027-02-12",
+   "until": "2027-03-04"
+  },
+  {
+   "id": "new-dragon-gate-inn-2026",
+   "from": "2027-02-13",
+   "until": "2027-03-05"
+  },
+  {
+   "id": "laughing-to-survive-2026",
+   "from": "2027-02-14",
+   "until": "2027-03-06"
+  },
+  {
+   "id": "winners-and-sinners-1983",
+   "from": "2027-02-14",
+   "until": "2027-03-06"
+  },
+  {
+   "id": "the-big-heat-1988",
+   "from": "2027-02-15",
+   "until": "2027-03-07"
+  },
+  {
+   "id": "legacy-of-rage-1986",
+   "from": "2027-02-16",
+   "until": "2027-03-08"
+  },
+  {
+   "id": "by-train-through-the-caribbean-2024",
+   "from": "2027-02-17",
+   "until": "2027-03-09"
+  },
+  {
+   "id": "cosmic-dawn-2025",
+   "from": "2027-02-17",
+   "until": "2027-03-09"
+  },
+  {
+   "id": "special-raid-awaken-2026",
+   "from": "2027-02-18",
+   "until": "2027-03-10"
+  },
+  {
+   "id": "i-love-maria-1988",
+   "from": "2027-02-19",
+   "until": "2027-03-11"
+  },
+  {
+   "id": "singularity-2026",
+   "from": "2027-02-19",
+   "until": "2027-03-11"
+  },
+  {
+   "id": "quick-counterattack-2026",
+   "from": "2027-02-20",
+   "until": "2027-03-12"
+  },
+  {
+   "id": "can-trees-save-the-planet-2026",
+   "from": "2027-02-21",
+   "until": "2027-03-13"
+  },
+  {
+   "id": "no-trouble-2026",
+   "from": "2027-02-22",
+   "until": "2027-03-14"
+  },
+  {
+   "id": "the-protector-1985",
+   "from": "2027-02-22",
+   "until": "2027-03-14"
+  },
+  {
+   "id": "night-shift-2025",
+   "from": "2027-02-23",
+   "until": "2027-03-15"
+  },
+  {
+   "id": "the-flying-sailor-2022",
+   "from": "2027-02-24",
+   "until": "2027-03-16"
+  },
+  {
+   "id": "an-eye-for-an-eye-1981",
+   "from": "2027-02-25",
+   "until": "2027-03-17"
+  },
+  {
+   "id": "coffee-run-2020",
+   "from": "2027-02-25",
+   "until": "2027-03-17"
+  },
+  {
+   "id": "blade-dancer-2026",
+   "from": "2027-02-26",
+   "until": "2027-03-18"
+  },
+  {
+   "id": "gunmen-1988",
+   "from": "2027-02-27",
+   "until": "2027-03-19"
+  },
+  {
+   "id": "countdown-to-mars-2020",
+   "from": "2027-02-28",
+   "until": "2027-03-20"
+  },
+  {
+   "id": "wing-it-2023",
+   "from": "2027-02-28",
+   "until": "2027-03-20"
+  },
+  {
+   "id": "the-spider-within-2024",
+   "from": "2027-03-01",
+   "until": "2027-03-21"
+  },
+  {
+   "id": "reckoning-day-2026",
+   "from": "2027-03-02",
+   "until": "2027-03-22"
+  },
+  {
+   "id": "72-hour-golden-operation-2026",
+   "from": "2027-03-03",
+   "until": "2027-03-23"
+  },
+  {
+   "id": "hair-love-2019",
+   "from": "2027-03-03",
+   "until": "2027-03-23"
+  },
+  {
+   "id": "deep-sea-fishing-arctic-2026",
+   "from": "2027-03-04",
+   "until": "2027-03-24"
+  },
+  {
+   "id": "planetary-defenders-2025",
+   "from": "2027-03-05",
+   "until": "2027-03-25"
+  },
+  {
+   "id": "artemis-i-documentary-2025",
+   "from": "2027-03-06",
+   "until": "2027-03-26"
+  },
+  {
+   "id": "bloodfist-1989",
+   "from": "2027-03-06",
+   "until": "2027-03-26"
+  },
+  {
+   "id": "out-2020",
+   "from": "2027-03-07",
+   "until": "2027-03-27"
+  },
+  {
+   "id": "special-delivery-2026",
+   "from": "2027-03-08",
+   "until": "2027-03-28"
+  },
+  {
+   "id": "kerims-climate-odyssey-2022",
+   "from": "2027-03-09",
+   "until": "2027-03-29"
+  },
+  {
+   "id": "wild-journey-2026",
+   "from": "2027-03-09",
+   "until": "2027-03-29"
+  }
+ ]
+}

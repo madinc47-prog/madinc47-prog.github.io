@@ -1,0 +1,12 @@
+{
+  "id": "fl-bass-rock",
+  "n": "FLEX Rock Bass",
+  "p": {
+    "i": "rockbass",
+    "tone": {
+      "drive": 0.35
+    }
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

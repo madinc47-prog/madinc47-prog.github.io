@@ -1,0 +1,12 @@
+{
+  "id": "fl-lead-fifth",
+  "n": "FLEX Fifth Lead",
+  "p": {
+    "i": "hyperlead",
+    "tone": {
+      "drive": 0.25
+    }
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

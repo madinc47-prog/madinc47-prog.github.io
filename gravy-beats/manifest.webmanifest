@@ -1,0 +1,19 @@
+{
+  "id": "/gravy-beats/",
+  "name": "Gravy Beats",
+  "short_name": "Gravy Beats",
+  "description": "Standalone keyboard and pads for the Donner DMK25 Pro — play, record, and export.",
+  "start_url": "/gravy-beats/",
+  "scope": "/gravy-beats/",
+  "display": "standalone",
+  "display_override": ["standalone", "fullscreen"],
+  "orientation": "landscape",
+  "background_color": "#12141a",
+  "theme_color": "#12141a",
+  "categories": ["music", "entertainment"],
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

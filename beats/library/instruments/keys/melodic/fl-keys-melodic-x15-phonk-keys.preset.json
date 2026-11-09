@@ -1,0 +1,10 @@
+{
+  "id": "fl-keys-melodic-x15-phonk-keys",
+  "n": "FLEX Phonk Keys",
+  "base": "trappiano",
+  "tone": {
+    "drive": 0.3
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

@@ -1,0 +1,10 @@
+{
+  "id": "fl-keys-melodic-x14-reggaeton-keys",
+  "n": "FLEX Reggaeton Keys",
+  "base": "pluck",
+  "tone": {
+    "drive": 0.12
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

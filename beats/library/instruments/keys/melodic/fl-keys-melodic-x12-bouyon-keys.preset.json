@@ -1,0 +1,10 @@
+{
+  "id": "fl-keys-melodic-x12-bouyon-keys",
+  "n": "FLEX Bouyon Keys",
+  "base": "dbell",
+  "tone": {
+    "drive": 0.12
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

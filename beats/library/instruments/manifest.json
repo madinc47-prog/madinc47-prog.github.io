@@ -1,0 +1,7554 @@
+{
+  "v": 1,
+  "name": "Island Pin Beats — FL-style Instruments",
+  "note": "Procedural presets mapping to IPBKeys voices with FLEX-like tones. Original — not Image-Line content.",
+  "license": "CC0 1.0 (IPB Original)",
+  "folders": [
+    "bass",
+    "synths",
+    "pads",
+    "leads",
+    "plucks",
+    "keys"
+  ],
+  "keysSubs": [
+    "acoustic",
+    "electric",
+    "organ",
+    "clav",
+    "harpsichord",
+    "melodic"
+  ],
+  "items": [
+    {
+      "id": "fl-bass-sub",
+      "n": "FLEX Sub Bass",
+      "folder": "bass",
+      "sub": "",
+      "c": "bass",
+      "s": "bass",
+      "k": "preset",
+      "t": [
+        "Trap",
+        "R&B"
+      ],
+      "h": 3,
+      "p": {
+        "i": "bass",
+        "tone": {
+          "drive": 0.15
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-bass-analog",
+      "n": "FLEX Analog Bass",
+      "folder": "bass",
+      "sub": "",
+      "c": "bass",
+      "s": "bass",
+      "k": "preset",
+      "t": [
+        "West Coast",
+        "Pop"
+      ],
+      "h": 3,
+      "p": {
+        "i": "synthbass",
+        "tone": {
+          "drive": 0.35
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-bass-808",
+      "n": "FLEX 808 Bass",
+      "folder": "bass",
+      "sub": "",
+      "c": "bass",
+      "s": "bass",
+      "k": "preset",
+      "t": [
+        "Trap",
+        "Drill"
+      ],
+      "h": 4,
+      "p": {
+        "i": "808",
+        "tone": {
+          "drive": 0.45,
+          "glide": 0.55
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-bass-808-clean",
+      "n": "FLEX 808 Clean",
+      "folder": "bass",
+      "sub": "",
+      "c": "bass",
+      "s": "bass",
+      "k": "preset",
+      "t": [
+        "R&B",
+        "Pop"
+      ],
+      "h": 2,
+      "p": {
+        "i": "808",
+        "tone": {
+          "drive": 0.1,
+          "glide": 0.35
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-bass-reese",
+      "n": "FLEX Reese",
+      "folder": "bass",
+      "sub": "",
+      "c": "bass",
+      "s": "bass",
+      "k": "preset",
+      "t": [
+        "Drill",
+        "DnB"
+      ],
+      "h": 4,
+      "p": {
+        "i": "reese",
+        "tone": {
+          "drive": 0.5,
+          "glide": 0.7
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-bass-reese-soft",
+      "n": "FLEX Reese Soft",
+      "folder": "bass",
+      "sub": "",
+      "c": "bass",
+      "s": "bass",
+      "k": "preset",
+      "t": [
+        "UK Drill"
+      ],
+      "h": 3,
+      "p": {
+        "i": "reese",
+        "tone": {
+          "drive": 0.25,
+          "glide": 0.5
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-bass-rock",
+      "n": "FLEX Rock Bass",
+      "folder": "bass",
+      "sub": "",
+      "c": "bass",
+      "s": "bass",
+      "k": "preset",
+      "t": [
+        "Rock"
+      ],
+      "h": 3,
+      "p": {
+        "i": "rockbass",
+        "tone": {
+          "drive": 0.35
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-bass-growl",
+      "n": "FLEX Growl Bass",
+      "folder": "bass",
+      "sub": "",
+      "c": "bass",
+      "s": "bass",
+      "k": "preset",
+      "t": [
+        "Rage",
+        "Trap"
+      ],
+      "h": 4,
+      "p": {
+        "i": "808",
+        "tone": {
+          "drive": 0.75,
+          "glide": 0.4
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-bass-round",
+      "n": "FLEX Round Bass",
+      "folder": "bass",
+      "sub": "",
+      "c": "bass",
+      "s": "bass",
+      "k": "preset",
+      "t": [
+        "Afrobeats",
+        "Dancehall"
+      ],
+      "h": 2,
+      "p": {
+        "i": "synthbass",
+        "tone": {
+          "drive": 0.2
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-bass-acid",
+      "n": "FLEX Acid Bass",
+      "folder": "bass",
+      "sub": "",
+      "c": "bass",
+      "s": "bass",
+      "k": "preset",
+      "t": [
+        "Techno",
+        "House"
+      ],
+      "h": 3,
+      "p": {
+        "i": "synthbass",
+        "tone": {
+          "drive": 0.55
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-bass-slide",
+      "n": "FLEX Slide 808",
+      "folder": "bass",
+      "sub": "",
+      "c": "bass",
+      "s": "bass",
+      "k": "preset",
+      "t": [
+        "Drill"
+      ],
+      "h": 4,
+      "p": {
+        "i": "808",
+        "tone": {
+          "drive": 0.6,
+          "glide": 0.8
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-bass-pluck",
+      "n": "FLEX Bass Pluck",
+      "folder": "bass",
+      "sub": "",
+      "c": "bass",
+      "s": "bass",
+      "k": "preset",
+      "t": [
+        "PluggnB"
+      ],
+      "h": 2,
+      "p": {
+        "i": "synthbass",
+        "tone": {
+          "drive": 0.15
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-bass-wobble",
+      "n": "FLEX Wobble",
+      "folder": "bass",
+      "sub": "",
+      "c": "bass",
+      "s": "bass",
+      "k": "preset",
+      "t": [
+        "DnB"
+      ],
+      "h": 4,
+      "p": {
+        "i": "reese",
+        "tone": {
+          "drive": 0.6,
+          "glide": 0.3
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-bass-deep",
+      "n": "FLEX Deep Sub",
+      "folder": "bass",
+      "sub": "",
+      "c": "bass",
+      "s": "bass",
+      "k": "preset",
+      "t": [
+        "Techno",
+        "House"
+      ],
+      "h": 3,
+      "p": {
+        "i": "bass",
+        "tone": {
+          "drive": 0.05
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-bass-funk",
+      "n": "FLEX Funk Bass",
+      "folder": "bass",
+      "sub": "",
+      "c": "bass",
+      "s": "bass",
+      "k": "preset",
+      "t": [
+        "West Coast",
+        "Pop"
+      ],
+      "h": 2,
+      "p": {
+        "i": "synthbass",
+        "tone": {
+          "drive": 0.3
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-bass-dist",
+      "n": "FLEX Dist Bass",
+      "folder": "bass",
+      "sub": "",
+      "c": "bass",
+      "s": "bass",
+      "k": "preset",
+      "t": [
+        "Rage",
+        "Phonk"
+      ],
+      "h": 5,
+      "p": {
+        "i": "808",
+        "tone": {
+          "drive": 0.85,
+          "glide": 0.45
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-bass-warm",
+      "n": "FLEX Warm Bass",
+      "folder": "bass",
+      "sub": "",
+      "c": "bass",
+      "s": "bass",
+      "k": "preset",
+      "t": [
+        "R&B",
+        "Lo-fi"
+      ],
+      "h": 2,
+      "p": {
+        "i": "bass",
+        "tone": {
+          "drive": 0.2
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-bass-tight",
+      "n": "FLEX Tight Bass",
+      "folder": "bass",
+      "sub": "",
+      "c": "bass",
+      "s": "bass",
+      "k": "preset",
+      "t": [
+        "Pop",
+        "House"
+      ],
+      "h": 3,
+      "p": {
+        "i": "synthbass",
+        "tone": {
+          "drive": 0.4
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-bass-island",
+      "n": "FLEX Island Bass",
+      "folder": "bass",
+      "sub": "",
+      "c": "bass",
+      "s": "bass",
+      "k": "preset",
+      "t": [
+        "Bouyon",
+        "Soca"
+      ],
+      "h": 3,
+      "p": {
+        "i": "synthbass",
+        "tone": {
+          "drive": 0.35
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-bass-cinematic",
+      "n": "FLEX Cinematic Bass",
+      "folder": "bass",
+      "sub": "",
+      "c": "bass",
+      "s": "bass",
+      "k": "preset",
+      "t": [
+        "Orchestral"
+      ],
+      "h": 3,
+      "p": {
+        "i": "bass",
+        "tone": {
+          "drive": 0.25
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-syn-supersaw",
+      "n": "FLEX Supersaw",
+      "folder": "synths",
+      "sub": "",
+      "c": "synths",
+      "s": "synths",
+      "k": "preset",
+      "t": [
+        "Rage",
+        "Pop"
+      ],
+      "h": 3,
+      "p": {
+        "i": "hyperlead",
+        "tone": {
+          "drive": 0.35
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-syn-sawbright",
+      "n": "FLEX Bright Saw",
+      "folder": "synths",
+      "sub": "",
+      "c": "synths",
+      "s": "synths",
+      "k": "preset",
+      "t": [
+        "Pop",
+        "House"
+      ],
+      "h": 2,
+      "p": {
+        "i": "hyperlead",
+        "tone": {
+          "drive": 0.2
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-syn-square",
+      "n": "FLEX Square Lead",
+      "folder": "synths",
+      "sub": "",
+      "c": "synths",
+      "s": "synths",
+      "k": "preset",
+      "t": [
+        "Techno"
+      ],
+      "h": 3,
+      "p": {
+        "i": "lead",
+        "tone": {
+          "drive": 0.3
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-syn-pwm",
+      "n": "FLEX PWM",
+      "folder": "synths",
+      "sub": "",
+      "c": "synths",
+      "s": "synths",
+      "k": "preset",
+      "t": [
+        "House"
+      ],
+      "h": 2,
+      "p": {
+        "i": "lead",
+        "tone": {
+          "drive": 0.25
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-syn-keys",
+      "n": "FLEX Synth Keys",
+      "folder": "synths",
+      "sub": "",
+      "c": "synths",
+      "s": "synths",
+      "k": "preset",
+      "t": [
+        "Pop",
+        "R&B"
+      ],
+      "h": 2,
+      "p": {
+        "i": "pluck",
+        "tone": {
+          "drive": 0.1
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-syn-bell",
+      "n": "FLEX Digital Bell",
+      "folder": "synths",
+      "sub": "",
+      "c": "synths",
+      "s": "synths",
+      "k": "preset",
+      "t": [
+        "Trap",
+        "Pop"
+      ],
+      "h": 2,
+      "p": {
+        "i": "dbell",
+        "tone": {
+          "drive": 0
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-syn-arp",
+      "n": "FLEX Arp",
+      "folder": "synths",
+      "sub": "",
+      "c": "synths",
+      "s": "synths",
+      "k": "preset",
+      "t": [
+        "Pop",
+        "House"
+      ],
+      "h": 2,
+      "p": {
+        "i": "arp",
+        "tone": {
+          "drive": 0.12
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-syn-chord",
+      "n": "FLEX Chord Stab",
+      "folder": "synths",
+      "sub": "",
+      "c": "synths",
+      "s": "synths",
+      "k": "preset",
+      "t": [
+        "House",
+        "Pop"
+      ],
+      "h": 3,
+      "p": {
+        "i": "horn",
+        "tone": {
+          "drive": 0.2
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-syn-brass",
+      "n": "FLEX Brass Synth",
+      "folder": "synths",
+      "sub": "",
+      "c": "synths",
+      "s": "synths",
+      "k": "preset",
+      "t": [
+        "Pop",
+        "Soca"
+      ],
+      "h": 3,
+      "p": {
+        "i": "horn",
+        "tone": {
+          "drive": 0.35
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-syn-flute",
+      "n": "FLEX Flute Synth",
+      "folder": "synths",
+      "sub": "",
+      "c": "synths",
+      "s": "synths",
+      "k": "preset",
+      "t": [
+        "Trap"
+      ],
+      "h": 2,
+      "p": {
+        "i": "trapflute",
+        "tone": {
+          "drive": 0.08,
+          "glide": 0.3
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-syn-whine",
+      "n": "FLEX Whine",
+      "folder": "synths",
+      "sub": "",
+      "c": "synths",
+      "s": "synths",
+      "k": "preset",
+      "t": [
+        "West Coast"
+      ],
+      "h": 2,
+      "p": {
+        "i": "whine",
+        "tone": {}
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-syn-vox",
+      "n": "FLEX Vox Synth",
+      "folder": "synths",
+      "sub": "",
+      "c": "synths",
+      "s": "synths",
+      "k": "preset",
+      "t": [
+        "Trap",
+        "R&B"
+      ],
+      "h": 2,
+      "p": {
+        "i": "voxah",
+        "tone": {
+          "drive": 0.05
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-syn-metal",
+      "n": "FLEX Metal Hit",
+      "folder": "synths",
+      "sub": "",
+      "c": "synths",
+      "s": "synths",
+      "k": "preset",
+      "t": [
+        "Phonk"
+      ],
+      "h": 4,
+      "p": {
+        "i": "dbell",
+        "tone": {
+          "drive": 0.4
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-syn-glass",
+      "n": "FLEX Glass",
+      "folder": "synths",
+      "sub": "",
+      "c": "synths",
+      "s": "synths",
+      "k": "preset",
+      "t": [
+        "Pop",
+        "Lo-fi"
+      ],
+      "h": 1,
+      "p": {
+        "i": "bell",
+        "tone": {}
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-syn-plucksyn",
+      "n": "FLEX Syn Pluck",
+      "folder": "synths",
+      "sub": "",
+      "c": "synths",
+      "s": "synths",
+      "k": "preset",
+      "t": [
+        "Afrobeats"
+      ],
+      "h": 2,
+      "p": {
+        "i": "trappluck",
+        "tone": {
+          "drive": 0.12
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-syn-dark",
+      "n": "FLEX Dark Syn",
+      "folder": "synths",
+      "sub": "",
+      "c": "synths",
+      "s": "synths",
+      "k": "preset",
+      "t": [
+        "Drill"
+      ],
+      "h": 3,
+      "p": {
+        "i": "hyperlead",
+        "tone": {
+          "drive": 0.45
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-syn-wide",
+      "n": "FLEX Wide Syn",
+      "folder": "synths",
+      "sub": "",
+      "c": "synths",
+      "s": "synths",
+      "k": "preset",
+      "t": [
+        "Pop"
+      ],
+      "h": 2,
+      "p": {
+        "i": "sidepad",
+        "tone": {
+          "drive": 0.1
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-syn-mono",
+      "n": "FLEX Mono Lead",
+      "folder": "synths",
+      "sub": "",
+      "c": "synths",
+      "s": "synths",
+      "k": "preset",
+      "t": [
+        "Techno"
+      ],
+      "h": 3,
+      "p": {
+        "i": "lead",
+        "tone": {
+          "drive": 0.4
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-syn-poly",
+      "n": "FLEX Poly Syn",
+      "folder": "synths",
+      "sub": "",
+      "c": "synths",
+      "s": "synths",
+      "k": "preset",
+      "t": [
+        "House",
+        "Pop"
+      ],
+      "h": 2,
+      "p": {
+        "i": "pluck",
+        "tone": {
+          "drive": 0.15
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-syn-fx",
+      "n": "FLEX FX Syn",
+      "folder": "synths",
+      "sub": "",
+      "c": "synths",
+      "s": "synths",
+      "k": "preset",
+      "t": [
+        "DnB"
+      ],
+      "h": 3,
+      "p": {
+        "i": "hyperlead",
+        "tone": {
+          "drive": 0.5
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-lead-soft",
+      "n": "FLEX Soft Lead",
+      "folder": "leads",
+      "sub": "",
+      "c": "leads",
+      "s": "leads",
+      "k": "preset",
+      "t": [
+        "Pop",
+        "R&B"
+      ],
+      "h": 2,
+      "p": {
+        "i": "lead",
+        "tone": {}
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-lead-hyper",
+      "n": "FLEX Hyper Lead",
+      "folder": "leads",
+      "sub": "",
+      "c": "leads",
+      "s": "leads",
+      "k": "preset",
+      "t": [
+        "Rage"
+      ],
+      "h": 4,
+      "p": {
+        "i": "hyperlead",
+        "tone": {
+          "drive": 0.4
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-lead-flute",
+      "n": "FLEX Flute Lead",
+      "folder": "leads",
+      "sub": "",
+      "c": "leads",
+      "s": "leads",
+      "k": "preset",
+      "t": [
+        "Trap"
+      ],
+      "h": 2,
+      "p": {
+        "i": "trapflute",
+        "tone": {
+          "drive": 0.08,
+          "glide": 0.3
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-lead-whine",
+      "n": "FLEX G-Funk Lead",
+      "folder": "leads",
+      "sub": "",
+      "c": "leads",
+      "s": "leads",
+      "k": "preset",
+      "t": [
+        "West Coast"
+      ],
+      "h": 2,
+      "p": {
+        "i": "whine",
+        "tone": {}
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-lead-scream",
+      "n": "FLEX Scream Lead",
+      "folder": "leads",
+      "sub": "",
+      "c": "leads",
+      "s": "leads",
+      "k": "preset",
+      "t": [
+        "Rage",
+        "Phonk"
+      ],
+      "h": 5,
+      "p": {
+        "i": "hyperlead",
+        "tone": {
+          "drive": 0.7
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-lead-trumpet",
+      "n": "FLEX Trumpet Lead",
+      "folder": "leads",
+      "sub": "",
+      "c": "leads",
+      "s": "leads",
+      "k": "preset",
+      "t": [
+        "Soca",
+        "Pop"
+      ],
+      "h": 3,
+      "p": {
+        "i": "horn",
+        "tone": {
+          "drive": 0.3
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-lead-saw",
+      "n": "FLEX Saw Lead",
+      "folder": "leads",
+      "sub": "",
+      "c": "leads",
+      "s": "leads",
+      "k": "preset",
+      "t": [
+        "House",
+        "Techno"
+      ],
+      "h": 3,
+      "p": {
+        "i": "hyperlead",
+        "tone": {
+          "drive": 0.3
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-lead-square",
+      "n": "FLEX Square Lead",
+      "folder": "leads",
+      "sub": "",
+      "c": "leads",
+      "s": "leads",
+      "k": "preset",
+      "t": [
+        "Techno"
+      ],
+      "h": 3,
+      "p": {
+        "i": "lead",
+        "tone": {
+          "drive": 0.35
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-lead-dirty",
+      "n": "FLEX Dirty Lead",
+      "folder": "leads",
+      "sub": "",
+      "c": "leads",
+      "s": "leads",
+      "k": "preset",
+      "t": [
+        "Drill"
+      ],
+      "h": 4,
+      "p": {
+        "i": "hyperlead",
+        "tone": {
+          "drive": 0.55
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-lead-airy",
+      "n": "FLEX Airy Lead",
+      "folder": "leads",
+      "sub": "",
+      "c": "leads",
+      "s": "leads",
+      "k": "preset",
+      "t": [
+        "Lo-fi",
+        "R&B"
+      ],
+      "h": 1,
+      "p": {
+        "i": "lead",
+        "tone": {
+          "drive": 0.05
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-lead-glide",
+      "n": "FLEX Glide Lead",
+      "folder": "leads",
+      "sub": "",
+      "c": "leads",
+      "s": "leads",
+      "k": "preset",
+      "t": [
+        "Trap"
+      ],
+      "h": 3,
+      "p": {
+        "i": "trapflute",
+        "tone": {
+          "drive": 0.15,
+          "glide": 0.6
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-lead-fifth",
+      "n": "FLEX Fifth Lead",
+      "folder": "leads",
+      "sub": "",
+      "c": "leads",
+      "s": "leads",
+      "k": "preset",
+      "t": [
+        "Pop"
+      ],
+      "h": 2,
+      "p": {
+        "i": "hyperlead",
+        "tone": {
+          "drive": 0.25
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-lead-oct",
+      "n": "FLEX Oct Lead",
+      "folder": "leads",
+      "sub": "",
+      "c": "leads",
+      "s": "leads",
+      "k": "preset",
+      "t": [
+        "House"
+      ],
+      "h": 3,
+      "p": {
+        "i": "arp",
+        "tone": {
+          "drive": 0.2
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-lead-vocal",
+      "n": "FLEX Vocal Lead",
+      "folder": "leads",
+      "sub": "",
+      "c": "leads",
+      "s": "leads",
+      "k": "preset",
+      "t": [
+        "R&B"
+      ],
+      "h": 2,
+      "p": {
+        "i": "voxoo",
+        "tone": {
+          "drive": 0.05
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-lead-island",
+      "n": "FLEX Island Lead",
+      "folder": "leads",
+      "sub": "",
+      "c": "leads",
+      "s": "leads",
+      "k": "preset",
+      "t": [
+        "Bouyon",
+        "Dancehall"
+      ],
+      "h": 3,
+      "p": {
+        "i": "dbell",
+        "tone": {
+          "drive": 0.1
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-pad-dark",
+      "n": "FLEX Dark Pad",
+      "folder": "pads",
+      "sub": "",
+      "c": "pads",
+      "s": "pads",
+      "k": "preset",
+      "t": [
+        "Drill",
+        "Trap"
+      ],
+      "h": 2,
+      "p": {
+        "i": "pad",
+        "tone": {}
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-pad-pump",
+      "n": "FLEX Pump Pad",
+      "folder": "pads",
+      "sub": "",
+      "c": "pads",
+      "s": "pads",
+      "k": "preset",
+      "t": [
+        "House",
+        "Pop"
+      ],
+      "h": 2,
+      "p": {
+        "i": "sidepad",
+        "tone": {
+          "drive": 0.08
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-pad-lush",
+      "n": "FLEX Lush Pad",
+      "folder": "pads",
+      "sub": "",
+      "c": "pads",
+      "s": "pads",
+      "k": "preset",
+      "t": [
+        "R&B",
+        "Pop"
+      ],
+      "h": 1,
+      "p": {
+        "i": "sidepad",
+        "tone": {
+          "drive": 0.05
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-pad-strings",
+      "n": "FLEX String Pad",
+      "folder": "pads",
+      "sub": "",
+      "c": "pads",
+      "s": "pads",
+      "k": "preset",
+      "t": [
+        "Orchestral",
+        "Pop"
+      ],
+      "h": 2,
+      "p": {
+        "i": "strings",
+        "tone": {}
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-pad-choir",
+      "n": "FLEX Choir Pad",
+      "folder": "pads",
+      "sub": "",
+      "c": "pads",
+      "s": "pads",
+      "k": "preset",
+      "t": [
+        "Drill",
+        "Cinematic"
+      ],
+      "h": 2,
+      "p": {
+        "i": "pad",
+        "tone": {
+          "drive": 0.1
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-pad-warm",
+      "n": "FLEX Warm Pad",
+      "folder": "pads",
+      "sub": "",
+      "c": "pads",
+      "s": "pads",
+      "k": "preset",
+      "t": [
+        "Lo-fi",
+        "R&B"
+      ],
+      "h": 1,
+      "p": {
+        "i": "pad",
+        "tone": {}
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-pad-wide",
+      "n": "FLEX Wide Pad",
+      "folder": "pads",
+      "sub": "",
+      "c": "pads",
+      "s": "pads",
+      "k": "preset",
+      "t": [
+        "Pop"
+      ],
+      "h": 2,
+      "p": {
+        "i": "sidepad",
+        "tone": {
+          "drive": 0.12
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-pad-moving",
+      "n": "FLEX Moving Pad",
+      "folder": "pads",
+      "sub": "",
+      "c": "pads",
+      "s": "pads",
+      "k": "preset",
+      "t": [
+        "Ambient",
+        "Lo-fi"
+      ],
+      "h": 1,
+      "p": {
+        "i": "pad",
+        "tone": {
+          "drive": 0.08
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-pad-bright",
+      "n": "FLEX Bright Pad",
+      "folder": "pads",
+      "sub": "",
+      "c": "pads",
+      "s": "pads",
+      "k": "preset",
+      "t": [
+        "House"
+      ],
+      "h": 2,
+      "p": {
+        "i": "sidepad",
+        "tone": {
+          "drive": 0.15
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-pad-darkswell",
+      "n": "FLEX Dark Swell",
+      "folder": "pads",
+      "sub": "",
+      "c": "pads",
+      "s": "pads",
+      "k": "preset",
+      "t": [
+        "Cinematic"
+      ],
+      "h": 3,
+      "p": {
+        "i": "strings",
+        "tone": {
+          "drive": 0.2
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-pad-island",
+      "n": "FLEX Island Pad",
+      "folder": "pads",
+      "sub": "",
+      "c": "pads",
+      "s": "pads",
+      "k": "preset",
+      "t": [
+        "Afrobeats"
+      ],
+      "h": 2,
+      "p": {
+        "i": "pad",
+        "tone": {}
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-pad-night",
+      "n": "FLEX Night Pad",
+      "folder": "pads",
+      "sub": "",
+      "c": "pads",
+      "s": "pads",
+      "k": "preset",
+      "t": [
+        "R&B"
+      ],
+      "h": 1,
+      "p": {
+        "i": "pad",
+        "tone": {}
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-pluck-trap",
+      "n": "FLEX Trap Pluck",
+      "folder": "plucks",
+      "sub": "",
+      "c": "plucks",
+      "s": "plucks",
+      "k": "preset",
+      "t": [
+        "Trap"
+      ],
+      "h": 2,
+      "p": {
+        "i": "trappluck",
+        "tone": {
+          "drive": 0.1
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-pluck-bounce",
+      "n": "FLEX Bounce Pluck",
+      "folder": "plucks",
+      "sub": "",
+      "c": "plucks",
+      "s": "plucks",
+      "k": "preset",
+      "t": [
+        "Pop",
+        "Afrobeats"
+      ],
+      "h": 2,
+      "p": {
+        "i": "trappluck",
+        "tone": {
+          "drive": 0.12
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-pluck-gtr",
+      "n": "FLEX Guitar Pluck",
+      "folder": "plucks",
+      "sub": "",
+      "c": "plucks",
+      "s": "plucks",
+      "k": "preset",
+      "t": [
+        "R&B",
+        "Pop"
+      ],
+      "h": 2,
+      "p": {
+        "i": "gtrpluck",
+        "tone": {
+          "drive": 0.05
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-pluck-classic",
+      "n": "FLEX Classic Pluck",
+      "folder": "plucks",
+      "sub": "",
+      "c": "plucks",
+      "s": "plucks",
+      "k": "preset",
+      "t": [
+        "Pop"
+      ],
+      "h": 2,
+      "p": {
+        "i": "pluck",
+        "tone": {}
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-pluck-bell",
+      "n": "FLEX Bell Pluck",
+      "folder": "plucks",
+      "sub": "",
+      "c": "plucks",
+      "s": "plucks",
+      "k": "preset",
+      "t": [
+        "Trap"
+      ],
+      "h": 2,
+      "p": {
+        "i": "dbell",
+        "tone": {}
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-pluck-soft",
+      "n": "FLEX Soft Pluck",
+      "folder": "plucks",
+      "sub": "",
+      "c": "plucks",
+      "s": "plucks",
+      "k": "preset",
+      "t": [
+        "Lo-fi"
+      ],
+      "h": 1,
+      "p": {
+        "i": "pluck",
+        "tone": {}
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-pluck-hard",
+      "n": "FLEX Hard Pluck",
+      "folder": "plucks",
+      "sub": "",
+      "c": "plucks",
+      "s": "plucks",
+      "k": "preset",
+      "t": [
+        "Drill"
+      ],
+      "h": 3,
+      "p": {
+        "i": "trappluck",
+        "tone": {
+          "drive": 0.25
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-pluck-nylon",
+      "n": "FLEX Nylon Pluck",
+      "folder": "plucks",
+      "sub": "",
+      "c": "plucks",
+      "s": "plucks",
+      "k": "preset",
+      "t": [
+        "Jazz",
+        "Pop"
+      ],
+      "h": 1,
+      "p": {
+        "i": "gtrpluck",
+        "tone": {}
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-pluck-kalimba",
+      "n": "FLEX Kalimba Pluck",
+      "folder": "plucks",
+      "sub": "",
+      "c": "plucks",
+      "s": "plucks",
+      "k": "preset",
+      "t": [
+        "Afrobeats"
+      ],
+      "h": 2,
+      "p": {
+        "i": "trappluck",
+        "tone": {
+          "drive": 0.05
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-pluck-marimba",
+      "n": "FLEX Marimba Pluck",
+      "folder": "plucks",
+      "sub": "",
+      "c": "plucks",
+      "s": "plucks",
+      "k": "preset",
+      "t": [
+        "Dancehall"
+      ],
+      "h": 2,
+      "p": {
+        "i": "pluck",
+        "tone": {
+          "drive": 0.08
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-pluck-harp",
+      "n": "FLEX Harp Pluck",
+      "folder": "plucks",
+      "sub": "",
+      "c": "plucks",
+      "s": "plucks",
+      "k": "preset",
+      "t": [
+        "Pop",
+        "Cinematic"
+      ],
+      "h": 1,
+      "p": {
+        "i": "pluck",
+        "tone": {}
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-pluck-stereo",
+      "n": "FLEX Stereo Pluck",
+      "folder": "plucks",
+      "sub": "",
+      "c": "plucks",
+      "s": "plucks",
+      "k": "preset",
+      "t": [
+        "House"
+      ],
+      "h": 2,
+      "p": {
+        "i": "trappluck",
+        "tone": {
+          "drive": 0.15
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-grand",
+      "n": "FLEX Grand Piano",
+      "folder": "keys",
+      "sub": "acoustic",
+      "c": "keys",
+      "s": "acoustic",
+      "k": "preset",
+      "t": [
+        "Pop",
+        "Jazz"
+      ],
+      "h": 2,
+      "p": {
+        "i": "grand",
+        "tone": {}
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-grand-bright",
+      "n": "FLEX Grand Bright",
+      "folder": "keys",
+      "sub": "acoustic",
+      "c": "keys",
+      "s": "acoustic",
+      "k": "preset",
+      "t": [
+        "Pop"
+      ],
+      "h": 2,
+      "p": {
+        "i": "grand",
+        "tone": {
+          "drive": 0.08
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-grand-soft",
+      "n": "FLEX Grand Soft",
+      "folder": "keys",
+      "sub": "acoustic",
+      "c": "keys",
+      "s": "acoustic",
+      "k": "preset",
+      "t": [
+        "R&B",
+        "Jazz"
+      ],
+      "h": 1,
+      "p": {
+        "i": "grand",
+        "tone": {}
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-grand-room",
+      "n": "FLEX Grand Room",
+      "folder": "keys",
+      "sub": "acoustic",
+      "c": "keys",
+      "s": "acoustic",
+      "k": "preset",
+      "t": [
+        "Pop",
+        "Cinematic"
+      ],
+      "h": 2,
+      "p": {
+        "i": "grand",
+        "tone": {
+          "drive": 0.05
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-grand-pop",
+      "n": "FLEX Grand Pop",
+      "folder": "keys",
+      "sub": "acoustic",
+      "c": "keys",
+      "s": "acoustic",
+      "k": "preset",
+      "t": [
+        "Pop"
+      ],
+      "h": 2,
+      "p": {
+        "i": "grand",
+        "tone": {
+          "drive": 0.1
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-grand-ballad",
+      "n": "FLEX Grand Ballad",
+      "folder": "keys",
+      "sub": "acoustic",
+      "c": "keys",
+      "s": "acoustic",
+      "k": "preset",
+      "t": [
+        "R&B",
+        "Pop"
+      ],
+      "h": 1,
+      "p": {
+        "i": "grand",
+        "tone": {}
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-upright",
+      "n": "FLEX Upright",
+      "folder": "keys",
+      "sub": "acoustic",
+      "c": "keys",
+      "s": "acoustic",
+      "k": "preset",
+      "t": [
+        "Jazz",
+        "Lo-fi"
+      ],
+      "h": 2,
+      "p": {
+        "i": "grand",
+        "tone": {
+          "drive": 0.12
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-upright-honky",
+      "n": "FLEX Honky Upright",
+      "folder": "keys",
+      "sub": "acoustic",
+      "c": "keys",
+      "s": "acoustic",
+      "k": "preset",
+      "t": [
+        "Jazz"
+      ],
+      "h": 3,
+      "p": {
+        "i": "grand",
+        "tone": {
+          "drive": 0.2
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-rock-piano",
+      "n": "FLEX Rock Piano",
+      "folder": "keys",
+      "sub": "acoustic",
+      "c": "keys",
+      "s": "acoustic",
+      "k": "preset",
+      "t": [
+        "Rock",
+        "Pop"
+      ],
+      "h": 3,
+      "p": {
+        "i": "rockpiano",
+        "tone": {
+          "drive": 0.08
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-concert",
+      "n": "FLEX Concert Grand",
+      "folder": "keys",
+      "sub": "acoustic",
+      "c": "keys",
+      "s": "acoustic",
+      "k": "preset",
+      "t": [
+        "Orchestral",
+        "Pop"
+      ],
+      "h": 2,
+      "p": {
+        "i": "grand",
+        "tone": {}
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-intimate",
+      "n": "FLEX Intimate Piano",
+      "folder": "keys",
+      "sub": "acoustic",
+      "c": "keys",
+      "s": "acoustic",
+      "k": "preset",
+      "t": [
+        "R&B",
+        "Lo-fi"
+      ],
+      "h": 1,
+      "p": {
+        "i": "grand",
+        "tone": {}
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-film",
+      "n": "FLEX Film Piano",
+      "folder": "keys",
+      "sub": "acoustic",
+      "c": "keys",
+      "s": "acoustic",
+      "k": "preset",
+      "t": [
+        "Cinematic"
+      ],
+      "h": 2,
+      "p": {
+        "i": "grand",
+        "tone": {
+          "drive": 0.05
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-rhodes",
+      "n": "FLEX Rhodes",
+      "folder": "keys",
+      "sub": "electric",
+      "c": "keys",
+      "s": "electric",
+      "k": "preset",
+      "t": [
+        "R&B",
+        "Jazz"
+      ],
+      "h": 2,
+      "p": {
+        "i": "rhodes",
+        "tone": {}
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-rhodes-warm",
+      "n": "FLEX Rhodes Warm",
+      "folder": "keys",
+      "sub": "electric",
+      "c": "keys",
+      "s": "electric",
+      "k": "preset",
+      "t": [
+        "R&B"
+      ],
+      "h": 1,
+      "p": {
+        "i": "rhodes",
+        "tone": {}
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-rhodes-bright",
+      "n": "FLEX Rhodes Bright",
+      "folder": "keys",
+      "sub": "electric",
+      "c": "keys",
+      "s": "electric",
+      "k": "preset",
+      "t": [
+        "Pop",
+        "R&B"
+      ],
+      "h": 2,
+      "p": {
+        "i": "rhodes",
+        "tone": {
+          "drive": 0.1
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-rhodes-chorus",
+      "n": "FLEX Rhodes Chorus",
+      "folder": "keys",
+      "sub": "electric",
+      "c": "keys",
+      "s": "electric",
+      "k": "preset",
+      "t": [
+        "Pop"
+      ],
+      "h": 2,
+      "p": {
+        "i": "rhodes",
+        "tone": {
+          "drive": 0.08
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-rhodes-dark",
+      "n": "FLEX Rhodes Dark",
+      "folder": "keys",
+      "sub": "electric",
+      "c": "keys",
+      "s": "electric",
+      "k": "preset",
+      "t": [
+        "Lo-fi",
+        "R&B"
+      ],
+      "h": 2,
+      "p": {
+        "i": "rhodes",
+        "tone": {
+          "drive": 0.15
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-ep-dusty",
+      "n": "FLEX Dusty EP",
+      "folder": "keys",
+      "sub": "electric",
+      "c": "keys",
+      "s": "electric",
+      "k": "preset",
+      "t": [
+        "Lo-fi",
+        "Boom-bap"
+      ],
+      "h": 2,
+      "p": {
+        "i": "lofi",
+        "tone": {
+          "drive": 0.25
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-ep-suit",
+      "n": "FLEX Suitcase EP",
+      "folder": "keys",
+      "sub": "electric",
+      "c": "keys",
+      "s": "electric",
+      "k": "preset",
+      "t": [
+        "Jazz",
+        "R&B"
+      ],
+      "h": 2,
+      "p": {
+        "i": "rhodes",
+        "tone": {}
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-wurli",
+      "n": "FLEX Wurlitzer",
+      "folder": "keys",
+      "sub": "electric",
+      "c": "keys",
+      "s": "electric",
+      "k": "preset",
+      "t": [
+        "Pop",
+        "Rock"
+      ],
+      "h": 2,
+      "p": {
+        "i": "lofi",
+        "tone": {
+          "drive": 0.15
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-wurli-drive",
+      "n": "FLEX Wurli Drive",
+      "folder": "keys",
+      "sub": "electric",
+      "c": "keys",
+      "s": "electric",
+      "k": "preset",
+      "t": [
+        "Rock"
+      ],
+      "h": 3,
+      "p": {
+        "i": "lofi",
+        "tone": {
+          "drive": 0.35
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-wurli-soft",
+      "n": "FLEX Wurli Soft",
+      "folder": "keys",
+      "sub": "electric",
+      "c": "keys",
+      "s": "electric",
+      "k": "preset",
+      "t": [
+        "Indie",
+        "Pop"
+      ],
+      "h": 1,
+      "p": {
+        "i": "lofi",
+        "tone": {
+          "drive": 0.1
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-ep-bell",
+      "n": "FLEX EP Bell",
+      "folder": "keys",
+      "sub": "electric",
+      "c": "keys",
+      "s": "electric",
+      "k": "preset",
+      "t": [
+        "R&B"
+      ],
+      "h": 2,
+      "p": {
+        "i": "rhodes",
+        "tone": {
+          "drive": 0.05
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-ep-trem",
+      "n": "FLEX EP Tremolo",
+      "folder": "keys",
+      "sub": "electric",
+      "c": "keys",
+      "s": "electric",
+      "k": "preset",
+      "t": [
+        "Jazz"
+      ],
+      "h": 2,
+      "p": {
+        "i": "rhodes",
+        "tone": {
+          "drive": 0.08
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-organ-soul",
+      "n": "FLEX Soul Organ",
+      "folder": "keys",
+      "sub": "organ",
+      "c": "keys",
+      "s": "organ",
+      "k": "preset",
+      "t": [
+        "R&B",
+        "Soul"
+      ],
+      "h": 2,
+      "p": {
+        "i": "organ",
+        "tone": {}
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-organ-gospel",
+      "n": "FLEX Gospel Organ",
+      "folder": "keys",
+      "sub": "organ",
+      "c": "keys",
+      "s": "organ",
+      "k": "preset",
+      "t": [
+        "R&B"
+      ],
+      "h": 3,
+      "p": {
+        "i": "organ",
+        "tone": {
+          "drive": 0.2
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-organ-rock",
+      "n": "FLEX Rock Organ",
+      "folder": "keys",
+      "sub": "organ",
+      "c": "keys",
+      "s": "organ",
+      "k": "preset",
+      "t": [
+        "Rock"
+      ],
+      "h": 3,
+      "p": {
+        "i": "rockorgan",
+        "tone": {
+          "drive": 0.35
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-organ-leslie",
+      "n": "FLEX Leslie Organ",
+      "folder": "keys",
+      "sub": "organ",
+      "c": "keys",
+      "s": "organ",
+      "k": "preset",
+      "t": [
+        "Rock",
+        "Pop"
+      ],
+      "h": 3,
+      "p": {
+        "i": "rockorgan",
+        "tone": {
+          "drive": 0.4
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-organ-jazz",
+      "n": "FLEX Jazz Organ",
+      "folder": "keys",
+      "sub": "organ",
+      "c": "keys",
+      "s": "organ",
+      "k": "preset",
+      "t": [
+        "Jazz"
+      ],
+      "h": 2,
+      "p": {
+        "i": "organ",
+        "tone": {
+          "drive": 0.1
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-organ-house",
+      "n": "FLEX House Organ",
+      "folder": "keys",
+      "sub": "organ",
+      "c": "keys",
+      "s": "organ",
+      "k": "preset",
+      "t": [
+        "House"
+      ],
+      "h": 3,
+      "p": {
+        "i": "organ",
+        "tone": {
+          "drive": 0.25
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-organ-farfisa",
+      "n": "FLEX Farfisa",
+      "folder": "keys",
+      "sub": "organ",
+      "c": "keys",
+      "s": "organ",
+      "k": "preset",
+      "t": [
+        "Pop",
+        "Indie"
+      ],
+      "h": 2,
+      "p": {
+        "i": "organ",
+        "tone": {
+          "drive": 0.3
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-organ-pipe",
+      "n": "FLEX Pipe Organ",
+      "folder": "keys",
+      "sub": "organ",
+      "c": "keys",
+      "s": "organ",
+      "k": "preset",
+      "t": [
+        "Cinematic"
+      ],
+      "h": 3,
+      "p": {
+        "i": "organ",
+        "tone": {
+          "drive": 0.15
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-clav",
+      "n": "FLEX Clav",
+      "folder": "keys",
+      "sub": "clav",
+      "c": "keys",
+      "s": "clav",
+      "k": "preset",
+      "t": [
+        "Funk",
+        "Pop"
+      ],
+      "h": 3,
+      "p": {
+        "i": "pluck",
+        "tone": {
+          "drive": 0.2
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-clav-wah",
+      "n": "FLEX Clav Wah",
+      "folder": "keys",
+      "sub": "clav",
+      "c": "keys",
+      "s": "clav",
+      "k": "preset",
+      "t": [
+        "Funk"
+      ],
+      "h": 3,
+      "p": {
+        "i": "pluck",
+        "tone": {
+          "drive": 0.35
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-clav-soft",
+      "n": "FLEX Clav Soft",
+      "folder": "keys",
+      "sub": "clav",
+      "c": "keys",
+      "s": "clav",
+      "k": "preset",
+      "t": [
+        "R&B"
+      ],
+      "h": 2,
+      "p": {
+        "i": "pluck",
+        "tone": {
+          "drive": 0.1
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-harpsi",
+      "n": "FLEX Harpsichord",
+      "folder": "keys",
+      "sub": "harpsichord",
+      "c": "keys",
+      "s": "harpsichord",
+      "k": "preset",
+      "t": [
+        "Pop",
+        "Cinematic"
+      ],
+      "h": 2,
+      "p": {
+        "i": "pluck",
+        "tone": {
+          "drive": 0.05
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-harpsi-bright",
+      "n": "FLEX Harpsi Bright",
+      "folder": "keys",
+      "sub": "harpsichord",
+      "c": "keys",
+      "s": "harpsichord",
+      "k": "preset",
+      "t": [
+        "Pop"
+      ],
+      "h": 2,
+      "p": {
+        "i": "bell",
+        "tone": {}
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-celesta",
+      "n": "FLEX Celesta",
+      "folder": "keys",
+      "sub": "melodic",
+      "c": "keys",
+      "s": "melodic",
+      "k": "preset",
+      "t": [
+        "Cinematic",
+        "Pop"
+      ],
+      "h": 1,
+      "p": {
+        "i": "bell",
+        "tone": {}
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-toy",
+      "n": "FLEX Toy Piano",
+      "folder": "keys",
+      "sub": "melodic",
+      "c": "keys",
+      "s": "melodic",
+      "k": "preset",
+      "t": [
+        "Pop",
+        "Lo-fi"
+      ],
+      "h": 1,
+      "p": {
+        "i": "dbell",
+        "tone": {}
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-trap-dark",
+      "n": "FLEX Dark Trap Keys",
+      "folder": "keys",
+      "sub": "melodic",
+      "c": "keys",
+      "s": "melodic",
+      "k": "preset",
+      "t": [
+        "Trap",
+        "Drill"
+      ],
+      "h": 3,
+      "p": {
+        "i": "trappiano",
+        "tone": {
+          "drive": 0.12
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-trap-felt",
+      "n": "FLEX Felt Keys",
+      "folder": "keys",
+      "sub": "melodic",
+      "c": "keys",
+      "s": "melodic",
+      "k": "preset",
+      "t": [
+        "Trap",
+        "R&B"
+      ],
+      "h": 2,
+      "p": {
+        "i": "feltpiano",
+        "tone": {}
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-trap-lofi",
+      "n": "FLEX Lo-Fi Trap Keys",
+      "folder": "keys",
+      "sub": "melodic",
+      "c": "keys",
+      "s": "melodic",
+      "k": "preset",
+      "t": [
+        "Lo-fi",
+        "Trap"
+      ],
+      "h": 2,
+      "p": {
+        "i": "lofipiano",
+        "tone": {
+          "drive": 0.25
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-trap-bright",
+      "n": "FLEX Bright Trap Keys",
+      "folder": "keys",
+      "sub": "melodic",
+      "c": "keys",
+      "s": "melodic",
+      "k": "preset",
+      "t": [
+        "Trap",
+        "Pop"
+      ],
+      "h": 2,
+      "p": {
+        "i": "trappiano",
+        "tone": {
+          "drive": 0.08
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-plugg",
+      "n": "FLEX Plugg Keys",
+      "folder": "keys",
+      "sub": "melodic",
+      "c": "keys",
+      "s": "melodic",
+      "k": "preset",
+      "t": [
+        "R&B",
+        "Trap"
+      ],
+      "h": 2,
+      "p": {
+        "i": "feltpiano",
+        "tone": {}
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-bells",
+      "n": "FLEX Key Bells",
+      "folder": "keys",
+      "sub": "melodic",
+      "c": "keys",
+      "s": "melodic",
+      "k": "preset",
+      "t": [
+        "Pop",
+        "Trap"
+      ],
+      "h": 2,
+      "p": {
+        "i": "dbell",
+        "tone": {}
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-mellow",
+      "n": "FLEX Mellow Keys",
+      "folder": "keys",
+      "sub": "melodic",
+      "c": "keys",
+      "s": "melodic",
+      "k": "preset",
+      "t": [
+        "R&B"
+      ],
+      "h": 1,
+      "p": {
+        "i": "rhodes",
+        "tone": {}
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-staccato",
+      "n": "FLEX Staccato Keys",
+      "folder": "keys",
+      "sub": "melodic",
+      "c": "keys",
+      "s": "melodic",
+      "k": "preset",
+      "t": [
+        "Pop"
+      ],
+      "h": 2,
+      "p": {
+        "i": "pluck",
+        "tone": {
+          "drive": 0.1
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-island",
+      "n": "FLEX Island Keys",
+      "folder": "keys",
+      "sub": "melodic",
+      "c": "keys",
+      "s": "melodic",
+      "k": "preset",
+      "t": [
+        "Dancehall",
+        "Soca"
+      ],
+      "h": 2,
+      "p": {
+        "i": "dbell",
+        "tone": {
+          "drive": 0.1
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-afro",
+      "n": "FLEX Afro Keys",
+      "folder": "keys",
+      "sub": "melodic",
+      "c": "keys",
+      "s": "melodic",
+      "k": "preset",
+      "t": [
+        "Afrobeats"
+      ],
+      "h": 2,
+      "p": {
+        "i": "pluck",
+        "tone": {
+          "drive": 0.12
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-house",
+      "n": "FLEX House Keys",
+      "folder": "keys",
+      "sub": "melodic",
+      "c": "keys",
+      "s": "melodic",
+      "k": "preset",
+      "t": [
+        "House"
+      ],
+      "h": 2,
+      "p": {
+        "i": "rhodes",
+        "tone": {
+          "drive": 0.15
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-techno",
+      "n": "FLEX Techno Keys",
+      "folder": "keys",
+      "sub": "melodic",
+      "c": "keys",
+      "s": "melodic",
+      "k": "preset",
+      "t": [
+        "Techno"
+      ],
+      "h": 3,
+      "p": {
+        "i": "pluck",
+        "tone": {
+          "drive": 0.3
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-dnb",
+      "n": "FLEX DnB Keys",
+      "folder": "keys",
+      "sub": "melodic",
+      "c": "keys",
+      "s": "melodic",
+      "k": "preset",
+      "t": [
+        "DnB"
+      ],
+      "h": 3,
+      "p": {
+        "i": "trappiano",
+        "tone": {
+          "drive": 0.2
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-jazz-comp",
+      "n": "FLEX Jazz Comp",
+      "folder": "keys",
+      "sub": "melodic",
+      "c": "keys",
+      "s": "melodic",
+      "k": "preset",
+      "t": [
+        "Jazz"
+      ],
+      "h": 2,
+      "p": {
+        "i": "rhodes",
+        "tone": {}
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-gospel",
+      "n": "FLEX Gospel Keys",
+      "folder": "keys",
+      "sub": "melodic",
+      "c": "keys",
+      "s": "melodic",
+      "k": "preset",
+      "t": [
+        "R&B"
+      ],
+      "h": 2,
+      "p": {
+        "i": "organ",
+        "tone": {
+          "drive": 0.15
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-cinematic",
+      "n": "FLEX Cinematic Keys",
+      "folder": "keys",
+      "sub": "melodic",
+      "c": "keys",
+      "s": "melodic",
+      "k": "preset",
+      "t": [
+        "Orchestral"
+      ],
+      "h": 2,
+      "p": {
+        "i": "grand",
+        "tone": {}
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-pop-layer",
+      "n": "FLEX Pop Layer Keys",
+      "folder": "keys",
+      "sub": "melodic",
+      "c": "keys",
+      "s": "melodic",
+      "k": "preset",
+      "t": [
+        "Pop"
+      ],
+      "h": 2,
+      "p": {
+        "i": "grand",
+        "tone": {
+          "drive": 0.08
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-wide-ep",
+      "n": "FLEX Wide EP Keys",
+      "folder": "keys",
+      "sub": "melodic",
+      "c": "keys",
+      "s": "melodic",
+      "k": "preset",
+      "t": [
+        "Pop",
+        "R&B"
+      ],
+      "h": 2,
+      "p": {
+        "i": "rhodes",
+        "tone": {
+          "drive": 0.1
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-grand-x1-studio",
+      "n": "FLEX Studio Grand",
+      "folder": "keys",
+      "sub": "acoustic",
+      "c": "keys",
+      "s": "acoustic",
+      "k": "preset",
+      "t": [
+        "Pop"
+      ],
+      "h": 2,
+      "p": {
+        "i": "grand",
+        "tone": {
+          "drive": 0.06
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-grand-x2-close",
+      "n": "FLEX Close Grand",
+      "folder": "keys",
+      "sub": "acoustic",
+      "c": "keys",
+      "s": "acoustic",
+      "k": "preset",
+      "t": [
+        "Jazz"
+      ],
+      "h": 2,
+      "p": {
+        "i": "grand",
+        "tone": {}
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-grand-x3-hall",
+      "n": "FLEX Hall Grand",
+      "folder": "keys",
+      "sub": "acoustic",
+      "c": "keys",
+      "s": "acoustic",
+      "k": "preset",
+      "t": [
+        "Cinematic"
+      ],
+      "h": 2,
+      "p": {
+        "i": "grand",
+        "tone": {
+          "drive": 0.04
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-grand-x4-bright-pop",
+      "n": "FLEX Bright Pop Piano",
+      "folder": "keys",
+      "sub": "acoustic",
+      "c": "keys",
+      "s": "acoustic",
+      "k": "preset",
+      "t": [
+        "Pop"
+      ],
+      "h": 2,
+      "p": {
+        "i": "grand",
+        "tone": {
+          "drive": 0.12
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-grand-x5-dark-ballad",
+      "n": "FLEX Dark Ballad Piano",
+      "folder": "keys",
+      "sub": "acoustic",
+      "c": "keys",
+      "s": "acoustic",
+      "k": "preset",
+      "t": [
+        "R&B"
+      ],
+      "h": 1,
+      "p": {
+        "i": "grand",
+        "tone": {}
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-grand-x6-layered",
+      "n": "FLEX Layered Grand",
+      "folder": "keys",
+      "sub": "acoustic",
+      "c": "keys",
+      "s": "acoustic",
+      "k": "preset",
+      "t": [
+        "Pop"
+      ],
+      "h": 2,
+      "p": {
+        "i": "grand",
+        "tone": {
+          "drive": 0.08
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-grand-x7-compressed",
+      "n": "FLEX Radio Piano",
+      "folder": "keys",
+      "sub": "acoustic",
+      "c": "keys",
+      "s": "acoustic",
+      "k": "preset",
+      "t": [
+        "Pop"
+      ],
+      "h": 3,
+      "p": {
+        "i": "grand",
+        "tone": {
+          "drive": 0.15
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-grand-x8-ambient",
+      "n": "FLEX Ambient Piano",
+      "folder": "keys",
+      "sub": "acoustic",
+      "c": "keys",
+      "s": "acoustic",
+      "k": "preset",
+      "t": [
+        "Lo-fi",
+        "Cinematic"
+      ],
+      "h": 1,
+      "p": {
+        "i": "grand",
+        "tone": {}
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-grand-x9-prepared",
+      "n": "FLEX Prepared Piano",
+      "folder": "keys",
+      "sub": "acoustic",
+      "c": "keys",
+      "s": "acoustic",
+      "k": "preset",
+      "t": [
+        "Experimental"
+      ],
+      "h": 3,
+      "p": {
+        "i": "grand",
+        "tone": {
+          "drive": 0.2
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-grand-x10-detuned",
+      "n": "FLEX Detuned Upright",
+      "folder": "keys",
+      "sub": "acoustic",
+      "c": "keys",
+      "s": "acoustic",
+      "k": "preset",
+      "t": [
+        "Lo-fi"
+      ],
+      "h": 2,
+      "p": {
+        "i": "grand",
+        "tone": {
+          "drive": 0.18
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-grand-x11-rock-hard",
+      "n": "FLEX Hard Rock Piano",
+      "folder": "keys",
+      "sub": "acoustic",
+      "c": "keys",
+      "s": "acoustic",
+      "k": "preset",
+      "t": [
+        "Rock"
+      ],
+      "h": 3,
+      "p": {
+        "i": "rockpiano",
+        "tone": {
+          "drive": 0.12
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-grand-x12-gospel-pno",
+      "n": "FLEX Gospel Piano",
+      "folder": "keys",
+      "sub": "acoustic",
+      "c": "keys",
+      "s": "acoustic",
+      "k": "preset",
+      "t": [
+        "R&B"
+      ],
+      "h": 2,
+      "p": {
+        "i": "grand",
+        "tone": {
+          "drive": 0.1
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-ep-x1-mk1",
+      "n": "FLEX Rhodes MK1",
+      "folder": "keys",
+      "sub": "electric",
+      "c": "keys",
+      "s": "electric",
+      "k": "preset",
+      "t": [
+        "Jazz",
+        "R&B"
+      ],
+      "h": 2,
+      "p": {
+        "i": "rhodes",
+        "tone": {}
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-ep-x2-mk2",
+      "n": "FLEX Rhodes MK2",
+      "folder": "keys",
+      "sub": "electric",
+      "c": "keys",
+      "s": "electric",
+      "k": "preset",
+      "t": [
+        "Pop"
+      ],
+      "h": 2,
+      "p": {
+        "i": "rhodes",
+        "tone": {
+          "drive": 0.08
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-ep-x3-suitcase-dark",
+      "n": "FLEX Suitcase Dark",
+      "folder": "keys",
+      "sub": "electric",
+      "c": "keys",
+      "s": "electric",
+      "k": "preset",
+      "t": [
+        "Lo-fi"
+      ],
+      "h": 2,
+      "p": {
+        "i": "rhodes",
+        "tone": {
+          "drive": 0.18
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-ep-x4-stage",
+      "n": "FLEX Stage EP",
+      "folder": "keys",
+      "sub": "electric",
+      "c": "keys",
+      "s": "electric",
+      "k": "preset",
+      "t": [
+        "Pop",
+        "Rock"
+      ],
+      "h": 2,
+      "p": {
+        "i": "rhodes",
+        "tone": {
+          "drive": 0.12
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-ep-x5-phaser",
+      "n": "FLEX Phaser EP",
+      "folder": "keys",
+      "sub": "electric",
+      "c": "keys",
+      "s": "electric",
+      "k": "preset",
+      "t": [
+        "Funk",
+        "Pop"
+      ],
+      "h": 2,
+      "p": {
+        "i": "rhodes",
+        "tone": {
+          "drive": 0.1
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-ep-x6-comp",
+      "n": "FLEX Compressed EP",
+      "folder": "keys",
+      "sub": "electric",
+      "c": "keys",
+      "s": "electric",
+      "k": "preset",
+      "t": [
+        "Pop"
+      ],
+      "h": 3,
+      "p": {
+        "i": "rhodes",
+        "tone": {
+          "drive": 0.15
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-ep-x7-wurli-a200",
+      "n": "FLEX Wurli A200",
+      "folder": "keys",
+      "sub": "electric",
+      "c": "keys",
+      "s": "electric",
+      "k": "preset",
+      "t": [
+        "Pop"
+      ],
+      "h": 2,
+      "p": {
+        "i": "lofi",
+        "tone": {
+          "drive": 0.18
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-ep-x8-wurli-bark",
+      "n": "FLEX Wurli Bark",
+      "folder": "keys",
+      "sub": "electric",
+      "c": "keys",
+      "s": "electric",
+      "k": "preset",
+      "t": [
+        "Rock"
+      ],
+      "h": 3,
+      "p": {
+        "i": "lofi",
+        "tone": {
+          "drive": 0.4
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-ep-x9-ep-lofi-tape",
+      "n": "FLEX Tape EP",
+      "folder": "keys",
+      "sub": "electric",
+      "c": "keys",
+      "s": "electric",
+      "k": "preset",
+      "t": [
+        "Lo-fi"
+      ],
+      "h": 2,
+      "p": {
+        "i": "lofi",
+        "tone": {
+          "drive": 0.3
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-ep-x10-ep-island",
+      "n": "FLEX Island EP",
+      "folder": "keys",
+      "sub": "electric",
+      "c": "keys",
+      "s": "electric",
+      "k": "preset",
+      "t": [
+        "Dancehall"
+      ],
+      "h": 2,
+      "p": {
+        "i": "rhodes",
+        "tone": {
+          "drive": 0.1
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-org-x1-b3-jazz",
+      "n": "FLEX B3 Jazz",
+      "folder": "keys",
+      "sub": "organ",
+      "c": "keys",
+      "s": "organ",
+      "k": "preset",
+      "t": [
+        "Jazz"
+      ],
+      "h": 2,
+      "p": {
+        "i": "organ",
+        "tone": {
+          "drive": 0.12
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-org-x2-b3-rock",
+      "n": "FLEX B3 Rock",
+      "folder": "keys",
+      "sub": "organ",
+      "c": "keys",
+      "s": "organ",
+      "k": "preset",
+      "t": [
+        "Rock"
+      ],
+      "h": 3,
+      "p": {
+        "i": "rockorgan",
+        "tone": {
+          "drive": 0.4
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-org-x3-b3-gospel",
+      "n": "FLEX B3 Gospel",
+      "folder": "keys",
+      "sub": "organ",
+      "c": "keys",
+      "s": "organ",
+      "k": "preset",
+      "t": [
+        "R&B"
+      ],
+      "h": 3,
+      "p": {
+        "i": "organ",
+        "tone": {
+          "drive": 0.22
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-org-x4-vox-organ",
+      "n": "FLEX Vox Organ",
+      "folder": "keys",
+      "sub": "organ",
+      "c": "keys",
+      "s": "organ",
+      "k": "preset",
+      "t": [
+        "Pop",
+        "Indie"
+      ],
+      "h": 2,
+      "p": {
+        "i": "organ",
+        "tone": {
+          "drive": 0.28
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-org-x5-church",
+      "n": "FLEX Church Organ",
+      "folder": "keys",
+      "sub": "organ",
+      "c": "keys",
+      "s": "organ",
+      "k": "preset",
+      "t": [
+        "Cinematic"
+      ],
+      "h": 3,
+      "p": {
+        "i": "organ",
+        "tone": {
+          "drive": 0.1
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-org-x6-house-stab",
+      "n": "FLEX House Organ Stab",
+      "folder": "keys",
+      "sub": "organ",
+      "c": "keys",
+      "s": "organ",
+      "k": "preset",
+      "t": [
+        "House"
+      ],
+      "h": 3,
+      "p": {
+        "i": "organ",
+        "tone": {
+          "drive": 0.3
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-clav-x1-funk",
+      "n": "FLEX Funk Clav",
+      "folder": "keys",
+      "sub": "clav",
+      "c": "keys",
+      "s": "clav",
+      "k": "preset",
+      "t": [
+        "Funk"
+      ],
+      "h": 3,
+      "p": {
+        "i": "pluck",
+        "tone": {
+          "drive": 0.3
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-clav-x2-mute",
+      "n": "FLEX Mute Clav",
+      "folder": "keys",
+      "sub": "clav",
+      "c": "keys",
+      "s": "clav",
+      "k": "preset",
+      "t": [
+        "Funk",
+        "Pop"
+      ],
+      "h": 2,
+      "p": {
+        "i": "pluck",
+        "tone": {
+          "drive": 0.15
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-clav-x3-bright",
+      "n": "FLEX Bright Clav",
+      "folder": "keys",
+      "sub": "clav",
+      "c": "keys",
+      "s": "clav",
+      "k": "preset",
+      "t": [
+        "Pop"
+      ],
+      "h": 3,
+      "p": {
+        "i": "pluck",
+        "tone": {
+          "drive": 0.25
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-harpsichord-x4-baroque",
+      "n": "FLEX Baroque Harpsi",
+      "folder": "keys",
+      "sub": "harpsichord",
+      "c": "keys",
+      "s": "harpsichord",
+      "k": "preset",
+      "t": [
+        "Cinematic"
+      ],
+      "h": 2,
+      "p": {
+        "i": "pluck",
+        "tone": {
+          "drive": 0.05
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-harpsichord-x5-pop",
+      "n": "FLEX Pop Harpsi",
+      "folder": "keys",
+      "sub": "harpsichord",
+      "c": "keys",
+      "s": "harpsichord",
+      "k": "preset",
+      "t": [
+        "Pop"
+      ],
+      "h": 2,
+      "p": {
+        "i": "bell",
+        "tone": {}
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-melodic-x6-neon",
+      "n": "FLEX Neon Keys",
+      "folder": "keys",
+      "sub": "melodic",
+      "c": "keys",
+      "s": "melodic",
+      "k": "preset",
+      "t": [
+        "Pop",
+        "Rage"
+      ],
+      "h": 3,
+      "p": {
+        "i": "hyperlead",
+        "tone": {
+          "drive": 0.25
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-melodic-x7-glass",
+      "n": "FLEX Glass Keys",
+      "folder": "keys",
+      "sub": "melodic",
+      "c": "keys",
+      "s": "melodic",
+      "k": "preset",
+      "t": [
+        "Pop"
+      ],
+      "h": 1,
+      "p": {
+        "i": "bell",
+        "tone": {}
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-melodic-x8-choir-keys",
+      "n": "FLEX Choir Keys",
+      "folder": "keys",
+      "sub": "melodic",
+      "c": "keys",
+      "s": "melodic",
+      "k": "preset",
+      "t": [
+        "Cinematic"
+      ],
+      "h": 2,
+      "p": {
+        "i": "pad",
+        "tone": {
+          "drive": 0.08
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-melodic-x9-uk-drill",
+      "n": "FLEX UK Drill Keys",
+      "folder": "keys",
+      "sub": "melodic",
+      "c": "keys",
+      "s": "melodic",
+      "k": "preset",
+      "t": [
+        "Drill"
+      ],
+      "h": 3,
+      "p": {
+        "i": "trappiano",
+        "tone": {
+          "drive": 0.18
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-melodic-x10-sexy-drill",
+      "n": "FLEX Soft Drill Keys",
+      "folder": "keys",
+      "sub": "melodic",
+      "c": "keys",
+      "s": "melodic",
+      "k": "preset",
+      "t": [
+        "Drill",
+        "R&B"
+      ],
+      "h": 2,
+      "p": {
+        "i": "feltpiano",
+        "tone": {}
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-melodic-x11-amapiano-keys",
+      "n": "FLEX Amapiano Keys",
+      "folder": "keys",
+      "sub": "melodic",
+      "c": "keys",
+      "s": "melodic",
+      "k": "preset",
+      "t": [
+        "Afrobeats"
+      ],
+      "h": 2,
+      "p": {
+        "i": "rhodes",
+        "tone": {
+          "drive": 0.08
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-melodic-x12-bouyon-keys",
+      "n": "FLEX Bouyon Keys",
+      "folder": "keys",
+      "sub": "melodic",
+      "c": "keys",
+      "s": "melodic",
+      "k": "preset",
+      "t": [
+        "Bouyon"
+      ],
+      "h": 3,
+      "p": {
+        "i": "dbell",
+        "tone": {
+          "drive": 0.12
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-melodic-x13-soca-keys",
+      "n": "FLEX Soca Keys",
+      "folder": "keys",
+      "sub": "melodic",
+      "c": "keys",
+      "s": "melodic",
+      "k": "preset",
+      "t": [
+        "Soca"
+      ],
+      "h": 3,
+      "p": {
+        "i": "dbell",
+        "tone": {
+          "drive": 0.15
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-melodic-x14-reggaeton-keys",
+      "n": "FLEX Reggaeton Keys",
+      "folder": "keys",
+      "sub": "melodic",
+      "c": "keys",
+      "s": "melodic",
+      "k": "preset",
+      "t": [
+        "Reggaeton"
+      ],
+      "h": 2,
+      "p": {
+        "i": "pluck",
+        "tone": {
+          "drive": 0.12
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-melodic-x15-phonk-keys",
+      "n": "FLEX Phonk Keys",
+      "folder": "keys",
+      "sub": "melodic",
+      "c": "keys",
+      "s": "melodic",
+      "k": "preset",
+      "t": [
+        "Phonk"
+      ],
+      "h": 4,
+      "p": {
+        "i": "trappiano",
+        "tone": {
+          "drive": 0.3
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-melodic-x16-jersey-keys",
+      "n": "FLEX Jersey Keys",
+      "folder": "keys",
+      "sub": "melodic",
+      "c": "keys",
+      "s": "melodic",
+      "k": "preset",
+      "t": [
+        "Club"
+      ],
+      "h": 3,
+      "p": {
+        "i": "pluck",
+        "tone": {
+          "drive": 0.2
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-melodic-x17-techno-stab",
+      "n": "FLEX Techno Key Stab",
+      "folder": "keys",
+      "sub": "melodic",
+      "c": "keys",
+      "s": "melodic",
+      "k": "preset",
+      "t": [
+        "Techno"
+      ],
+      "h": 3,
+      "p": {
+        "i": "pluck",
+        "tone": {
+          "drive": 0.35
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-melodic-x18-liquid-dnb",
+      "n": "FLEX Liquid DnB Keys",
+      "folder": "keys",
+      "sub": "melodic",
+      "c": "keys",
+      "s": "melodic",
+      "k": "preset",
+      "t": [
+        "DnB"
+      ],
+      "h": 2,
+      "p": {
+        "i": "rhodes",
+        "tone": {
+          "drive": 0.1
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-melodic-x19-westcoast-keys",
+      "n": "FLEX West Coast Keys",
+      "folder": "keys",
+      "sub": "melodic",
+      "c": "keys",
+      "s": "melodic",
+      "k": "preset",
+      "t": [
+        "West Coast"
+      ],
+      "h": 2,
+      "p": {
+        "i": "rhodes",
+        "tone": {}
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-melodic-x20-boom-bap-keys",
+      "n": "FLEX Boom Bap Keys",
+      "folder": "keys",
+      "sub": "melodic",
+      "c": "keys",
+      "s": "melodic",
+      "k": "preset",
+      "t": [
+        "Boom-bap"
+      ],
+      "h": 2,
+      "p": {
+        "i": "lofi",
+        "tone": {
+          "drive": 0.22
+        }
+      },
+      "cr": "ipb-fl",
+      "char": "fl-flex",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.85,
+          "lp": 9000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-bass-dre-sub",
+      "n": "Dre Dark Sub",
+      "folder": "bass",
+      "sub": "",
+      "c": "bass",
+      "s": "bass",
+      "k": "preset",
+      "t": [
+        "West Coast",
+        "G-funk",
+        "Dre-pocket",
+        "dark"
+      ],
+      "h": 2,
+      "p": {
+        "i": "bass",
+        "tone": {
+          "drive": 0.35,
+          "lp": 900
+        }
+      },
+      "cr": "ipb-dre-wc",
+      "char": "dre-wc",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.55,
+          "lp": 2500
+        },
+        {
+          "v": 80,
+          "gain": 0.9,
+          "lp": 5000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 7000
+        }
+      ]
+    },
+    {
+      "id": "fl-bass-dre-round",
+      "n": "Dre Round 808 Bass",
+      "folder": "bass",
+      "sub": "",
+      "c": "bass",
+      "s": "bass",
+      "k": "preset",
+      "t": [
+        "West Coast",
+        "808",
+        "dark"
+      ],
+      "h": 2,
+      "p": {
+        "i": "bass",
+        "tone": {
+          "drive": 0.45,
+          "lp": 700
+        }
+      },
+      "cr": "ipb-dre-wc",
+      "char": "dre-wc",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 2000
+        },
+        {
+          "v": 80,
+          "gain": 0.88,
+          "lp": 4500
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 6500
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-dre-rhodes",
+      "n": "Dre Dark Rhodes",
+      "folder": "keys",
+      "sub": "electric",
+      "c": "keys",
+      "s": "keys",
+      "k": "preset",
+      "t": [
+        "West Coast",
+        "G-funk",
+        "Rhodes",
+        "dark"
+      ],
+      "h": 2,
+      "p": {
+        "i": "rhodes",
+        "tone": {
+          "drive": 0.12,
+          "lp": 3200
+        }
+      },
+      "cr": "ipb-dre-wc",
+      "char": "dre-wc",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.45,
+          "lp": 4000
+        },
+        {
+          "v": 80,
+          "gain": 0.8,
+          "lp": 7000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 10000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-dre-strings",
+      "n": "Dre Sparse Strings",
+      "folder": "keys",
+      "sub": "strings",
+      "c": "keys",
+      "s": "pad",
+      "k": "preset",
+      "t": [
+        "West Coast",
+        "strings",
+        "sparse",
+        "dark"
+      ],
+      "h": 2,
+      "p": {
+        "i": "strings",
+        "tone": {
+          "drive": 0.08,
+          "lp": 2800
+        }
+      },
+      "cr": "ipb-dre-wc",
+      "char": "dre-wc",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.4,
+          "lp": 3500
+        },
+        {
+          "v": 80,
+          "gain": 0.75,
+          "lp": 6000
+        },
+        {
+          "v": 127,
+          "gain": 0.95,
+          "lp": 9000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-dre-bell",
+      "n": "Dre High Bell",
+      "folder": "keys",
+      "sub": "bell",
+      "c": "keys",
+      "s": "bell",
+      "k": "preset",
+      "t": [
+        "West Coast",
+        "G-funk",
+        "bell"
+      ],
+      "h": 3,
+      "p": {
+        "i": "bell",
+        "tone": {
+          "drive": 0.05,
+          "lp": 8000
+        }
+      },
+      "cr": "ipb-dre-wc",
+      "char": "dre-wc",
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.4,
+          "lp": 6000
+        },
+        {
+          "v": 80,
+          "gain": 0.75,
+          "lp": 10000
+        },
+        {
+          "v": 127,
+          "gain": 1.0,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-ny-dusty-ep",
+      "n": "NY Dusty EP",
+      "folder": "keys",
+      "sub": "ep",
+      "c": "keys",
+      "s": "keys",
+      "k": "preset",
+      "h": 2,
+      "t": [
+        "Boom-bap",
+        "NY",
+        "dusty",
+        "vinyl",
+        "dark"
+      ],
+      "char": "ny-legends",
+      "cr": "ipb-ny",
+      "p": {
+        "i": "rhodes",
+        "tone": {
+          "drive": 0.22,
+          "lp": 2400
+        }
+      },
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 64,
+          "gain": 0.75,
+          "lp": 7000
+        },
+        {
+          "v": 127,
+          "gain": 1,
+          "lp": 11000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-ny-chop-pad",
+      "n": "NY Chop Pad",
+      "folder": "keys",
+      "sub": "pad",
+      "c": "keys",
+      "s": "pad",
+      "k": "preset",
+      "h": 2,
+      "t": [
+        "Boom-bap",
+        "NY",
+        "pad",
+        "dark",
+        "gritty"
+      ],
+      "char": "ny-legends",
+      "cr": "ipb-ny",
+      "p": {
+        "i": "pad",
+        "tone": {
+          "drive": 0.15,
+          "lp": 2200
+        }
+      },
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.45,
+          "lp": 3500
+        },
+        {
+          "v": 64,
+          "gain": 0.7,
+          "lp": 6500
+        },
+        {
+          "v": 127,
+          "gain": 1,
+          "lp": 10000
+        }
+      ]
+    },
+    {
+      "id": "fl-bass-ny-knock",
+      "n": "NY Knock Bass",
+      "folder": "bass",
+      "sub": "bass",
+      "c": "bass",
+      "s": "bass",
+      "k": "preset",
+      "h": 2,
+      "t": [
+        "Boom-bap",
+        "NY",
+        "bass",
+        "punchy"
+      ],
+      "char": "ny-legends",
+      "cr": "ipb-ny",
+      "p": {
+        "i": "bass",
+        "tone": {
+          "drive": 0.4,
+          "lp": 800
+        }
+      },
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 2000
+        },
+        {
+          "v": 64,
+          "gain": 0.8,
+          "lp": 4000
+        },
+        {
+          "v": 127,
+          "gain": 1,
+          "lp": 6000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-ny-bounce-bell",
+      "n": "NY Bounce Bell",
+      "folder": "keys",
+      "sub": "bell",
+      "c": "keys",
+      "s": "bell",
+      "k": "preset",
+      "h": 2,
+      "t": [
+        "NY",
+        "bounce",
+        "melodic",
+        "bright"
+      ],
+      "char": "ny-bounce",
+      "cr": "ipb-ny",
+      "p": {
+        "i": "bell",
+        "tone": {
+          "drive": 0.08,
+          "lp": 9000
+        }
+      },
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 6000
+        },
+        {
+          "v": 64,
+          "gain": 0.8,
+          "lp": 10000
+        },
+        {
+          "v": 127,
+          "gain": 1,
+          "lp": 14000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-ny-bounce-pluck",
+      "n": "NY Bounce Pluck",
+      "folder": "keys",
+      "sub": "pluck",
+      "c": "keys",
+      "s": "keys",
+      "k": "preset",
+      "h": 2,
+      "t": [
+        "NY",
+        "bounce",
+        "melodic",
+        "pluck"
+      ],
+      "char": "ny-bounce",
+      "cr": "ipb-ny",
+      "p": {
+        "i": "trappluck",
+        "tone": {
+          "drive": 0.1,
+          "lp": 5000
+        }
+      },
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.5,
+          "lp": 4000
+        },
+        {
+          "v": 64,
+          "gain": 0.8,
+          "lp": 8000
+        },
+        {
+          "v": 127,
+          "gain": 1,
+          "lp": 12000
+        }
+      ]
+    },
+    {
+      "id": "fl-bass-ny-drill-slide",
+      "n": "NY Drill Slide 808",
+      "folder": "bass",
+      "sub": "808",
+      "c": "bass",
+      "s": "808",
+      "k": "preset",
+      "h": 2,
+      "t": [
+        "Drill",
+        "NY",
+        "808",
+        "slide",
+        "dark"
+      ],
+      "char": "ny-drill",
+      "cr": "ipb-ny",
+      "p": {
+        "i": "808",
+        "tone": {
+          "drive": 0.55,
+          "glide": 0.65,
+          "lp": 600
+        }
+      },
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.55,
+          "lp": 1500
+        },
+        {
+          "v": 64,
+          "gain": 0.85,
+          "lp": 3000
+        },
+        {
+          "v": 127,
+          "gain": 1,
+          "lp": 5000
+        }
+      ]
+    },
+    {
+      "id": "fl-keys-ny-drill-minor",
+      "n": "NY Drill Minor Keys",
+      "folder": "keys",
+      "sub": "melodic",
+      "c": "keys",
+      "s": "keys",
+      "k": "preset",
+      "h": 2,
+      "t": [
+        "Drill",
+        "NY",
+        "dark",
+        "minor",
+        "melodic"
+      ],
+      "char": "ny-drill",
+      "cr": "ipb-ny",
+      "p": {
+        "i": "pad",
+        "tone": {
+          "drive": 0.18,
+          "lp": 2600
+        }
+      },
+      "vel": [
+        {
+          "v": 0,
+          "gain": 0.45,
+          "lp": 3000
+        },
+        {
+          "v": 64,
+          "gain": 0.7,
+          "lp": 5500
+        },
+        {
+          "v": 127,
+          "gain": 1,
+          "lp": 9000
+        }
+      ]
+    }
+  ],
+  "counts": {
+    "bass": 20,
+    "synths": 20,
+    "leads": 15,
+    "pads": 12,
+    "plucks": 12,
+    "keys": 105,
+    "dre-wc": 5,
+    "ny-legends": 3,
+    "ny-bounce": 2,
+    "ny-drill": 2
+  },
+  "keysBySub": {
+    "acoustic": 24,
+    "electric": 22,
+    "organ": 14,
+    "clav": 6,
+    "harpsichord": 4,
+    "melodic": 35
+  },
+  "total": 196
+}

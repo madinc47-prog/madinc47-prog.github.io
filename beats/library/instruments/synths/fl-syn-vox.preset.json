@@ -1,0 +1,12 @@
+{
+  "id": "fl-syn-vox",
+  "n": "FLEX Vox Synth",
+  "p": {
+    "i": "voxah",
+    "tone": {
+      "drive": 0.05
+    }
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

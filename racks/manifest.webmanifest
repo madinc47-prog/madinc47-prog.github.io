@@ -1,0 +1,10 @@
+{
+  "name": "Mix & Master",
+  "short_name": "MixMaster",
+  "start_url": "/beats/mixer.html#beat-rack",
+  "scope": "/beats/",
+  "display": "standalone",
+  "background_color": "#0b0d12",
+  "theme_color": "#0b0d12",
+  "icons": [{ "src": "/beats/icons/master/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+}

@@ -1,0 +1,1 @@
+try{importScripts("../sw.js")}catch(e){self.addEventListener("install",function(ev){self.skipWaiting()}),self.addEventListener("activate",function(ev){ev.waitUntil(self.clients.claim())}),self.addEventListener("fetch",function(){})}

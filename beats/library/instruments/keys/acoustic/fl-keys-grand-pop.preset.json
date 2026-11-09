@@ -1,0 +1,10 @@
+{
+  "id": "fl-keys-grand-pop",
+  "n": "FLEX Grand Pop",
+  "base": "grand",
+  "tone": {
+    "drive": 0.1
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

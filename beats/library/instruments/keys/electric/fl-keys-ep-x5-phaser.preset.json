@@ -1,0 +1,10 @@
+{
+  "id": "fl-keys-ep-x5-phaser",
+  "n": "FLEX Phaser EP",
+  "base": "rhodes",
+  "tone": {
+    "drive": 0.1
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

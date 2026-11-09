@@ -1,0 +1,8 @@
+{
+  "id": "fl-keys-bells",
+  "n": "FLEX Key Bells",
+  "base": "dbell",
+  "tone": {},
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

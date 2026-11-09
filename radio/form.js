@@ -1,0 +1,1 @@
+!function(){var e=document.querySelector("form"),t=document.getElementById("artist"),a=document.getElementById("subj");e.addEventListener("submit",function(){var d="ad"===e.dataset.kind?"Island Beats Radio ad request: ":"Island Beats Radio application: ";a.value=d+(t.value||"").slice(0,80)})}();

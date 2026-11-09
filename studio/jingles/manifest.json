@@ -1,0 +1,74 @@
+[
+  {
+    "slug": "island-sunrise",
+    "title": "Island Sunrise",
+    "role": "Intro",
+    "bpm": 118,
+    "dur": 16.27,
+    "file": "island-sunrise.mp3",
+    "bytes": 181761
+  },
+  {
+    "slug": "hot-sting",
+    "title": "Hot Sting",
+    "role": "Sting",
+    "bpm": 140,
+    "dur": 5.54,
+    "file": "hot-sting.mp3",
+    "bytes": 40044
+  },
+  {
+    "slug": "groove-break",
+    "title": "Groove Break",
+    "role": "Break",
+    "bpm": 102,
+    "dur": 14.12,
+    "file": "groove-break.mp3",
+    "bytes": 158246
+  },
+  {
+    "slug": "soft-landing",
+    "title": "Soft Landing",
+    "role": "Outro",
+    "bpm": 86,
+    "dur": 13.95,
+    "file": "soft-landing.mp3",
+    "bytes": 187264
+  },
+  {
+    "slug": "ha-ha-band",
+    "title": "Ha-Ha Band",
+    "role": "Laugh",
+    "bpm": 128,
+    "dur": 11.25,
+    "file": "ha-ha-band.mp3",
+    "bytes": 118322
+  },
+  {
+    "slug": "standing-o",
+    "title": "Standing O",
+    "role": "Applause",
+    "bpm": 110,
+    "dur": 10.91,
+    "file": "standing-o.mp3",
+    "bytes": 94482
+  },
+  {
+    "slug": "sky-sweep",
+    "title": "Sky Sweep",
+    "role": "Whoosh",
+    "bpm": 96,
+    "dur": 12.5,
+    "file": "sky-sweep.mp3",
+    "bytes": 111003
+  },
+  {
+    "slug": "clean-tone",
+    "title": "Clean Tone",
+    "role": "Beep",
+    "bpm": 100,
+    "dur": 12.0,
+    "file": "clean-tone.mp3",
+    "bytes": 57999
+  }
+]

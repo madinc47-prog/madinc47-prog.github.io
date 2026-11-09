@@ -1,0 +1,35 @@
+{
+  "id": "/apps/",
+  "name": "Island Pin Hub",
+  "short_name": "Hub",
+  "description": "Island Pin Hub — open every IslePin & Island Beats app from one place",
+  "start_url": "/apps/",
+  "scope": "/apps/",
+  "display": "standalone",
+  "background_color": "#06201c",
+  "theme_color": "#0a2e28",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "display_override": [
+    "standalone",
+    "fullscreen"
+  ]
+}

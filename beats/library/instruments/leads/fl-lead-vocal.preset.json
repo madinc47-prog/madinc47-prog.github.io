@@ -1,0 +1,12 @@
+{
+  "id": "fl-lead-vocal",
+  "n": "FLEX Vocal Lead",
+  "p": {
+    "i": "voxoo",
+    "tone": {
+      "drive": 0.05
+    }
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

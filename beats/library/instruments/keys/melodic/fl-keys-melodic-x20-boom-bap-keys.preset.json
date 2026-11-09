@@ -1,0 +1,10 @@
+{
+  "id": "fl-keys-melodic-x20-boom-bap-keys",
+  "n": "FLEX Boom Bap Keys",
+  "base": "lofi",
+  "tone": {
+    "drive": 0.22
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

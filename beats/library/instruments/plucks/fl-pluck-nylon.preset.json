@@ -1,0 +1,10 @@
+{
+  "id": "fl-pluck-nylon",
+  "n": "FLEX Nylon Pluck",
+  "p": {
+    "i": "gtrpluck",
+    "tone": {}
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

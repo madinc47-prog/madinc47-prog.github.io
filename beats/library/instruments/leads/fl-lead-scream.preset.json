@@ -1,0 +1,12 @@
+{
+  "id": "fl-lead-scream",
+  "n": "FLEX Scream Lead",
+  "p": {
+    "i": "hyperlead",
+    "tone": {
+      "drive": 0.7
+    }
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

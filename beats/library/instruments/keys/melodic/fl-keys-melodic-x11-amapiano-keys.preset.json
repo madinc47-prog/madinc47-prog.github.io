@@ -1,0 +1,10 @@
+{
+  "id": "fl-keys-melodic-x11-amapiano-keys",
+  "n": "FLEX Amapiano Keys",
+  "base": "rhodes",
+  "tone": {
+    "drive": 0.08
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

@@ -1,0 +1,10 @@
+{
+  "id": "fl-keys-trap-bright",
+  "n": "FLEX Bright Trap Keys",
+  "base": "trappiano",
+  "tone": {
+    "drive": 0.08
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

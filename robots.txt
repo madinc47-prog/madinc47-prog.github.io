@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://madinc47-prog.github.io/sitemap.xml

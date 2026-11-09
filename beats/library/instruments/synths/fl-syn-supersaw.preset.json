@@ -1,0 +1,12 @@
+{
+  "id": "fl-syn-supersaw",
+  "n": "FLEX Supersaw",
+  "p": {
+    "i": "hyperlead",
+    "tone": {
+      "drive": 0.35
+    }
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

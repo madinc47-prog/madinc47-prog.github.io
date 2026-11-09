@@ -1,0 +1,10 @@
+{
+  "id": "fl-keys-grand-x3-hall",
+  "n": "FLEX Hall Grand",
+  "base": "grand",
+  "tone": {
+    "drive": 0.04
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

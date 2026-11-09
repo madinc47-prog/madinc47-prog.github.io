@@ -1,0 +1,58 @@
+{
+  "version": "20261102fix7",
+  "total": 606,
+  "ranges": {
+    "0": {
+      "file": "channels/r0.json",
+      "count": 48
+    },
+    "100": {
+      "file": "channels/r100.json",
+      "count": 38
+    },
+    "200": {
+      "file": "channels/r200.json",
+      "count": 47
+    },
+    "300": {
+      "file": "channels/r300.json",
+      "count": 56
+    },
+    "400": {
+      "file": "channels/r400.json",
+      "count": 30
+    },
+    "500": {
+      "file": "channels/r500.json",
+      "count": 56
+    },
+    "600": {
+      "file": "channels/r600.json",
+      "count": 75
+    },
+    "700": {
+      "file": "channels/r700.json",
+      "count": 44
+    },
+    "800": {
+      "file": "channels/r800.json",
+      "count": 77
+    },
+    "900": {
+      "file": "channels/r900.json",
+      "count": 77
+    },
+    "1000": {
+      "file": "channels/r1000.json",
+      "count": 26
+    },
+    "1100": {
+      "file": "channels/r1100.json",
+      "count": 16
+    },
+    "1500": {
+      "file": "channels/r1500.json",
+      "count": 16
+    }
+  }
+}

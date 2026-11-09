@@ -1,0 +1,10 @@
+{
+  "id": "fl-keys-melodic-x18-liquid-dnb",
+  "n": "FLEX Liquid DnB Keys",
+  "base": "rhodes",
+  "tone": {
+    "drive": 0.1
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

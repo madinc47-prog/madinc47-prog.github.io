@@ -1,0 +1,10 @@
+{
+  "id": "fl-keys-melodic-x16-jersey-keys",
+  "n": "FLEX Jersey Keys",
+  "base": "pluck",
+  "tone": {
+    "drive": 0.2
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

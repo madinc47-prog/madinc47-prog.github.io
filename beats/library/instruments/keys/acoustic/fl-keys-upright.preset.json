@@ -1,0 +1,10 @@
+{
+  "id": "fl-keys-upright",
+  "n": "FLEX Upright",
+  "base": "grand",
+  "tone": {
+    "drive": 0.12
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

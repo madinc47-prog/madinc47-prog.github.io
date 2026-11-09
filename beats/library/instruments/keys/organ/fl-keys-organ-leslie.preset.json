@@ -1,0 +1,10 @@
+{
+  "id": "fl-keys-organ-leslie",
+  "n": "FLEX Leslie Organ",
+  "base": "rockorgan",
+  "tone": {
+    "drive": 0.4
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

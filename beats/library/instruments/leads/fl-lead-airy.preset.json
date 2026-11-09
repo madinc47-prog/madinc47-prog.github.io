@@ -1,0 +1,12 @@
+{
+  "id": "fl-lead-airy",
+  "n": "FLEX Airy Lead",
+  "p": {
+    "i": "lead",
+    "tone": {
+      "drive": 0.05
+    }
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

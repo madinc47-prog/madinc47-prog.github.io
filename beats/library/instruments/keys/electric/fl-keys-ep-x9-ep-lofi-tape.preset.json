@@ -1,0 +1,10 @@
+{
+  "id": "fl-keys-ep-x9-ep-lofi-tape",
+  "n": "FLEX Tape EP",
+  "base": "lofi",
+  "tone": {
+    "drive": 0.3
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}
