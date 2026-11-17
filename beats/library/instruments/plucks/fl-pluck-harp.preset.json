@@ -1,0 +1,10 @@
+{
+  "id": "fl-pluck-harp",
+  "n": "FLEX Harp Pluck",
+  "p": {
+    "i": "pluck",
+    "tone": {}
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

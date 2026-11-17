@@ -1,0 +1,12 @@
+{
+  "id": "fl-syn-keys",
+  "n": "FLEX Synth Keys",
+  "p": {
+    "i": "pluck",
+    "tone": {
+      "drive": 0.1
+    }
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

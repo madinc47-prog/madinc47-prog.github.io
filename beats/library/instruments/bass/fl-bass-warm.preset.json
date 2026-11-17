@@ -1,0 +1,12 @@
+{
+  "id": "fl-bass-warm",
+  "n": "FLEX Warm Bass",
+  "p": {
+    "i": "bass",
+    "tone": {
+      "drive": 0.2
+    }
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

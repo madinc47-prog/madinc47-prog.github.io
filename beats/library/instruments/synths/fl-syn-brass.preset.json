@@ -1,0 +1,12 @@
+{
+  "id": "fl-syn-brass",
+  "n": "FLEX Brass Synth",
+  "p": {
+    "i": "horn",
+    "tone": {
+      "drive": 0.35
+    }
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

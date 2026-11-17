@@ -1,0 +1,10 @@
+{
+  "id": "fl-keys-melodic-x8-choir-keys",
+  "n": "FLEX Choir Keys",
+  "base": "pad",
+  "tone": {
+    "drive": 0.08
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

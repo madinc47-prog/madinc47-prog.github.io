@@ -1,0 +1,10 @@
+{
+  "id": "fl-keys-harpsichord-x4-baroque",
+  "n": "FLEX Baroque Harpsi",
+  "base": "pluck",
+  "tone": {
+    "drive": 0.05
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

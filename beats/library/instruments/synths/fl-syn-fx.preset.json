@@ -1,0 +1,12 @@
+{
+  "id": "fl-syn-fx",
+  "n": "FLEX FX Syn",
+  "p": {
+    "i": "hyperlead",
+    "tone": {
+      "drive": 0.5
+    }
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

@@ -1,0 +1,12 @@
+{
+  "id": "fl-syn-arp",
+  "n": "FLEX Arp",
+  "p": {
+    "i": "arp",
+    "tone": {
+      "drive": 0.12
+    }
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

@@ -1,0 +1,8 @@
+{
+  "id": "fl-keys-concert",
+  "n": "FLEX Concert Grand",
+  "base": "grand",
+  "tone": {},
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

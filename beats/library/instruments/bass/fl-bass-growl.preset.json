@@ -1,0 +1,13 @@
+{
+  "id": "fl-bass-growl",
+  "n": "FLEX Growl Bass",
+  "p": {
+    "i": "808",
+    "tone": {
+      "drive": 0.75,
+      "glide": 0.4
+    }
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

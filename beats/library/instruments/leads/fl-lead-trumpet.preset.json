@@ -1,0 +1,12 @@
+{
+  "id": "fl-lead-trumpet",
+  "n": "FLEX Trumpet Lead",
+  "p": {
+    "i": "horn",
+    "tone": {
+      "drive": 0.3
+    }
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

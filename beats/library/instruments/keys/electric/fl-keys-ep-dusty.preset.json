@@ -1,0 +1,10 @@
+{
+  "id": "fl-keys-ep-dusty",
+  "n": "FLEX Dusty EP",
+  "base": "lofi",
+  "tone": {
+    "drive": 0.25
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

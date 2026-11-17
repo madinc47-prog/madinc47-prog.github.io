@@ -1,0 +1,12 @@
+{
+  "id": "fl-syn-poly",
+  "n": "FLEX Poly Syn",
+  "p": {
+    "i": "pluck",
+    "tone": {
+      "drive": 0.15
+    }
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

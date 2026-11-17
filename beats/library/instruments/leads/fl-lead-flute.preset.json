@@ -1,0 +1,13 @@
+{
+  "id": "fl-lead-flute",
+  "n": "FLEX Flute Lead",
+  "p": {
+    "i": "trapflute",
+    "tone": {
+      "drive": 0.08,
+      "glide": 0.3
+    }
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

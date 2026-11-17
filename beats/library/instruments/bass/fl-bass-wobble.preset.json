@@ -1,0 +1,13 @@
+{
+  "id": "fl-bass-wobble",
+  "n": "FLEX Wobble",
+  "p": {
+    "i": "reese",
+    "tone": {
+      "drive": 0.6,
+      "glide": 0.3
+    }
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

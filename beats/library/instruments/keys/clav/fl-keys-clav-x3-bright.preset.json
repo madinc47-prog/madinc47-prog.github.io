@@ -1,0 +1,10 @@
+{
+  "id": "fl-keys-clav-x3-bright",
+  "n": "FLEX Bright Clav",
+  "base": "pluck",
+  "tone": {
+    "drive": 0.25
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

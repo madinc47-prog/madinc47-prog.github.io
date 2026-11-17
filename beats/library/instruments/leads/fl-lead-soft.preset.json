@@ -1,0 +1,10 @@
+{
+  "id": "fl-lead-soft",
+  "n": "FLEX Soft Lead",
+  "p": {
+    "i": "lead",
+    "tone": {}
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

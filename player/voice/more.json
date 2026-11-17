@@ -1,0 +1,477 @@
+{
+ "model": "Kokoro-82M v1.0 (kokoro-onnx 0.6.1, Apache-2.0)",
+ "voice": "am_fenrir",
+ "loudness": "-20 LUFS integrated, sample peak < -6 dBFS",
+ "cats": {
+  "crowd": [
+   {
+    "id": "crowd-1",
+    "file": "more/crowd-1.mp3",
+    "text": "Crowd, make some noise!",
+    "dur": 1.53,
+    "lufs": -20.4,
+    "peak": -7.3,
+    "speed": 1.1,
+    "pitchRange": 14.0,
+    "bytes": 12790
+   },
+   {
+    "id": "crowd-2",
+    "file": "more/crowd-2.mp3",
+    "text": "Let me hear you, crowd!",
+    "dur": 1.31,
+    "lufs": -20.4,
+    "peak": -7.2,
+    "speed": 1.1,
+    "pitchRange": 15.5,
+    "bytes": 11118
+   },
+   {
+    "id": "crowd-3",
+    "file": "more/crowd-3.mp3",
+    "text": "Everybody, hands up!",
+    "dur": 1.54,
+    "lufs": -20.4,
+    "peak": -7.3,
+    "speed": 1.1,
+    "pitchRange": 10.7,
+    "bytes": 12790
+   }
+  ],
+  "selector": [
+   {
+    "id": "selector-1",
+    "file": "more/selector-1.mp3",
+    "text": "Selector!",
+    "dur": 0.87,
+    "lufs": -20.4,
+    "peak": -7.2,
+    "speed": 1.1,
+    "pitchRange": 11.1,
+    "bytes": 7566
+   },
+   {
+    "id": "selector-2",
+    "file": "more/selector-2.mp3",
+    "text": "Selector, wheel it!",
+    "dur": 1.31,
+    "lufs": -20.4,
+    "peak": -7.2,
+    "speed": 1.18,
+    "pitchRange": 14.5,
+    "bytes": 11118
+   },
+   {
+    "id": "selector-3",
+    "file": "more/selector-3.mp3",
+    "text": "Big up the selector!",
+    "dur": 1.39,
+    "lufs": -20.4,
+    "peak": -7.2,
+    "speed": 1.18,
+    "pitchRange": 10.4,
+    "bytes": 11745
+   }
+  ],
+  "pullup": [
+   {
+    "id": "pullup-1",
+    "file": "more/pullup-1.mp3",
+    "text": "Pull up!",
+    "dur": 0.76,
+    "lufs": -20.5,
+    "peak": -7.3,
+    "speed": 1.1,
+    "pitchRange": 6.9,
+    "bytes": 6730
+   },
+   {
+    "id": "pullup-2",
+    "file": "more/pullup-2.mp3",
+    "text": "Pull up, pull up!",
+    "dur": 1.18,
+    "lufs": -20.4,
+    "peak": -7.0,
+    "speed": 1.18,
+    "pitchRange": 13.3,
+    "bytes": 10074
+   },
+   {
+    "id": "pullup-3",
+    "file": "more/pullup-3.mp3",
+    "text": "Pull it up, selector!",
+    "dur": 1.34,
+    "lufs": -20.4,
+    "peak": -7.2,
+    "speed": 1.18,
+    "pitchRange": 10.0,
+    "bytes": 11327
+   }
+  ],
+  "onemore": [
+   {
+    "id": "onemore-1",
+    "file": "more/onemore-1.mp3",
+    "text": "One more time!",
+    "dur": 1.01,
+    "lufs": -20.5,
+    "peak": -7.2,
+    "speed": 1.18,
+    "pitchRange": 14.8,
+    "bytes": 8611
+   },
+   {
+    "id": "onemore-2",
+    "file": "more/onemore-2.mp3",
+    "text": "Again! One more time!",
+    "dur": 1.27,
+    "lufs": -20.5,
+    "peak": -7.5,
+    "speed": 1.1,
+    "pitchRange": 13.3,
+    "bytes": 10700
+   },
+   {
+    "id": "onemore-3",
+    "file": "more/onemore-3.mp3",
+    "text": "Run it back, one more time!",
+    "dur": 1.64,
+    "lufs": -20.5,
+    "peak": -7.2,
+    "speed": 1.1,
+    "pitchRange": 13.4,
+    "bytes": 13626
+   }
+  ],
+  "psycho": [
+   {
+    "id": "psycho-1",
+    "file": "more/psycho-1.mp3",
+    "text": "DJ Psycho Fingers in the mix!",
+    "dur": 2.25,
+    "lufs": -20.4,
+    "peak": -6.7,
+    "speed": 1.18,
+    "pitchRange": 12.9,
+    "bytes": 18642
+   },
+   {
+    "id": "psycho-2",
+    "file": "more/psycho-2.mp3",
+    "text": "Big up DJ Psycho Fingers!",
+    "dur": 1.95,
+    "lufs": -20.3,
+    "peak": -7.1,
+    "speed": 1.1,
+    "pitchRange": 13.9,
+    "bytes": 16134
+   },
+   {
+    "id": "psycho-3",
+    "file": "more/psycho-3.mp3",
+    "text": "Psycho Fingers on the decks!",
+    "dur": 1.78,
+    "lufs": -20.4,
+    "peak": -7.3,
+    "speed": 1.18,
+    "pitchRange": 10.8,
+    "bytes": 14880
+   }
+  ],
+  "noise": [
+   {
+    "id": "noise-1",
+    "file": "more/noise-1.mp3",
+    "text": "Make some noise!",
+    "dur": 1.06,
+    "lufs": -20.4,
+    "peak": -7.3,
+    "speed": 1.18,
+    "pitchRange": 14.3,
+    "bytes": 9029
+   },
+   {
+    "id": "noise-2",
+    "file": "more/noise-2.mp3",
+    "text": "Make some noise for that one!",
+    "dur": 1.55,
+    "lufs": -20.4,
+    "peak": -7.5,
+    "speed": 1.1,
+    "pitchRange": 12.0,
+    "bytes": 12999
+   },
+   {
+    "id": "noise-3",
+    "file": "more/noise-3.mp3",
+    "text": "Make some noise, people!",
+    "dur": 1.53,
+    "lufs": -20.4,
+    "peak": -7.2,
+    "speed": 1.1,
+    "pitchRange": 14.8,
+    "bytes": 12790
+   }
+  ],
+  "intro": [
+   {
+    "id": "intro-1",
+    "file": "more/intro-1.mp3",
+    "text": "Here comes a big one!",
+    "dur": 1.3,
+    "lufs": -20.4,
+    "peak": -7.4,
+    "speed": 1.1,
+    "pitchRange": 12.0,
+    "bytes": 10909
+   },
+   {
+    "id": "intro-2",
+    "file": "more/intro-2.mp3",
+    "text": "Brand new vibes, listen!",
+    "dur": 1.55,
+    "lufs": -20.4,
+    "peak": -7.1,
+    "speed": 1.18,
+    "pitchRange": 9.7,
+    "bytes": 12999
+   },
+   {
+    "id": "intro-3",
+    "file": "more/intro-3.mp3",
+    "text": "Fresh one coming in!",
+    "dur": 1.25,
+    "lufs": -20.4,
+    "peak": -7.2,
+    "speed": 1.18,
+    "pitchRange": 12.9,
+    "bytes": 10492
+   }
+  ],
+  "outro": [
+   {
+    "id": "outro-1",
+    "file": "more/outro-1.mp3",
+    "text": "That was a big tune!",
+    "dur": 1.24,
+    "lufs": -20.4,
+    "peak": -7.1,
+    "speed": 1.1,
+    "pitchRange": 15.2,
+    "bytes": 10492
+   },
+   {
+    "id": "outro-2",
+    "file": "more/outro-2.mp3",
+    "text": "Big tune! Big tune!",
+    "dur": 1.35,
+    "lufs": -20.3,
+    "peak": -7.3,
+    "speed": 1.1,
+    "pitchRange": 14.5,
+    "bytes": 11327
+   },
+   {
+    "id": "outro-3",
+    "file": "more/outro-3.mp3",
+    "text": "Did you feel that one?",
+    "dur": 1.35,
+    "lufs": -20.4,
+    "peak": -7.3,
+    "speed": 1.1,
+    "pitchRange": 15.9,
+    "bytes": 11327
+   }
+  ],
+  "dominica": [
+   {
+    "id": "dominica-1",
+    "file": "more/dominica-1.mp3",
+    "text": "Dominica, stand up!",
+    "dur": 1.29,
+    "lufs": -20.3,
+    "peak": -7.3,
+    "speed": 1.18,
+    "pitchRange": 11.1,
+    "bytes": 10909
+   },
+   {
+    "id": "dominica-2",
+    "file": "more/dominica-2.mp3",
+    "text": "Dominica, where you at?",
+    "dur": 1.37,
+    "lufs": -20.4,
+    "peak": -7.4,
+    "speed": 1.18,
+    "pitchRange": 13.0,
+    "bytes": 11536
+   },
+   {
+    "id": "dominica-3",
+    "file": "more/dominica-3.mp3",
+    "text": "Dominica in the house!",
+    "dur": 1.34,
+    "lufs": -20.4,
+    "peak": -7.3,
+    "speed": 1.1,
+    "pitchRange": 9.2,
+    "bytes": 11327
+   }
+  ],
+  "nature": [
+   {
+    "id": "nature-2",
+    "file": "more/nature-2.mp3",
+    "text": "Big up the Nature Isle!",
+    "dur": 1.34,
+    "lufs": -20.4,
+    "peak": -7.7,
+    "speed": 1.1,
+    "pitchRange": 13.6,
+    "bytes": 11327
+   },
+   {
+    "id": "nature-3",
+    "file": "more/nature-3.mp3",
+    "text": "Straight from the Nature Isle!",
+    "dur": 1.45,
+    "lufs": -20.4,
+    "peak": -7.7,
+    "speed": 1.1,
+    "pitchRange": 13.2,
+    "bytes": 12163
+   },
+   {
+    "id": "nature-1",
+    "file": "more/nature-1.mp3",
+    "text": "Nature Isle vibes!",
+    "dur": 1.67,
+    "lufs": -20.4,
+    "peak": -7.2,
+    "speed": 1.1,
+    "pitchRange": 14.0,
+    "bytes": 13835
+   }
+  ],
+  "afternoon": [
+   {
+    "id": "afternoon-1",
+    "file": "more/afternoon-1.mp3",
+    "text": "Afternoon vibes!",
+    "dur": 1.2,
+    "lufs": -20.4,
+    "peak": -7.3,
+    "speed": 1.1,
+    "pitchRange": 13.3,
+    "bytes": 10074
+   },
+   {
+    "id": "afternoon-2",
+    "file": "more/afternoon-2.mp3",
+    "text": "Sunshine and big tunes!",
+    "dur": 1.57,
+    "lufs": -20.4,
+    "peak": -7.1,
+    "speed": 1.1,
+    "pitchRange": 13.9,
+    "bytes": 13208
+   }
+  ],
+  "evening": [
+   {
+    "id": "evening-1",
+    "file": "more/evening-1.mp3",
+    "text": "Good evening, people!",
+    "dur": 1.2,
+    "lufs": -20.4,
+    "peak": -7.4,
+    "speed": 1.18,
+    "pitchRange": 18.1,
+    "bytes": 10283
+   },
+   {
+    "id": "evening-2",
+    "file": "more/evening-2.mp3",
+    "text": "Evening vibes, let's go!",
+    "dur": 1.6,
+    "lufs": -20.4,
+    "peak": -7.4,
+    "speed": 1.18,
+    "pitchRange": 11.2,
+    "bytes": 13417
+   }
+  ],
+  "late": [
+   {
+    "id": "late-1",
+    "file": "more/late-1.mp3",
+    "text": "It's getting late and we still going!",
+    "dur": 2.06,
+    "lufs": -20.4,
+    "peak": -7.4,
+    "speed": 1.1,
+    "pitchRange": 13.5,
+    "bytes": 16970
+   },
+   {
+    "id": "late-2",
+    "file": "more/late-2.mp3",
+    "text": "Late night crew, big up!",
+    "dur": 1.56,
+    "lufs": -20.5,
+    "peak": -7.1,
+    "speed": 1.1,
+    "pitchRange": 11.0,
+    "bytes": 12999
+   }
+  ],
+  "midnight": [
+   {
+    "id": "midnight-1",
+    "file": "more/midnight-1.mp3",
+    "text": "Midnight vibes!",
+    "dur": 1.02,
+    "lufs": -20.4,
+    "peak": -7.1,
+    "speed": 1.18,
+    "pitchRange": 12.4,
+    "bytes": 8820
+   },
+   {
+    "id": "midnight-2",
+    "file": "more/midnight-2.mp3",
+    "text": "Past midnight and the party don't stop!",
+    "dur": 2.35,
+    "lufs": -20.4,
+    "peak": -7.2,
+    "speed": 1.1,
+    "pitchRange": 11.8,
+    "bytes": 19269
+   }
+  ],
+  "early": [
+   {
+    "id": "early-2",
+    "file": "more/early-2.mp3",
+    "text": "Sun soon come, keep dancing!",
+    "dur": 1.88,
+    "lufs": -20.4,
+    "peak": -7.3,
+    "speed": 1.18,
+    "pitchRange": 11.4,
+    "bytes": 15716
+   },
+   {
+    "id": "early-1",
+    "file": "more/early-1.mp3",
+    "text": "Early morning crew, big up!",
+    "dur": 1.7,
+    "lufs": -20.5,
+    "peak": -7.5,
+    "speed": 1.1,
+    "pitchRange": 10.5,
+    "bytes": 14253
+   }
+  ]
+ }
+}

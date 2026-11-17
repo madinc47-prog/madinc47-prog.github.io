@@ -1,0 +1,10 @@
+{
+  "id": "fl-keys-clav-soft",
+  "n": "FLEX Clav Soft",
+  "base": "pluck",
+  "tone": {
+    "drive": 0.1
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

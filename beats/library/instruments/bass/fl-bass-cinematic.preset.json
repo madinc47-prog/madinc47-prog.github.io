@@ -1,0 +1,12 @@
+{
+  "id": "fl-bass-cinematic",
+  "n": "FLEX Cinematic Bass",
+  "p": {
+    "i": "bass",
+    "tone": {
+      "drive": 0.25
+    }
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

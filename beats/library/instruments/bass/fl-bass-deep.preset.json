@@ -1,0 +1,12 @@
+{
+  "id": "fl-bass-deep",
+  "n": "FLEX Deep Sub",
+  "p": {
+    "i": "bass",
+    "tone": {
+      "drive": 0.05
+    }
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

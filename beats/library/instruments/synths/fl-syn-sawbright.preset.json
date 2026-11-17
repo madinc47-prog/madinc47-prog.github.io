@@ -1,0 +1,12 @@
+{
+  "id": "fl-syn-sawbright",
+  "n": "FLEX Bright Saw",
+  "p": {
+    "i": "hyperlead",
+    "tone": {
+      "drive": 0.2
+    }
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

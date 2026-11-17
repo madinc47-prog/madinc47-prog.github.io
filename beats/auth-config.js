@@ -1,0 +1,1 @@
+window.IPB_AUTH_CONFIG={supabaseUrl:"https://wgruvyctmksvnypugash.supabase.co",supabaseAnonKey:"sb_publishable_uZq5T3jDbdtbtd8O6CHmHQ_Ajwz2vIV"};

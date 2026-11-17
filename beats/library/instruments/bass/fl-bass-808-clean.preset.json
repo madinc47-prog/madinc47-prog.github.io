@@ -1,0 +1,13 @@
+{
+  "id": "fl-bass-808-clean",
+  "n": "FLEX 808 Clean",
+  "p": {
+    "i": "808",
+    "tone": {
+      "drive": 0.1,
+      "glide": 0.35
+    }
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

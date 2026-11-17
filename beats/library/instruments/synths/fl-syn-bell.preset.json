@@ -1,0 +1,12 @@
+{
+  "id": "fl-syn-bell",
+  "n": "FLEX Digital Bell",
+  "p": {
+    "i": "dbell",
+    "tone": {
+      "drive": 0
+    }
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

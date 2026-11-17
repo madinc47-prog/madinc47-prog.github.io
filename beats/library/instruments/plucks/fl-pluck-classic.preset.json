@@ -1,0 +1,10 @@
+{
+  "id": "fl-pluck-classic",
+  "n": "FLEX Classic Pluck",
+  "p": {
+    "i": "pluck",
+    "tone": {}
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

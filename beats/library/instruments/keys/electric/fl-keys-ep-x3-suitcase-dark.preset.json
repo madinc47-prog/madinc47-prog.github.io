@@ -1,0 +1,10 @@
+{
+  "id": "fl-keys-ep-x3-suitcase-dark",
+  "n": "FLEX Suitcase Dark",
+  "base": "rhodes",
+  "tone": {
+    "drive": 0.18
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

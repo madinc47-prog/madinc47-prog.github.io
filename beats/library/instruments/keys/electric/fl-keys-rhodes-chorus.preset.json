@@ -1,0 +1,10 @@
+{
+  "id": "fl-keys-rhodes-chorus",
+  "n": "FLEX Rhodes Chorus",
+  "base": "rhodes",
+  "tone": {
+    "drive": 0.08
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}
