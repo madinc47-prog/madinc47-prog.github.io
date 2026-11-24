@@ -1,0 +1,10 @@
+{
+  "id": "fl-keys-org-x6-house-stab",
+  "n": "FLEX House Organ Stab",
+  "base": "organ",
+  "tone": {
+    "drive": 0.3
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

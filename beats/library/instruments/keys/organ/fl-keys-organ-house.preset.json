@@ -1,0 +1,10 @@
+{
+  "id": "fl-keys-organ-house",
+  "n": "FLEX House Organ",
+  "base": "organ",
+  "tone": {
+    "drive": 0.25
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

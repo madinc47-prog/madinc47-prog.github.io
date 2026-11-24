@@ -1,0 +1,10 @@
+{
+  "id": "fl-keys-grand-x9-prepared",
+  "n": "FLEX Prepared Piano",
+  "base": "grand",
+  "tone": {
+    "drive": 0.2
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

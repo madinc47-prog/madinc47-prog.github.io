@@ -1,0 +1,46 @@
+{
+  "id": "/beats/check",
+  "name": "Sound Check",
+  "short_name": "Sound Check",
+  "description": "Mic and speaker sound check",
+  "start_url": "/beats/check/",
+  "scope": "/beats/check/",
+  "display": "fullscreen",
+  "display_override": [
+    "fullscreen",
+    "standalone"
+  ],
+  "orientation": "any",
+  "background_color": "#08120e",
+  "theme_color": "#0c1a14",
+  "categories": [
+    "music",
+    "entertainment"
+  ],
+  "icons": [
+    {
+      "src": "../icons/check/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "../icons/check/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "../icons/check/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "../icons/check/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

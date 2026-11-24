@@ -1,0 +1,39 @@
+{
+  "kits": 29,
+  "drumItems": 2900,
+  "drumsByFolder": {
+    "kicks": 406,
+    "snares": 406,
+    "hats": 348,
+    "claps": 290,
+    "808s": 348,
+    "percussion": 348,
+    "cymbals": 174,
+    "shakers": 232,
+    "rides": 174,
+    "crashes": 174
+  },
+  "instruments": 196,
+  "instrumentsByFolder": {
+    "bass": 24,
+    "synths": 20,
+    "leads": 15,
+    "pads": 12,
+    "plucks": 12,
+    "keys": 113
+  },
+  "keysBySub": {
+    "acoustic": 24,
+    "electric": 23,
+    "organ": 14,
+    "clav": 6,
+    "harpsichord": 4,
+    "melodic": 36,
+    "strings": 1,
+    "bell": 2,
+    "ep": 1,
+    "pad": 1,
+    "pluck": 1
+  },
+  "note": "Regenerated 2026-11-04 from kits/instruments manifests (29 kits \u00d7 100 = 2900)"
+}

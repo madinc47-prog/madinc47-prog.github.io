@@ -1,0 +1,12 @@
+{
+  "id": "fl-lead-oct",
+  "n": "FLEX Oct Lead",
+  "p": {
+    "i": "arp",
+    "tone": {
+      "drive": 0.2
+    }
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

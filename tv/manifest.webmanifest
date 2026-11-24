@@ -1,0 +1,46 @@
+{
+  "id": "/tv/",
+  "name": "Island Beats TV",
+  "short_name": "IB TV",
+  "description": "Dominica creator video hub",
+  "start_url": "/tv/?source=pwa",
+  "scope": "/tv/",
+  "display": "fullscreen",
+  "display_override": [
+    "fullscreen",
+    "standalone"
+  ],
+  "orientation": "any",
+  "background_color": "#14110c",
+  "theme_color": "#0b6b3a",
+  "categories": [
+    "music",
+    "entertainment"
+  ],
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

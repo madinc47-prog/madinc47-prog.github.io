@@ -1,0 +1,10 @@
+{
+  "id": "fl-keys-organ-jazz",
+  "n": "FLEX Jazz Organ",
+  "base": "organ",
+  "tone": {
+    "drive": 0.1
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

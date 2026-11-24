@@ -1,0 +1,8 @@
+{
+  "id": "fl-keys-toy",
+  "n": "FLEX Toy Piano",
+  "base": "dbell",
+  "tone": {},
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

@@ -1,0 +1,4 @@
+CC0 1.0 / Public Domain vocal samples for Island Pin Beats.
+See ../CREDITS.md and ../../library/CREDITS.md for sources.
+playable/ = keys / both; beats/ = beat-production (and some 'both' phrases).
+Do not ship raw/ from the staging tree — only these app-ready MP3s.

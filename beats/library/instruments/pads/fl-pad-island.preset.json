@@ -1,0 +1,10 @@
+{
+  "id": "fl-pad-island",
+  "n": "FLEX Island Pad",
+  "p": {
+    "i": "pad",
+    "tone": {}
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

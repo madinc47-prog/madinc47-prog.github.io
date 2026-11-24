@@ -1,0 +1,56 @@
+Gravy Beats instrument samples - credits and licenses
+
+Sources and licenses
+
+| Source | Author | License | Used for |
+| Salamander Grand Piano V3 | Alexander Holm | CC-BY 3.0 | Piano (Classic Piano, Kompa Piano) |
+| FluidR3_GM soundfont (MIDI.js rendering by gleitz/midi-js-soundfonts) | Frank Wen and contributors | CC-BY 3.0 (gleitz) / MIT (original) | E-piano, organ, harmonium (reed organ), string ensemble, brass section, finger bass, clean guitar, warm pad |
+| VSCO 2 Community Edition | Versilian Studios | CC0 1.0 | Chutney strings (violin spiccato) |
+| VCSL — Versilian Community Sample Library | Versilian Studios | CC0 1.0 | Snares, rims, claps, toms, hats, cymbals, brake-drum iron, frame drums, darbuka, triangle, rope snare, shakers, cowbells (high and low bell, open and muted, soft and hard velocity layers), conga, bongo, woodblock |
+| Sonic Pi built-in samples (from Freesound) | Sam Aaron / Freesound contributors | CC0 1.0 | Kicks (acoustic, live, punch, deep, fat, 808), tight and dub snares, pedal hat |
+
+| FreePats Finger Bass YR | Andrea Biasior (Yamaha RBX bass guitar) | CC0 1.0 | Bass Gtr |
+| FreePats FSBS Electric Guitar Distorted #1 | FreePats (real Fender guitar, DI through an amp/effects rack) | CC0 1.0 | Rock Gtr (soft + hard layers) |
+| FreePats FSBS Electric Guitar Clean #1 (bridge, small) | FreePats | CC0 1.0 | Clean Gtr |
+| FreePats Spanish Classical Guitar | Roberto (FreePats) | CC0 1.0 | Nylon Gtr |
+| 052 Florestan Ahh Choir (SF2) | Nando Florestan | Public domain (as listed by Musical Artifacts #388 and Polyphone) | Choir |
+| "ooh-aha.wav" (Freesound #419161) | ellenmentor (her own voice, 12 layered female voices) | CC0 1.0 (licence verified on https://freesound.org/people/ellenmentor/sounds/419161/ — creativecommons.org/publicdomain/zero/1.0) | Ooh-Aha (female) — from Freesound's public HQ preview of that sound, level −3.5 dB, 128 kbps |
+| Freesound "Percussion Samples" pack 28352 | Sassaby | CC0 1.0 | Timbales (high, low, high rimshot), mambo bell (body, mouth), cha-cha bell |
+| VCSL Conga / Quinto / Tumba / Bongos | Versilian Studios | CC0 1.0 | Congas (open, muted), quinto, tumba, bongos hi/lo (soft + hard) |
+| Sonic Pi built-in samples | Freesound contributors | CC0 1.0 | Hip-hop / rap / trap / drill kicks, snares, hats, snaps, bell, tick |
+| 808 basses | made by tools/build_expansion.py (synthesised, no third-party audio) | n/a | 808 (keys), Slide 808, 808 pads |
+
+Salamander and VSCO files were copied from the suite's own free library (same licenses).
+The build script is `tools/build_samples.py`.
+
+
+CC-BY 3.0: https://creativecommons.org/licenses/by/3.0/
+CC0 1.0: https://creativecommons.org/publicdomain/zero/1.0/
+MIT: https://opensource.org/licenses/MIT
+Cowbells: VCSL Idiophones/Struck Idiophones/Cowbells (Cowbell1 = high, Cowbell2 = low; Normal and Muted strokes; v2 soft and v3 hard layers), CC0 1.0, no credit required.
+Changes: trimmed, peak normalized, looped (crossfaded) for sustained instruments, converted to mono MP3.
+Expansion (Nov 2026): built by tools/build_expansion.py. Choir zones keep the SF2's own loop points (unrolled, then crossfade-looped) and fine-tune.
+Florestan Ahh Choir: https://musical-artifacts.com/artifacts/388 and https://www.polyphone.io/en/soundfonts/vocals/221-052-florestan-ahh-choir (both list it as public domain).
+Sassaby timbales: https://freesound.org/people/Sassaby/packs/28352/ (sounds 533095, 533094, 533089, 533091, 533090, 533092; CC0).
+Session drum kit (gb14, reggae one-drop first): Virtuosity Drums by studiorack, drummer Austin McMahon on the house kit at Virtuosity Musical Instruments, Boston, recorded live in the room with six mic positions. https://github.com/studiorack/virtuosity-drums (LICENSE: CC0 1.0 Universal, no credit required). Built by tools/build_session_kit.py: each hit = close mic + overheads + room mic of the same take mixed to mono (room ambience kept), velocity layers + round-robins kept, trimmed, peak normalized, mono MP3 96 kbps (files drums/vd-*.mp3). Only the kit pieces are used (not the "perc" folder).
+
+gb22 vocal instruments (CC0 1.0 / Public Domain) — November 2026
+----------------------------------------------------------------
+All new vocal instruments below are CC0 1.0 or Public Domain (Emmanuel's 2026-11-17 rule).
+Attribution is not legally required; makers are credited gratefully. Staging notes and
+full source URLs: /workspace/vocal-samples-staging/CREDITS.txt (not shipped in the app).
+Files live under samples/{legatoah,synthchoir,crowdahh,crowdooh,crowdmmm,howlong*,humfs,humam,smoothvox,choirs*,soulhold,choralchord,orksvowels}/.
+
+| Instrument | Author / source | License | Used for |
+| Chromatic legato “ah” (C3–Bb4, 23 notes) | Public-domain / CC0 legato ah set (staged as legato-ah-*.mp3) | CC0 1.0 / Public Domain | Legato Ah (Classical) |
+| FreePats Synth Pad Choir (C/F# 2–7) | FreePats — https://freepats.zenvoid.org/Synthesizer/synth-pad.html and github.com/freepats/synth-pad-choir | CC0 1.0 | Synth Choir Pad (Electronic) |
+| GameSoundCon 2024 Walla choir vowels (ahh / ooh / mmm, near concert F) | Shane Vincent / ShangusBurger — Freesound pack 42098 | CC0 1.0 | Crowd Ahh / Ooh / Mmm (Classical) |
+| How Long Choir (Bm, 80 BPM) full mix + 8 stems | f-r-a-g-i-l-e on Freesound | CC0 1.0 | How Long Choir and High/Mid/Low stems (Pop) |
+| Humming F#m and Am | xkeril on Freesound | CC0 1.0 | Humming F#m / Am (Electronic) |
+| Smooth Vox 1 | Hajisounds on Freesound | CC0 1.0 | Smooth Vox (Electronic) |
+| Choir Voices Soundscapes 2 (01, 05, 10) | Signature Sounds on Freesound (#872320, #872324, #872329) | CC0 1.0 | Choir Soundscape 1 / 5 / 10 (Electronic) |
+| Held soul vocal line | Ehved — “female singing sacrifice” on Freesound | CC0 1.0 | Soul Hold (R&B) |
+| Choral chord with breaths | blackbar on Freesound | CC0 1.0 | Choral Chord (Classical) |
+| Merry Orks sung vowels (ah, eh, ih, oh, oo, uh) | Merry Orks (clean vowels only; explicit phrases were not bundled) | CC0 1.0 | Merry Orks Vowels (Rock) |
+
+Backup Vocals remains removed (gb21). These are playable key instruments for the on-screen keys and the Donner DMK-25 Pro.

@@ -1,0 +1,12 @@
+{
+  "id": "fl-bass-tight",
+  "n": "FLEX Tight Bass",
+  "p": {
+    "i": "synthbass",
+    "tone": {
+      "drive": 0.4
+    }
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

@@ -1,0 +1,728 @@
+{
+  "version": "20261102cov2",
+  "categories": [
+    {
+      "id": "microphones",
+      "label": "Microphones"
+    },
+    {
+      "id": "headphones",
+      "label": "Headphones"
+    },
+    {
+      "id": "sound-waves",
+      "label": "Sound waves"
+    },
+    {
+      "id": "studio-gear",
+      "label": "Studio gear"
+    },
+    {
+      "id": "abstract-audio",
+      "label": "Abstract audio"
+    }
+  ],
+  "images": [
+    {
+      "id": "microphones-01-carbon-microphone-c-1920s-ellis-electrical-labor",
+      "cat": "microphones",
+      "title": "Carbon microphone, c. 1920s, Ellis Electrical Laboratories - Museum of Science and Industry (Chicago) - DSC06626.JPG",
+      "full": "/studio/covers/full/microphones-01-carbon-microphone-c-1920s-ellis-electrical-labor.webp",
+      "thumb": "/studio/covers/thumbs/microphones-01-carbon-microphone-c-1920s-ellis-electrical-labor.webp",
+      "license": "CC0",
+      "artist": "Daderot",
+      "source": "https://commons.wikimedia.org/wiki/File%3ACarbon_microphone%2C_c._1920s%2C_Ellis_Electrical_Laboratories_-_Museum_of_Science_and_Industry_%28Chicago%29_-_DSC06626.JPG"
+    },
+    {
+      "id": "microphones-02-microphone-to-chat-with-the-chat-bot-jpg",
+      "cat": "microphones",
+      "title": "Microphone to chat with the chat bot.jpg",
+      "full": "/studio/covers/full/microphones-02-microphone-to-chat-with-the-chat-bot-jpg.webp",
+      "thumb": "/studio/covers/thumbs/microphones-02-microphone-to-chat-with-the-chat-bot-jpg.webp",
+      "license": "CC0",
+      "artist": "Wikideas1",
+      "source": "https://commons.wikimedia.org/wiki/File%3AMicrophone_to_chat_with_the_chat_bot.jpg"
+    },
+    {
+      "id": "microphones-03-spencerkimballearmountedmicrophone-jpg",
+      "cat": "microphones",
+      "title": "SpencerKimballEarMountedMicrophone.jpg",
+      "full": "/studio/covers/full/microphones-03-spencerkimballearmountedmicrophone-jpg.webp",
+      "thumb": "/studio/covers/thumbs/microphones-03-spencerkimballearmountedmicrophone-jpg.webp",
+      "license": "CC0",
+      "artist": "Unknown",
+      "source": "https://commons.wikimedia.org/wiki/File%3ASpencerKimballEarMountedMicrophone.jpg"
+    },
+    {
+      "id": "microphones-04-microphone-lectrostatique-jpg",
+      "cat": "microphones",
+      "title": "Microphone \u00e9lectrostatique.jpg",
+      "full": "/studio/covers/full/microphones-04-microphone-lectrostatique-jpg.webp",
+      "thumb": "/studio/covers/thumbs/microphones-04-microphone-lectrostatique-jpg.webp",
+      "license": "Public domain",
+      "artist": "\u00c9ric Chassaing at French Wikipedia",
+      "source": "https://commons.wikimedia.org/wiki/File%3AMicrophone_%C3%A9lectrostatique.jpg"
+    },
+    {
+      "id": "microphones-05-winston-churchill-at-the-microphone-in-the-cabin",
+      "cat": "microphones",
+      "title": "Winston Churchill at the microphone in the Cabinet Office, making his 'VE Day' broadcast to the nation, 8 May 1945. H41844.jpg",
+      "full": "/studio/covers/full/microphones-05-winston-churchill-at-the-microphone-in-the-cabin.webp",
+      "thumb": "/studio/covers/thumbs/microphones-05-winston-churchill-at-the-microphone-in-the-cabin.webp",
+      "license": "Public domain",
+      "artist": "War Office official photographer, Horton (Maj)",
+      "source": "https://commons.wikimedia.org/wiki/File%3AWinston_Churchill_at_the_microphone_in_the_Cabinet_Office%2C_making_his_%27VE_Day%27_broadcast_to_the_nation%2C_8_May_1945._H41844.jpg"
+    },
+    {
+      "id": "microphones-06-winston-churchill-at-a-bbc-microphone-about-to-b",
+      "cat": "microphones",
+      "title": "Winston Churchill at a BBC microphone about to broadcast to the nation on the afternoon of VE Day, 8 May 1945. H41843.jpg",
+      "full": "/studio/covers/full/microphones-06-winston-churchill-at-a-bbc-microphone-about-to-b.webp",
+      "thumb": "/studio/covers/thumbs/microphones-06-winston-churchill-at-a-bbc-microphone-about-to-b.webp",
+      "license": "Public domain",
+      "artist": "War Office official photographer, Egalton (Mr), Horton (Major)",
+      "source": "https://commons.wikimedia.org/wiki/File%3AWinston_Churchill_at_a_BBC_microphone_about_to_broadcast_to_the_nation_on_the_afternoon_of_VE_Day%2C_8_May_1945._H41843.jpg"
+    },
+    {
+      "id": "microphones-08-tomato-can-radio-microphone-presented-to-smithso",
+      "cat": "microphones",
+      "title": "'Tomato Can' radio microphone presented to Smithsonian Institution. Washington, D.C., Oct. 28. The 'Tomato Can' radio microphone which was used to broadcast the Harding-Cox election returns LCCN2016874234.jpg",
+      "full": "/studio/covers/full/microphones-08-tomato-can-radio-microphone-presented-to-smithso.webp",
+      "thumb": "/studio/covers/thumbs/microphones-08-tomato-can-radio-microphone-presented-to-smithso.webp",
+      "license": "Public domain",
+      "artist": "Harris &amp; Ewing, photographer",
+      "source": "https://commons.wikimedia.org/wiki/File%3A%27Tomato_Can%27_radio_microphone_presented_to_Smithsonian_Institution._Washington%2C_D.C.%2C_Oct._28._The_%27Tomato_Can%27_radio_microphone_which_was_used_to_broadcast_the_Harding-Cox_election_returns_LCCN2016874234.jpg"
+    },
+    {
+      "id": "microphones-09-the-voice-of-the-united-states-of-america-microp",
+      "cat": "microphones",
+      "title": "\"THE VOICE OF THE UNITED STATES OF AMERICA\" microphone in 1942 and other microphone with the German translation of same phrase, from- William Harlan Hale, first VOA broadcast (cropped).png",
+      "full": "/studio/covers/full/microphones-09-the-voice-of-the-united-states-of-america-microp.webp",
+      "thumb": "/studio/covers/thumbs/microphones-09-the-voice-of-the-united-states-of-america-microp.webp",
+      "license": "Public domain",
+      "artist": "Voice of America",
+      "source": "https://commons.wikimedia.org/wiki/File%3A%22THE_VOICE_OF_THE_UNITED_STATES_OF_AMERICA%22_microphone_in_1942_and_other_microphone_with_the_German_translation_of_same_phrase%2C_from-_William_Harlan_Hale%2C_first_VOA_broadcast_%28cropped%29.png"
+    },
+    {
+      "id": "microphones-10-trader-horn-in-front-of-nbc-radio-microphone-192",
+      "cat": "microphones",
+      "title": "Trader Horn in front of NBC radio microphone, 1928.jpg",
+      "full": "/studio/covers/full/microphones-10-trader-horn-in-front-of-nbc-radio-microphone-192.webp",
+      "thumb": "/studio/covers/thumbs/microphones-10-trader-horn-in-front-of-nbc-radio-microphone-192.webp",
+      "license": "Public domain",
+      "artist": "The New York Times",
+      "source": "https://commons.wikimedia.org/wiki/File%3ATrader_Horn_in_front_of_NBC_radio_microphone%2C_1928.jpg"
+    },
+    {
+      "id": "microphones-11-museum-of-making-music-electro-voice-re15-microp",
+      "cat": "microphones",
+      "title": "Museum of Making Music - Electro-Voice RE15 Microphone, Cry Baby Wah-Wah, Shure SM57 Dynamic Microphone - 2017 NAMM Show (2017-01-22 09.35.22 by Jim J).jpg",
+      "full": "/studio/covers/full/microphones-11-museum-of-making-music-electro-voice-re15-microp.webp",
+      "thumb": "/studio/covers/thumbs/microphones-11-museum-of-making-music-electro-voice-re15-microp.webp",
+      "license": "Public domain",
+      "artist": "Jim J",
+      "source": "https://commons.wikimedia.org/wiki/File%3AMuseum_of_Making_Music_-_Electro-Voice_RE15_Microphone%2C_Cry_Baby_Wah-Wah%2C_Shure_SM57_Dynamic_Microphone_-_2017_NAMM_Show_%282017-01-22_09.35.22_by_Jim_J%29.jpg"
+    },
+    {
+      "id": "microphones-13-silver-and-black-studio-microphone-condenser-jpg",
+      "cat": "microphones",
+      "title": "Silver and black studio microphone condenser.jpg",
+      "full": "/studio/covers/full/microphones-13-silver-and-black-studio-microphone-condenser-jpg.webp",
+      "thumb": "/studio/covers/thumbs/microphones-13-silver-and-black-studio-microphone-condenser-jpg.webp",
+      "license": "CC0",
+      "artist": "Jonathan Velasquez",
+      "source": "https://commons.wikimedia.org/wiki/File%3ASilver_and_black_studio_microphone_condenser.jpg"
+    },
+    {
+      "id": "microphones-300-studio-mic-blue",
+      "cat": "microphones",
+      "title": "Blue Studio Mic",
+      "full": "/studio/covers/full/microphones-300-studio-mic-blue.webp",
+      "thumb": "/studio/covers/thumbs/microphones-300-studio-mic-blue.webp",
+      "license": "CC0",
+      "artist": "Island Pin (original CC0)",
+      "source": "https://madinc47-prog.github.io/studio/podcast-live.html"
+    },
+    {
+      "id": "microphones-301-studio-mic-gold",
+      "cat": "microphones",
+      "title": "Gold Studio Mic",
+      "full": "/studio/covers/full/microphones-301-studio-mic-gold.webp",
+      "thumb": "/studio/covers/thumbs/microphones-301-studio-mic-gold.webp",
+      "license": "CC0",
+      "artist": "Island Pin (original CC0)",
+      "source": "https://madinc47-prog.github.io/studio/podcast-live.html"
+    },
+    {
+      "id": "microphones-302-studio-mic-amber",
+      "cat": "microphones",
+      "title": "Amber Studio Mic",
+      "full": "/studio/covers/full/microphones-302-studio-mic-amber.webp",
+      "thumb": "/studio/covers/thumbs/microphones-302-studio-mic-amber.webp",
+      "license": "CC0",
+      "artist": "Island Pin (original CC0)",
+      "source": "https://madinc47-prog.github.io/studio/podcast-live.html"
+    },
+    {
+      "id": "headphones-01-high-impedance-radio-engineering-headphones-jpg",
+      "cat": "headphones",
+      "title": "High Impedance Radio Engineering Headphones.jpg",
+      "full": "/studio/covers/full/headphones-01-high-impedance-radio-engineering-headphones-jpg.webp",
+      "thumb": "/studio/covers/thumbs/headphones-01-high-impedance-radio-engineering-headphones-jpg.webp",
+      "license": "CC0",
+      "artist": "Mojmir Churavy",
+      "source": "https://commons.wikimedia.org/wiki/File%3AHigh_Impedance_Radio_Engineering_Headphones.jpg"
+    },
+    {
+      "id": "headphones-02-headphone-dynamic-clay-png",
+      "cat": "headphones",
+      "title": "Headphone-dynamic-clay.png",
+      "full": "/studio/covers/full/headphones-02-headphone-dynamic-clay-png.webp",
+      "thumb": "/studio/covers/thumbs/headphones-02-headphone-dynamic-clay-png.webp",
+      "license": "CC0",
+      "artist": "Vijay Verma",
+      "source": "https://commons.wikimedia.org/wiki/File%3AHeadphone-dynamic-clay.png"
+    },
+    {
+      "id": "headphones-03-headphone-dynamic-color-png",
+      "cat": "headphones",
+      "title": "Headphone-dynamic-color.png",
+      "full": "/studio/covers/full/headphones-03-headphone-dynamic-color-png.webp",
+      "thumb": "/studio/covers/thumbs/headphones-03-headphone-dynamic-color-png.webp",
+      "license": "CC0",
+      "artist": "Vijay Verma",
+      "source": "https://commons.wikimedia.org/wiki/File%3AHeadphone-dynamic-color.png"
+    },
+    {
+      "id": "headphones-04-headphone-dynamic-premium-png",
+      "cat": "headphones",
+      "title": "Headphone-dynamic-premium.png",
+      "full": "/studio/covers/full/headphones-04-headphone-dynamic-premium-png.webp",
+      "thumb": "/studio/covers/thumbs/headphones-04-headphone-dynamic-premium-png.webp",
+      "license": "CC0",
+      "artist": "Vijay Verma",
+      "source": "https://commons.wikimedia.org/wiki/File%3AHeadphone-dynamic-premium.png"
+    },
+    {
+      "id": "headphones-05-headphone-dynamic-gradient-png",
+      "cat": "headphones",
+      "title": "Headphone-dynamic-gradient.png",
+      "full": "/studio/covers/full/headphones-05-headphone-dynamic-gradient-png.webp",
+      "thumb": "/studio/covers/thumbs/headphones-05-headphone-dynamic-gradient-png.webp",
+      "license": "CC0",
+      "artist": "Vijay Verma",
+      "source": "https://commons.wikimedia.org/wiki/File%3AHeadphone-dynamic-gradient.png"
+    },
+    {
+      "id": "headphones-06-homemade-high-level-headphones-with-portable-rad",
+      "cat": "headphones",
+      "title": "Homemade high level headphones with portable radio 01.jpg",
+      "full": "/studio/covers/full/headphones-06-homemade-high-level-headphones-with-portable-rad.webp",
+      "thumb": "/studio/covers/thumbs/headphones-06-homemade-high-level-headphones-with-portable-rad.webp",
+      "license": "CC0",
+      "artist": "B137",
+      "source": "https://commons.wikimedia.org/wiki/File%3AHomemade_high_level_headphones_with_portable_radio_01.jpg"
+    },
+    {
+      "id": "headphones-08-action-max-stereo-headphones-jpg",
+      "cat": "headphones",
+      "title": "Action-Max-Stereo-Headphones.jpg",
+      "full": "/studio/covers/full/headphones-08-action-max-stereo-headphones-jpg.webp",
+      "thumb": "/studio/covers/thumbs/headphones-08-action-max-stereo-headphones-jpg.webp",
+      "license": "Public domain",
+      "artist": "Evan-Amos",
+      "source": "https://commons.wikimedia.org/wiki/File%3AAction-Max-Stereo-Headphones.jpg"
+    },
+    {
+      "id": "headphones-09-out-ear-earphones-jpg",
+      "cat": "headphones",
+      "title": "Out ear earphones.JPG",
+      "full": "/studio/covers/full/headphones-09-out-ear-earphones-jpg.webp",
+      "thumb": "/studio/covers/thumbs/headphones-09-out-ear-earphones-jpg.webp",
+      "license": "Public domain",
+      "artist": "KVDP",
+      "source": "https://commons.wikimedia.org/wiki/File%3AOut_ear_earphones.JPG"
+    },
+    {
+      "id": "headphones-11-bluedio-turbine-headset-worn-out-coating-jpg",
+      "cat": "headphones",
+      "title": "Bluedio Turbine headset worn-out coating.JPG",
+      "full": "/studio/covers/full/headphones-11-bluedio-turbine-headset-worn-out-coating-jpg.webp",
+      "thumb": "/studio/covers/thumbs/headphones-11-bluedio-turbine-headset-worn-out-coating-jpg.webp",
+      "license": "Public domain",
+      "artist": "MKFI",
+      "source": "https://commons.wikimedia.org/wiki/File%3ABluedio_Turbine_headset_worn-out_coating.JPG"
+    },
+    {
+      "id": "headphones-14-desk-music-headphones-earphones-24243083451-jpg",
+      "cat": "headphones",
+      "title": "Desk-music-headphones-earphones (24243083451).jpg",
+      "full": "/studio/covers/full/headphones-14-desk-music-headphones-earphones-24243083451-jpg.webp",
+      "thumb": "/studio/covers/thumbs/headphones-14-desk-music-headphones-earphones-24243083451-jpg.webp",
+      "license": "CC0",
+      "artist": "www.Pixel.la Free Stock Photos",
+      "source": "https://commons.wikimedia.org/wiki/File%3ADesk-music-headphones-earphones_%2824243083451%29.jpg"
+    },
+    {
+      "id": "headphones-300-studio-cans-violet",
+      "cat": "headphones",
+      "title": "Violet Studio Cans",
+      "full": "/studio/covers/full/headphones-300-studio-cans-violet.webp",
+      "thumb": "/studio/covers/thumbs/headphones-300-studio-cans-violet.webp",
+      "license": "CC0",
+      "artist": "Island Pin (original CC0)",
+      "source": "https://madinc47-prog.github.io/studio/podcast-live.html"
+    },
+    {
+      "id": "headphones-301-studio-cans-teal",
+      "cat": "headphones",
+      "title": "Teal Studio Cans",
+      "full": "/studio/covers/full/headphones-301-studio-cans-teal.webp",
+      "thumb": "/studio/covers/thumbs/headphones-301-studio-cans-teal.webp",
+      "license": "CC0",
+      "artist": "Island Pin (original CC0)",
+      "source": "https://madinc47-prog.github.io/studio/podcast-live.html"
+    },
+    {
+      "id": "headphones-310-studio-cans-lavender",
+      "cat": "headphones",
+      "title": "Lavender Studio Cans",
+      "full": "/studio/covers/full/headphones-310-studio-cans-lavender.webp",
+      "thumb": "/studio/covers/thumbs/headphones-310-studio-cans-lavender.webp",
+      "license": "CC0",
+      "artist": "Island Pin (original CC0)",
+      "source": "https://madinc47-prog.github.io/studio/podcast-live.html"
+    },
+    {
+      "id": "headphones-311-studio-cans-aqua",
+      "cat": "headphones",
+      "title": "Aqua Studio Cans",
+      "full": "/studio/covers/full/headphones-311-studio-cans-aqua.webp",
+      "thumb": "/studio/covers/thumbs/headphones-311-studio-cans-aqua.webp",
+      "license": "CC0",
+      "artist": "Island Pin (original CC0)",
+      "source": "https://madinc47-prog.github.io/studio/podcast-live.html"
+    },
+    {
+      "id": "sound-waves-07-esselte-oscilloscope-jpg",
+      "cat": "sound-waves",
+      "title": "Esselte oscilloscope.jpg",
+      "full": "/studio/covers/full/sound-waves-07-esselte-oscilloscope-jpg.webp",
+      "thumb": "/studio/covers/thumbs/sound-waves-07-esselte-oscilloscope-jpg.webp",
+      "license": "CC0",
+      "artist": "Unnerving duck",
+      "source": "https://commons.wikimedia.org/wiki/File%3AEsselte_oscilloscope.jpg"
+    },
+    {
+      "id": "sound-waves-15-us-army-53605-nco-uses-spectrum-analyzer-to-chec",
+      "cat": "sound-waves",
+      "title": "US Army 53605 NCO uses Spectrum Analyzer to check EW.jpg",
+      "full": "/studio/covers/full/sound-waves-15-us-army-53605-nco-uses-spectrum-analyzer-to-chec.webp",
+      "thumb": "/studio/covers/thumbs/sound-waves-15-us-army-53605-nco-uses-spectrum-analyzer-to-chec.webp",
+      "license": "Public domain",
+      "artist": "Pennsylvania National Guard",
+      "source": "https://commons.wikimedia.org/wiki/File%3AUS_Army_53605_NCO_uses_Spectrum_Analyzer_to_check_EW.jpg"
+    },
+    {
+      "id": "sound-waves-310-cyan-sine-field",
+      "cat": "sound-waves",
+      "title": "Cyan Sine Field",
+      "full": "/studio/covers/full/sound-waves-310-cyan-sine-field.webp",
+      "thumb": "/studio/covers/thumbs/sound-waves-310-cyan-sine-field.webp",
+      "license": "CC0",
+      "artist": "Island Pin (original CC0)",
+      "source": "https://madinc47-prog.github.io/studio/podcast-live.html"
+    },
+    {
+      "id": "sound-waves-311-amber-pulse-grid",
+      "cat": "sound-waves",
+      "title": "Amber Pulse Grid",
+      "full": "/studio/covers/full/sound-waves-311-amber-pulse-grid.webp",
+      "thumb": "/studio/covers/thumbs/sound-waves-311-amber-pulse-grid.webp",
+      "license": "CC0",
+      "artist": "Island Pin (original CC0)",
+      "source": "https://madinc47-prog.github.io/studio/podcast-live.html"
+    },
+    {
+      "id": "sound-waves-312-violet-eq-rise",
+      "cat": "sound-waves",
+      "title": "Violet EQ Rise",
+      "full": "/studio/covers/full/sound-waves-312-violet-eq-rise.webp",
+      "thumb": "/studio/covers/thumbs/sound-waves-312-violet-eq-rise.webp",
+      "license": "CC0",
+      "artist": "Island Pin (original CC0)",
+      "source": "https://madinc47-prog.github.io/studio/podcast-live.html"
+    },
+    {
+      "id": "sound-waves-313-teal-ripple",
+      "cat": "sound-waves",
+      "title": "Teal Ripple Rings",
+      "full": "/studio/covers/full/sound-waves-313-teal-ripple.webp",
+      "thumb": "/studio/covers/thumbs/sound-waves-313-teal-ripple.webp",
+      "license": "CC0",
+      "artist": "Island Pin (original CC0)",
+      "source": "https://madinc47-prog.github.io/studio/podcast-live.html"
+    },
+    {
+      "id": "sound-waves-314-magenta-bars",
+      "cat": "sound-waves",
+      "title": "Magenta Beat Bars",
+      "full": "/studio/covers/full/sound-waves-314-magenta-bars.webp",
+      "thumb": "/studio/covers/thumbs/sound-waves-314-magenta-bars.webp",
+      "license": "CC0",
+      "artist": "Island Pin (original CC0)",
+      "source": "https://madinc47-prog.github.io/studio/podcast-live.html"
+    },
+    {
+      "id": "sound-waves-315-gold-wave-stack",
+      "cat": "sound-waves",
+      "title": "Gold Wave Stack",
+      "full": "/studio/covers/full/sound-waves-315-gold-wave-stack.webp",
+      "thumb": "/studio/covers/thumbs/sound-waves-315-gold-wave-stack.webp",
+      "license": "CC0",
+      "artist": "Island Pin (original CC0)",
+      "source": "https://madinc47-prog.github.io/studio/podcast-live.html"
+    },
+    {
+      "id": "sound-waves-316-blue-oscillo-glow",
+      "cat": "sound-waves",
+      "title": "Blue Oscillo Glow",
+      "full": "/studio/covers/full/sound-waves-316-blue-oscillo-glow.webp",
+      "thumb": "/studio/covers/thumbs/sound-waves-316-blue-oscillo-glow.webp",
+      "license": "CC0",
+      "artist": "Island Pin (original CC0)",
+      "source": "https://madinc47-prog.github.io/studio/podcast-live.html"
+    },
+    {
+      "id": "sound-waves-317-lime-spectrum",
+      "cat": "sound-waves",
+      "title": "Lime Spectrum Glow",
+      "full": "/studio/covers/full/sound-waves-317-lime-spectrum.webp",
+      "thumb": "/studio/covers/thumbs/sound-waves-317-lime-spectrum.webp",
+      "license": "CC0",
+      "artist": "Island Pin (original CC0)",
+      "source": "https://madinc47-prog.github.io/studio/podcast-live.html"
+    },
+    {
+      "id": "sound-waves-318-rose-pulse",
+      "cat": "sound-waves",
+      "title": "Rose Pulse Waves",
+      "full": "/studio/covers/full/sound-waves-318-rose-pulse.webp",
+      "thumb": "/studio/covers/thumbs/sound-waves-318-rose-pulse.webp",
+      "license": "CC0",
+      "artist": "Island Pin (original CC0)",
+      "source": "https://madinc47-prog.github.io/studio/podcast-live.html"
+    },
+    {
+      "id": "sound-waves-319-ice-frequency",
+      "cat": "sound-waves",
+      "title": "Ice Frequency Field",
+      "full": "/studio/covers/full/sound-waves-319-ice-frequency.webp",
+      "thumb": "/studio/covers/thumbs/sound-waves-319-ice-frequency.webp",
+      "license": "CC0",
+      "artist": "Island Pin (original CC0)",
+      "source": "https://madinc47-prog.github.io/studio/podcast-live.html"
+    },
+    {
+      "id": "sound-waves-320-neon-vu",
+      "cat": "sound-waves",
+      "title": "Neon VU Cascade",
+      "full": "/studio/covers/full/sound-waves-320-neon-vu.webp",
+      "thumb": "/studio/covers/thumbs/sound-waves-320-neon-vu.webp",
+      "license": "CC0",
+      "artist": "Island Pin (original CC0)",
+      "source": "https://madinc47-prog.github.io/studio/podcast-live.html"
+    },
+    {
+      "id": "sound-waves-321-sunset-harmonics",
+      "cat": "sound-waves",
+      "title": "Sunset Harmonics",
+      "full": "/studio/covers/full/sound-waves-321-sunset-harmonics.webp",
+      "thumb": "/studio/covers/thumbs/sound-waves-321-sunset-harmonics.webp",
+      "license": "CC0",
+      "artist": "Island Pin (original CC0)",
+      "source": "https://madinc47-prog.github.io/studio/podcast-live.html"
+    },
+    {
+      "id": "studio-gear-01-yamaha-m7cl-digital-live-sound-mixing-console-le",
+      "cat": "studio-gear",
+      "title": "Yamaha M7CL digital live-sound mixing console - left half angled.jpg",
+      "full": "/studio/covers/full/studio-gear-01-yamaha-m7cl-digital-live-sound-mixing-console-le.webp",
+      "thumb": "/studio/covers/thumbs/studio-gear-01-yamaha-m7cl-digital-live-sound-mixing-console-le.webp",
+      "license": "CC0",
+      "artist": "beeki from Schee\u00dfel, Germany",
+      "source": "https://commons.wikimedia.org/wiki/File%3AYamaha_M7CL_digital_live-sound_mixing_console_-_left_half_angled.jpg"
+    },
+    {
+      "id": "studio-gear-02-owen-bradley-s-office-from-his-bradley-s-barn-re",
+      "cat": "studio-gear",
+      "title": "Owen Bradley's office from his Bradley's Barn recording studio in Mount Juliet, Tennessee - Country Music Hall of Fame and Museum (2018-08-21 13.34.20 by e Kat).jpg",
+      "full": "/studio/covers/full/studio-gear-02-owen-bradley-s-office-from-his-bradley-s-barn-re.webp",
+      "thumb": "/studio/covers/thumbs/studio-gear-02-owen-bradley-s-office-from-his-bradley-s-barn-re.webp",
+      "license": "CC0",
+      "artist": "e Kat",
+      "source": "https://commons.wikimedia.org/wiki/File%3AOwen_Bradley%27s_office_from_his_Bradley%27s_Barn_recording_studio_in_Mount_Juliet%2C_Tennessee_-_Country_Music_Hall_of_Fame_and_Museum_%282018-08-21_13.34.20_by_e_Kat%29.jpg"
+    },
+    {
+      "id": "studio-gear-03-whai-mixer-greenfield-ma-jpg",
+      "cat": "studio-gear",
+      "title": "WHAI mixer - Greenfield, MA.jpg",
+      "full": "/studio/covers/full/studio-gear-03-whai-mixer-greenfield-ma-jpg.webp",
+      "thumb": "/studio/covers/thumbs/studio-gear-03-whai-mixer-greenfield-ma-jpg.webp",
+      "license": "CC0",
+      "artist": "Daderot",
+      "source": "https://commons.wikimedia.org/wiki/File%3AWHAI_mixer_-_Greenfield%2C_MA.jpg"
+    },
+    {
+      "id": "studio-gear-04-audiomixer-jpg",
+      "cat": "studio-gear",
+      "title": "AudioMixer.jpg",
+      "full": "/studio/covers/full/studio-gear-04-audiomixer-jpg.webp",
+      "thumb": "/studio/covers/thumbs/studio-gear-04-audiomixer-jpg.webp",
+      "license": "Public domain",
+      "artist": "Morningfrost",
+      "source": "https://commons.wikimedia.org/wiki/File%3AAudioMixer.jpg"
+    },
+    {
+      "id": "studio-gear-05-mixing-console-jpg",
+      "cat": "studio-gear",
+      "title": "Mixing console.jpg",
+      "full": "/studio/covers/full/studio-gear-05-mixing-console-jpg.webp",
+      "thumb": "/studio/covers/thumbs/studio-gear-05-mixing-console-jpg.webp",
+      "license": "Public domain",
+      "artist": "Rodrigo C\u00e9sar",
+      "source": "https://commons.wikimedia.org/wiki/File%3AMixing_console.jpg"
+    },
+    {
+      "id": "studio-gear-07-blattnerphone-recorder-1937-jpg",
+      "cat": "studio-gear",
+      "title": "Blattnerphone recorder 1937.jpg",
+      "full": "/studio/covers/full/studio-gear-07-blattnerphone-recorder-1937-jpg.webp",
+      "thumb": "/studio/covers/thumbs/studio-gear-07-blattnerphone-recorder-1937-jpg.webp",
+      "license": "Public domain",
+      "artist": "Douglas Hallam, Jr.",
+      "source": "https://commons.wikimedia.org/wiki/File%3ABlattnerphone_recorder_1937.jpg"
+    },
+    {
+      "id": "studio-gear-08-two-tape-recorders-in-the-television-studio-cont",
+      "cat": "studio-gear",
+      "title": "Two tape recorders in the television studio control room, 1958 (29435919791).jpg",
+      "full": "/studio/covers/full/studio-gear-08-two-tape-recorders-in-the-television-studio-cont.webp",
+      "thumb": "/studio/covers/thumbs/studio-gear-08-two-tape-recorders-in-the-television-studio-cont.webp",
+      "license": "Public domain",
+      "artist": "Archives of the Finnish Broadcasting Company Yle",
+      "source": "https://commons.wikimedia.org/wiki/File%3ATwo_tape_recorders_in_the_television_studio_control_room%2C_1958_%2829435919791%29.jpg"
+    },
+    {
+      "id": "studio-gear-09-mixing-console-unsplash-jpg",
+      "cat": "studio-gear",
+      "title": "Mixing console (Unsplash).jpg",
+      "full": "/studio/covers/full/studio-gear-09-mixing-console-unsplash-jpg.webp",
+      "thumb": "/studio/covers/thumbs/studio-gear-09-mixing-console-unsplash-jpg.webp",
+      "license": "CC0",
+      "artist": "Abigail  Keenan akeenster",
+      "source": "https://commons.wikimedia.org/wiki/File%3AMixing_console_%28Unsplash%29.jpg"
+    },
+    {
+      "id": "studio-gear-10-fader-tweaked-on-mackie-d8b-digital-mixer-2011-0",
+      "cat": "studio-gear",
+      "title": "Fader tweaked on Mackie D8B Digital Mixer (2011-07-04 by hanmaili) pixabay - 225498.jpg",
+      "full": "/studio/covers/full/studio-gear-10-fader-tweaked-on-mackie-d8b-digital-mixer-2011-0.webp",
+      "thumb": "/studio/covers/thumbs/studio-gear-10-fader-tweaked-on-mackie-d8b-digital-mixer-2011-0.webp",
+      "license": "CC0",
+      "artist": "hanmaili from Korea",
+      "source": "https://commons.wikimedia.org/wiki/File%3AFader_tweaked_on_Mackie_D8B_Digital_Mixer_%282011-07-04_by_hanmaili%29_pixabay_-_225498.jpg"
+    },
+    {
+      "id": "studio-gear-11-recording-studio-console-for-daw-work-2016-03-23",
+      "cat": "studio-gear",
+      "title": "Recording studio console for DAW work (2016-03-23 15.01.29 by DayronV @pixabay 1290090).jpg",
+      "full": "/studio/covers/full/studio-gear-11-recording-studio-console-for-daw-work-2016-03-23.webp",
+      "thumb": "/studio/covers/thumbs/studio-gear-11-recording-studio-console-for-daw-work-2016-03-23.webp",
+      "license": "CC0",
+      "artist": "Dayron Villaverde from Miami, USA",
+      "source": "https://commons.wikimedia.org/wiki/File%3ARecording_studio_console_for_DAW_work_%282016-03-23_15.01.29_by_DayronV_%40pixabay_1290090%29.jpg"
+    },
+    {
+      "id": "studio-gear-12-ssl-xlogic-x-desk-superanalogue-summing-mixer-20",
+      "cat": "studio-gear",
+      "title": "SSL XLogic X-Desk SuperAnalogue summing mixer (2017-03-18 @pxhere 1193187).jpg",
+      "full": "/studio/covers/full/studio-gear-12-ssl-xlogic-x-desk-superanalogue-summing-mixer-20.webp",
+      "thumb": "/studio/covers/thumbs/studio-gear-12-ssl-xlogic-x-desk-superanalogue-summing-mixer-20.webp",
+      "license": "CC0",
+      "artist": "g_sakketos",
+      "source": "https://commons.wikimedia.org/wiki/File%3ASSL_XLogic_X-Desk_SuperAnalogue_summing_mixer_%282017-03-18_%40pxhere_1193187%29.jpg"
+    },
+    {
+      "id": "studio-gear-13-vintage-music-mixer-unsplash-jpg",
+      "cat": "studio-gear",
+      "title": "Vintage music mixer (Unsplash).jpg",
+      "full": "/studio/covers/full/studio-gear-13-vintage-music-mixer-unsplash-jpg.webp",
+      "thumb": "/studio/covers/thumbs/studio-gear-13-vintage-music-mixer-unsplash-jpg.webp",
+      "license": "CC0",
+      "artist": "Jo\u00e3o Silas joaosilas",
+      "source": "https://commons.wikimedia.org/wiki/File%3AVintage_music_mixer_%28Unsplash%29.jpg"
+    },
+    {
+      "id": "studio-gear-14-api-console-vu-meter-bridge-api560-10-band-eq-ap",
+      "cat": "studio-gear",
+      "title": "API Console - VU Meter Bridge, API560 10 Band EQ, API550A 3 Band EQ (2017-01-05 19.45.22 piqsels.com en).jpg",
+      "full": "/studio/covers/full/studio-gear-14-api-console-vu-meter-bridge-api560-10-band-eq-ap.webp",
+      "thumb": "/studio/covers/thumbs/studio-gear-14-api-console-vu-meter-bridge-api560-10-band-eq-ap.webp",
+      "license": "CC0",
+      "artist": "Unknown authorUnknown author",
+      "source": "https://commons.wikimedia.org/wiki/File%3AAPI_Console_-_VU_Meter_Bridge%2C_API560_10_Band_EQ%2C_API550A_3_Band_EQ_%282017-01-05_19.45.22_piqsels.com_en%29.jpg"
+    },
+    {
+      "id": "studio-gear-15-ls3-5a-jpg",
+      "cat": "studio-gear",
+      "title": "Ls3 5a.jpg",
+      "full": "/studio/covers/full/studio-gear-15-ls3-5a-jpg.webp",
+      "thumb": "/studio/covers/thumbs/studio-gear-15-ls3-5a-jpg.webp",
+      "license": "Public domain",
+      "artist": "Bextr\u00e8ne",
+      "source": "https://commons.wikimedia.org/wiki/File%3ALs3_5a.jpg"
+    },
+    {
+      "id": "abstract-audio-01-blue-orange-sounds-together-contemporary-abstrac",
+      "cat": "abstract-audio",
+      "title": "'Blue & Orange sounds together' contemporary abstract art - colorful watercolor art sketch on paper and gouache, by artist Fons Heijnsbroek; free download art image CC0, high resolution TIFF.tif",
+      "full": "/studio/covers/full/abstract-audio-01-blue-orange-sounds-together-contemporary-abstrac.webp",
+      "thumb": "/studio/covers/thumbs/abstract-audio-01-blue-orange-sounds-together-contemporary-abstrac.webp",
+      "license": "CC0",
+      "artist": "Fons Heijnsbroek",
+      "source": "https://commons.wikimedia.org/wiki/File%3A%27Blue_%26_Orange_sounds_together%27_contemporary_abstract_art_-_colorful_watercolor_art_sketch_on_paper_and_gouache%2C_by_artist_Fons_Heijnsbroek%3B_free_download_art_image_CC0%2C_high_resolution_TIFF.tif"
+    },
+    {
+      "id": "abstract-audio-02-art-dialogue-on-lucia-drochs-music-1-contemporar",
+      "cat": "abstract-audio",
+      "title": "Art dialogue 'On Lucia Drochs music 1.' contemporary fusion art - abstract sketch in watercolor art and gouache on paper by artist Fons Heijnsbroek; free download art image CC0, high resolution TIFF.tif",
+      "full": "/studio/covers/full/abstract-audio-02-art-dialogue-on-lucia-drochs-music-1-contemporar.webp",
+      "thumb": "/studio/covers/thumbs/abstract-audio-02-art-dialogue-on-lucia-drochs-music-1-contemporar.webp",
+      "license": "CC0",
+      "artist": "Fons Heijnsbroek",
+      "source": "https://commons.wikimedia.org/wiki/File%3AArt_dialogue_%27On_Lucia_Drochs_music_1.%27_contemporary_fusion_art_-_abstract_sketch_in_watercolor_art_and_gouache_on_paper_by_artist_Fons_Heijnsbroek%3B_free_download_art_image_CC0%2C_high_resolution_TIFF.tif"
+    },
+    {
+      "id": "abstract-audio-03-music-painting-contemporary-abstract-art-colorfu",
+      "cat": "abstract-audio",
+      "title": "'Music painting' contemporary abstract art - colorful watercolor sketch on paper and gouache in red and blue colors, by Dutch artist Fons Heijnsbroek; free download abstract expressionism art image CC0, high resolution TIFF.tif",
+      "full": "/studio/covers/full/abstract-audio-03-music-painting-contemporary-abstract-art-colorfu.webp",
+      "thumb": "/studio/covers/thumbs/abstract-audio-03-music-painting-contemporary-abstract-art-colorfu.webp",
+      "license": "CC0",
+      "artist": "Fons Heijnsbroek",
+      "source": "https://commons.wikimedia.org/wiki/File%3A%27Music_painting%27_contemporary_abstract_art_-_colorful_watercolor_sketch_on_paper_and_gouache_in_red_and_blue_colors%2C_by_Dutch_artist_Fons_Heijnsbroek%3B_free_download_abstract_expressionism_art_image_CC0%2C_high_resolution_TIFF.tif"
+    },
+    {
+      "id": "abstract-audio-04-music-painting-2-modern-abstract-expressionism-a",
+      "cat": "abstract-audio",
+      "title": "'Music painting 2.' modern abstract expressionism art - colorful watercolor on paper in orange & blue colors, by artist Fons Heijnsbroek; free download image CC0, high resolution TIFF.tif",
+      "full": "/studio/covers/full/abstract-audio-04-music-painting-2-modern-abstract-expressionism-a.webp",
+      "thumb": "/studio/covers/thumbs/abstract-audio-04-music-painting-2-modern-abstract-expressionism-a.webp",
+      "license": "CC0",
+      "artist": "Fons Heijnsbroek",
+      "source": "https://commons.wikimedia.org/wiki/File%3A%27Music_painting_2.%27_modern_abstract_expressionism_art_-_colorful_watercolor_on_paper_in_orange_%26_blue_colors%2C_by_artist_Fons_Heijnsbroek%3B_free_download_image_CC0%2C_high_resolution_TIFF.tif"
+    },
+    {
+      "id": "abstract-audio-10-wood-gaylor-abstract-figure-1915-jpg",
+      "cat": "abstract-audio",
+      "title": "Wood Gaylor Abstract Figure 1915.jpg",
+      "full": "/studio/covers/full/abstract-audio-10-wood-gaylor-abstract-figure-1915-jpg.webp",
+      "thumb": "/studio/covers/thumbs/abstract-audio-10-wood-gaylor-abstract-figure-1915-jpg.webp",
+      "license": "Public domain",
+      "artist": "Wood Gaylor",
+      "source": "https://commons.wikimedia.org/wiki/File%3AWood_Gaylor_Abstract_Figure_1915.jpg"
+    },
+    {
+      "id": "abstract-audio-12-non-objective-composition-color-painting-rozanov",
+      "cat": "abstract-audio",
+      "title": "Non-Objective Composition (Color Painting) (Rozanova, 1917).jpg",
+      "full": "/studio/covers/full/abstract-audio-12-non-objective-composition-color-painting-rozanov.webp",
+      "thumb": "/studio/covers/thumbs/abstract-audio-12-non-objective-composition-color-painting-rozanov.webp",
+      "license": "Public domain",
+      "artist": "Olga Rozanova",
+      "source": "https://commons.wikimedia.org/wiki/File%3ANon-Objective_Composition_%28Color_Painting%29_%28Rozanova%2C_1917%29.jpg"
+    },
+    {
+      "id": "abstract-audio-15-otto-m-kil-abstract-a-1992-252-finnish-national-",
+      "cat": "abstract-audio",
+      "title": "Otto M\u00e4kil\u00e4 - Abstract - A-1992-252 - Finnish National Gallery.jpg",
+      "full": "/studio/covers/full/abstract-audio-15-otto-m-kil-abstract-a-1992-252-finnish-national-.webp",
+      "thumb": "/studio/covers/thumbs/abstract-audio-15-otto-m-kil-abstract-a-1992-252-finnish-national-.webp",
+      "license": "Public domain",
+      "artist": "Otto M\u00e4kil\u00e4",
+      "source": "https://commons.wikimedia.org/wiki/File%3AOtto_M%C3%A4kil%C3%A4_-_Abstract_-_A-1992-252_-_Finnish_National_Gallery.jpg"
+    },
+    {
+      "id": "abstract-audio-20-wave-cyan",
+      "cat": "abstract-audio",
+      "title": "Cyan Sine Sweep",
+      "full": "/studio/covers/full/abstract-audio-20-wave-cyan.webp",
+      "thumb": "/studio/covers/thumbs/abstract-audio-20-wave-cyan.webp",
+      "license": "CC0",
+      "artist": "Island Pin (original CC0)",
+      "source": "https://madinc47-prog.github.io/studio/podcast-live.html"
+    },
+    {
+      "id": "abstract-audio-21-eq-violet",
+      "cat": "abstract-audio",
+      "title": "Violet EQ Bars",
+      "full": "/studio/covers/full/abstract-audio-21-eq-violet.webp",
+      "thumb": "/studio/covers/thumbs/abstract-audio-21-eq-violet.webp",
+      "license": "CC0",
+      "artist": "Island Pin (original CC0)",
+      "source": "https://madinc47-prog.github.io/studio/podcast-live.html"
+    },
+    {
+      "id": "abstract-audio-22-vinyl-night",
+      "cat": "abstract-audio",
+      "title": "Night Vinyl",
+      "full": "/studio/covers/full/abstract-audio-22-vinyl-night.webp",
+      "thumb": "/studio/covers/thumbs/abstract-audio-22-vinyl-night.webp",
+      "license": "CC0",
+      "artist": "Island Pin (original CC0)",
+      "source": "https://madinc47-prog.github.io/studio/podcast-live.html"
+    },
+    {
+      "id": "abstract-audio-23-rings-amber",
+      "cat": "abstract-audio",
+      "title": "Amber Pulse Rings",
+      "full": "/studio/covers/full/abstract-audio-23-rings-amber.webp",
+      "thumb": "/studio/covers/thumbs/abstract-audio-23-rings-amber.webp",
+      "license": "CC0",
+      "artist": "Island Pin (original CC0)",
+      "source": "https://madinc47-prog.github.io/studio/podcast-live.html"
+    },
+    {
+      "id": "abstract-audio-24-wave-magenta",
+      "cat": "abstract-audio",
+      "title": "Magenta Beat Wave",
+      "full": "/studio/covers/full/abstract-audio-24-wave-magenta.webp",
+      "thumb": "/studio/covers/thumbs/abstract-audio-24-wave-magenta.webp",
+      "license": "CC0",
+      "artist": "Island Pin (original CC0)",
+      "source": "https://madinc47-prog.github.io/studio/podcast-live.html"
+    },
+    {
+      "id": "abstract-audio-25-eq-teal",
+      "cat": "abstract-audio",
+      "title": "Teal Spectrum Bars",
+      "full": "/studio/covers/full/abstract-audio-25-eq-teal.webp",
+      "thumb": "/studio/covers/thumbs/abstract-audio-25-eq-teal.webp",
+      "license": "CC0",
+      "artist": "Island Pin (original CC0)",
+      "source": "https://madinc47-prog.github.io/studio/podcast-live.html"
+    },
+    {
+      "id": "abstract-audio-26-vinyl-gold",
+      "cat": "abstract-audio",
+      "title": "Gold Label Vinyl",
+      "full": "/studio/covers/full/abstract-audio-26-vinyl-gold.webp",
+      "thumb": "/studio/covers/thumbs/abstract-audio-26-vinyl-gold.webp",
+      "license": "CC0",
+      "artist": "Island Pin (original CC0)",
+      "source": "https://madinc47-prog.github.io/studio/podcast-live.html"
+    }
+  ],
+  "generatedNote": "Diagrams/screenshots/negatives removed; Island Pin CC0 replacements added. Large square gallery UI."
+}

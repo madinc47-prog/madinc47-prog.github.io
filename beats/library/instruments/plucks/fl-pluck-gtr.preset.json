@@ -1,0 +1,12 @@
+{
+  "id": "fl-pluck-gtr",
+  "n": "FLEX Guitar Pluck",
+  "p": {
+    "i": "gtrpluck",
+    "tone": {
+      "drive": 0.05
+    }
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

@@ -1,0 +1,12 @@
+{
+  "id": "fl-pluck-hard",
+  "n": "FLEX Hard Pluck",
+  "p": {
+    "i": "trappluck",
+    "tone": {
+      "drive": 0.25
+    }
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

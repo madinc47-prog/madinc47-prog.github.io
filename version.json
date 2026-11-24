@@ -1,0 +1,5 @@
+{
+  "version": "20261124upd-376742f-mwu5km9a",
+  "builtAt": "2026-11-24T03:46:30.190Z",
+  "note": "Site-wide deploy stamp. Bumped on every push so shared/*.js and any suite change reach every app."
+}

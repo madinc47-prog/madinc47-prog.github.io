@@ -1,0 +1,10 @@
+{
+  "id": "fl-lead-whine",
+  "n": "FLEX G-Funk Lead",
+  "p": {
+    "i": "whine",
+    "tone": {}
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

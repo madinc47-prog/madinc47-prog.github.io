@@ -1,0 +1,12 @@
+{
+  "id": "fl-pad-bright",
+  "n": "FLEX Bright Pad",
+  "p": {
+    "i": "sidepad",
+    "tone": {
+      "drive": 0.15
+    }
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

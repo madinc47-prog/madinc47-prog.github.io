@@ -1,0 +1,10 @@
+{
+  "id": "fl-keys-organ-rock",
+  "n": "FLEX Rock Organ",
+  "base": "rockorgan",
+  "tone": {
+    "drive": 0.35
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

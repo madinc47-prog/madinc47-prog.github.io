@@ -1,0 +1,10 @@
+{
+  "id": "fl-keys-melodic-x17-techno-stab",
+  "n": "FLEX Techno Key Stab",
+  "base": "pluck",
+  "tone": {
+    "drive": 0.35
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

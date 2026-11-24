@@ -1,0 +1,10 @@
+{
+  "id": "fl-keys-ep-x6-comp",
+  "n": "FLEX Compressed EP",
+  "base": "rhodes",
+  "tone": {
+    "drive": 0.15
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

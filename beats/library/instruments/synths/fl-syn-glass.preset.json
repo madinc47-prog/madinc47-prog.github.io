@@ -1,0 +1,10 @@
+{
+  "id": "fl-syn-glass",
+  "n": "FLEX Glass",
+  "p": {
+    "i": "bell",
+    "tone": {}
+  },
+  "char": "fl-flex",
+  "cr": "ipb-fl"
+}

@@ -1,0 +1,1 @@
+window.COLLAB_CONFIG={supabaseUrl:"https://wgruvyctmksvnypugash.supabase.co",supabaseAnonKey:"sb_publishable_uZq5T3jDbdtbtd8O6CHmHQ_Ajwz2vIV",iceEndpoint:"",iceServers:[{urls:["stun:stun.cloudflare.com:3478","stun:stun.l.google.com:19302"]}]};
